@@ -4,6 +4,8 @@ begin
 
 lemma FIXME: "P" sorry
 
+
+
 definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
   "rev_apply x f = f x"
 
@@ -43,7 +45,7 @@ definition is_Ok :: "'a rresult \<Rightarrow> bool" where
 definition dest_Ok :: "'a rresult \<Rightarrow> 'a" where
 "dest_Ok x == x |> rresult_to_option |> dest_Some"
 
-definition split_at :: "'lemma FIXME: "P" sorrya list \<Rightarrow> nat \<Rightarrow> 'a list * 'a list" where
+definition split_at :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list * 'a list" where
 "split_at xs n == (take n xs,drop n xs)"
 
 definition list_insert_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list" where

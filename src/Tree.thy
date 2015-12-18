@@ -2,17 +2,21 @@ theory Tree
 imports Util Constants Key_value
 begin
 
-type_synonym leaf_t = "(key * value_t) list"
-type_synonym node_t = "key list"
+type_synonym leaf_lbl_t = "(key * value_t) list"
+type_synonym node_lbl_t = "key list"
 
-datatype Tree = Node "node_t * Tree list" | Leaf "leaf_t"
+
+datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
+
+(* label at node and children ie a Node *)
+type_synonym node_t = "node_lbl_t * Tree list"
 
 
 definition height :: "Tree \<Rightarrow> nat" where
 "height == FIXME"
 
 
-function tree_to_leaves :: "Tree \<Rightarrow> leaf_t list" where
+function tree_to_leaves :: "Tree \<Rightarrow> leaf_lbl_t list" where
 "tree_to_leaves t0 = (case t0 of
 Node(l,cs) \<Rightarrow> (
 (cs |> (List.map tree_to_leaves)) |> List.concat
@@ -25,7 +29,7 @@ termination
   apply(force intro:FIXME)
   done
 
-definition update_child_at_position :: "node_t * Tree list \<Rightarrow> nat \<Rightarrow> Tree \<Rightarrow> Tree" where
+definition update_child_at_position :: "node_lbl_t * Tree list \<Rightarrow> nat \<Rightarrow> Tree \<Rightarrow> Tree" where
 "update_child_at_position node i child == FIXME"
 
 
