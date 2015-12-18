@@ -2,6 +2,7 @@ theory Insert_tree_stack
 imports Tree_stack
 begin
 
+(* FIXME we need this to be hereditary *)
 definition wellformed_context :: "context_t \<Rightarrow> bool" where
 "wellformed_context xs == (
 case (List.reverse xs) of Nil \<Rightarrow> True
