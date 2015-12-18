@@ -15,10 +15,11 @@ definition split_node :: "node_t \<Rightarrow> inserting_two_t" where
 
 definition update_focus_at_position :: "node_t \<Rightarrow> nat \<Rightarrow> focus_t \<Rightarrow> focus_t" where
 "update_focus_at_position n i f == (
+let (ks,rs) = n in
 case f of
 Inserting_one t \<Rightarrow> (
-let rs2 = update_child_at_position n i t in
-Inserting_one(t))
+let rs2 = dest_Some(list_replace_1_at_n rs i t) in
+Inserting_one(Node(ks,rs2)))
 | Inserting_two (tl_,k,tr) \<Rightarrow> (
 let ks2 = list_insert_at_n (n|>fst) i [k] in
 let rs2 = list_replace_at_n (n|>snd) i [tl_,tr] |> dest_Some in
