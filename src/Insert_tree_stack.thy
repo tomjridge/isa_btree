@@ -41,8 +41,11 @@ b1 & b2
 
 definition wellformed_ts :: "tree_stack \<Rightarrow> bool" where
 "wellformed_ts ts == (
+
 let (f,stk) = dest_ts ts in
-case stk of 
+wellformed_focus f 
+& wellformed_context stk 
+& (case stk of 
 
 Nil \<Rightarrow> (
 case f of 
@@ -107,7 +110,7 @@ wf
 )
 
 
-)"
+))"
 
 
 end
