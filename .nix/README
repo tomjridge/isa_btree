@@ -1,0 +1,4 @@
+For isabelle env:
+
+nix-shell
+source build_and_run_isabelle.sh
