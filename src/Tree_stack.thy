@@ -38,6 +38,17 @@ definition dest_ts :: "tree_stack \<Rightarrow> focus_t * context_t" where
 "dest_ts ts == (case ts of Tree_stack(f,c) \<Rightarrow> (f,c))"
 
 definition step_tree_stack :: "tree_stack \<Rightarrow> tree_stack option" where
-"step_tree_stack == FIXME"
+"step_tree_stack ts == (
+let (f,stk) = dest_ts ts in
+case stk of 
+Nil \<Rightarrow> None
+| ((n,i)#xs) \<Rightarrow> (
+let f2 = update_focus_at_position n i f in
+Some(Tree_stack(f2,xs))
+)
+
+)
+
+"
 
 end

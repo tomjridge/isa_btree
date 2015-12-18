@@ -39,13 +39,10 @@ in
 b1 & b2
 )"
 
-definition wellformed_ts :: "tree_stack \<Rightarrow> bool" where
-"wellformed_ts ts == (
-
+definition wellformed_ts_1 :: "tree_stack \<Rightarrow> bool" where
+"wellformed_ts_1 ts == (
 let (f,stk) = dest_ts ts in
-wellformed_focus f 
-& wellformed_context stk 
-& (case stk of 
+(case stk of 
 
 Nil \<Rightarrow> (
 case f of 
@@ -111,6 +108,13 @@ wf
 
 
 ))"
+
+definition wellformed_ts :: "tree_stack \<Rightarrow> bool" where
+"wellformed_ts ts == (
+let (f,stk) = dest_ts ts in
+wellformed_focus f 
+& wellformed_context stk 
+& wellformed_ts_1 ts)"
 
 
 end
