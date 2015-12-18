@@ -4,7 +4,7 @@ begin
 
 definition wellformed_context :: "context_t \<Rightarrow> bool" where
 "wellformed_context xs == (
-case xs of Nil \<Rightarrow> True
+case (List.reverse xs) of Nil \<Rightarrow> True
 | (((l,cs),i)#xs) \<Rightarrow> (
 wellformed_tree (Node(l,cs))
 & List.list_all (% n. wellformed_subtree (Node(l,cs))) xs 
