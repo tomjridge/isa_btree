@@ -30,7 +30,12 @@ Inserting_two(split_node(ks2,rs2))
 )
 )"
 
-datatype tree_stack = Tree_stack "focus_t * (node_t * nat) list"
+type_synonym context_t = "(node_t * nat) list"
+
+datatype tree_stack = Tree_stack "focus_t * context_t"
+
+definition dest_ts :: "tree_stack \<Rightarrow> focus_t * context_t" where
+"dest_ts ts == (case ts of Tree_stack(f,c) \<Rightarrow> (f,c))"
 
 definition step_tree_stack :: "tree_stack \<Rightarrow> tree_stack option" where
 "step_tree_stack == FIXME"
