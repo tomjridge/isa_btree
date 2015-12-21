@@ -6,7 +6,7 @@ begin
 definition wellformed_context_1 :: "node_t * nat \<Rightarrow> bool" where
 "wellformed_context_1 lcsi = (
 let ((l,cs),i) = lcsi in
-wellformed_subtree (Node(l,cs))
+wellformed_tree (Rmbs False) (Node(l,cs))
 & i : { 0 .. (length l) }
 )"
 
@@ -15,23 +15,11 @@ definition wellformed_context :: "context_t \<Rightarrow> bool" where
 case xs of Nil \<Rightarrow> True
 | _ \<Rightarrow> (
 let ((l,cs),i) = last xs in
-wellformed_tree (Node(l,cs))
-& i : { 0 .. (length l) }
+wellformed_tree (Rmbs True) (Node(l,cs))
+& i : { 0 .. (length l - 1) }
 & List.list_all wellformed_context_1 (butlast xs)
 ))
 "
-
-definition wellformed_focus :: "focus_t \<Rightarrow> bool" where
-"wellformed_focus f == (
-case f of
-Inserting_one t \<Rightarrow> (wellformed_subtree t)
-| Inserting_two (tl_,k0,tr) \<Rightarrow> (
-wellformed_subtree tl_ 
-& wellformed_subtree tl_
-& List.list_all (% k. key_lt k k0) (keys(tl_))
-& List.list_all (% k. key_le k0 k) (keys(tr))
-)
-)"
 
 definition check_keys :: "key option \<Rightarrow> key list \<Rightarrow> key option \<Rightarrow> bool" where
 "check_keys kl ks kr == (
@@ -48,29 +36,35 @@ in
 b1 & b2
 )"
 
+definition wellformed_focus :: "focus_t \<Rightarrow> bool \<Rightarrow> bool" where
+"wellformed_focus f stack_empty == (
+case f of
+Inserting_one t \<Rightarrow> (wellformed_tree (Rmbs stack_empty) t)
+| Inserting_two (tl_,k0,tr) \<Rightarrow> (
+wellformed_tree (Rmbs False) tl_ 
+& wellformed_tree (Rmbs False) tr
+& check_keys None (keys(tl_)) (Some k0)
+& check_keys (Some k0) (keys(tr)) None
+)
+)"
+
+
+
 definition wellformed_ts_1 :: "tree_stack \<Rightarrow> bool" where
 "wellformed_ts_1 ts == (
 let (f,stk) = dest_ts ts in
 (case stk of 
 
-Nil \<Rightarrow> (
-case f of 
-Inserting_one t \<Rightarrow> (wellformed_tree t)
-| Inserting_two (tl_,k0,tr) \<Rightarrow> (
-wellformed_subtree tl_
-& wellformed_subtree tr
-& check_keys None (keys tl_) (Some k0) 
-& check_keys (Some k0) (keys tr) None
-)) (* Nil *)
+Nil \<Rightarrow> (True) (* Nil - focus is wf *)
 
 | (((l,cs),i)#nis) \<Rightarrow> (
   let kl = (case i=0 of 
   True \<Rightarrow> None
   | False \<Rightarrow> Some(l!(i-1)))
   in
-  let kr = (case i=length l of
-  True \<Rightarrow> None
-  | False \<Rightarrow> Some(l!i))
+  let kr = (case i \<le> length l -1 of
+  True \<Rightarrow> Some(l!i)
+  | False \<Rightarrow> None)
   in
 case f of
 Inserting_one t \<Rightarrow> (
@@ -79,9 +73,7 @@ let b1 = True in
 (* ksrs fine *)
 let b2 = True in
 let b3 = (height (cs!i) = height t) in
-let b4 = (
-  check_keys kl (keys t) kr
-)
+let b4 = (check_keys kl (keys t) kr)
 in
 (* keys ordered *)
 let b5 = True in
@@ -94,8 +86,7 @@ let b1 = True in
 let b2 = True in
 let b3 = (
   let h = height (cs!i) in
-  (height tl_ = h)
-  & (height tr = h)
+  (height tl_ = h) & (height tr = h)
 )
 in
 (* keys consistent *)
@@ -121,7 +112,7 @@ wf
 definition wellformed_ts :: "tree_stack \<Rightarrow> bool" where
 "wellformed_ts ts == (
 let (f,stk) = dest_ts ts in
-wellformed_focus f 
+wellformed_focus f (stk=[])
 & wellformed_context stk
 & wellformed_ts_1 ts)"
 

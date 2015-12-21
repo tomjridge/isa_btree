@@ -88,8 +88,21 @@ let n = length l in
 )
 "
 
-definition wf_size :: "Tree \<Rightarrow> bool" where
-"wf_size t0 == forall_subtrees wf_size_1 t0"
+(* root may be small *)
+datatype rmbs_t = Rmbs bool
+
+definition wf_size :: "rmbs_t \<Rightarrow> Tree \<Rightarrow> bool" where
+"wf_size rmbs t0 == (
+case rmbs of
+Rmbs False \<Rightarrow> (forall_subtrees wf_size_1 t0)
+| Rmbs True \<Rightarrow> (
+case t0 of 
+Leaf(l) \<Rightarrow> (length l \<le> Constants.max_leaf_size)
+| Node(l,cs) \<Rightarrow> (
+1 \<le> length l &
+length l \<le> max_node_keys 
+& List.list_all wf_size_1 cs)
+))"
 
 definition wf_ks_rs_1 :: "Tree \<Rightarrow> bool" where
 "wf_ks_rs_1 t0 == (
@@ -149,6 +162,7 @@ Leaf xs \<Rightarrow> (xs |> List.map fst |> ordered_key_list)
 definition keys_ordered :: "Tree \<Rightarrow> bool" where
 "keys_ordered t == forall_subtrees keys_ordered_1 t"
 
+(*
 definition wellformed_subtree :: "Tree \<Rightarrow> bool" where
 "wellformed_subtree t0 == (
 let b1 = wf_size t0 in
@@ -159,14 +173,11 @@ let b5 = keys_ordered t0 in
 let wf = b1&b2&b3&b4&b5 in
 wf
 )"
+*)
 
-definition wellformed_tree :: "Tree \<Rightarrow> bool" where
-"wellformed_tree t0 == (
-let b1 = (
-case t0 of 
-Leaf(l) \<Rightarrow> (length l \<le> Constants.max_leaf_size)
-| Node(l,cs) \<Rightarrow> (wf_size t0)
-) in
+definition wellformed_tree :: "rmbs_t \<Rightarrow> Tree \<Rightarrow> bool" where
+"wellformed_tree rmbs t0 == (
+let b1 = wf_size rmbs t0 in
 let b2 = wf_ks_rs t0 in
 let b3 = balanced t0 in
 let b4 = keys_consistent t0 in

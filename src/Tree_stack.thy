@@ -11,7 +11,15 @@ type_synonym inserting_two_t =  "Tree * key * Tree"
 type_synonym focus_t = One_or_two
 
 definition split_node :: "node_t \<Rightarrow> inserting_two_t" where
-"split_node == FIXME"
+"split_node n == (
+let (l,cs) = n in
+let n0 = min_node_keys in
+let left_ks = take n0 l in
+let (k,right_ks) = (case drop n0 l of (k#ks) \<Rightarrow> (k,ks)) in
+let left_rs = take (1+n0) cs in
+let right_rs = drop (1+n0) cs in
+(Node(left_ks,left_rs),k,Node(right_ks,right_rs))
+)"
 
 definition update_focus_at_position :: "node_t \<Rightarrow> nat \<Rightarrow> focus_t \<Rightarrow> focus_t" where
 "update_focus_at_position n i f == (

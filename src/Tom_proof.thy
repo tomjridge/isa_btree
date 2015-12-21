@@ -16,6 +16,13 @@ wellformed_ts ts'
 ))
 "
 
+lemma fst_snd_simps: "((a,b)|>fst = a) & ((a,b)|>snd = b)"
+apply(simp add:rev_apply_def)
+done
+  
+
+lemma wellformed_context_hereditary: "wellformed_context (x#xs) \<Longrightarrow> wellformed_context xs" sorry
+
 lemma invariant_wf_ts: "invariant_wf_ts"
 apply(simp add: invariant_wf_ts_def)
 apply(intro allI impI)
@@ -38,6 +45,10 @@ apply(elim conjE)
 apply(case_tac n)
 apply(rename_tac ks rs)
 apply(simp)
+apply(subgoal_tac " wellformed_focus (update_focus_at_position (ks, rs) i f) (stk = []) \<and>
+       wellformed_context stk")
+prefer 2
+(* begin subproof *)
 apply(intro conjI)
  (* wf_focus *)
  apply(simp add: wellformed_focus_def )
@@ -46,9 +57,11 @@ apply(intro conjI)
   apply(rename_tac t)
   apply(simp)
   apply(simp add: update_focus_at_position_def)
-  apply(subgoal_tac "wellformed_subtree (Node (ks,rs))")
+  apply(subgoal_tac "wellformed_tree (Rmbs (stk=[])) (Node (ks,rs))")
+   apply(simp add: wellformed_context_def wellformed_context_1_def)
    apply(force intro:FIXME)
-  apply(simp add: wellformed_subtree_def)
+  apply(simp add: wellformed_tree_def)
+  apply(elim conjE)
   apply(intro conjI)
    apply(simp add: wf_size_def)
    apply(force intro:FIXME)
@@ -60,6 +73,7 @@ apply(intro conjI)
    (* keys_consistent; but tihs follows from wf_ts *)
    apply(force intro:FIXME)
 
+   (* keys ordered *)
    apply(force intro:FIXME)
 
   (* inserting_two *)
@@ -83,18 +97,29 @@ apply(intro conjI)
   
 
  (* wf_context *)
+ apply(force intro: wellformed_context_hereditary)
+(* end subproof *)
+apply(elim conjE)
+
+apply(simp)
+(* wf_ts_1 *)
+apply(simp add: update_focus_at_position_def)
+apply(case_tac f)
+ (* i1 *)
+ apply(simp)
  apply(force intro: FIXME)
 
-  (* wf_ts_1 *)
-  apply(simp add: update_focus_at_position_def)
-  apply(case_tac f)
-   (* i1 *)
-   apply(simp)
-   apply(force intro: FIXME)
+  (* i2 FIXME may be worth combining with other i2 cases? *)
+ apply(simp)
+ apply(subgoal_tac "? tleft k0 tr. x2 = (tleft,k0,tr)") prefer 2 apply(force)
+ apply(elim exE)
+ apply(simp)
+ apply(subgoal_tac "? ks2. list_insert_at_n (n |> fst) i [k0]  = ks2") prefer 2 apply(force)
+ apply(subgoal_tac "? rs2. list_replace_at_n (n |> snd) i [tleft, tr] |> dest_Some = rs2") prefer 2 apply(force)
+ apply(elim exE)
+ apply(simp add: Let_def fst_snd_simps)
 
-   (* i2 FIXME may be worth combining with other i2 cases? *)
-   apply(simp)
-   apply(force intro: FIXME)
+ apply(force intro: FIXME)
 done
 
 
