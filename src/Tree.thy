@@ -12,9 +12,16 @@ datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
 type_synonym node_t = "node_lbl_t * Tree list"
 
 
-definition height :: "Tree \<Rightarrow> nat" where
-"height == FIXME"
-
+function height :: "Tree \<Rightarrow> nat" where
+"height t0 = (
+case t0 of
+Leaf _ \<Rightarrow> (1::nat)
+| Node(_,cs) \<Rightarrow> (1 + Max(set(List.map height cs)))
+)"
+by auto
+termination
+  apply(force intro:FIXME)
+  done
 
 function tree_to_leaves :: "Tree \<Rightarrow> leaf_lbl_t list" where
 "tree_to_leaves t0 = (case t0 of
@@ -34,22 +41,24 @@ definition update_child_at_position :: "node_lbl_t * Tree list \<Rightarrow> nat
 "update_child_at_position node i child == FIXME"
 *)
 
-definition tree_to_subtrees :: "Tree \<Rightarrow> Tree list" where
-"tree_to_subtrees == FIXME"
+function tree_to_subtrees :: "Tree \<Rightarrow> Tree list" where
+"tree_to_subtrees t0 = (
+case t0 of
+Leaf _ \<Rightarrow> [t0]
+| Node(l,cs) \<Rightarrow> (
+t0#((List.map tree_to_subtrees cs) |> List.concat)
+)
+)
+"
+by auto
+termination
+  apply(force intro:FIXME)
+  done
 
 definition forall_subtrees :: "(Tree \<Rightarrow> bool) \<Rightarrow> Tree \<Rightarrow> bool" where
 "forall_subtrees P t == (
 List.list_all P (t |> tree_to_subtrees) 
 )"
-
-definition wf_size_1 :: "Tree \<Rightarrow> bool" where
-"wf_size_1 == FIXME"
-
-definition wf_size :: "Tree \<Rightarrow> bool" where
-"wf_size == FIXME"
-
-definition wf_ks_rs :: "Tree \<Rightarrow> bool" where
-"wf_ks_rs == FIXME"
 
 definition balanced_1 :: "Tree \<Rightarrow> bool" where
 "balanced_1 t0 == (
@@ -62,8 +71,45 @@ List.list_all (% c. height c = height (cs!0)) cs))
 definition balanced :: "Tree \<Rightarrow> bool" where
 "balanced t == forall_subtrees balanced_1 t"
 
+
+
+
+definition wf_size_1 :: "Tree \<Rightarrow> bool" where
+"wf_size_1 t1 == (
+case t1 of
+Leaf xs \<Rightarrow> (
+let n = length xs in
+(n \<ge> min_leaf_size) & ( n \<le> max_leaf_size))
+| Node(l,cs) \<Rightarrow> (
+let n = length l in
+(n \<ge> min_node_keys) & (n \<le> max_node_keys)
+
+)
+)
+"
+
+definition wf_size :: "Tree \<Rightarrow> bool" where
+"wf_size t0 == forall_subtrees wf_size_1 t0"
+
+definition wf_ks_rs_1 :: "Tree \<Rightarrow> bool" where
+"wf_ks_rs_1 t0 == (
+case t0 of Leaf _ \<Rightarrow> True
+| Node(l,cs) \<Rightarrow> ((1+ length l) = (length cs))
+)"
+
+definition wf_ks_rs :: "Tree \<Rightarrow> bool" where
+"wf_ks_rs t0 == forall_subtrees wf_ks_rs_1 t0"
+
+definition keys_1 :: "Tree \<Rightarrow> key list" where
+"keys_1 t0 == (case t0 of
+Leaf xs \<Rightarrow> (List.map fst xs)
+| Node (l,cs) \<Rightarrow> (l)
+)"
+
 definition keys :: "Tree \<Rightarrow> key list" where
-"keys t0 == FIXME"
+"keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)
+" 
+  
 
 definition keys_consistent_1 :: "Tree \<Rightarrow> bool" where
 "keys_consistent_1 t0 == (
@@ -87,10 +133,18 @@ definition keys_consistent :: "Tree \<Rightarrow> bool" where
 "keys_consistent t == forall_subtrees keys_consistent_1 t"
 
 definition ordered_key_list :: "key list \<Rightarrow> bool" where 
-"ordered_key_list == FIXME"
+"ordered_key_list ks == (
+! i : { 0 .. (length ks -2)}. key_lt (ks!i) (ks!(i+1))
+)
+"
 
 definition keys_ordered_1 :: "Tree \<Rightarrow> bool" where
-"keys_ordered_1 == FIXME"
+"keys_ordered_1 t0 == (
+case t0 of
+Leaf xs \<Rightarrow> (xs |> List.map fst |> ordered_key_list)
+| Node (l,cs) \<Rightarrow> (ordered_key_list l)
+)
+"
 
 definition keys_ordered :: "Tree \<Rightarrow> bool" where
 "keys_ordered t == forall_subtrees keys_ordered_1 t"

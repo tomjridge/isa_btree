@@ -2,16 +2,24 @@ theory Insert_tree_stack
 imports Tree_stack
 begin
 
-(* FIXME we need this to be hereditary *)
+
+definition wellformed_context_1 :: "node_t * nat \<Rightarrow> bool" where
+"wellformed_context_1 lcsi = (
+let ((l,cs),i) = lcsi in
+wellformed_subtree (Node(l,cs))
+& i : { 0 .. (length l) }
+)"
+
 definition wellformed_context :: "context_t \<Rightarrow> bool" where
 "wellformed_context xs == (
-case (List.reverse xs) of Nil \<Rightarrow> True
-| (((l,cs),i)#xs) \<Rightarrow> (
+case xs of Nil \<Rightarrow> True
+| _ \<Rightarrow> (
+let ((l,cs),i) = last xs in
 wellformed_tree (Node(l,cs))
-& List.list_all (% n. wellformed_subtree (Node(l,cs))) xs 
 & i : { 0 .. (length l) }
-)
-)"
+& List.list_all wellformed_context_1 (butlast xs)
+))
+"
 
 definition wellformed_focus :: "focus_t \<Rightarrow> bool" where
 "wellformed_focus f == (
@@ -114,7 +122,7 @@ definition wellformed_ts :: "tree_stack \<Rightarrow> bool" where
 "wellformed_ts ts == (
 let (f,stk) = dest_ts ts in
 wellformed_focus f 
-& wellformed_context stk 
+& wellformed_context stk
 & wellformed_ts_1 ts)"
 
 
