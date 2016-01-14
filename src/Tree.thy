@@ -131,7 +131,7 @@ case t0 of Leaf(l) \<Rightarrow> True
 let b1 = (! i : {0 .. (List.length label -1)}. 
   let k0 = label!i in
   let ks = keys(children!i) in
-  ! k : set ks. key_lt k k0)
+  ! k : set ks. key_le k k0)
 in
 let b2 = (! i : {0 .. (List.length label -1)}. 
   let k0 = label!i in

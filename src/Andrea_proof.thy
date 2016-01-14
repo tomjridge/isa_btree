@@ -29,7 +29,27 @@ done
 lemma list_all_update: "list_all P l \<Longrightarrow> P a \<Longrightarrow> list_all P (l[i := a]) "
 by (metis length_list_update list_all_length nth_list_update_eq nth_list_update_neq) 
  
-  
+lemma list_all_concat_map_tree_subtrees:
+"(list_all P (concat (map tree_to_subtrees rs))) =               
+ (list_all P rs \<and> list_all P (concat (map (\<lambda> t. case t of Node(l,cs) \<Rightarrow> (List.map tree_to_subtrees cs) |> List.concat | Leaf _ \<Rightarrow> []) rs)))"
+apply (induct rs)
+ apply simp
+
+ apply (case_tac a)
+  apply simp
+  apply (case_tac x1)
+   apply force
+
+  apply force
+done
+
+lemma wf_size_hereditary: "wf_size (Rmbs b) (Node(ks,x#xs)) \<Longrightarrow> wf_size (Rmbs b) (Node (ks,xs))"
+apply (simp add:wf_size_def)
+apply (case_tac b)
+  apply simp
+
+  apply (simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
+done
 
 lemma invariant_wf_ts: "invariant_wf_ts"
 apply(simp add: invariant_wf_ts_def)
@@ -86,19 +106,60 @@ apply(intro conjI)
   apply(simp add: wellformed_tree_def)
   apply(elim conjE)
   apply (simp add:list_replace_1_at_n_def dest_Some_def)
-  apply(intro conjI)
-   apply(simp add: wf_size_def)
-   apply(force intro:FIXME)
-   
-   apply(force intro:FIXME)
+(*  apply (subgoal_tac "\<exists> x. rs!i = x") prefer 2 apply force
+  apply (erule exE)
+  apply (subgoal_tac "\<exists> rs1 rs2. (rs  = rs1@x#rs2)")
+  prefer 2
+   apply (case_tac "rs = []")
+    apply (force intro:FIXME)
 
+    apply (case_tac "i < length rs")
+     
+     apply (blast intro:id_take_nth_drop)
+
+     apply (force intro:FIXME)
+  apply (elim exE)+
+  apply (subgoal_tac "(rs [i:=t ] = rs1@t#rs2)")
+  prefer 2
+   apply (subgoal_tac "length rs = length (rs1 @ x # rs2)") prefer 2 apply force
+   apply (subgoal_tac "i = length rs1 ")
+   prefer 2
+    apply meson
+    apply (subgoal_tac "(length rs) = (length (rs1@(rs!i)#rs2))") prefer 2 apply force
+    apply (force intro:FIXME)
+      
+   apply simp
+*)   
+  apply(intro conjI)
+   (*wf_size (Rmbs (stk = [])) (Node (ks, rs[i := t]))*)
+   apply (simp add:wf_size_def)
+   apply (subgoal_tac "wf_size_1 t") prefer 2  apply (case_tac t) apply (force simp add:forall_subtrees_def rev_apply_def)+
+   apply (case_tac "stk=[]")
+    apply (simp add:list_all_update)
+
+    apply (simp add:forall_subtrees_def rev_apply_def wf_size_1_def list_all_iff)
+    apply (subgoal_tac "set (rs[i := t]) \<subseteq> insert t (set rs)") prefer 2 apply (simp add: set_update_subset_insert)
+    apply force
+    
+   (* wf_ks_rs (Node (ks, rs[i := t])) *)
+   apply (simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def list_all_iff)
+   apply (subgoal_tac "set (rs[i := t]) \<subseteq> insert t (set rs)") prefer 2 apply (simp add: set_update_subset_insert)
+   apply force
+
+   apply (simp add:balanced_def forall_subtrees_def rev_apply_def balanced_1_def)
+   apply (erule conjE)+
    apply(force intro:FIXME)
 
    (* keys_consistent; but this follows from wf_ts *)
+   apply (simp add:keys_consistent_def forall_subtrees_def rev_apply_def keys_consistent_1_def)
+   apply (simp add:wellformed_ts_1_def dest_ts_def check_keys_def)
+   apply (subgoal_tac "keys_consistent_1 t") prefer 2 apply (case_tac t) apply force apply force
    apply(force intro:FIXME)
 
    (* keys ordered *)
-   apply(force intro:FIXME)
+   apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def list_all_iff)
+   apply (subgoal_tac "set (rs[i := t]) \<subseteq> insert t (set rs)") prefer 2 apply (simp add: set_update_subset_insert)
+   apply force
 
   (* inserting_two *)
   apply(simp)
