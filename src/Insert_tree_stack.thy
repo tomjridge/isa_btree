@@ -58,12 +58,9 @@ let (f,stk) = dest_ts ts in
 Nil \<Rightarrow> (True) (* Nil - focus is wf *)
 
 | (((l,cs),i)#nis) \<Rightarrow> (
-  let kl = (case i=0 of 
-  True \<Rightarrow> None
-  | False \<Rightarrow> Some(l!(i-1)))
-  in
+  let kl = Some(l!(i)) in
   let kr = (case i \<le> length l -1 of
-  True \<Rightarrow> Some(l!i)
+  True \<Rightarrow> Some(l!(i+1))
   | False \<Rightarrow> None)
   in
 case f of

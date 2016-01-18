@@ -188,7 +188,6 @@ apply(intro conjI)
     apply (thin_tac "list_all keys_consistent_1 (case t of Node (l, cs) \<Rightarrow> t # map tree_to_subtrees cs |> concat | Leaf x \<Rightarrow> [t])")
     apply (simp add:keys_consistent_1_def)
     apply (elim conjE)
-    apply (intro conjI)
      (*\<forall>ia\<in>{0..length ks - Suc 0}. \<forall>k\<in>set (keys (rs[i := t] ! ia)). key_le k (ks ! ia)*)
      (* I need to know that 
       \<forall>k\<in>set(keys t). key_le k (ks!i)
@@ -197,31 +196,26 @@ apply(intro conjI)
      apply (subgoal_tac "i \<le> length ks") prefer 2 apply (force intro:FIXME)
      apply (subgoal_tac "length ks  = length rs - 1") prefer 2 apply (force intro:FIXME)
      apply simp
-     (*now I want to define rs as rs1+ith+rs2*)
-     apply (subgoal_tac 
-       "(\<forall>i\<in>{0..length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i)) =
-       ((\<forall>i\<in>{0.. i - 1}. \<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i)) 
-       \<and> (i \<le> length rs - Suc (Suc 0) \<longrightarrow> (\<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i))) \<and> (\<forall>i\<in>{i+1.. length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i)))
-       ") prefer 2 apply force
-     apply (subgoal_tac 
-       "(\<forall>ia\<in>{0..length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs[i := t] ! ia)). key_le k (ks ! ia)) =
-       ((\<forall>i\<in>{0.. i - 1}. \<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i)) 
-       \<and> ((i \<le> length rs - Suc (Suc 0)) \<longrightarrow> (\<forall>k\<in>set (keys (rs[i := t] ! i)). key_le k (ks ! i))) \<and> (\<forall>i\<in>{i+1.. length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i)))
-       ") prefer 2  apply (force intro:FIXME)
-     apply simp
      apply (case_tac "i \<le> length rs - Suc (Suc 0)")
+      apply (subgoal_tac 
+       "(\<forall>ia\<in>{0..length rs - Suc (Suc 0)}. \<forall>x\<in>set (keys (rs[i := t] ! ia)). key_le (ks ! ia) x) =
+       ((\<forall>i\<in>{0.. i - 1}. \<forall>k\<in>set (keys (rs ! i)). key_le (ks ! i) k) 
+       \<and> ((i \<le> length rs - Suc (Suc 0)) \<longrightarrow> (\<forall>k\<in>set (keys (rs[i := t] ! i)). key_le (ks ! i) k)) 
+       \<and> (\<forall>i\<in>{i+1.. length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs ! i)). key_le (ks ! i) k))
+       ") prefer 2 apply simp apply (metis atLeastAtMost_iff le0 nth_list_update_neq)
+      apply (subgoal_tac "
+        (\<forall>ia\<in>{0..length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs[i := t]!ia)). key_lt k (ks ! (Suc ia))) =
+        ((\<forall>i\<in>{0.. i - 1}. \<forall>k\<in>set (keys (rs ! i)). key_lt k (ks ! Suc i)) 
+       \<and> ((i \<le> length rs - Suc (Suc 0)) \<longrightarrow> (\<forall>k\<in>set (keys (rs[i := t] ! i)). key_lt k (ks ! Suc i))) 
+       \<and> (\<forall>i\<in>{i+1.. length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs ! i)). key_lt k (ks ! Suc i)))
+        ") prefer 2 apply simp apply (metis atLeastAtMost_iff le0 nth_list_update_neq) 
       apply (simp add:wellformed_ts_1_def dest_ts_def check_keys_def)
       apply (case_tac i)
-       apply(force intro:FIXME)
+       apply (case_tac rs, force, force)
 
-       (*FIXME error in check_keys or in wf_consistent: the definitions do not match*)
-       apply simp
+       apply force
+      apply force
 
-      apply(force intro:FIXME)
-
-      apply simp
-     (*\<forall>ia\<in>{0..length ks - Suc 0}. \<forall>x\<in>set (keys (rs[i := t] ! Suc ia)). key_lt (ks ! ia) x*)
-     apply (force intro:FIXME)
     (* list_all keys_consistent_1 (concat (map tree_to_subtrees (rs[i := t]))) *)
     apply (subgoal_tac "list_all keys_consistent_1 (tree_to_subtrees t)") prefer 2 apply force
     apply (force simp:list_all_update_concat_map_subtrees)
