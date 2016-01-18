@@ -28,7 +28,13 @@ done
 
 lemma list_all_update: "list_all P l \<Longrightarrow> P a \<Longrightarrow> list_all P (l[i := a]) "
 by (metis length_list_update list_all_length nth_list_update_eq nth_list_update_neq) 
- 
+
+lemma list_all_update_concat_map_subtrees: 
+"list_all P (concat (map tree_to_subtrees rs)) \<Longrightarrow> list_all P (tree_to_subtrees t) \<Longrightarrow>
+list_all P (concat (map tree_to_subtrees (rs[i := t])))"
+by (smt concat.simps(2) concat_append id_take_nth_drop list.map(2) list_all_append list_update_beyond map_append not_le upd_conv_take_nth_drop)
+
+
 lemma list_all_concat_map_tree_subtrees:
 "(list_all P (concat (map tree_to_subtrees rs))) =               
  (list_all P rs \<and> list_all P (concat (map (\<lambda> t. case t of Node(l,cs) \<Rightarrow> (List.map tree_to_subtrees cs) |> List.concat | Leaf _ \<Rightarrow> []) rs)))"
@@ -146,15 +152,79 @@ apply(intro conjI)
    apply (subgoal_tac "set (rs[i := t]) \<subseteq> insert t (set rs)") prefer 2 apply (simp add: set_update_subset_insert)
    apply force
 
-   apply (simp add:balanced_def forall_subtrees_def rev_apply_def balanced_1_def)
-   apply (erule conjE)+
-   apply(force intro:FIXME)
+   (* balanced (Node (ks, rs[i := t])) *)
+   apply (case_tac "rs \<noteq> []")
+    (* rs \<noteq> [] *)
+    apply (subgoal_tac "i < length rs \<and> (height (rs!i) = height t) ") 
+    prefer 2
+     apply (intro conjI)
+      (* i < length rs *)
+      apply (simp add:wellformed_context_def)
+      apply (case_tac stk)
+       apply (simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
+     
+       apply (force intro:FIXME) (* I need to induct to solve this *)
+
+      (* (height (rs!i) = height t) *)
+      apply (simp add:wellformed_ts_1_def dest_ts_def)
+    apply (simp add:balanced_def forall_subtrees_def rev_apply_def balanced_1_def del:height.simps)
+    apply (elim conjE)+
+    (* now I know that height rs!i = height t, so a substitution should not do any harm*)
+    apply (intro conjI)
+     apply (smt length_list_update list_all_length nth_list_update_eq nth_list_update_neq)
+     
+     apply (subgoal_tac "list_all balanced_1 (tree_to_subtrees t)") prefer 2 apply force
+     apply (force simp:list_all_update_concat_map_subtrees)
+
+    (* rs = [] *)
+    apply (simp add:wellformed_ts_1_def)
 
    (* keys_consistent; but this follows from wf_ts *)
-   apply (simp add:keys_consistent_def forall_subtrees_def rev_apply_def keys_consistent_1_def)
-   apply (simp add:wellformed_ts_1_def dest_ts_def check_keys_def)
-   apply (subgoal_tac "keys_consistent_1 t") prefer 2 apply (case_tac t) apply force apply force
-   apply(force intro:FIXME)
+   apply (simp add:keys_consistent_def forall_subtrees_def rev_apply_def)
+   apply (intro conjI)
+    (* keys_consistent_1 (Node (ks, rs[i := t])) *)
+    apply (elim conjE)
+    apply (thin_tac "list_all keys_consistent_1 (concat (map tree_to_subtrees rs))")
+    apply (thin_tac "list_all keys_consistent_1 (case t of Node (l, cs) \<Rightarrow> t # map tree_to_subtrees cs |> concat | Leaf x \<Rightarrow> [t])")
+    apply (simp add:keys_consistent_1_def)
+    apply (elim conjE)
+    apply (intro conjI)
+     (*\<forall>ia\<in>{0..length ks - Suc 0}. \<forall>k\<in>set (keys (rs[i := t] ! ia)). key_le k (ks ! ia)*)
+     (* I need to know that 
+      \<forall>k\<in>set(keys t). key_le k (ks!i)
+      then I can divide the \<forall>ia on the ith index
+      *)
+     apply (subgoal_tac "i \<le> length ks") prefer 2 apply (force intro:FIXME)
+     apply (subgoal_tac "length ks  = length rs - 1") prefer 2 apply (force intro:FIXME)
+     apply simp
+     (*now I want to define rs as rs1+ith+rs2*)
+     apply (subgoal_tac 
+       "(\<forall>i\<in>{0..length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i)) =
+       ((\<forall>i\<in>{0.. i - 1}. \<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i)) 
+       \<and> (i \<le> length rs - Suc (Suc 0) \<longrightarrow> (\<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i))) \<and> (\<forall>i\<in>{i+1.. length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i)))
+       ") prefer 2 apply force
+     apply (subgoal_tac 
+       "(\<forall>ia\<in>{0..length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs[i := t] ! ia)). key_le k (ks ! ia)) =
+       ((\<forall>i\<in>{0.. i - 1}. \<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i)) 
+       \<and> ((i \<le> length rs - Suc (Suc 0)) \<longrightarrow> (\<forall>k\<in>set (keys (rs[i := t] ! i)). key_le k (ks ! i))) \<and> (\<forall>i\<in>{i+1.. length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs ! i)). key_le k (ks ! i)))
+       ") prefer 2  apply (force intro:FIXME)
+     apply simp
+     apply (case_tac "i \<le> length rs - Suc (Suc 0)")
+      apply (simp add:wellformed_ts_1_def dest_ts_def check_keys_def)
+      apply (case_tac i)
+       apply(force intro:FIXME)
+
+       (*FIXME error in check_keys or in wf_consistent: the definitions do not match*)
+       apply simp
+
+      apply(force intro:FIXME)
+
+      apply simp
+     (*\<forall>ia\<in>{0..length ks - Suc 0}. \<forall>x\<in>set (keys (rs[i := t] ! Suc ia)). key_lt (ks ! ia) x*)
+     apply (force intro:FIXME)
+    (* list_all keys_consistent_1 (concat (map tree_to_subtrees (rs[i := t]))) *)
+    apply (subgoal_tac "list_all keys_consistent_1 (tree_to_subtrees t)") prefer 2 apply force
+    apply (force simp:list_all_update_concat_map_subtrees)
 
    (* keys ordered *)
    apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def list_all_iff)

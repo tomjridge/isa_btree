@@ -16,7 +16,7 @@ case xs of Nil \<Rightarrow> True
 | _ \<Rightarrow> (
 let ((l,cs),i) = last xs in
 wellformed_tree (Rmbs True) (Node(l,cs))
-& i : { 0 .. (length l - 1) }
+& i : { 0 .. (length l) }
 & List.list_all wellformed_context_1 (butlast xs)
 ))
 "
