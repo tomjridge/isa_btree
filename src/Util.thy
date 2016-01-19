@@ -55,7 +55,11 @@ ys@as@zs
 )"
 
 definition list_replace_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list option" where
-"list_replace_at_n == FIXME"
+"list_replace_at_n xs n as ==
+  (if (length xs \<le> n) then None else
+  (let (ys,zs) = split_at xs n in
+  if n = 0 then Some(as@(tl zs)) else
+  Some ((butlast ys)@as@zs)))"
 
 definition list_replace_1_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list option" where
 "list_replace_1_at_n xs n a == (Some (list_update xs n a))"
