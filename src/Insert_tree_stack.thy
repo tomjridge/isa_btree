@@ -25,12 +25,12 @@ definition check_keys :: "key option \<Rightarrow> key list \<Rightarrow> key op
 "check_keys kl ks kr == (
 let b1 = (
 case kl of None \<Rightarrow> True 
-| Some k0 \<Rightarrow> (! k : set ks. key_le k0 k)
+| Some kl \<Rightarrow> (! k : set ks. key_le kl k)
 )
 in
 let b2 = (
 case kr of None \<Rightarrow> True 
-| Some k0 \<Rightarrow> (! k : set ks. key_lt k k0)
+| Some kr \<Rightarrow> (! k : set ks. key_lt k kr)
 )
 in
 b1 & b2
@@ -97,7 +97,7 @@ let b4 = (
 in
 (* keys ordered *)
 let b5 = (
-check_keys kl [k0] kr
+check_keys kl [k0] kr  (* andrea: error here! proof needs more *)
 )
 in
 let wf = b1&b2&b3&b4&b5 in

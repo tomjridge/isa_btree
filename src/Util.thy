@@ -45,12 +45,21 @@ definition is_Ok :: "'a rresult \<Rightarrow> bool" where
 definition dest_Ok :: "'a rresult \<Rightarrow> 'a" where
 "dest_Ok x == x |> rresult_to_option |> dest_Some"
 
-definition split_at :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list * 'a list" where
-"split_at xs n == (take n xs,drop n xs)"
+
+definition split_at_2 :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list * 'a list" where
+"split_at_2 xs n == (take n xs,drop n xs)"
+
+
+definition split_at_3 :: "'a list \<Rightarrow> nat \<Rightarrow> ('a list * 'a * 'a list) option" where
+"split_at_3 xs n == (
+case (n < length xs) of
+True \<Rightarrow> (Some(take n xs, xs!n, drop (n+1) xs)) 
+| False \<Rightarrow> None
+)"
 
 definition list_insert_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list" where
 "list_insert_at_n xs n as == (
-let (ys,zs) = split_at xs n in
+let (ys,zs) = split_at_2 xs n in
 ys@as@zs
 )"
 
