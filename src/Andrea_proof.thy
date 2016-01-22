@@ -99,6 +99,53 @@ apply (drule_tac t="rs2" in sym)
  apply (simp add:butlast_take list_all_take_drop_less_one_element_concat_map_subtrees)
 done
 
+lemma a:
+"\<forall>i\<in>{0..length xs + length ys - 2}. key_lt ((xs @ ys) ! i) ((xs @ ys) ! Suc i)
+\<Longrightarrow> key_lt (last xs) k0 \<Longrightarrow> key_lt k0 (hd ys) \<Longrightarrow> 
+i \<le> length xs + length ys - Suc 0 \<Longrightarrow> key_lt ((xs @ k0 # ys) ! i) ((xs @ k0 # ys) ! Suc i)"
+apply (induct i)
+ (* 0 *)
+ apply simp
+ apply (induct xs)
+  (*xs = []*)
+  apply simp
+  apply (case_tac ys)
+   apply (force intro:FIXME) (*I need an hypothesis on the overall length*)
+   
+   apply simp
+
+  (*xs = a#xs*)
+  apply simp
+   apply (case_tac xs)
+    apply simp
+
+    apply force
+ (*Suc i*)
+ apply simp
+ (*dividing on the possible values of i*)
+ apply (case_tac "i < length xs")
+  (*i < length xs*)
+  apply (force intro:FIXME)
+  (*i \<ge> length xs*)
+  apply (case_tac "i = length xs")
+   apply simp
+   apply (force intro:FIXME)
+  
+   (* i \<noteq> length xs *)
+   apply (subgoal_tac "length xs < i") prefer 2 apply force
+   apply (thin_tac "i \<noteq> length xs")
+   apply (thin_tac "\<not> i < length xs")
+   apply (force intro:FIXME)
+oops
+
+lemma b:
+"length xs \<le> n \<Longrightarrow> (\<forall>i\<in>{length xs..n}. P ((xs@ys)!i)) \<Longrightarrow> (\<forall>i\<in>{0..(n - length xs)}. P ((ys)!i))"
+apply (induct xs)
+ apply simp
+
+ apply simp
+oops
+
 lemma invariant_wf_ts: "invariant_wf_ts"
 apply(simp add: invariant_wf_ts_def)
 apply(intro allI impI)
@@ -207,6 +254,7 @@ apply(intro conjI)
      apply (subgoal_tac "length ks  = length rs - 1") prefer 2 apply (force simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
      apply simp
      apply (case_tac "i \<le> length rs - Suc (Suc 0)")
+      (* i \<le> length rs - Suc (Suc 0) *)
       apply (subgoal_tac 
        "(\<forall>ia\<in>{0..length rs - Suc (Suc 0)}. \<forall>x\<in>set (keys (rs[i := t] ! ia)). key_le (ks ! ia) x) =
        ((\<forall>i\<in>{0.. i - 1}. \<forall>k\<in>set (keys (rs ! i)). key_le (ks ! i) k) 
@@ -223,7 +271,8 @@ apply(intro conjI)
       apply (case_tac i)
        apply (case_tac rs, force, force)
 
-       apply force
+      (*i > length rs - Suc (Suc 0)*)
+      apply force
 
     (* list_all keys_consistent_1 (concat (map tree_to_subtrees (rs[i := t]))) *)
     apply (subgoal_tac "list_all keys_consistent_1 (tree_to_subtrees t)") prefer 2 apply force
@@ -294,17 +343,111 @@ apply(intro conjI)
     apply (force simp add: list_all_of_list_replace_at_n)
 
     (* keys_consistent (Node (ks2, take (i - Suc 0) rs @ tleft # tright # drop i rs)) *)
-    apply(force intro: FIXME)
+    apply (simp add:keys_consistent_def forall_subtrees_def rev_apply_def)
+    apply (simp add:list_all_of_list_replace_at_n_concat_map_subtrees)  
+    apply (simp add:keys_consistent_1_def check_keys_def)
+    (*so I know already that between tleft k0 tright there is consistency,
+      while I know that there is consistency ks!i and tleft and ks!i+1 and tright by wellformed_ts_1
+
+      I need to divide in bits this goal! !
+    *)
+    apply (simp add:list_replace_at_n_def split_at_def)
+    apply (case_tac "i = 0")
+     (*i=0*)
+     apply (simp add:list_insert_at_n_def split_at_def)
+     apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
+     (*subgoal to split the goal in the hypothesis we have already*)
+     apply(force intro: FIXME)
+     
+     (* i \<noteq> 0 *)
+     apply (simp add:list_insert_at_n_def split_at_def butlast_take)
+     apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
+     apply (case_tac "i \<le> length ks - Suc 0")
+      (*i \<le> length ks - Suc 0*)
+      apply simp
+      apply(force intro: FIXME)
+
+      (*i > length ks - Suc 0 // in this case tright will contain the biggest keys*)
+      apply simp
+      apply(force intro: FIXME)
 
     (* keys_ordered (Node (ks2, take (i - Suc 0) rs @ tleft # tright # drop i rs)) *)
+    apply (thin_tac "length ks2 = Suc (length ks)")
     apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def)
     apply (simp add:list_all_of_list_replace_at_n_concat_map_subtrees)
     apply (simp add:keys_ordered_1_def ordered_key_list_def)
-    apply(force intro: FIXME)
+    apply (subgoal_tac "\<exists> xs ys. (ks2 = xs@k0#ys) \<and> (ks = xs @ ys)") prefer 2 apply (force simp add:list_insert_at_n_def split_at_def)
+    apply (erule exE)+
+    apply (erule conjE)+
+    apply simp
+    apply (force intro:FIXME)
+    (*apply (subgoal_tac "i \<le> length ks") prefer 2 apply (force intro:FIXME)
+    apply (thin_tac "i < length rs")
+    apply (case_tac "i \<le> length ks - Suc 0")
+     (*i \<le> length ks - Suc 0*)
+     apply (subgoal_tac "key_lt k0 (ks!i)") prefer 2 apply (force simp add:wellformed_ts_1_def dest_ts_def check_keys_def Let_def)
+     apply (subgoal_tac "{0..length ks2 - 2} = ({0..i-1} \<union> {i} \<union> {i+1..length ks -1}) ") prefer 2 apply fastforce
+     apply (subgoal_tac "ks2 ! i = k0 \<and> ks2 ! Suc i = ks!i")
+     prefer 2
+      apply (case_tac "length ks = 0",force)
+      apply (subgoal_tac "length (take i ks) \<noteq> length ks") prefer 2 apply force 
+      apply (drule_tac t="ks2" in sym)
+      apply simp
+      apply (intro conjI)
+       (*(take i ks @ k0 # drop i ks) ! i = k0*)
+       apply (metis append_take_drop_id diff_add_inverse2 diff_diff_cancel length_append length_drop nth_append_length)
+       
+       (*(take i ks @ k0 # drop i ks) ! Suc i = ks ! i*)
+       apply (force simp add: nth_append)
+     apply (drule_tac t="ks2" in sym)
+     apply simp
+     apply (elim conjE)+
+     apply (drule_tac t="k0" in sym)
+     apply (subgoal_tac "key_lt (ks!(i - Suc 0)) (k0) ") prefer 2 apply (force intro:FIXME)
+     apply (case_tac " ks = []") apply force
+     apply(force intro: FIXME)
+     
+     (*i > length ks - Suc 0*)
+     apply simp
+     apply (drule_tac t="ks2" in sym)
+     apply simp
+     apply (thin_tac "ks2 = ks @ [k0]")
+     (*FIXME: we do not have the assumption key_lt x k0 *)
+     apply (subgoal_tac "key_lt (ks!(length ks - 1)) k0") prefer 2 apply (force intro:FIXME)
+     apply(force intro: FIXME)*)
    apply(simp)
    apply(simp add: split_node_def)
-   apply(force intro: FIXME)
-  
+   apply (case_tac "case drop min_node_keys ks2 of x # xa \<Rightarrow> (x, xa)")
+   apply (rename_tac "k" "right_ks")
+   apply (subgoal_tac "\<exists> left_ks. take min_node_keys ks2 = left_ks") prefer 2 apply force
+   apply (subgoal_tac "\<exists> right_rs. drop (Suc min_node_keys) rs2 = right_rs") prefer 2 apply force
+   apply (subgoal_tac "\<exists> left_rs. take (Suc min_node_keys) rs2 = left_rs") prefer 2 apply force
+   apply (erule exE)+
+   apply simp
+   apply (intro conjI)
+    (*wellformed_tree (Rmbs False) (Node (left_ks, left_rs))*)
+    apply (simp add:wellformed_tree_def)
+    apply (force intro:FIXME)
+    
+    (*wellformed_tree (Rmbs False) (Node (right_ks, right_rs))*)
+    apply (simp add:wellformed_tree_def)
+    apply (force intro:FIXME)
+
+    (*check_keys None (keys (Node (left_ks, left_rs))) (Some k)*)
+    apply (simp add:check_keys_def)
+    (* I want to show that if ks=l_ks@r_ks and rs=l_rs@r_rs 
+    then keys(left_ks,left_rs) = insert k0 (keys (l_ks,l_rs))
+    and if k=k0, I need to know that 
+    \<forall> ka \<in> (keys(left_ks,left_rs)). key_lt ka k0
+    but do I know that key_lt any_left_ks k0?
+    The only hypothesis we get is from wellformed_ts_1 and that tells about single keys.
+    Probably we need to change the definitions...
+    *)
+    apply (force intro:FIXME)
+
+    (*check_keys (Some k) (keys (Node (right_ks, right_rs))) None*)
+    apply (force intro:FIXME)
+ 
 
  (* wf_context *)
  apply(force intro: wellformed_context_hereditary)

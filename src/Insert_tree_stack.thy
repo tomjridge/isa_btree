@@ -94,7 +94,11 @@ let b4 = (
 in
 (* keys ordered *)
 let b5 = (
+let kl = (if 0 < i then Some (l!(i-1)) else None ) in
+let kr = Some (l!i) in
 check_keys kl [k0] kr
+\<and>
+(if i > length l -1 then (key_lt (l!(length l -1)) k0) else True)
 )
 in
 let wf = b1&b2&b3&b4&b5 in
