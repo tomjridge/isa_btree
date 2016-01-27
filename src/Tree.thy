@@ -82,7 +82,7 @@ let n = length xs in
 (n \<ge> min_leaf_size) & ( n \<le> max_leaf_size))
 | Node(l,cs) \<Rightarrow> (
 let n = length l in
-(n \<ge> min_node_keys) & (n \<le> max_node_keys)
+(1 \<le> length l) & (n \<ge> min_node_keys) & (n \<le> max_node_keys)
 
 )
 )
@@ -122,21 +122,26 @@ Leaf xs \<Rightarrow> (List.map fst xs)
 definition keys :: "Tree \<Rightarrow> key list" where
 "keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)
 " 
-  
+
+definition key_indexes :: "Tree \<Rightarrow> nat list" where
+"key_indexes t == (
+  case t of 
+  Leaf xs \<Rightarrow> (upt 0 (length xs))
+  | Node (l,_) \<Rightarrow> (upt 0 (length l)))"  
 
 definition keys_consistent_1 :: "Tree \<Rightarrow> bool" where
 "keys_consistent_1 t0 == (
 case t0 of Leaf(l) \<Rightarrow> True
 | Node(label,children) \<Rightarrow> (
-let b1 = (! i : {0 .. (List.length label -1)}. 
+let b1 = (! i : set(key_indexes t0). 
   let k0 = label!i in
-  let ks = keys(children!i) in
-  ! k : set ks. key_le k0 k)
+  let kls = keys(children!i) in
+  check_keys None kls (Some k0))
 in
-let b2 = (! i : {0 .. (List.length label -1)}. 
-  let k0 = label!(i+1) in
-  let ks = keys(children!i) in
-  ! k : set ks. key_lt k k0)
+let b2 = (! i : set(key_indexes t0). 
+  let k0 = label!i in
+  let krs = keys(children!(i+1)) in
+  check_keys (Some k0) krs None)
 in
 b1 & b2
 ))
@@ -145,17 +150,16 @@ b1 & b2
 definition keys_consistent :: "Tree \<Rightarrow> bool" where
 "keys_consistent t == forall_subtrees keys_consistent_1 t"
 
-definition ordered_key_list :: "key list \<Rightarrow> bool" where 
-"ordered_key_list ks == (
-! i : { 0 .. (length ks -2)}. key_lt (ks!i) (ks!(i+1))
-)
-"
 
 definition keys_ordered_1 :: "Tree \<Rightarrow> bool" where
 "keys_ordered_1 t0 == (
+let is = set (butlast (key_indexes t0)) in
 case t0 of
-Leaf xs \<Rightarrow> (xs |> List.map fst |> ordered_key_list)
-| Node (l,cs) \<Rightarrow> (ordered_key_list l)
+Leaf xs \<Rightarrow>
+  let ks = (xs |> List.map fst) in
+  ! i : is. key_lt (ks!i) (ks!(i+1))
+| Node (ks,_) \<Rightarrow> 
+  ! i : is . key_lt (ks!i) (ks!(i+1))
 )
 "
 

@@ -29,23 +29,33 @@ lemma wellformed_context_i_less_than_length_rs:
 "wellformed_context (((ks, rs), i) # stk) \<Longrightarrow> i \<le> length ks \<and> i < length rs"
 apply (induct stk)
  apply (simp add:wellformed_context_def)
- apply (simp add:wellformed_tree_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
+ apply (simp add:wellformed_tree_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def subtree_indexes_def)
 
  apply (simp add:wellformed_context_def)
  apply (case_tac "stk =[]")
   (*stk = []*)
   apply (case_tac a, case_tac aa)
   apply (simp add:wellformed_context_1_def)
-  apply (simp add:wellformed_tree_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
+  apply (simp add:wellformed_tree_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def subtree_indexes_def)
 
   (*stk = aa#list*)
-  apply simp
   apply (case_tac "last stk")
   apply simp
-  apply (case_tac aa)
-  apply (simp add:wellformed_context_1_def)
 done
-  
+
+lemma wf_size_ks_not_empty: "wf_size rmbs (Node(ks,rs)) \<longrightarrow> 1\<le>length ks"
+apply (simp add:wf_size_def)
+apply (case_tac "rmbs")
+ apply (case_tac x)
+  apply simp
+
+  apply (simp add:forall_subtrees_def rev_apply_def wf_size_1_def Let_def)
+done
+
+lemma wf_size_ks_not_empty': "wf_size (Rmbs (stk = [])) (Node(ks,rs)) \<Longrightarrow> 1\<le>length ks"
+apply (insert wf_size_ks_not_empty,force)
+done
+
 lemma list_all_update: "list_all P l \<Longrightarrow> P a \<Longrightarrow> list_all P (l[i := a]) "
 by (metis length_list_update list_all_length nth_list_update_eq nth_list_update_neq) 
 
@@ -60,7 +70,7 @@ by (metis append_take_drop_id list_all_append)
 
 lemma list_all_of_list_replace_at_n:
 "i < length rs \<Longrightarrow>
- list_replace_at_n ((ks, rs) |> snd) i [tleft, tright] |> dest_Some = rs2 \<Longrightarrow>
+ list_replace_at_n rs i [tleft, tright] |> dest_Some = rs2 \<Longrightarrow>
  P tleft \<Longrightarrow>
  P tright \<Longrightarrow>
  list_all P rs \<Longrightarrow> list_all P rs2"
@@ -245,41 +255,61 @@ apply(intro conjI)
     apply (thin_tac "list_all keys_consistent_1 (case t of Node (l, cs) \<Rightarrow> t # map tree_to_subtrees cs |> concat | Leaf x \<Rightarrow> [t])")
     apply (simp add:keys_consistent_1_def)
     apply (elim conjE)
-     (*\<forall>ia\<in>{0..length ks - Suc 0}. \<forall>k\<in>set (keys (rs[i := t] ! ia)). key_le k (ks ! ia)*)
-     (* I need to know that 
-      \<forall>k\<in>set(keys t). key_le k (ks!i)
-      then I can divide the \<forall>ia on the ith index
-      *)
-     apply (subgoal_tac "i \<le> length ks") prefer 2 apply (simp add:wellformed_context_i_less_than_length_rs)
+    apply (subgoal_tac "length ks  = length rs - 1") prefer 2 apply (force simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
+    apply (subgoal_tac "1 < length rs")
+    prefer 2
+     apply (subgoal_tac "1 \<le> length ks") prefer 2 apply (blast intro:wf_size_ks_not_empty')
      apply (subgoal_tac "length ks  = length rs - 1") prefer 2 apply (force simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
-     apply simp
-     apply (case_tac "i \<le> length rs - Suc (Suc 0)")
-      (* i \<le> length rs - Suc (Suc 0) *)
-      apply (subgoal_tac 
-       "(\<forall>ia\<in>{0..length rs - Suc (Suc 0)}. \<forall>x\<in>set (keys (rs[i := t] ! ia)). key_le (ks ! ia) x) =
-       ((\<forall>i\<in>{0.. i - 1}. \<forall>k\<in>set (keys (rs ! i)). key_le (ks ! i) k) 
-       \<and> ((i \<le> length rs - Suc (Suc 0)) \<longrightarrow> (\<forall>k\<in>set (keys (rs[i := t] ! i)). key_le (ks ! i) k)) 
-       \<and> (\<forall>i\<in>{i+1.. length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs ! i)). key_le (ks ! i) k))
-       ") prefer 2 apply (thin_tac "i < length rs") apply simp apply (metis atLeastAtMost_iff le0 nth_list_update_neq) 
-      apply (subgoal_tac "
-        (\<forall>ia\<in>{0..length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs[i := t]!ia)). key_lt k (ks ! (Suc ia))) =
-        ((\<forall>i\<in>{0.. i - 1}. \<forall>k\<in>set (keys (rs ! i)). key_lt k (ks ! Suc i)) 
-       \<and> ((i \<le> length rs - Suc (Suc 0)) \<longrightarrow> (\<forall>k\<in>set (keys (rs[i := t] ! i)). key_lt k (ks ! Suc i))) 
-       \<and> (\<forall>i\<in>{i+1.. length rs - Suc (Suc 0)}. \<forall>k\<in>set (keys (rs ! i)). key_lt k (ks ! Suc i)))
-        ") prefer 2 apply (thin_tac "i < length rs") apply simp apply (metis atLeastAtMost_iff le0 nth_list_update_neq) 
-      apply (simp add:wellformed_ts_1_def dest_ts_def check_keys_def)
-      apply (case_tac i)
-       apply (case_tac rs, force, force)
-
-      (*i > length rs - Suc (Suc 0)*)
+     apply force
+    apply (subgoal_tac "\<exists> ys x zs . (rs = ys@x#zs) \<and> (rs!i = x) \<and> (i = length ys)") prefer 2 using id_take_nth_drop apply fastforce 
+    apply (erule exE)+
+    apply (erule conjE)+
+    apply (intro conjI)
+     (* R!i \<sqsubseteq> ks!i  - \<forall>ia\<in>set (key_indexes (Node (ks, rs[i := t]))). check_keys None (keys (rs[i := t] ! ia)) (Some (ks ! ia))*)
+     apply (simp add:nth_append)
+     apply (rule)
+     apply (rename_tac i')
+     apply (case_tac "i' < length ys")
+      (*ia < length ys*)
+      apply (subgoal_tac "i' \<in> set (key_indexes (Node (ks, ys @ x # zs)))") prefer 2 apply (force simp add:key_indexes_def)
       apply force
 
+      (*i' \<ge> length ys*)
+      apply simp
+      apply (case_tac "i' = length ys")
+       (* i' = i *)
+       apply (simp add:wellformed_ts_1_def dest_ts_def check_keys_def)
+
+       (*i' > length ys*)
+       apply (subgoal_tac "i' \<in> set (key_indexes (Node (ks, ys @ x # zs)))") prefer 2 apply (force simp add:key_indexes_def)
+       apply force
+       
+     (* k!i \<sqsubset> R!i+1 - \<forall>ia\<in>set (key_indexes (Node (ks, rs[i := t]))). check_keys (Some (ks ! ia)) (keys (rs[i := t] ! Suc ia)) None*)
+     apply (simp add:nth_append)
+     apply (rule)
+     apply (rename_tac i')
+     apply (case_tac "Suc i' < length ys")
+      (*Suc i' < length ys*)
+      apply (subgoal_tac "i' \<in> set (key_indexes (Node (ks, ys @ x # zs)))") prefer 2 apply (force simp add:key_indexes_def)
+      apply force
+
+      (*Suc i' \<ge> length ys*)
+      apply simp
+      apply (case_tac "Suc i' = length ys")
+       (* Suc i' = i *)
+       apply (simp add:wellformed_ts_1_def dest_ts_def check_keys_def)
+       apply (case_tac ys, force, force)
+       
+       (*i' > length ys*)
+       apply (subgoal_tac "i' \<in> set (key_indexes (Node (ks, ys @ x # zs)))") prefer 2 apply (force simp add:key_indexes_def)
+       apply force
+    
     (* list_all keys_consistent_1 (concat (map tree_to_subtrees (rs[i := t]))) *)
     apply (subgoal_tac "list_all keys_consistent_1 (tree_to_subtrees t)") prefer 2 apply force
     apply (force simp:list_all_update_concat_map_subtrees)
 
    (* keys ordered *)
-   apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def list_all_iff)
+   apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def list_all_iff key_indexes_def)
    apply (subgoal_tac "set (rs[i := t]) \<subseteq> insert t (set rs)") prefer 2 apply (simp add: set_update_subset_insert)
    apply force
 
@@ -290,23 +320,29 @@ apply(intro conjI)
   apply(simp add: update_focus_at_position_def)
   apply(elim conjE)
   apply(thin_tac "x2 = _")
-  apply(subgoal_tac "? ks2. list_insert_at_n (n |> fst) i [k0] = ks2") prefer 2 apply(force)
-  apply(subgoal_tac "? rs2. list_replace_at_n (n |> snd) i [tleft, tright] |> dest_Some = rs2") prefer 2 apply(force)
-  apply(elim exE)
+  apply(subgoal_tac "? ks2. list_insert_at_n ks i [k0] = ks2") prefer 2 apply(force)
+  apply(subgoal_tac "? rs2. list_replace_at_n rs i [tleft, tright] |> dest_Some = rs2") prefer 2 apply(force)
+  apply(elim exE)+
   apply(simp add: Let_def)
   apply(case_tac "length ks2 \<le> max_node_keys")
-   apply(simp)
    apply (simp add:wellformed_tree_def)
-   apply(subgoal_tac "length ks2 = Suc (length ks)")
-   prefer 2 apply (force simp add:list_insert_at_n_def rev_apply_def split_at_def)
+   apply(subgoal_tac "length ks2 = Suc (length ks)") prefer 2 apply (force simp add:list_insert_at_n_def rev_apply_def split_at_def)
    apply (intro conjI)
     (*wf_size (Rmbs (stk = [])) (Node (ks2, rs2)) *)
     apply (simp add:wf_size_def)
-    apply (subgoal_tac "wf_size_1 tleft \<and> wf_size_1 tright") prefer 2 apply (force intro:FIXME)
+    apply (subgoal_tac "wf_size_1 tleft \<and> wf_size_1 tright")
+    prefer 2
+     apply (simp add:forall_subtrees_def rev_apply_def)
+     apply (intro conjI)
+      apply (case_tac "tleft")
+      apply force+
+
+      apply (case_tac "tright")
+      apply force+
     apply (elim conjE)+
     apply (case_tac "stk=[]")
      (* stk = []*)
-     apply (simp add:list_all_of_list_replace_at_n)
+     apply (force simp add:list_all_of_list_replace_at_n)
 
      (* stk \<noteq> [] *)
      apply (simp add:forall_subtrees_def Let_def rev_apply_def wf_size_1_def)
@@ -324,7 +360,7 @@ apply(intro conjI)
     apply (simp add:balanced_def forall_subtrees_def rev_apply_def)
     apply (simp add:list_all_of_list_replace_at_n_concat_map_subtrees)  
     apply (simp add:balanced_1_def del:height.simps)
-    apply (subgoal_tac "list_replace_at_n ((ks, rs) |> snd) i [tleft, tright] |> dest_Some = rs2") prefer 2 apply (force simp add:rev_apply_def)
+    apply (subgoal_tac "list_replace_at_n rs i [tleft, tright] |> dest_Some = rs2") prefer 2 apply (force simp add:rev_apply_def)
     apply (subgoal_tac "height tright = height (rs!0) \<and> height tleft = height (rs!0)") prefer 2 apply (simp add:wellformed_ts_1_def dest_ts_def Let_def del:height.simps) apply (force intro:FIXME)
     apply (subgoal_tac "height (rs2!0) = height (rs!0)")
     prefer 2 
@@ -380,6 +416,12 @@ apply(intro conjI)
     apply (erule exE)+
     apply (erule conjE)+
     apply simp
+    apply rule
+    apply (rename_tac i')
+    apply simp
+    apply (case_tac "i' < length xs")
+     apply (simp add:nth_append)
+     
     apply (force intro:FIXME)
     (*apply (subgoal_tac "i \<le> length ks") prefer 2 apply (force intro:FIXME)
     apply (thin_tac "i < length rs")

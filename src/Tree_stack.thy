@@ -29,8 +29,8 @@ Inserting_one t \<Rightarrow> (
 let rs2 = dest_Some(list_replace_1_at_n rs i t) in
 Inserting_one(Node(ks,rs2)))
 | Inserting_two (tl_,k,tr) \<Rightarrow> (
-let ks2 = list_insert_at_n (n|>fst) i [k] in
-let rs2 = list_replace_at_n (n|>snd) i [tl_,tr] |> dest_Some in
+let ks2 = list_insert_at_n ks i [k] in
+let rs2 = list_replace_at_n rs i [tl_,tr] |> dest_Some in
 case (length ks2 \<le> max_node_keys) of
 True \<Rightarrow> Inserting_one(Node(ks2,rs2))
 | False \<Rightarrow> (

@@ -2,12 +2,15 @@ theory Insert_tree_stack
 imports Tree_stack
 begin
 
+definition subtree_indexes :: "node_t \<Rightarrow> nat set" where
+"subtree_indexes n == (
+  case n of (l,_) \<Rightarrow>  { 0 .. (length l)})"
 
 definition wellformed_context_1 :: "node_t * nat \<Rightarrow> bool" where
 "wellformed_context_1 lcsi = (
 let ((l,cs),i) = lcsi in
 wellformed_tree (Rmbs False) (Node(l,cs))
-& i : { 0 .. (length l) }
+& i : (subtree_indexes (l,cs))
 )"
 
 definition wellformed_context :: "context_t \<Rightarrow> bool" where
@@ -16,25 +19,10 @@ case xs of Nil \<Rightarrow> True
 | _ \<Rightarrow> (
 let ((l,cs),i) = last xs in
 wellformed_tree (Rmbs True) (Node(l,cs))
-& i : { 0 .. (length l) }
+& i : (subtree_indexes (l,cs))
 & List.list_all wellformed_context_1 (butlast xs)
 ))
 "
-
-definition check_keys :: "key option \<Rightarrow> key list \<Rightarrow> key option \<Rightarrow> bool" where
-"check_keys kl ks kr == (
-let b1 = (
-case kl of None \<Rightarrow> True 
-| Some k0 \<Rightarrow> (! k : set ks. key_le k0 k)
-)
-in
-let b2 = (
-case kr of None \<Rightarrow> True 
-| Some k0 \<Rightarrow> (! k : set ks. key_lt k k0)
-)
-in
-b1 & b2
-)"
 
 definition wellformed_focus :: "focus_t \<Rightarrow> bool \<Rightarrow> bool" where
 "wellformed_focus f stack_empty == (
@@ -58,9 +46,12 @@ let (f,stk) = dest_ts ts in
 Nil \<Rightarrow> (True) (* Nil - focus is wf *)
 
 | (((l,cs),i)#nis) \<Rightarrow> (
-  let kl = Some(l!(i)) in
-  let kr = (case i \<le> length l -1 of
-  True \<Rightarrow> Some(l!(i+1))
+  let kl = (case i=0 of 
+  True \<Rightarrow> None
+  | False \<Rightarrow> Some(l!(i-1)))
+  in
+  let kr = (case i \<le> length l of
+  True \<Rightarrow> Some(l!i)
   | False \<Rightarrow> None)
   in
 case f of
@@ -94,11 +85,7 @@ let b4 = (
 in
 (* keys ordered *)
 let b5 = (
-let kl = (if 0 < i then Some (l!(i-1)) else None ) in
-let kr = Some (l!i) in
-check_keys kl [k0] kr
-\<and>
-(if i > length l -1 then (key_lt (l!(length l -1)) k0) else True)
+check_keys kl [k0] kr  (* andrea: error here! proof needs more *)
 )
 in
 let wf = b1&b2&b3&b4&b5 in
