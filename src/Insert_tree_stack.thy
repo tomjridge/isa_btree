@@ -2,12 +2,15 @@ theory Insert_tree_stack
 imports Tree_stack
 begin
 
+definition subtree_indexes :: "node_t \<Rightarrow> nat set" where
+"subtree_indexes n == (
+  case n of (l,_) \<Rightarrow>  { 0 .. (length l)})"
 
 definition wellformed_context_1 :: "node_t * nat \<Rightarrow> bool" where
 "wellformed_context_1 lcsi = (
 let ((l,cs),i) = lcsi in
 wellformed_tree (Rmbs False) (Node(l,cs))
-& i : { 0 .. (length l) }
+& i : (subtree_indexes (l,cs))
 )"
 
 definition wellformed_context :: "context_t \<Rightarrow> bool" where
@@ -16,11 +19,10 @@ case xs of Nil \<Rightarrow> True
 | _ \<Rightarrow> (
 let ((l,cs),i) = last xs in
 wellformed_tree (Rmbs True) (Node(l,cs))
-& i : { 0 .. (length l - 1) }
+& i : (subtree_indexes (l,cs))
 & List.list_all wellformed_context_1 (butlast xs)
 ))
 "
-
 
 definition wellformed_focus :: "focus_t \<Rightarrow> bool \<Rightarrow> bool" where
 "wellformed_focus f stack_empty == (
@@ -48,7 +50,7 @@ Nil \<Rightarrow> (True) (* Nil - focus is wf *)
   True \<Rightarrow> None
   | False \<Rightarrow> Some(l!(i-1)))
   in
-  let kr = (case i \<le> length l -1 of
+  let kr = (case i \<le> length l of
   True \<Rightarrow> Some(l!i)
   | False \<Rightarrow> None)
   in
