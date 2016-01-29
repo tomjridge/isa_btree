@@ -82,7 +82,7 @@ let n = length xs in
 (n \<ge> min_leaf_size) & ( n \<le> max_leaf_size))
 | Node(l,cs) \<Rightarrow> (
 let n = length l in
-(n \<ge> min_node_keys) & (n \<le> max_node_keys)
+(1 \<le> length l) & (n \<ge> min_node_keys) & (n \<le> max_node_keys)
 
 )
 )
@@ -119,17 +119,15 @@ Leaf xs \<Rightarrow> (List.map fst xs)
 | Node (l,cs) \<Rightarrow> (l)
 )"
 
-definition key_indexes :: "Tree \<Rightarrow> nat list" where
-"key_indexes n == FIXME"
-
-definition subtree_indexes :: "node_t \<Rightarrow>nat set" where
-"subtree_indexes n == FIXME" 
-
-
 definition keys :: "Tree \<Rightarrow> key list" where
 "keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)
 " 
-  
+
+definition key_indexes :: "Tree \<Rightarrow> nat list" where
+"key_indexes t == (
+  case t of 
+  Leaf xs \<Rightarrow> (upt 0 (length xs))
+  | Node (l,_) \<Rightarrow> (upt 0 (length l)))"  
 
 definition keys_consistent_1 :: "Tree \<Rightarrow> bool" where
 "keys_consistent_1 t0 == (
@@ -152,22 +150,16 @@ b1 & b2
 definition keys_consistent :: "Tree \<Rightarrow> bool" where
 "keys_consistent t == forall_subtrees keys_consistent_1 t"
 
-definition ordered_key_list_2 :: "key list \<Rightarrow> bool" where 
-"ordered_key_list_2 ks == (
-! i : { 0 .. (length ks -2)}. key_lt (ks!i) (ks!(i+1))
-)
-"
-
-(*
-definition ordered_key_indexes :: "Tree \<Rightarrow> bool" where
-"ordered_key_indexes t0 == (ordered_key_list_2 (key_indexes t0))"
-*)
 
 definition keys_ordered_1 :: "Tree \<Rightarrow> bool" where
 "keys_ordered_1 t0 == (
+let is = set (butlast (key_indexes t0)) in
 case t0 of
-Leaf xs \<Rightarrow> (xs |> List.map fst |> ordered_key_list_2)
-| Node (l,cs) \<Rightarrow> (ordered_key_list_2 l)
+Leaf xs \<Rightarrow>
+  let ks = (xs |> List.map fst) in
+  ! i : is. key_lt (ks!i) (ks!(i+1))
+| Node (ks,_) \<Rightarrow> 
+  ! i : is . key_lt (ks!i) (ks!(i+1))
 )
 "
 
