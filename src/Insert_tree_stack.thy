@@ -2,14 +2,13 @@ theory Insert_tree_stack
 imports Tree_stack
 begin
 
-definition subtree_indexes :: "node_t \<Rightarrow> nat set" where
-"subtree_indexes n == (
-  case n of (l,_) \<Rightarrow>  { 0 .. (length l)})"
+(* scala: most of following defns are split out from Insert_tree_stack.scala wellformed_ts *)
+
 
 definition wellformed_context_1 :: "node_t * nat \<Rightarrow> bool" where
 "wellformed_context_1 lcsi = (
 let ((l,cs),i) = lcsi in
-wellformed_tree (Rmbs False) (Node(l,cs))
+wellformed_kv_tree (Rmbs False) (Node(l,cs))
 & i : (subtree_indexes (l,cs))
 )"
 
@@ -18,7 +17,7 @@ definition wellformed_context :: "context_t \<Rightarrow> bool" where
 case xs of Nil \<Rightarrow> True
 | _ \<Rightarrow> (
 let ((l,cs),i) = last xs in
-wellformed_tree (Rmbs True) (Node(l,cs))
+wellformed_kv_tree (Rmbs True) (Node(l,cs))
 & i : (subtree_indexes (l,cs))
 & List.list_all wellformed_context_1 (butlast xs)
 ))
@@ -27,16 +26,14 @@ wellformed_tree (Rmbs True) (Node(l,cs))
 definition wellformed_focus :: "focus_t \<Rightarrow> bool \<Rightarrow> bool" where
 "wellformed_focus f stack_empty == (
 case f of
-Inserting_one t \<Rightarrow> (wellformed_tree (Rmbs stack_empty) t)
+Inserting_one t \<Rightarrow> (wellformed_kv_tree (Rmbs stack_empty) t)
 | Inserting_two (tl_,k0,tr) \<Rightarrow> (
-wellformed_tree (Rmbs False) tl_ 
-& wellformed_tree (Rmbs False) tr
+wellformed_kv_tree (Rmbs False) tl_ 
+& wellformed_kv_tree (Rmbs False) tr
 & check_keys None (keys(tl_)) (Some k0)
 & check_keys (Some k0) (keys(tr)) None
 )
 )"
-
-
 
 definition wellformed_ts_1 :: "tree_stack \<Rightarrow> bool" where
 "wellformed_ts_1 ts == (
@@ -50,7 +47,7 @@ Nil \<Rightarrow> (True) (* Nil - focus is wf *)
   True \<Rightarrow> None
   | False \<Rightarrow> Some(l!(i-1)))
   in
-  let kr = (case i \<le> length l of
+  let kr = (case i < length l of
   True \<Rightarrow> Some(l!i)
   | False \<Rightarrow> None)
   in

@@ -14,6 +14,11 @@ definition kv_lt :: "(key * value_t) => (key * value_t) => bool" where
   "kv_lt kv1 kv2 == (key_lt (fst kv1) (fst kv2))"
 
 
+definition ordered_key_list :: "key list \<Rightarrow> bool" where
+"ordered_key_list ks == (
+! i : set (upt 0 (length ks - 1)). key_lt (ks!i) (ks!(i+1)) 
+)"
+
 definition check_keys :: "key option \<Rightarrow> key list \<Rightarrow> key option \<Rightarrow> bool" where
 "check_keys kl ks kr == (
 let b1 = (

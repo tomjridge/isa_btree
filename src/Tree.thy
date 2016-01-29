@@ -11,6 +11,10 @@ datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
 (* label at node and children ie a Node *)
 type_synonym node_t = "node_lbl_t * Tree list"
 
+definition subtree_indexes :: "node_t \<Rightarrow> nat set" where
+"subtree_indexes n == (
+  case n of (_,cs) \<Rightarrow>  { 0 .. (length cs)-1})"
+
 
 function height :: "Tree \<Rightarrow> nat" where
 "height t0 = (
@@ -73,7 +77,7 @@ definition balanced :: "Tree \<Rightarrow> bool" where
 
 
 
-
+(* scala: Tree_kv.scala *)
 definition wf_size_1 :: "Tree \<Rightarrow> bool" where
 "wf_size_1 t1 == (
 case t1 of
@@ -88,9 +92,11 @@ let n = length l in
 )
 "
 
+(* Tree_kv.scala *)
 (* root may be small *)
 datatype rmbs_t = Rmbs bool
 
+(* Tree_kv.scala *)
 definition wf_size :: "rmbs_t \<Rightarrow> Tree \<Rightarrow> bool" where
 "wf_size rmbs t0 == (
 case rmbs of
@@ -104,31 +110,37 @@ length l \<le> max_node_keys
 & List.list_all wf_size_1 cs)
 ))"
 
+(* Tree_kv.scala *)
 definition wf_ks_rs_1 :: "Tree \<Rightarrow> bool" where
 "wf_ks_rs_1 t0 == (
 case t0 of Leaf _ \<Rightarrow> True
 | Node(l,cs) \<Rightarrow> ((1+ length l) = (length cs))
 )"
 
+(* Tree_kv.scala *)
 definition wf_ks_rs :: "Tree \<Rightarrow> bool" where
 "wf_ks_rs t0 == forall_subtrees wf_ks_rs_1 t0"
 
+(* Tree_kv.scala *)
 definition keys_1 :: "Tree \<Rightarrow> key list" where
 "keys_1 t0 == (case t0 of
 Leaf xs \<Rightarrow> (List.map fst xs)
 | Node (l,cs) \<Rightarrow> (l)
 )"
 
+(* Tree_kv.scala *)
 definition keys :: "Tree \<Rightarrow> key list" where
 "keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)
 " 
 
+(* Tree_kv.scala *)
 definition key_indexes :: "Tree \<Rightarrow> nat list" where
 "key_indexes t == (
   case t of 
   Leaf xs \<Rightarrow> (upt 0 (length xs))
   | Node (l,_) \<Rightarrow> (upt 0 (length l)))"  
 
+(* Tree_kv.scala *)
 definition keys_consistent_1 :: "Tree \<Rightarrow> bool" where
 "keys_consistent_1 t0 == (
 case t0 of Leaf(l) \<Rightarrow> True
@@ -147,22 +159,17 @@ b1 & b2
 ))
 "
 
+(* Tree_kv.scala *)
 definition keys_consistent :: "Tree \<Rightarrow> bool" where
 "keys_consistent t == forall_subtrees keys_consistent_1 t"
 
-
+(* Tree_kv.scala *)
 definition keys_ordered_1 :: "Tree \<Rightarrow> bool" where
 "keys_ordered_1 t0 == (
-let is = set (butlast (key_indexes t0)) in
-case t0 of
-Leaf xs \<Rightarrow>
-  let ks = (xs |> List.map fst) in
-  ! i : is. key_lt (ks!i) (ks!(i+1))
-| Node (ks,_) \<Rightarrow> 
-  ! i : is . key_lt (ks!i) (ks!(i+1))
-)
-"
+t0 |> keys_1 |> ordered_key_list
+)"
 
+(* Tree_kv.scala *)
 definition keys_ordered :: "Tree \<Rightarrow> bool" where
 "keys_ordered t == forall_subtrees keys_ordered_1 t"
 
@@ -179,8 +186,9 @@ wf
 )"
 *)
 
-definition wellformed_tree :: "rmbs_t \<Rightarrow> Tree \<Rightarrow> bool" where
-"wellformed_tree rmbs t0 == (
+(* Tree_kv.scala *)
+definition wellformed_kv_tree :: "rmbs_t \<Rightarrow> Tree \<Rightarrow> bool" where
+"wellformed_kv_tree rmbs t0 == (
 let b1 = wf_size rmbs t0 in
 let b2 = wf_ks_rs t0 in
 let b3 = balanced t0 in
