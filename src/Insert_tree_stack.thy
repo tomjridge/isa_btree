@@ -21,20 +21,6 @@ wellformed_tree (Rmbs True) (Node(l,cs))
 ))
 "
 
-definition check_keys :: "key option \<Rightarrow> key list \<Rightarrow> key option \<Rightarrow> bool" where
-"check_keys kl ks kr == (
-let b1 = (
-case kl of None \<Rightarrow> True 
-| Some kl \<Rightarrow> (! k : set ks. key_le kl k)
-)
-in
-let b2 = (
-case kr of None \<Rightarrow> True 
-| Some kr \<Rightarrow> (! k : set ks. key_lt k kr)
-)
-in
-b1 & b2
-)"
 
 definition wellformed_focus :: "focus_t \<Rightarrow> bool \<Rightarrow> bool" where
 "wellformed_focus f stack_empty == (

@@ -2,14 +2,17 @@ theory Tree_stack
 imports Tree
 begin
 
+(* scala: declared and defined in Insert_tree_stack *)
 datatype One_or_two = 
 Inserting_one "Tree"
 | Inserting_two "Tree * key * Tree"
 
 type_synonym inserting_two_t =  "Tree * key * Tree"
 
+(* scala: declared in Tree_stack, defined in Insert_tree_stack *)
 type_synonym focus_t = One_or_two
 
+(* scala: declared and defined in Insert_tree_stack *)
 definition split_node :: "node_t \<Rightarrow> inserting_two_t" where
 "split_node n == (
 let (l,cs) = n in
@@ -21,6 +24,7 @@ let right_rs = drop (1+n0) cs in
 (Node(left_ks,left_rs),k,Node(right_ks,right_rs))
 )"
 
+(* scala: declared in Tree_stack; defined in Insert_tree_stack *)
 definition update_focus_at_position :: "node_t \<Rightarrow> nat \<Rightarrow> focus_t \<Rightarrow> focus_t" where
 "update_focus_at_position n i f == (
 let (ks,rs) = n in
