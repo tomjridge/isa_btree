@@ -85,14 +85,15 @@ apply (drule_tac t="rs2" in sym)
  apply (case_tac rs,simp+)
 
  (*i\<noteq>0*)
- apply (simp add:butlast_take list_all_take_drop_less_one_element)
+ apply (metis append_take_drop_id drop_eq_Nil list.collapse list.pred_inject(2) list_all_append not_le)
 done
 
 lemma list_all_take_drop_less_one_element_concat_map_subtrees:
 "list_all P (concat (map tree_to_subtrees xs)) \<Longrightarrow> 
-(list_all P (concat (map tree_to_subtrees (take (i- Suc 0) xs)))) 
-\<and> (list_all P (concat (map tree_to_subtrees (drop i  xs))))"
-by (metis append_take_drop_id concat_append list_all_append map_append)
+(list_all P (concat (map tree_to_subtrees (take i xs)))) 
+\<and> (list_all P (concat (map tree_to_subtrees (tl (drop i  xs)))))"
+by (metis append_take_drop_id concat_append drop_Suc list_all_append map_append tl_drop)
+
 
 lemma list_all_of_list_replace_at_n_concat_map_subtrees:
 "
@@ -105,59 +106,13 @@ list_all P (concat (map tree_to_subtrees rs2))
 "
 apply (simp_all add:list_replace_at_n_def rev_apply_def split_at_def)
 apply (drule_tac t="rs2" in sym)
-  (*i=0*)
- apply (case_tac rs,simp+)
+apply (case_tac "i=0")
+ (*i=0*)
+ apply (case_tac rs,force+)
 
  (*i\<noteq>0*)
- apply (simp add:butlast_take list_all_take_drop_less_one_element_concat_map_subtrees)
+ apply (force simp add:butlast_take list_all_take_drop_less_one_element_concat_map_subtrees)
 done
-
-lemma a:
-"\<forall>i\<in>{0..length xs + length ys - 2}. key_lt ((xs @ ys) ! i) ((xs @ ys) ! Suc i)
-\<Longrightarrow> key_lt (last xs) k0 \<Longrightarrow> key_lt k0 (hd ys) \<Longrightarrow> 
-i \<le> length xs + length ys - Suc 0 \<Longrightarrow> key_lt ((xs @ k0 # ys) ! i) ((xs @ k0 # ys) ! Suc i)"
-apply (induct i)
- (* 0 *)
- apply simp
- apply (induct xs)
-  (*xs = []*)
-  apply simp
-  apply (case_tac ys)
-   apply (force intro:FIXME) (*I need an hypothesis on the overall length*)
-   
-   apply simp
-
-  (*xs = a#xs*)
-  apply simp
-   apply (case_tac xs)
-    apply simp
-
-    apply force
- (*Suc i*)
- apply simp
- (*dividing on the possible values of i*)
- apply (case_tac "i < length xs")
-  (*i < length xs*)
-  apply (force intro:FIXME)
-  (*i \<ge> length xs*)
-  apply (case_tac "i = length xs")
-   apply simp
-   apply (force intro:FIXME)
-  
-   (* i \<noteq> length xs *)
-   apply (subgoal_tac "length xs < i") prefer 2 apply force
-   apply (thin_tac "i \<noteq> length xs")
-   apply (thin_tac "\<not> i < length xs")
-   apply (force intro:FIXME)
-oops
-
-lemma b:
-"length xs \<le> n \<Longrightarrow> (\<forall>i\<in>{length xs..n}. P ((xs@ys)!i)) \<Longrightarrow> (\<forall>i\<in>{0..(n - length xs)}. P ((ys)!i))"
-apply (induct xs)
- apply simp
-
- apply simp
-oops
 
 lemma invariant_wf_ts: "invariant_wf_ts"
 apply(simp add: invariant_wf_ts_def)
@@ -372,11 +327,9 @@ apply(intro conjI)
       apply force
 
       (* i \<noteq> 0 *)
-      apply (simp add:butlast_take del:height.simps)
-      apply (case_tac "take (i - Suc 0) rs")
-       apply force
-
-       apply (metis append_Cons append_take_drop_id nth_Cons_0)
+      apply (simp add: del:height.simps)
+      apply (metis append_take_drop_id length_greater_0_conv list.size(3) nth_append nth_append_length)
+      
     apply (case_tac "rs2 = []", simp)
     apply (force simp add: list_all_of_list_replace_at_n)
 
@@ -390,24 +343,114 @@ apply(intro conjI)
       I need to divide in bits this goal! !
     *)
     apply (simp add:list_replace_at_n_def split_at_def)
-    apply (case_tac "i = 0")
-     (*i=0*)
+    apply (case_tac "rs = []") apply force
+    (*rs \<noteq> [] *)
+    apply (subgoal_tac "\<exists> xs ys. (ks2 = xs@k0#ys) \<and> (ks = xs @ ys) \<and> (i = length xs)")
+    prefer 2
      apply (simp add:list_insert_at_n_def split_at_def)
-     apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
-     (*subgoal to split the goal in the hypothesis we have already*)
-     apply(force intro: FIXME)
-     
-     (* i \<noteq> 0 *)
-     apply (simp add:list_insert_at_n_def split_at_def butlast_take)
-     apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
-     apply (case_tac "i \<le> length ks - Suc 0")
-      (*i \<le> length ks - Suc 0*)
+     using wellformed_context_i_less_than_length_rs apply fastforce
+    apply (subgoal_tac "length ks  = length rs - 1") prefer 2 apply (force simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
+    apply (subgoal_tac "1 < length rs")
+    prefer 2
+     apply (subgoal_tac "1 \<le> length ks") prefer 2 apply (blast intro:wf_size_ks_not_empty')
+     apply force
+    apply (erule exE)+
+    apply (erule conjE)+
+    apply simp
+    apply rule
+     (* key_lt --\<forall>i\<in>set (key_indexes (Node (xs @ k0 # ys, rs2))). \<forall>k\<in>set (keys (rs2 ! i)). key_lt k ((xs @ k0 # ys) ! i)*)
+     apply rule+
+     apply (rename_tac i' k)
+     apply (case_tac "i' < i") (* this assumption tells me that i < 0, because 0 < 0 is False*)
+      (*i' < i*)
+      (*i' can be only elements that were already in rs before,
+      since this key_lt uses only i', the following hypothesis is enough
+      \<forall>i\<in>set (key_indexes (Node (xs @ ys, rs))). \<forall>k\<in>set (keys (rs ! i)). key_lt k ((xs @ ys) ! i)
+      *)
+      apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
       apply simp
-      apply(force intro: FIXME)
+      apply (drule_tac t=rs2 in sym)
+      apply (simp add:nth_append key_indexes_def)    
+      apply (subgoal_tac "{0..<length xs} \<subset> {0..<length rs}") prefer 2 apply (force)
+      apply force
 
-      (*i > length ks - Suc 0 // in this case tright will contain the biggest keys*)
+      (* i' \<ge> i *)
+      apply (case_tac "i' = i")
+       (*i' = i*) (* here  i may be equal to 0*)
+       apply (subgoal_tac "i' = length xs") prefer 2 apply force
+       apply (drule_tac t=rs2 in sym)
+       apply (force simp add:nth_append key_indexes_def)
+       
+       (*i' > i*) (* here  i may be equal to 0*)
+       apply simp
+       apply (drule_tac t=rs2 in sym)
+       apply simp
+       (*if i' = Suc i, we are in tright*)
+       apply (case_tac "i' = Suc i")
+        (*i' = Suc i, we are in tright*)
+        apply (subgoal_tac "length ys \<noteq> 0") prefer 2 apply (force simp add:key_indexes_def)
+        apply (simp add: Let_def wellformed_ts_1_def dest_ts_def check_keys_def del:height.simps)
+        apply (force simp add:nth_append)
+        
+        (*i' \<noteq> Suc i*)
+        apply (subgoal_tac "Suc (length xs)<i'") prefer 2 apply force
+        apply (simp add:key_indexes_def)
+        apply (case_tac "length ys =0") apply force
+        apply (subgoal_tac "{Suc (length xs)..< length rs -1} \<subset> {0..<length rs -1}") prefer 2 apply force
+        apply (subgoal_tac "(tl (drop (length xs) rs)) = (drop (length xs +1) rs)") prefer 2 apply (force simp add:drop_Suc drop_tl)
+        apply (simp add:nth_append min_def)
+        apply (smt One_nat_def Suc_lessE add_2_eq_Suc atLeastLessThan_iff diff_Suc_1 diff_Suc_eq_diff_pred le_add_diff_inverse less_2_cases less_Suc0 less_imp_le_nat not_le old.nat.distinct(2))
+     
+     (*key_le --\<forall>i\<in>set (key_indexes (Node (xs @ k0 # ys, rs2))). \<forall>x\<in>set (keys (rs2 ! Suc i)). key_le ((xs @ k0 # ys) ! i) x*)
+     apply rule+
+     apply (rename_tac i' k)
+     apply (case_tac "Suc i' < i") (* this assumption tells me that i < 0, because 0 < 0 is False*)
+      (*Suc i' < i*)
+      (*i' can be only elements that were already in rs before,
+      since this key_lt uses only i', the following hypothesis is enough
+      \<forall>i\<in>set (key_indexes (Node (xs @ ys, rs))). \<forall>k\<in>set (keys (rs ! i)). key_lt k ((xs @ ys) ! i)
+      *)
+      apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
       apply simp
-      apply(force intro: FIXME)
+      apply (drule_tac t=rs2 in sym)
+      apply (simp add:nth_append key_indexes_def)    
+      apply (subgoal_tac "{0..<length xs} \<subset> {0..<length rs}") prefer 2 apply force
+      apply force
+
+      (* Suc i' \<ge> i *)
+      apply (case_tac "Suc i' = i")
+       (*i' = i*) (* here  i may be equal to 0*)
+       apply (subgoal_tac "Suc i' = length xs") prefer 2 apply force
+       apply (drule_tac t=rs2 in sym)
+       apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def del:height.simps)
+       apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
+       apply (simp add:nth_append key_indexes_def)
+       apply (metis One_nat_def diff_Suc_1)
+       
+       (*Suc i' > i*) (* here  i may be equal to 0*)
+       apply simp
+       apply (drule_tac t=rs2 in sym)
+       apply simp
+       (*if Suc i' = Suc i, we are in tright*)
+       apply (case_tac "Suc i' = Suc i")
+        (*Suc i' = Suc i, we are in tright*)
+        apply (simp add: Let_def wellformed_ts_1_def dest_ts_def check_keys_def del:height.simps)
+        apply (force simp add:nth_append)
+        
+        (*Suc i' \<noteq> Suc i*)
+        apply (subgoal_tac "Suc (length xs) < Suc i'") prefer 2 apply force
+        apply (subgoal_tac "Suc i' \<le> length rs") prefer 2 apply (force simp add:key_indexes_def)
+        apply (simp add:key_indexes_def)
+        apply (case_tac "length ys =0") apply force
+        apply (subgoal_tac "(tl (drop (length xs) rs)) = (drop (length xs +1) rs)") prefer 2 apply (force simp add:drop_Suc drop_tl)
+        apply (simp add:nth_append min_def)
+        apply (subgoal_tac "length rs = 1+length xs + length ys") prefer 2 apply force
+        apply (thin_tac " length xs + length ys = length rs - Suc 0")
+        apply simp
+        apply (case_tac "length ys") apply force
+        apply (subgoal_tac "\<exists> x. i' = x+(Suc(length xs))") prefer 2 apply (metis Suc_leI le_add_diff_inverse2)
+        apply (erule exE)
+        apply force
 
     (* keys_ordered (Node (ks2, take (i - Suc 0) rs @ tleft # tright # drop i rs)) *)
     apply (thin_tac "length ks2 = Suc (length ks)")
@@ -446,37 +489,37 @@ apply(intro conjI)
        apply force
       
      (*Suc i' \<ge> length xs*)
-      apply (case_tac "Suc i' = length xs")
-       (*Suc i' = length xs*)
-       apply (subgoal_tac "i' < length xs") prefer 2 apply force
+     apply (case_tac "Suc i' = length xs")
+      (*Suc i' = length xs*)
+      apply (subgoal_tac "i' < length xs") prefer 2 apply force
+      apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
+      apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
+      apply (simp add:nth_append)
+      (*FIXME the assumption key_lt (xs ! i') k0 should be in wellformed_ts_1: is it?*)
+      apply (force intro:FIXME)
+
+      (*Suc i' \<noteq> length xs*)
+      apply (subgoal_tac "length xs < Suc i'") prefer 2 apply force
+      apply (subgoal_tac "Suc i' \<in> set (key_indexes (Node (xs @ k0 # ys, rs2)))") prefer 2 apply (force simp add:key_indexes_def set_butlast_lessThan)  
+      apply (case_tac "i' = length xs")
+       (* i' = length xs *)
        apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
-       apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
-       apply (simp add:nth_append)
-       (*FIXME the assumption key_lt (xs ! i') k0 should be in wellformed_ts_1: is it?*)
-       apply (force intro:FIXME)
+       apply (force simp add:nth_append)
 
-       (*Suc i' \<noteq> length xs*)
-       apply (subgoal_tac "length xs < Suc i'") prefer 2 apply force
-       apply (subgoal_tac "Suc i' \<in> set (key_indexes (Node (xs @ k0 # ys, rs2)))") prefer 2 apply (force simp add:key_indexes_def set_butlast_lessThan)  
-       apply (case_tac "i' = length xs")
-        (* i' = length xs *)
-        apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
+       (* length xs < i' *)
+       apply (subgoal_tac "length xs < i'") prefer 2 apply force
+       apply (case_tac i') apply force
+       apply (rename_tac i'')
+       apply (subgoal_tac "2 \<le> length ys") prefer 2 apply (case_tac "length ys < 2", force simp add:key_indexes_def) apply force
+       apply simp
+       (*we take only the subset we are interested in*)
+       apply (subgoal_tac "\<forall> i \<in> {length xs ..<length xs + length ys - 1}.  key_lt ((xs @ ys) ! i) ((xs @ ys) ! Suc i)") prefer 2 apply (force simp add:key_indexes_def set_butlast_lessThan)
+       apply (case_tac "i' \<le> length xs + length ys - 1")
+        (*i' \<le> length xs + length ys - 1*)
         apply (force simp add:nth_append)
-
-        (* length xs < i' *)
-        apply (subgoal_tac "length xs < i'") prefer 2 apply force
-        apply (case_tac i') apply force
-        apply (rename_tac i'')
-        apply (subgoal_tac "2 \<le> length ys") prefer 2 apply (case_tac "length ys < 2", force simp add:key_indexes_def) apply force
-        apply simp
-        (*we take only the subset we are interested in*)
-        apply (subgoal_tac "\<forall> i \<in> {length xs ..<length xs + length ys - 1}.  key_lt ((xs @ ys) ! i) ((xs @ ys) ! Suc i)") prefer 2 apply (force simp add:key_indexes_def set_butlast_lessThan)
-        apply (case_tac "i' \<le> length xs + length ys - 1")
-         (*i' \<le> length xs + length ys - 1*)
-         apply (force simp add:nth_append)
          
-         (*i' > length xs + length ys - 1 -- this case should be false because Suc i' would not belong to {..<Suc(length xs+length ys)}*)
-         apply (force simp add:key_indexes_def set_butlast_lessThan)
+        (*i' > length xs + length ys - 1 -- this case should be false because Suc i' would not belong to {..<Suc(length xs+length ys)}*)
+        apply (force simp add:key_indexes_def set_butlast_lessThan)
    apply(simp)
    apply(simp add: split_node_def)
    apply (case_tac "case drop min_node_keys ks2 of x # xa \<Rightarrow> (x, xa)")

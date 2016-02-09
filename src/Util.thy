@@ -59,8 +59,14 @@ definition list_replace_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list
 "list_replace_at_n xs n as ==
   (if (length xs \<le> n) then None else
   (let (ys,zs) = split_at xs n in
-  if n = 0 then Some(as@(tl zs)) else
-  Some ((butlast ys)@as@zs)))"
+  Some (ys@as@tl zs)))"
+
+(* tests for list_replace_at_n:
+value "(dest_Some(list_replace_at_n [0,0,0] 0 [1,2])) = [1,2,0,0]"
+value "(dest_Some(list_replace_at_n [0,0,0] 1 [1,2])) = [0,1,2,0]"
+value "(dest_Some(list_replace_at_n [0,0,0] 2 [1,2])) = [0,0,1,2]"
+value "((list_replace_at_n [0,0,0] 3 [1,2])) = None"
+*)
 
 definition list_replace_1_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list option" where
 "list_replace_1_at_n xs n a == (Some (list_update xs n a))"
