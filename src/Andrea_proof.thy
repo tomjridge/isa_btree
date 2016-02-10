@@ -171,7 +171,7 @@ apply(intro conjI)
   apply (simp add:list_replace_1_at_n_def dest_Some_def)
   apply(intro conjI)
    (*wf_size (Rmbs (stk = [])) (Node (ks, rs[i := t]))*)
-   apply (simp add:wf_size_def)
+   apply (simp add:wf_size_def) 
    apply (subgoal_tac "wf_size_1 t") prefer 2  apply (case_tac t) apply (force simp add:forall_subtrees_def rev_apply_def)+
    apply (case_tac "stk=[]")
     apply (simp add:list_all_update)
@@ -532,7 +532,34 @@ apply(intro conjI)
    apply (intro conjI)
     (*wellformed_tree (Rmbs False) (Node (left_ks, left_rs))*)
     apply (simp add:wellformed_tree_def)
-    apply (force intro:FIXME)
+    apply (intro conjI)
+     (*wf_size (Rmbs False) (Node (left_ks, left_rs))*)
+     apply (simp add:wf_size_def forall_subtrees_def rev_apply_def wf_size_1_def Let_def)
+     apply (subgoal_tac "length ks2 = Suc (length ks)") prefer 2 apply (force simp add:list_insert_at_n_def rev_apply_def split_at_def)
+     apply (drule_tac t="left_ks" in sym)
+     apply (case_tac stk)
+      apply (simp add:min_def)
+      (*what about the min_node_keys if I am splitting the root?*)
+      apply (force intro:FIXME)
+      
+      apply simp
+      apply (subgoal_tac "wf_size_1 (Node (ks, rs))") prefer 2 apply (force intro:FIXME)
+      apply (simp add:wf_size_1_def Let_def min_def)
+      (*FIXME Suc 0 \<le> min_node_keys because otherwise the length of take is again max_node_keys! *)
+      
+     apply (force intro:FIXME)
+
+     (*wf_ks_rs (Node (left_ks, left_rs))*)
+     apply (force intro:FIXME)
+
+     (*balanced (Node (left_ks, left_rs))*)
+     apply (force intro:FIXME)
+
+     (*keys_consistent (Node (left_ks, left_rs))*)
+     apply (force intro:FIXME)
+
+     (*keys_ordered (Node (left_ks, left_rs))*)
+     apply (force intro:FIXME)
     
     (*wellformed_tree (Rmbs False) (Node (right_ks, right_rs))*)
     apply (simp add:wellformed_tree_def)
