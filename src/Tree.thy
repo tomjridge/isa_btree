@@ -82,7 +82,7 @@ let n = length xs in
 (n \<ge> min_leaf_size) & ( n \<le> max_leaf_size))
 | Node(l,cs) \<Rightarrow> (
 let n = length l in
-(1 \<le> length l) & (n \<ge> min_node_keys) & (n \<le> max_node_keys)
+(1 \<le> n) & (n \<ge> min_node_keys) & (n \<le> max_node_keys)
 
 )
 )
@@ -97,11 +97,13 @@ case rmbs of
 Rmbs False \<Rightarrow> (forall_subtrees wf_size_1 t0)
 | Rmbs True \<Rightarrow> (
 case t0 of 
-Leaf(l) \<Rightarrow> (length l \<le> Constants.max_leaf_size)
+Leaf xs \<Rightarrow>
+let n = length xs in
+(n \<le> max_leaf_size)
 | Node(l,cs) \<Rightarrow> (
-1 \<le> length l &
-length l \<le> max_node_keys 
-& List.list_all wf_size_1 cs)
+let n = length l in
+(1 \<le> n) & (n \<le> max_node_keys) 
+& (List.list_all (forall_subtrees wf_size_1) cs))
 ))"
 
 definition wf_ks_rs_1 :: "Tree \<Rightarrow> bool" where
