@@ -443,7 +443,7 @@ apply(intro conjI)
        (*i' = i*) (* here  i may be equal to 0*)
        apply (subgoal_tac "i' = length xs") prefer 2 apply force
        apply (drule_tac t=rs2 in sym)
-       apply (force simp add:nth_append key_indexes_def)
+       apply (force simp add:nth_append key_indexes_def wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
        
        (*i' > i*) (* here  i may be equal to 0*)
        apply simp
@@ -614,15 +614,33 @@ apply(intro conjI)
    (*wf_size*)
    apply (subgoal_tac "wf_size (Rmbs False) (Node (left_ks, left_rs)) \<and> wf_size (Rmbs False) (Node (right_ks, right_rs))")
    prefer 2
-    apply (simp add:wf_size'_def wf_size_def)
-    apply (simp add:list_all_iff forall_subtrees_def rev_apply_def)
-    (*FIXME I remember there could be a def problem in solving the followings *)
-    apply (subgoal_tac "wf_size_1 (Node (left_ks, left_rs))") prefer 2
+    apply (thin_tac "f = Inserting_two (tleft, k0, tright)")
+    apply (thin_tac "wf_size (Rmbs False) tleft \<and> wf_ks_rs tleft \<and> balanced tleft \<and> keys_consistent tleft \<and> keys_ordered tleft ")
+    apply (thin_tac "case tleft of Node (l_ks, l_rs) \<Rightarrow> key_lt (last l_ks) k0 \<and> check_keys None (keys (last l_rs)) (Some k0) | Leaf x \<Rightarrow> True")
+    apply (thin_tac "wf_size (Rmbs False) tright \<and> wf_ks_rs tright \<and> balanced tright \<and> keys_consistent tright \<and> keys_ordered tright")
+    apply (thin_tac "case tright of Node (r_ks, r_rs) \<Rightarrow> key_lt k0 (hd r_ks) \<and> check_keys (Some k0) (keys (hd r_rs)) None | Leaf x \<Rightarrow> True")
+    apply (simp add:wf_size_def wf_size'_def list_all_iff forall_subtrees_def rev_apply_def)
+    apply (subgoal_tac "wf_size_1 (Node (left_ks, left_rs)) \<and> wf_size_1 (Node (right_ks, right_rs))")
+    prefer 2
+     apply (subgoal_tac "1 \<le> min_node_keys \<and> max_node_keys = 2 * min_node_keys") prefer 2 apply (force intro:FIXME) (* further hypothesis*)
      apply (simp add:wf_size_1_def Let_def)
-     apply (drule_tac t="left_ks" in sym)
-     (*FIXME we do not know anything about min_node_keys, in particular we do not know if 1 \<le> min_node_keys*)
-    apply (force intro:FIXME)
-    apply (subgoal_tac "wf_size_1 (Node (right_ks, right_rs))") prefer 2 apply (force intro:FIXME)
+     apply (subgoal_tac "0 < length ks") prefer 2 apply force
+     apply (subgoal_tac "(length ks) \<le> max_node_keys") prefer 2 apply (case_tac stk) apply force apply (force simp add:forall_subtrees_def rev_apply_def Let_def wf_size_1_def)
+     apply (subgoal_tac "drop min_node_keys ks2 = k#right_ks")
+     prefer 2
+      apply (case_tac "drop min_node_keys ks2")
+       (*drop min_node_keys ks2 = []*)
+       apply (subgoal_tac "\<not> (length ks2 \<le> min_node_keys)") prefer 2 apply (force simp add:wf_size_def wf_size_1_def forall_subtrees_def rev_apply_def Let_def)
+       apply (metis drop_eq_Nil)
+       
+       apply force
+      apply (subgoal_tac "tl (drop min_node_keys ks2) = right_ks \<and> hd (drop min_node_keys ks2) = k ") prefer 2 apply force
+     apply (thin_tac "drop min_node_keys ks2 = k # right_ks")
+     apply (erule conjE)+
+     apply simp
+     apply (subgoal_tac "length ks = max_node_keys") prefer 2
+      apply force
+     apply force
     apply blast
    (*wf_ks_rs*)
    apply (subgoal_tac "wf_ks_rs (Node (left_ks, left_rs)) \<and> wf_ks_rs (Node (right_ks, right_rs))")
@@ -660,20 +678,45 @@ apply(intro conjI)
        apply (smt Cons_nth_drop_Suc append_take_drop_id drop_all list_all_append list_all_length not_le nth_Cons_0)
     apply blast
    (*keys_consistent*)
-   apply (subgoal_tac "keys_consistent (Node (left_ks, left_rs)) \<and> keys_consistent (Node (right_ks, right_rs))")
+   apply (subgoal_tac "keys_consistent (Node (left_ks, left_rs)) \<and> check_keys None (keys (last left_rs)) (Some k)  \<and> check_keys (Some k) (keys (hd right_rs)) None \<and> keys_consistent (Node (right_ks, right_rs))")
    prefer 2
     apply (simp add:keys_consistent_def forall_subtrees_def rev_apply_def list_all_iff)
-    apply (subgoal_tac "keys_consistent_1 (Node (left_ks, left_rs)) \<and> keys_consistent_1 (Node (right_ks, right_rs))")
+    apply (subgoal_tac "keys_consistent_1 (Node (left_ks, left_rs)) \<and> check_keys None (keys (last left_rs)) (Some k)  \<and> check_keys (Some k) (keys (hd right_rs)) None \<and> keys_consistent_1 (Node (right_ks, right_rs))")
     prefer 2
      apply (simp add:keys_consistent_1_def)
-     (*FIXME this should be similar to the check_keys conditions I have later*)
-     apply (force intro:FIXME)
+     apply (subgoal_tac "drop min_node_keys ks2 = k # right_ks")
+     prefer 2
+      apply (case_tac "drop min_node_keys ks2")
+       (*drop min_node_keys ks2 = []*)
+       apply (subgoal_tac "\<not> (length ks2 \<le> min_node_keys)") prefer 2 apply (force simp add:wf_size_def wf_size_1_def forall_subtrees_def rev_apply_def Let_def)
+       apply (metis drop_eq_Nil)
+       
+       apply force
+     apply (drule_tac s="length ks2" in sym)
+     apply (subgoal_tac "left_ks \<noteq> [] \<and> right_ks \<noteq> [] \<and> min_node_keys < length ks2") prefer 2 apply (force simp add:wf_size_def wf_size_1_def forall_subtrees_def rev_apply_def Let_def)
+     apply (subgoal_tac "left_rs \<noteq> [] \<and> right_rs \<noteq> []") prefer 2 apply (force simp add:wf_ks_rs_def wf_ks_rs_1_def wf_size_def wf_size_1_def forall_subtrees_def rev_apply_def Let_def)
+     apply (simp add:last_conv_nth hd_conv_nth)
+     apply (drule_tac t="left_ks" in sym)
+     apply (subgoal_tac "tl (drop min_node_keys ks2) = right_ks \<and> hd (drop min_node_keys ks2) = k ") prefer 2 apply force
+     apply (thin_tac "drop min_node_keys ks2 = k # right_ks")
+     apply (erule conjE)+
+     apply simp
+     apply (drule_tac t="right_ks" in sym)
+     apply (drule_tac t="left_rs" in sym)
+     apply (drule_tac t="right_rs" in sym)
+     apply (drule_tac t="k" in sym)
+     apply (simp add:key_indexes_def set_butlast_lessThan check_keys_def)
+     apply (simp add:min_def)
+     apply (simp add: hd_drop_conv_nth nth_tl tl_drop)
+     apply simp
+     apply (subgoal_tac "Suc (length ks2) = length rs2") prefer 2 apply (force simp add:wf_ks_rs_def wf_ks_rs_1_def forall_subtrees_def rev_apply_def Let_def)
+     apply force
     apply blast
    (*keys_ordered*)
-   apply (subgoal_tac "keys_ordered  (Node (left_ks, left_rs)) \<and> keys_ordered  (Node (right_ks, right_rs))")
+   apply (subgoal_tac "keys_ordered  (Node (left_ks, left_rs)) \<and> key_lt (last left_ks) k \<and> key_lt k (hd right_ks)  \<and> keys_ordered  (Node (right_ks, right_rs))")
    prefer 2
     apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def list_all_iff)
-    apply (subgoal_tac "keys_ordered_1 (Node (left_ks, left_rs)) \<and> keys_ordered_1 (Node (right_ks, right_rs))")
+    apply (subgoal_tac "keys_ordered_1 (Node (left_ks, left_rs)) \<and> key_lt (last left_ks) k \<and> key_lt k (hd right_ks)  \<and> keys_ordered_1 (Node (right_ks, right_rs))")
     prefer 2
      apply (erule conjE)+
      apply (thin_tac "\<forall>x\<in>set (case tleft of Node (l, cs) \<Rightarrow> tleft # map tree_to_subtrees cs |> concat | Leaf x \<Rightarrow> [tleft]). keys_ordered_1 x")
@@ -690,58 +733,23 @@ apply(intro conjI)
        apply (metis drop_eq_Nil)
        
        apply force
-     apply simp
      apply (drule_tac s="length ks2" in sym)
-     apply (simp add:key_indexes_def set_butlast_lessThan)
+     apply (subgoal_tac "left_ks \<noteq> [] \<and> right_ks \<noteq> [] \<and> min_node_keys < length ks2") prefer 2 apply (force simp add:wf_size_def wf_size_1_def forall_subtrees_def rev_apply_def Let_def)
+     apply (simp add:last_conv_nth hd_conv_nth)
      apply (drule_tac t="left_ks" in sym)
      apply (subgoal_tac "tl (drop min_node_keys ks2) = right_ks \<and> hd (drop min_node_keys ks2) = k ") prefer 2 apply force
      apply (thin_tac "drop min_node_keys ks2 = k # right_ks")
-     apply (erule conjE)
-     apply (drule_tac t="right_ks" in sym)
-     apply (simp)
-     apply rule
-     apply (rename_tac i')
-     apply (subgoal_tac "min_node_keys + i' \<le> length (tl ks2)") prefer 2 apply force
-     apply (simp add:tl_drop)
-     (*FIXME I think there is an error with the definitions here: the next check_keys conditions 
-     should be complementary to key_ordered and key_consistent properties:
-     
-     for keys_ordered] we want keys_ordered left_ks \<and> k_lt (last left_ks) k \<and> k_lt k (hd right_ks) \<and> keys_ordered righ_ks
-     for keys_consistent] we want keys_consistent left_ks \<and> check_keys (keys last left_ks) k \<and> check_keys k (keys (hd right_ks)) \<and> keys_consistent righ_ks
-     *)
-     
-     (*
-     apply (subgoal_tac "ks2 = left_ks@k#right_ks") prefer 2 apply (force intro:FIXME)
-     apply (drule_tac s="length ks2" in sym)
-     apply (subgoal_tac "(\<forall>i\<in>set (butlast (key_indexes (Node (left_ks, left_rs)))). key_lt (left_ks ! i) (left_ks ! Suc i))")
-     prefer 2 apply (force simp add:key_indexes_def set_butlast_lessThan)
+     apply (erule conjE)+
      apply simp
-     apply rule
-     apply (rename_tac i')
-     apply (simp add:key_indexes_def set_butlast_lessThan)
-     
-     apply (thin_tac "\<forall>i\<in>{0..<length left_ks - Suc 0}. key_lt (left_ks ! i) (left_ks ! Suc i)")
-     apply (subgoal_tac "tl (drop min_node_keys ks2) = right_ks") prefer 2 apply force
      apply (drule_tac t="right_ks" in sym)
-     apply (thin_tac "ks2 = left_ks @ k # right_ks")
-     apply simp*)
-     apply (force intro:FIXME)
+     apply (drule_tac t="k" in sym)
+     apply (simp add:key_indexes_def set_butlast_lessThan)
+     apply (simp add:min_def)
+     apply (simp add: hd_drop_conv_nth nth_tl tl_drop)
+     apply (metis Suc_pred atLeastLessThan_iff diff_Suc_1 less_Suc_eq_0_disj less_Suc_eq_le neq0_conv)
     apply blast
-   apply simp
-   (*check_keys None (keys (Node (left_ks, left_rs))) (Some k)*)
-   (*FIXME: cannot we solve this by proofing that check_keys is valid on fat_node?*)
-   apply (simp add:check_keys_def)
-   (* I want to show that if ks=l_ks@r_ks and rs=l_rs@r_rs 
-   then keys(left_ks,left_rs) = insert k0 (keys (l_ks,l_rs))
-   and if k=k0, I need to know that 
-   \<forall> ka \<in> (keys(left_ks,left_rs)). key_lt ka k0
-   but do I know that key_lt any_left_ks k0?
-   The only hypothesis we get is from wellformed_ts_1 and that tells about single keys.
-   Probably we need to change the definitions...
-   *)
-   
-   (*check_keys (Some k) (keys (Node (right_ks, right_rs))) None*)
-   apply (force intro:FIXME)
+   apply force
+
  (* wf_context *)
  apply(force intro: wellformed_context_hereditary)
 (* end subproof *)
