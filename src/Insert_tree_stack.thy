@@ -31,19 +31,8 @@ Inserting_one t \<Rightarrow> (wellformed_tree (Rmbs stack_empty) t)
 | Inserting_two (tl_,k0,tr) \<Rightarrow> (
 wellformed_tree (Rmbs False) tl_ 
 & wellformed_tree (Rmbs False) tr
-& (
-case tl_ of
-  Leaf _ \<Rightarrow> True
- | Node (l_ks,l_rs) \<Rightarrow>
-  (key_lt (last l_ks) k0 &
-  check_keys None (keys (last l_rs)) (Some k0)))
-& (
-case tr of
-  Leaf _ \<Rightarrow> True
- | Node (r_ks,r_rs) \<Rightarrow>
-  (key_lt k0 (hd r_ks) &
-  check_keys (Some k0) (keys(hd r_rs)) None))
-)
+& check_keys None (keys (tl_)) (Some k0)
+& check_keys (Some k0) (keys tr) None)
 )"
 
 

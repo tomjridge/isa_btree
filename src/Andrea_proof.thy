@@ -381,7 +381,7 @@ apply(intro conjI)
     apply (simp add:list_all_of_list_replace_at_n_concat_map_subtrees)  
     apply (simp add:balanced_1_def del:height.simps)
     apply (subgoal_tac "list_replace_at_n rs i [tleft, tright] |> dest_Some = rs2") prefer 2 apply (force simp add:rev_apply_def)
-    apply (subgoal_tac "height tright = height (rs!0) \<and> height tleft = height (rs!0)") prefer 2 apply (simp add:wellformed_ts_1_def dest_ts_def Let_def del:height.simps) apply (force intro:FIXME)
+    apply (subgoal_tac "height tright = height (rs!i) \<and> height tleft = height (rs!i)") prefer 2 apply (force simp add:wellformed_ts_1_def dest_ts_def Let_def )
     apply (subgoal_tac "height (rs2!0) = height (rs!0)")
     prefer 2 
      apply (simp add:list_replace_at_n_def rev_apply_def split_at_def del:height.simps)
@@ -391,10 +391,9 @@ apply(intro conjI)
 
       (* i \<noteq> 0 *)
       apply (simp add: del:height.simps)
-      apply (metis append_take_drop_id length_greater_0_conv list.size(3) nth_append nth_append_length)
-      
+      apply (metis append_take_drop_id gr_implies_not0 length_0_conv length_greater_0_conv nth_append take_eq_Nil)
     apply (case_tac "rs2 = []", simp)
-    apply (force simp add: list_all_of_list_replace_at_n)
+    apply (metis list.size(3) list_all_length list_all_of_list_replace_at_n not_less0)
 
     (* keys_consistent (Node (ks2, take (i - Suc 0) rs @ tleft # tright # drop i rs)) *)
     apply (drule_tac t="fat_node" in sym)
@@ -559,9 +558,11 @@ apply(intro conjI)
       apply (subgoal_tac "i' < length xs") prefer 2 apply force
       apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
       apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
-      apply (simp add:nth_append)
       (*FIXME the assumption key_lt (xs ! i') k0 should be in wellformed_ts_1: is it?*)
-      apply (force intro:FIXME)
+      apply (subgoal_tac "i' = length xs - 1") prefer 2 apply force
+      apply (simp add:nth_append key_le_def)
+      apply (subgoal_tac "(xs ! (length xs - Suc 0)) \<noteq> k0") prefer 2  apply (force intro:FIXME)
+      apply force
 
       (*Suc i' \<noteq> length xs*)
       apply (subgoal_tac "length xs < Suc i'") prefer 2 apply force
@@ -616,13 +617,11 @@ apply(intro conjI)
    prefer 2
     apply (thin_tac "f = Inserting_two (tleft, k0, tright)")
     apply (thin_tac "wf_size (Rmbs False) tleft \<and> wf_ks_rs tleft \<and> balanced tleft \<and> keys_consistent tleft \<and> keys_ordered tleft ")
-    apply (thin_tac "case tleft of Node (l_ks, l_rs) \<Rightarrow> key_lt (last l_ks) k0 \<and> check_keys None (keys (last l_rs)) (Some k0) | Leaf x \<Rightarrow> True")
     apply (thin_tac "wf_size (Rmbs False) tright \<and> wf_ks_rs tright \<and> balanced tright \<and> keys_consistent tright \<and> keys_ordered tright")
-    apply (thin_tac "case tright of Node (r_ks, r_rs) \<Rightarrow> key_lt k0 (hd r_ks) \<and> check_keys (Some k0) (keys (hd r_rs)) None | Leaf x \<Rightarrow> True")
     apply (simp add:wf_size_def wf_size'_def list_all_iff forall_subtrees_def rev_apply_def)
     apply (subgoal_tac "wf_size_1 (Node (left_ks, left_rs)) \<and> wf_size_1 (Node (right_ks, right_rs))")
     prefer 2
-     apply (subgoal_tac "1 \<le> min_node_keys \<and> max_node_keys = 2 * min_node_keys") prefer 2 apply (force intro:FIXME) (* further hypothesis*)
+     apply (subgoal_tac "1 \<le> min_node_keys \<and> (max_node_keys = 2 * min_node_keys \<or> max_node_keys = Suc (2 * min_node_keys))") prefer 2 apply (force intro:FIXME) (* further hypothesis*)
      apply (simp add:wf_size_1_def Let_def)
      apply (subgoal_tac "0 < length ks") prefer 2 apply force
      apply (subgoal_tac "(length ks) \<le> max_node_keys") prefer 2 apply (case_tac stk) apply force apply (force simp add:forall_subtrees_def rev_apply_def Let_def wf_size_1_def)
@@ -677,6 +676,7 @@ apply(intro conjI)
        apply (subgoal_tac "left_rs ! 0 = rs2 ! 0") prefer 2 apply force
        apply (smt Cons_nth_drop_Suc append_take_drop_id drop_all list_all_append list_all_length not_le nth_Cons_0)
     apply blast
+
    (*keys_consistent*)
    apply (subgoal_tac "keys_consistent (Node (left_ks, left_rs)) \<and> check_keys None (keys (last left_rs)) (Some k)  \<and> check_keys (Some k) (keys (hd right_rs)) None \<and> keys_consistent (Node (right_ks, right_rs))")
    prefer 2
@@ -748,6 +748,20 @@ apply(intro conjI)
      apply (simp add: hd_drop_conv_nth nth_tl tl_drop)
      apply (metis Suc_pred atLeastLessThan_iff diff_Suc_1 less_Suc_eq_0_disj less_Suc_eq_le neq0_conv)
     apply blast
+
+   (*keys_ordered*)
+   apply (subgoal_tac "check_keys None (keys (Node (left_ks, left_rs))) (Some k) \<and> check_keys (Some k) (keys (Node (right_ks, right_rs))) None")
+   prefer 2
+    (*cleanup hypothesises*)
+    apply (thin_tac "wf_size' (Rmbs False) fat_node \<and> wf_ks_rs fat_node \<and> balanced fat_node \<and> keys_consistent fat_node \<and> keys_ordered fat_node ")
+    apply (thin_tac "wf_size (Rmbs (stk = [])) (Node (ks, rs)) \<and>
+       wf_ks_rs (Node (ks, rs)) \<and> balanced (Node (ks, rs)) \<and> keys_consistent (Node (ks, rs)) \<and> keys_ordered (Node (ks, rs))")
+    apply (thin_tac "wf_size (Rmbs False) tleft \<and> wf_ks_rs tleft \<and> balanced tleft \<and> keys_consistent tleft \<and> keys_ordered tleft")
+    apply (thin_tac "wf_size (Rmbs False) tright \<and> wf_ks_rs tright \<and> balanced tright \<and> keys_consistent tright \<and> keys_ordered tright")
+    apply (thin_tac "check_keys None (keys tleft) (Some k0)")
+    apply (thin_tac "check_keys (Some k0) (keys tright) None")
+    
+    apply (force intro:FIXME)
    apply force
 
  (* wf_context *)
@@ -760,7 +774,11 @@ apply(simp)
 apply(simp add: update_focus_at_position_def)
 apply(case_tac f)
  (* i1 *)
- apply(simp)
+ apply(simp add:wellformed_ts_def wellformed_ts_1_def dest_ts_def Let_def)
+ apply (case_tac "stk") apply force
+ (* stk = (l,c) i'*)
+ apply (case_tac a,simp,case_tac aa,simp,rename_tac i' l cs)
+ apply (thin_tac "a = ((l, cs), i')",thin_tac "aa = (l, cs)")
  apply(force intro: FIXME)
 
   (* i2 FIXME may be worth combining with other i2 cases? *)
