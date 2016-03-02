@@ -5,7 +5,10 @@ begin
 typedecl key
 typedecl value_t
 
-consts key_lt :: "key \<Rightarrow> key \<Rightarrow> bool"
+consts k_lt :: "key \<Rightarrow> key \<Rightarrow> bool"
+
+definition key_lt :: "key => key => bool" where
+  "key_lt k1 k2 == (k1 \<noteq> k2) \<and> (k_lt k1 k2)"
 
 definition key_le :: "key => key => bool" where
   "key_le k1 k2 == (k1 = k2) | (key_lt k1 k2)"

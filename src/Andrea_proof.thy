@@ -5,7 +5,7 @@ begin
 definition invariant_wf_ts :: "bool" where
 "invariant_wf_ts == (
 ! ts.
-wellformed_ts ts \<longrightarrow> 
+  wellformed_ts ts \<longrightarrow> 
 (
 let ts' = step_tree_stack ts in
 case ts' of 
@@ -172,6 +172,8 @@ apply (case_tac "i=0")
 done
 
 lemma invariant_wf_ts: "invariant_wf_ts"
+apply (subgoal_tac "1 \<le> min_leaf_size \<and> 1 \<le> min_node_keys \<and> (max_node_keys = 2 * min_node_keys \<or> max_node_keys = Suc (2 * min_node_keys))") prefer 2 apply (force intro:FIXME) (* further hypothesis*)
+     
 apply(simp add: invariant_wf_ts_def)
 apply(intro allI impI)
 apply(case_tac ts)
@@ -558,11 +560,24 @@ apply(intro conjI)
       apply (subgoal_tac "i' < length xs") prefer 2 apply force
       apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
       apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
-      (*FIXME the assumption key_lt (xs ! i') k0 should be in wellformed_ts_1: is it?*)
       apply (subgoal_tac "i' = length xs - 1") prefer 2 apply force
-      apply (simp add:nth_append key_le_def)
-      apply (subgoal_tac "(xs ! (length xs - Suc 0)) \<noteq> k0") prefer 2  apply (force intro:FIXME)
-      apply force
+      apply (subgoal_tac "\<exists> k \<in> (set (keys tleft)). key_lt k k0")
+      prefer 2
+       apply (subgoal_tac "set (keys tleft) \<noteq> {}") 
+       prefer 2 
+        apply (simp add:rev_apply_def wf_size_def forall_subtrees_def list_all_iff wf_size_1_def Let_def)
+        apply (simp add:keys_def rev_apply_def keys_1_def)
+        apply (case_tac tleft) apply force
+        apply (simp add:Let_def) (*here we need 1 \<le> min_leaf_size*) apply force 
+       apply force
+      apply (simp add:nth_append key_le_def )
+      apply (subgoal_tac "key_lt (xs ! (length xs - Suc 0)) k0") prefer 2
+       apply (case_tac "(xs ! (length xs - Suc 0)) = k0")
+        apply simp
+        apply (subgoal_tac "k0 \<in> set (keys tleft)")
+        prefer 2 
+         apply (force intro:FIXME)
+        apply blast+
 
       (*Suc i' \<noteq> length xs*)
       apply (subgoal_tac "length xs < Suc i'") prefer 2 apply force
@@ -621,7 +636,7 @@ apply(intro conjI)
     apply (simp add:wf_size_def wf_size'_def list_all_iff forall_subtrees_def rev_apply_def)
     apply (subgoal_tac "wf_size_1 (Node (left_ks, left_rs)) \<and> wf_size_1 (Node (right_ks, right_rs))")
     prefer 2
-     apply (subgoal_tac "1 \<le> min_node_keys \<and> (max_node_keys = 2 * min_node_keys \<or> max_node_keys = Suc (2 * min_node_keys))") prefer 2 apply (force intro:FIXME) (* further hypothesis*)
+     (*here we need the hypothesis 1\<le> min_node_size and max_node_size= 2*min_node_size etc*)
      apply (simp add:wf_size_1_def Let_def)
      apply (subgoal_tac "0 < length ks") prefer 2 apply force
      apply (subgoal_tac "(length ks) \<le> max_node_keys") prefer 2 apply (case_tac stk) apply force apply (force simp add:forall_subtrees_def rev_apply_def Let_def wf_size_1_def)
