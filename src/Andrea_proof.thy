@@ -1,5 +1,5 @@
 theory Andrea_proof
-imports Insert_tree_stack
+imports Insert_tree_stack Key_lt_order
 begin
 
 definition invariant_wf_ts :: "bool" where
@@ -15,6 +15,7 @@ wellformed_ts ts'
 )
 ))
 "
+
 
 lemma forall_subtrees_Cons: "forall_subtrees P t = 
 (case t of 
@@ -171,9 +172,16 @@ apply (case_tac "i=0")
  apply (force simp add:butlast_take list_all_take_drop_less_one_element_concat_map_subtrees)
 done
 
+lemma keys_Cons: 
+"keys (Node (l, cs)) = l@((List.map keys cs) |> List.concat)"
+apply (simp add:keys_def rev_apply_def keys_1_def)
+apply (induct cs) apply (force simp add:keys_def rev_apply_def)+
+done
+
 lemma invariant_wf_ts: "invariant_wf_ts"
 apply (subgoal_tac "1 \<le> min_leaf_size \<and> 1 \<le> min_node_keys \<and> (max_node_keys = 2 * min_node_keys \<or> max_node_keys = Suc (2 * min_node_keys))") prefer 2 apply (force intro:FIXME) (* further hypothesis*)
-     
+apply (subgoal_tac "total_order_key_lte") prefer 2 apply (force intro:FIXME)
+
 apply(simp add: invariant_wf_ts_def)
 apply(intro allI impI)
 apply(case_tac ts)
@@ -710,7 +718,6 @@ apply(intro conjI)
      apply (drule_tac s="length ks2" in sym)
      apply (subgoal_tac "left_ks \<noteq> [] \<and> right_ks \<noteq> [] \<and> min_node_keys < length ks2") prefer 2 apply (force simp add:wf_size_def wf_size_1_def forall_subtrees_def rev_apply_def Let_def)
      apply (subgoal_tac "left_rs \<noteq> [] \<and> right_rs \<noteq> []") prefer 2 apply (force simp add:wf_ks_rs_def wf_ks_rs_1_def wf_size_def wf_size_1_def forall_subtrees_def rev_apply_def Let_def)
-     apply (simp add:last_conv_nth hd_conv_nth)
      apply (drule_tac t="left_ks" in sym)
      apply (subgoal_tac "tl (drop min_node_keys ks2) = right_ks \<and> hd (drop min_node_keys ks2) = k ") prefer 2 apply force
      apply (thin_tac "drop min_node_keys ks2 = k # right_ks")
@@ -721,11 +728,11 @@ apply(intro conjI)
      apply (drule_tac t="right_rs" in sym)
      apply (drule_tac t="k" in sym)
      apply (simp add:key_indexes_def set_butlast_lessThan check_keys_def)
-     apply (simp add:min_def)
      apply (simp add: hd_drop_conv_nth nth_tl tl_drop)
-     apply simp
      apply (subgoal_tac "Suc (length ks2) = length rs2") prefer 2 apply (force simp add:wf_ks_rs_def wf_ks_rs_1_def forall_subtrees_def rev_apply_def Let_def)
-     apply force
+     apply (simp add:min_def)
+     apply (simp add:hd_conv_nth last_conv_nth)
+     apply (metis (no_types, lifting) One_nat_def Suc_leD Suc_mono append_take_drop_id atLeastLessThan_iff diff_Suc_1 diff_add_inverse2 diff_diff_cancel length_append length_drop length_take less_imp_le_nat)
     apply blast
    (*keys_ordered*)
    apply (subgoal_tac "keys_ordered  (Node (left_ks, left_rs)) \<and> key_lt (last left_ks) k \<and> key_lt k (hd right_ks)  \<and> keys_ordered  (Node (right_ks, right_rs))")
@@ -775,8 +782,31 @@ apply(intro conjI)
     apply (thin_tac "wf_size (Rmbs False) tright \<and> wf_ks_rs tright \<and> balanced tright \<and> keys_consistent tright \<and> keys_ordered tright")
     apply (thin_tac "check_keys None (keys tleft) (Some k0)")
     apply (thin_tac "check_keys (Some k0) (keys tright) None")
-    
-    apply (force intro:FIXME)
+    apply (simp add:check_keys_def)
+    apply (simp add:keys_Cons)
+    apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def list_all_iff keys_ordered_1_def Let_def)
+    apply (simp add:key_indexes_def set_butlast_lessThan)
+    apply (subgoal_tac "left_ks \<noteq> []") prefer 2 apply force
+    apply rule+
+     apply (subgoal_tac "\<forall> x \<in> set left_ks. key_lt x k")
+     prefer 2
+      using bigger_than_last_in_list_sorted_by_key_lt' apply presburger
+     apply (subgoal_tac "\<forall> x \<in> (\<Union>a\<in>set left_rs. set (keys a)). key_lt x k")
+     prefer 2
+      apply (subgoal_tac "((\<forall>i\<in>{0..<length left_ks}. \<forall>k\<in>set (keys (left_rs ! i)). key_lt k (left_ks ! i)))") prefer 2 apply (force simp add:keys_consistent_def forall_subtrees_def rev_apply_def keys_consistent_1_def key_indexes_def check_keys_def)      
+      apply (subgoal_tac "length left_rs = Suc (length left_ks)") prefer 2 apply (force simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def key_indexes_def check_keys_def) 
+      using bigger_than_subkeys_in_list_sorted_by_key_lt' apply presburger
+     apply force
+     apply (subgoal_tac "right_ks \<noteq> []") prefer 2 apply (force simp add:wf_size_def forall_subtrees_def rev_apply_def wf_size_1_def)
+     apply (subgoal_tac "\<forall> x \<in> set right_ks. key_lt k x")
+     prefer 2
+      using k_klt_hd_klt_all apply presburger
+     apply (subgoal_tac "\<forall> x \<in> \<Union>a\<in>set right_rs. set (keys a). key_le k x")
+     prefer 2
+      apply (subgoal_tac "length right_rs = Suc (length right_ks)") prefer 2 apply (force simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def key_indexes_def check_keys_def) 
+      apply (subgoal_tac "(\<forall>i\<in>{0..<length right_ks}. \<forall>x\<in>set (keys (right_rs ! Suc i)). key_le (right_ks ! i) x)") prefer 2 apply (force simp add:keys_consistent_def forall_subtrees_def rev_apply_def keys_consistent_1_def key_indexes_def check_keys_def)
+      using k_klt_hdsubkeys_kle_allsubkeys apply presburger
+    apply (force simp add:key_le_def)
    apply force
 
  (* wf_context *)
@@ -789,12 +819,24 @@ apply(simp)
 apply(simp add: update_focus_at_position_def)
 apply(case_tac f)
  (* i1 *)
- apply(simp add:wellformed_ts_def wellformed_ts_1_def dest_ts_def Let_def)
+ apply (rename_tac "new_focus")
+ apply(simp add:wellformed_ts_def wellformed_ts_1_def dest_ts_def Let_def del:height.simps)
  apply (case_tac "stk") apply force
  (* stk = (l,c) i'*)
  apply (case_tac a,simp,case_tac aa,simp,rename_tac i' l cs)
  apply (thin_tac "a = ((l, cs), i')",thin_tac "aa = (l, cs)")
- apply(force intro: FIXME)
+ apply (subgoal_tac "\<exists> old_ks old_rs. cs ! i' = Node(old_ks,old_rs)") prefer 2 apply (force intro:FIXME)
+ apply (erule exE)+
+ apply simp
+ (*FIXME simplify list_replace_1_at_n before dividing the subgoals*)
+ apply rule
+  (*height of old focus equal to height of new focus*)
+  (*FIXME this holds for wellformed_focus.wellformed_tree.balanced*)
+  apply (force intro:FIXME)
+
+  (*keys of new focus maintain the order of the old focus*)
+  (*FIXME this holds for wellformed_focus.wellformed_tree.keys_ordered&keys_consistent*)
+  apply(force intro: FIXME)
 
   (* i2 FIXME may be worth combining with other i2 cases? *)
  apply(simp)
@@ -805,7 +847,6 @@ apply(case_tac f)
  apply(subgoal_tac "? rs2. list_replace_at_n (n |> snd) i [tleft, tr] |> dest_Some = rs2") prefer 2 apply(force)
  apply(elim exE)
  apply(simp add: Let_def fst_snd_simps)
-
  apply(force intro: FIXME)
 done
 
