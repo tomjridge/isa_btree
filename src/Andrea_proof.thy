@@ -203,6 +203,7 @@ apply(elim conjE)
 apply(case_tac n)
 apply(rename_tac ks rs)
 apply(simp)
+apply (thin_tac "n=_")
 apply(subgoal_tac " wellformed_focus (update_focus_at_position (ks, rs) i f) (stk = []) \<and>
        wellformed_context stk")
 prefer 2
@@ -825,15 +826,20 @@ apply(case_tac f)
  (* stk = (l,c) i'*)
  apply (case_tac a,simp,case_tac aa,simp,rename_tac i' l cs)
  apply (thin_tac "a = ((l, cs), i')",thin_tac "aa = (l, cs)")
- apply (subgoal_tac "\<exists> old_ks old_rs. cs ! i' = Node(old_ks,old_rs)") prefer 2 apply (force intro:FIXME)
- apply (erule exE)+
+ apply (subgoal_tac "cs ! i' = Node(ks,rs)")
+ prefer 2
+  (*we are following the context*)
+  apply simp
+  
+ apply (force intro:FIXME)
  apply simp
  (*FIXME simplify list_replace_1_at_n before dividing the subgoals*)
+ apply (simp add:list_replace_1_at_n_def)
  apply rule
   (*height of old focus equal to height of new focus*)
-  (*FIXME this holds for wellformed_focus.wellformed_tree.balanced*)
-  apply (force intro:FIXME)
-
+  apply (simp add:wellformed_focus_def wellformed_tree_def balanced_def)
+  apply (metis height.simps list.set_map list_update_id map_update)
+  
   (*keys of new focus maintain the order of the old focus*)
   (*FIXME this holds for wellformed_focus.wellformed_tree.keys_ordered&keys_consistent*)
   apply(force intro: FIXME)
