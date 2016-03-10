@@ -85,20 +85,9 @@ done
 
 lemma wellformed_context_i_less_than_length_rs:
 "wellformed_context (((ks, rs), i) # stk) \<Longrightarrow> i \<le> length ks \<and> i < length rs"
-apply (induct stk)
- apply (simp add:wellformed_context_def)
- apply (simp add:wellformed_tree_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def subtree_indexes_def)
-
- apply (simp add:wellformed_context_def)
- apply (case_tac "stk =[]")
-  (*stk = []*)
-  apply (case_tac a, case_tac aa)
-  apply (simp add:wellformed_context_1_def)
-  apply (simp add:wellformed_tree_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def subtree_indexes_def)
-
-  (*stk = aa#list*)
-  apply (case_tac "last stk")
-  apply simp
+apply (simp add:wellformed_context_def)
+apply (simp add:list_all_iff wellformed_tree_def wellformed_context_1_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def subtree_indexes_def)
+apply (case_tac stk) apply (force )+
 done
 
 lemma wf_size_ks_not_empty: "wf_size rmbs (Node(ks,rs)) \<longrightarrow> 1\<le>length ks"
@@ -566,27 +555,18 @@ apply(intro conjI)
      (*Suc i' \<ge> length xs*)
      apply (case_tac "Suc i' = length xs")
       (*Suc i' = length xs*)
-      apply (subgoal_tac "i' < length xs") prefer 2 apply force
-      apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
-      apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
       apply (subgoal_tac "i' = length xs - 1") prefer 2 apply force
-      apply (subgoal_tac "\<exists> k \<in> (set (keys tleft)). key_lt k k0")
-      prefer 2
-       apply (subgoal_tac "set (keys tleft) \<noteq> {}") 
-       prefer 2 
-        apply (simp add:rev_apply_def wf_size_def forall_subtrees_def list_all_iff wf_size_1_def Let_def)
-        apply (simp add:keys_def rev_apply_def keys_1_def)
-        apply (case_tac tleft) apply force
-        apply (simp add:Let_def) (*here we need 1 \<le> min_leaf_size*) apply force 
-       apply force
-      apply (simp add:nth_append key_le_def )
-      apply (subgoal_tac "key_lt (xs ! (length xs - Suc 0)) k0") prefer 2
-       apply (case_tac "(xs ! (length xs - Suc 0)) = k0")
-        apply simp
-        apply (subgoal_tac "k0 \<in> set (keys tleft)")
-        prefer 2 
-         apply (force intro:FIXME)
-        apply blast+
+      apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
+      apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def nth_append)
+      apply (simp add:key_indexes_def set_butlast_lessThan atLeast0LessThan lessThan_def)
+      apply (drule_tac x="i'" in spec)
+      apply simp
+      apply (subgoal_tac "keys tleft \<noteq> []") prefer 2 apply (force intro:FIXME) (*wf_size tleft*)
+      apply (subgoal_tac "\<exists> k. k \<in> set(keys(tleft)) \<and> key_le (xs ! (length xs - Suc 0)) k \<and> key_lt k k0") prefer 2 apply (force intro:FIXME)
+      apply (erule exE)
+      apply (erule conjE)+
+      using order_key_le
+      apply fast
 
       (*Suc i' \<noteq> length xs*)
       apply (subgoal_tac "length xs < Suc i'") prefer 2 apply force
@@ -826,14 +806,7 @@ apply(case_tac f)
  (* stk = (l,c) i'*)
  apply (case_tac a,simp,case_tac aa,simp,rename_tac i' l cs)
  apply (thin_tac "a = ((l, cs), i')",thin_tac "aa = (l, cs)")
- apply (subgoal_tac "cs ! i' = Node(ks,rs)")
- prefer 2
-  (*we are following the context*)
-  apply simp
-  
- apply (force intro:FIXME)
- apply simp
- (*FIXME simplify list_replace_1_at_n before dividing the subgoals*)
+ apply (subgoal_tac "cs ! i' = Node(ks,rs)") prefer 2 apply (force simp add:wellformed_context_def is_subnode_def)+
  apply (simp add:list_replace_1_at_n_def)
  apply rule
   (*height of old focus equal to height of new focus*)
@@ -849,10 +822,10 @@ apply(case_tac f)
  apply(subgoal_tac "? tleft k0 tr. x2 = (tleft,k0,tr)") prefer 2 apply(force)
  apply(elim exE)
  apply(simp)
- apply(subgoal_tac "? ks2. list_insert_at_n (n |> fst) i [k0]  = ks2") prefer 2 apply(force)
- apply(subgoal_tac "? rs2. list_replace_at_n (n |> snd) i [tleft, tr] |> dest_Some = rs2") prefer 2 apply(force)
+ apply(subgoal_tac "? ks2. list_insert_at_n ks i [k0]  = ks2") prefer 2 apply(force)
+ apply(subgoal_tac "? rs2. list_replace_at_n rs i [tleft, tr] |> dest_Some = rs2") prefer 2 apply(force)
  apply(elim exE)
- apply(simp add: Let_def fst_snd_simps)
+ apply(simp add: Let_def)
  apply(force intro: FIXME)
 done
 

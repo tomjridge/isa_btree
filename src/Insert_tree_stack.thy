@@ -13,12 +13,24 @@ wellformed_tree (Rmbs False) (Node(l,cs))
 & i : (subtree_indexes (l,cs))
 )"
 
+definition is_subnode :: "(node_t * nat) \<Rightarrow> (node_t * nat) \<Rightarrow> bool" where
+"is_subnode ni pi == (
+  let (n,_) = ni in
+  let ((ks,rs),i) = pi in
+  Node n = (rs!i))"
+                                        
+fun linked_context :: "(node_t * nat) \<Rightarrow> context_t \<Rightarrow> bool" where
+"linked_context ni [] = True" |
+"linked_context ni (pi#pis) = (
+  is_subnode ni pi \<and> linked_context pi pis)"
+
 definition wellformed_context :: "context_t \<Rightarrow> bool" where
 "wellformed_context xs == (
 case xs of Nil \<Rightarrow> True
 | _ \<Rightarrow> (
 let ((l,cs),i) = last xs in
 wellformed_tree (Rmbs True) (Node(l,cs))
+& linked_context (hd xs) (tl xs)
 & i : (subtree_indexes (l,cs))
 & List.list_all wellformed_context_1 (butlast xs)
 ))
