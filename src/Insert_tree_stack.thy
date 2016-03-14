@@ -61,7 +61,7 @@ Nil \<Rightarrow> (True) (* Nil - focus is wf *)
   True \<Rightarrow> None
   | False \<Rightarrow> Some(l!(i-1)))
   in
-  let kr = (case i \<le> length l of
+  let kr = (case i < length l of
   True \<Rightarrow> Some(l!i)
   | False \<Rightarrow> None)
   in

@@ -293,10 +293,11 @@ apply(intro conjI)
       apply (case_tac "i' = length ys")
        (* i' = i *)
        apply (simp add:wellformed_ts_1_def dest_ts_def check_keys_def)
-
+       apply (force simp add:key_indexes_def atLeast0LessThan lessThan_def)
+       
        (*i' > length ys*)
        apply (subgoal_tac "i' \<in> set (key_indexes (Node (ks, ys @ x # zs)))") prefer 2 apply (force simp add:key_indexes_def)
-       apply force
+       apply (force)
        
      (* k!i \<sqsubset> R!i+1 - \<forall>ia\<in>set (key_indexes (Node (ks, rs[i := t]))). check_keys (Some (ks ! ia)) (keys (rs[i := t] ! Suc ia)) None*)
      apply (simp add:nth_append)
@@ -573,9 +574,9 @@ apply(intro conjI)
       apply (subgoal_tac "Suc i' \<in> set (key_indexes (Node (xs @ k0 # ys, rs2)))") prefer 2 apply (force simp add:key_indexes_def set_butlast_lessThan)  
       apply (case_tac "i' = length xs")
        (* i' = length xs *)
-       apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def)
-       apply (force simp add:nth_append)
-
+       apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def nth_append)
+       apply (force simp add:key_indexes_def atLeast0LessThan lessThan_def nth_append)
+       
        (* length xs < i' *)
        apply (subgoal_tac "length xs < i'") prefer 2 apply force
        apply (case_tac i') apply force
@@ -815,7 +816,35 @@ apply(case_tac f)
   
   (*keys of new focus maintain the order of the old focus*)
   (*FIXME this holds for wellformed_focus.wellformed_tree.keys_ordered&keys_consistent*)
-  apply(force intro: FIXME)
+  apply (subgoal_tac "0 < length l \<and> i \<le> length ks \<and> i' \<le> length l \<and> keys_consistent(Node(l,cs)) ") prefer 2 apply (force intro:FIXME) (*wf_context*)
+  apply (subgoal_tac "keys_consistent(Node(ks,rs[i := new_focus]))") prefer 2 apply (force simp add:wellformed_focus_def wellformed_tree_def)
+  apply (simp add:keys_consistent_def forall_subtrees_Cons keys_consistent_1_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def) 
+  apply (case_tac "i' = 0")
+   (*i' = 0 *)
+   apply (erule conjE)+
+   apply (subgoal_tac "\<forall>k\<in>set (keys (cs ! i')). key_lt k (l ! i')") prefer 2 apply force
+   apply (thin_tac "\<forall>i<length l. \<forall>k\<in>set (keys (cs ! i)). key_lt k (l ! i)")
+   apply (simp add:keys_Cons)
+   apply rule+
+   (*FIXME now we have only to show that rs!i and new_focus are ordered in the same way*)
+   apply (subgoal_tac "\<exists> l_rs r_rs rsi. rs=l_rs@rsi#r_rs \<and> (length l_rs = i) ") prefer 2 apply (metis (no_types, lifting) Cons_nth_drop_Suc diff_add_inverse2 diff_diff_cancel id_take_nth_drop length_append length_drop less_imp_le_nat upd_conv_take_nth_drop wellformed_context_i_less_than_length_rs) 
+   apply (erule exE)+
+   apply (simp)
+   apply (subgoal_tac " ((l_rs @ rsi # r_rs)[i := new_focus] = l_rs@new_focus#r_rs)") prefer 2 apply force
+   apply (simp add:rev_apply_def)
+   (*which is the relation between keys(rsi) and keys(new_focus)?*)
+   (* I need to know that ks!i< rsi \<le> ks!i+1 \<and> ks!i < new_focus \<le> ks!i+1 \<and> ks!i+1< l!0 to solve this
+    so I need keys_consistent Node(ks,rs[i:=new_focus] \<and> keys_consistent Node(ks,rs))
+   *)
+   
+   apply (force intro:FIXME)
+   (*i' \<noteq> 0 *)
+   apply (case_tac "length l \<le> i'")
+    (*length l \<le> i'*)
+    apply (force intro:FIXME)
+   
+    (*i' < length l*)
+    apply (force intro:FIXME)
 
   (* i2 FIXME may be worth combining with other i2 cases? *)
  apply(simp)
