@@ -836,7 +836,6 @@ apply(case_tac f)
    (* I need to know that ks!i< rsi \<le> ks!i+1 \<and> ks!i < new_focus \<le> ks!i+1 \<and> ks!i+1< l!0 to solve this
     so I need keys_consistent Node(ks,rs[i:=new_focus] \<and> keys_consistent Node(ks,rs))
    *)
-   
    apply (force intro:FIXME)
    (*i' \<noteq> 0 *)
    apply (case_tac "length l \<le> i'")
@@ -855,6 +854,15 @@ apply(case_tac f)
  apply(subgoal_tac "? rs2. list_replace_at_n rs i [tleft, tr] |> dest_Some = rs2") prefer 2 apply(force)
  apply(elim exE)
  apply(simp add: Let_def)
+ apply (subgoal_tac "? fat_node. Node(ks2,rs2) = fat_node") prefer 2 apply force
+ apply (erule exE)
+ apply (simp add:wellformed_ts_1_def dest_ts_def Let_def)
+ apply (case_tac "stk") apply force
+ (*stk\<noteq>[]*)
+ apply (rename_tac hd_stk tl_stk)
+ apply (case_tac hd_stk,rename_tac hds_n hd_i, case_tac hds_n, rename_tac hs_ks hs_rs)
+ apply simp
+ apply (subgoal_tac "")
  apply(force intro: FIXME)
 done
 
