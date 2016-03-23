@@ -6,9 +6,9 @@ definition subtree_indexes :: "node_t \<Rightarrow> nat set" where
 "subtree_indexes n == (
   case n of (l,_) \<Rightarrow>  { 0 .. (length l)})"
 
-definition wellformed_context_1 :: "node_t * nat \<Rightarrow> bool" where
+definition wellformed_context_1 :: "(left_bound *(node_t * nat) * right_bound) \<Rightarrow> bool" where
 "wellformed_context_1 lcsi = (
-let ((l,cs),i) = lcsi in
+let (_,((l,cs),i),_) = lcsi in
 wellformed_tree (Rmbs False) (Node(l,cs))
 & i : (subtree_indexes (l,cs))
 )"
@@ -19,16 +19,16 @@ definition is_subnode :: "(node_t * nat) \<Rightarrow> (node_t * nat) \<Rightarr
   let ((ks,rs),i) = pi in
   Node n = (rs!i))"
                                         
-fun linked_context :: "(node_t * nat) \<Rightarrow> context_t \<Rightarrow> bool" where
+fun linked_context :: "(left_bound * (node_t * nat) * right_bound) \<Rightarrow> context_t \<Rightarrow> bool" where
 "linked_context ni [] = True" |
-"linked_context ni (pi#pis) = (
-  is_subnode ni pi \<and> linked_context pi pis)"
+"linked_context (lb,ni,rb) ((plb,pi,prb)#pis) = (
+  is_subnode ni pi \<and> linked_context (plb,pi,prb) pis)"
 
 definition wellformed_context :: "context_t \<Rightarrow> bool" where
 "wellformed_context xs == (
 case xs of Nil \<Rightarrow> True
 | _ \<Rightarrow> (
-let ((l,cs),i) = last xs in
+let (_,((l,cs),i),_) = last xs in
 wellformed_tree (Rmbs True) (Node(l,cs))
 & linked_context (hd xs) (tl xs)
 & i : (subtree_indexes (l,cs))
@@ -56,7 +56,7 @@ let (f,stk) = dest_ts ts in
 
 Nil \<Rightarrow> (True) (* Nil - focus is wf *)
 
-| (((l,cs),i)#nis) \<Rightarrow> (
+| ((lb,((l,cs),i),rb)#nis) \<Rightarrow> (
   let kl = (case i=0 of 
   True \<Rightarrow> None
   | False \<Rightarrow> Some(l!(i-1)))

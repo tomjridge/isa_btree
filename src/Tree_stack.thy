@@ -39,7 +39,11 @@ Inserting_two(split_node(ks2,rs2))
 )
 )"
 
-type_synonym context_t = "(node_t * nat) list"
+type_synonym left_bound = "key option"
+
+type_synonym right_bound = "key option"
+
+type_synonym context_t = "(left_bound * (node_t * nat) * right_bound) list"
 
 datatype tree_stack = Tree_stack "focus_t * context_t"
 
@@ -51,7 +55,7 @@ definition step_tree_stack :: "tree_stack \<Rightarrow> tree_stack option" where
 let (f,stk) = dest_ts ts in
 case stk of 
 Nil \<Rightarrow> None
-| ((n,i)#xs) \<Rightarrow> (
+| ((lb,(n,i),rb)#xs) \<Rightarrow> (
 let f2 = update_focus_at_position n i f in
 Some(Tree_stack(f2,xs))
 )

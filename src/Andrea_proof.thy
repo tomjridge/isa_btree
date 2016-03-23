@@ -80,11 +80,11 @@ done
   
 lemma wellformed_context_hereditary: "wellformed_context (x#xs) \<Longrightarrow> wellformed_context xs"
 apply (case_tac xs)
- apply (force simp add:wellformed_context_def)+
+ apply (force simp add:wellformed_context_def wellformed_context_1_def)+
 done
 
 lemma wellformed_context_i_less_than_length_rs:
-"wellformed_context (((ks, rs), i) # stk) \<Longrightarrow> i \<le> length ks \<and> i < length rs"
+"wellformed_context ((lb,((ks, rs), i),rb) # stk) \<Longrightarrow> i \<le> length ks \<and> i < length rs"
 apply (simp add:wellformed_context_def)
 apply (simp add:list_all_iff wellformed_tree_def wellformed_context_1_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def subtree_indexes_def)
 apply (case_tac stk) apply (force )+
@@ -178,20 +178,17 @@ apply(case_tac x)
 apply(rename_tac f stk)
 apply(simp add: step_tree_stack_def dest_ts_def)
 apply(case_tac stk) apply(force)
-apply(rename_tac ni stk)
-apply(case_tac ni)
-apply(rename_tac n i)
-apply(simp)
-apply(thin_tac "ts = _")
-apply(thin_tac "x = _")
-apply(thin_tac "stka = _")
-apply(thin_tac "ni = _")
+apply (rename_tac hd_stk stk)
+apply (subgoal_tac "\<exists> lb n i rb. hd_stk = (lb,(n,i),rb)") prefer 2 apply force
+apply (erule exE)+
+apply (simp)
+apply (thin_tac "x=_")
+apply (thin_tac "hd_stk=_")
 apply(simp add: wellformed_ts_def)
 apply(simp add: dest_ts_def)
 apply(elim conjE)
-apply(case_tac n)
-apply(rename_tac ks rs)
-apply(simp)
+apply (case_tac n,rename_tac ks rs)
+apply simp
 apply (thin_tac "n=_")
 apply(subgoal_tac " wellformed_focus (update_focus_at_position (ks, rs) i f) (stk = []) \<and>
        wellformed_context stk")
@@ -204,7 +201,7 @@ apply(intro conjI)
  apply(subgoal_tac "wellformed_tree (Rmbs (stk=[])) (Node (ks,rs))") (* A: given that the tree without update is wf, we just need to check that rs was wf (replacing an element will leave it as before)*)
   prefer 2
    apply(simp add: wellformed_context_def)
-   apply (subgoal_tac "\<exists> ks' rs' i'. (if stk = [] then ((ks, rs), i) else last stk) = ((ks', rs'), i')")
+   apply (subgoal_tac "\<exists> lb' ks' rs' i' rb'. (if stk = [] then (lb,((ks, rs), i),rb) else last stk) = (lb',((ks', rs'), i'),rb')")
    prefer 2
     apply force
    apply (elim exE)+
@@ -212,12 +209,12 @@ apply(intro conjI)
    apply (elim conjE)
    apply (case_tac stk)
     (*stk = [] *)
-    apply simp
+    apply force
    
     (* stk \<noteq> [] *)
     apply simp
     apply (elim conjE)
-    apply (simp add:wellformed_context_1_def)
+    apply (force simp add:wellformed_context_1_def)
  apply(case_tac f)
   (* inserting_one *) (*A: this case is easier, because the stepped focus can be only insert_one *)
   apply(rename_tac t)
@@ -285,8 +282,9 @@ apply(intro conjI)
      apply (rename_tac i')
      apply (case_tac "i' < length ys")
       (*ia < length ys*)
-      apply (subgoal_tac "i' \<in> set (key_indexes (Node (ks, ys @ x # zs)))") prefer 2 apply (force simp add:key_indexes_def)
-      apply force
+      apply simp
+      apply (subgoal_tac "i' \<in> set (key_indexes (Node (ks, ys @ x # zs)))") prefer 2 apply (force  simp add:key_indexes_def)
+      apply (force)
 
       (*i' \<ge> length ys*)
       apply simp
@@ -804,9 +802,10 @@ apply(case_tac f)
  apply (rename_tac "new_focus")
  apply(simp add:wellformed_ts_def wellformed_ts_1_def dest_ts_def Let_def del:height.simps)
  apply (case_tac "stk") apply force
- (* stk = (l,c) i'*)
- apply (case_tac a,simp,case_tac aa,simp,rename_tac i' l cs)
- apply (thin_tac "a = ((l, cs), i')",thin_tac "aa = (l, cs)")
+ (* stk = (lb,((l,c) i'),rb) *)
+ apply simp
+ apply (subgoal_tac "\<exists> lb' l cs i' rb'. a = (lb',((l, cs), i'),rb')") prefer 2 apply force
+ apply (erule exE)+
  apply (subgoal_tac "cs ! i' = Node(ks,rs)") prefer 2 apply (force simp add:wellformed_context_def is_subnode_def)+
  apply (simp add:list_replace_1_at_n_def)
  apply rule
@@ -862,7 +861,6 @@ apply(case_tac f)
  apply (rename_tac hd_stk tl_stk)
  apply (case_tac hd_stk,rename_tac hds_n hd_i, case_tac hds_n, rename_tac hs_ks hs_rs)
  apply simp
- apply (subgoal_tac "")
  apply(force intro: FIXME)
 done
 
