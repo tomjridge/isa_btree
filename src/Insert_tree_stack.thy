@@ -20,18 +20,36 @@ definition is_subnode :: "(node_t * nat) \<Rightarrow> (node_t * nat) \<Rightarr
   Node n = (rs!i))"
                                         
 fun linked_context :: "(left_bound * (node_t * nat) * right_bound) \<Rightarrow> context_t \<Rightarrow> bool" where
-"linked_context ni [] = True" |
+"linked_context _ [] = True" |
 "linked_context (lb,ni,rb) ((plb,pi,prb)#pis) = (
   is_subnode ni pi \<and> linked_context (plb,pi,prb) pis)"
+
+fun wf_bounds :: "(left_bound * (node_t * nat) * right_bound) \<Rightarrow> context_t \<Rightarrow> bool" where
+"wf_bounds (lb,_,rb) [] = ((lb = None) & (rb = None))" |
+"wf_bounds (lb,ni,rb) ((plb,pi,prb)#pis) = (
+  let (n,_)  = ni in
+  let ((ks,_),i) = pi in
+  (case lb of
+    None \<Rightarrow> i = 0
+  | Some key \<Rightarrow> (key = ks!i) & (! k : (set(keys (Node n))). key_lt key k)
+  )
+  &
+  (case rb of
+    None \<Rightarrow> i \<le> length ks
+  | Some key \<Rightarrow> (key = ks!(i+1)) & (! k : (set(keys (Node n))). key_lt k key)
+  )
+  &
+  (wf_bounds (plb,pi,prb) pis))"
 
 definition wellformed_context :: "context_t \<Rightarrow> bool" where
 "wellformed_context xs == (
 case xs of Nil \<Rightarrow> True
 | _ \<Rightarrow> (
-let (_,((l,cs),i),_) = last xs in
+let (lb,((l,cs),i),rb) = last xs in
 wellformed_tree (Rmbs True) (Node(l,cs))
-& linked_context (hd xs) (tl xs)
 & i : (subtree_indexes (l,cs))
+& linked_context (hd xs) (tl xs)
+& wf_bounds (hd xs) (tl xs) 
 & List.list_all wellformed_context_1 (butlast xs)
 ))
 "
@@ -102,10 +120,7 @@ in
 let wf = b1&b2&b3&b4&b5 in
 wf
 )
-
 )
-
-
 ))"
 
 definition wellformed_ts :: "tree_stack \<Rightarrow> bool" where

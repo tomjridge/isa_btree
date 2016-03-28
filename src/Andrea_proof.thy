@@ -817,7 +817,7 @@ apply(case_tac f)
   (*FIXME this holds for wellformed_focus.wellformed_tree.keys_ordered&keys_consistent*)
   apply (subgoal_tac "0 < length l \<and> i \<le> length ks \<and> i' \<le> length l \<and> keys_consistent(Node(l,cs)) ") prefer 2 apply (force intro:FIXME) (*wf_context*)
   apply (subgoal_tac "keys_consistent(Node(ks,rs[i := new_focus]))") prefer 2 apply (force simp add:wellformed_focus_def wellformed_tree_def)
-  apply (simp add:keys_consistent_def forall_subtrees_Cons keys_consistent_1_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def) 
+  apply (simp add:keys_consistent_def forall_subtrees_Cons keys_consistent_1_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def)
   apply (case_tac "i' = 0")
    (*i' = 0 *)
    apply (erule conjE)+
@@ -826,7 +826,7 @@ apply(case_tac f)
    apply (simp add:keys_Cons)
    apply rule+
    (*FIXME now we have only to show that rs!i and new_focus are ordered in the same way*)
-   apply (subgoal_tac "\<exists> l_rs r_rs rsi. rs=l_rs@rsi#r_rs \<and> (length l_rs = i) ") prefer 2 apply (metis (no_types, lifting) Cons_nth_drop_Suc diff_add_inverse2 diff_diff_cancel id_take_nth_drop length_append length_drop less_imp_le_nat upd_conv_take_nth_drop wellformed_context_i_less_than_length_rs) 
+   apply (subgoal_tac "\<exists> l_rs r_rs rsi. rs=l_rs@rsi#r_rs \<and> (length l_rs = i) ") prefer 2 apply (metis (no_types, lifting) Cons_nth_drop_Suc diff_add_inverse2 diff_diff_cancel id_take_nth_drop length_append length_drop less_imp_le_nat wellformed_context_i_less_than_length_rs) 
    apply (erule exE)+
    apply (simp)
    apply (subgoal_tac " ((l_rs @ rsi # r_rs)[i := new_focus] = l_rs@new_focus#r_rs)") prefer 2 apply force
@@ -861,7 +861,7 @@ apply(case_tac f)
  apply (rename_tac hd_stk tl_stk)
  apply (case_tac hd_stk,rename_tac hds_n hd_i, case_tac hds_n, rename_tac hs_ks hs_rs)
  apply simp
- apply(force intro: FIXME)
+ apply(force intro: FIXME )
 done
 
 
