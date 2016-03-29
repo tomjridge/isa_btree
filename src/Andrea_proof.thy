@@ -824,26 +824,89 @@ apply(case_tac f)
    apply (subgoal_tac "\<forall>k\<in>set (keys (cs ! i')). key_lt k (l ! i')") prefer 2 apply force
    apply (thin_tac "\<forall>i<length l. \<forall>k\<in>set (keys (cs ! i)). key_lt k (l ! i)")
    apply (simp add:keys_Cons)
-   apply rule+
    (*FIXME now we have only to show that rs!i and new_focus are ordered in the same way*)
    apply (subgoal_tac "\<exists> l_rs r_rs rsi. rs=l_rs@rsi#r_rs \<and> (length l_rs = i) ") prefer 2 apply (metis (no_types, lifting) Cons_nth_drop_Suc diff_add_inverse2 diff_diff_cancel id_take_nth_drop length_append length_drop less_imp_le_nat wellformed_context_i_less_than_length_rs) 
    apply (erule exE)+
    apply (simp)
    apply (subgoal_tac " ((l_rs @ rsi # r_rs)[i := new_focus] = l_rs@new_focus#r_rs)") prefer 2 apply force
    apply (simp add:rev_apply_def)
-   (*which is the relation between keys(rsi) and keys(new_focus)?*)
-   (* I need to know that ks!i< rsi \<le> ks!i+1 \<and> ks!i < new_focus \<le> ks!i+1 \<and> ks!i+1< l!0 to solve this
-    so I need keys_consistent Node(ks,rs[i:=new_focus] \<and> keys_consistent Node(ks,rs))
-   *)
-   apply (force intro:FIXME)
-   (*i' \<noteq> 0 *)
+   apply (case_tac rb) apply (force simp add:wellformed_context_def)
+    (*rb = Some aa*)
+    apply simp
+    apply (subgoal_tac "aa=l!0") prefer 2 apply (force simp add:wellformed_context_def)
+    apply simp
+    apply (case_tac lb')
+     (*lb' = None *)
+     apply (case_tac rb')
+      (*rb' = None*)
+      apply simp apply blast
+
+      (*rb' = Some ab*)
+      apply simp
+      apply (rule,blast,rule)
+      apply (simp add:keys_Cons rev_apply_def)
+      (*now ab is bigger of k because l!0 < ab for wf_context.keys_consistent *)
+      apply (subgoal_tac "key_lt (l!0) ab")
+      prefer 2
+       apply (simp add:wellformed_context_def wellformed_context_1_def)
+       apply clarsimp
+       apply (case_tac list) apply force
+       apply (rename_tac g_lbnrb g_stk)
+       apply (case_tac g_lbnrb,simp,case_tac b)
+       apply clarsimp
+       apply (case_tac g_stk) apply (force intro:FIXME) (* we cannot be at root, otherwise ab would not have existed*)
+       apply simp
+       apply (subgoal_tac "keys_consistent (Node (af, bh))") prefer 2 apply (force simp add:wellformed_context_1_def wellformed_tree_def)
+       apply (simp add:keys_consistent_def forall_subtrees_Cons keys_consistent_1_def check_keys_def key_indexes_def atLeast0LessThan lessThan_def)
+       apply (erule conjE)+
+       apply (drule_tac x=0 in spec) back back back
+       apply (subgoal_tac "0 < length af \<and>  ((l!0):set(keys(bh ! 0))) \<and> ab = (af ! 0)")
+       prefer 2
+        (*this is true for wf_context*)
+        apply (simp add: Let_def wellformed_context_1_def wellformed_tree_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def wf_size_def wf_size_1_def)
+        apply (case_tac "length af \<le> baa") apply force
+        apply simp
+        apply (case_tac baa) prefer 2 apply force
+        apply (simp add:is_subnode_def Let_def )
+        apply (drule_tac t="bh!0" in sym)
+        apply (force simp add:keys_Cons)
+       apply force
+      using order_key_lt apply blast
+
+     (*lb' = Some ab *)
+     apply (case_tac rb')
+      (*rb' = None*)
+      apply (force intro:FIXME)
+      
+      (*rb' = Some ac*)
+      apply simp
+      apply (force intro:FIXME)
+   (*i' \<noteq> 0 *) 
+   apply simp
+(*   (*i' \<noteq> 0 *)
    apply (case_tac "length l \<le> i'")
     (*length l \<le> i'*)
+    apply simp
+    apply rule+
+    apply (simp add:keys_Cons)
+    apply (subgoal_tac "\<exists> l_rs r_rs rsi. rs=l_rs@rsi#r_rs \<and> (length l_rs = i) ") prefer 2 apply (metis (no_types, lifting) Cons_nth_drop_Suc diff_add_inverse2 diff_diff_cancel id_take_nth_drop length_append length_drop less_imp_le_nat wellformed_context_i_less_than_length_rs) 
+    apply (erule exE)+
+    apply (simp)
+    apply (subgoal_tac " ((l_rs @ rsi # r_rs)[i := new_focus] = l_rs@new_focus#r_rs)") prefer 2 apply force
+    apply (simp add:rev_apply_def)
+    apply (case_tac lb) apply (force intro:FIXME)
+    apply simp
+    apply (subgoal_tac "aa=(l ! (length l - Suc 0))")
+    apply simp
     apply (force intro:FIXME)
-   
-    (*i' < length l*)
     apply (force intro:FIXME)
 
+    apply (force intro:FIXME)
+    
+    (*i' < length l*)
+    apply (subgoal_tac "i' < length l") prefer 2 apply force
+    apply simp
+    apply (force intro:FIXME)
   (* i2 FIXME may be worth combining with other i2 cases? *)
  apply(simp)
  apply(subgoal_tac "? tleft k0 tr. x2 = (tleft,k0,tr)") prefer 2 apply(force)
@@ -862,7 +925,6 @@ apply(case_tac f)
  apply (case_tac hd_stk,rename_tac hds_n hd_i, case_tac hds_n, rename_tac hs_ks hs_rs)
  apply simp
  apply(force intro: FIXME )
+*)
 done
-
-
 end

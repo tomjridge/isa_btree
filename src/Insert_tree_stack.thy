@@ -29,15 +29,9 @@ fun wf_bounds :: "(left_bound * (node_t * nat) * right_bound) \<Rightarrow> cont
 "wf_bounds (lb,ni,rb) ((plb,pi,prb)#pis) = (
   let (n,_)  = ni in
   let ((ks,_),i) = pi in
-  (case lb of
-    None \<Rightarrow> i = 0
-  | Some key \<Rightarrow> (key = ks!i) & (! k : (set(keys (Node n))). key_lt key k)
-  )
+  lb = (if i = 0 then None else Some (ks!(i-1)))
   &
-  (case rb of
-    None \<Rightarrow> i \<le> length ks
-  | Some key \<Rightarrow> (key = ks!(i+1)) & (! k : (set(keys (Node n))). key_lt k key)
-  )
+  rb = (if (length ks) \<le> i then None else Some (ks!i))
   &
   (wf_bounds (plb,pi,prb) pis))"
 
@@ -90,7 +84,7 @@ let b1 = True in
 (* ksrs fine *)
 let b2 = True in
 let b3 = (height (cs!i) = height t) in
-let b4 = (check_keys kl (keys t) kr)
+let b4 = (check_keys kl (keys t) kr) & (check_keys lb (keys t) rb)
 in
 (* keys ordered *)
 let b5 = True in
@@ -110,6 +104,8 @@ in
 let b4 = (
   check_keys kl (keys tl_) (Some k0)
   & check_keys (Some k0) (keys tr) kr
+  & (check_keys lb (keys tl_) rb)
+  & (check_keys lb (keys tr) rb)
 )
 in
 (* keys ordered *)
