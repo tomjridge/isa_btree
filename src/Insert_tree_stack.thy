@@ -29,9 +29,9 @@ fun wf_bounds :: "(left_bound * (node_t * nat) * right_bound) \<Rightarrow> cont
 "wf_bounds (lb,ni,rb) ((plb,pi,prb)#pis) = (
   let (n,_)  = ni in
   let ((ks,_),i) = pi in
-  lb = (if i = 0 then None else Some (ks!(i-1)))
+  lb = (if i = 0 then plb else Some (ks!(i-1)))
   &
-  rb = (if (length ks) \<le> i then None else Some (ks!i))
+  rb = (if (length ks) \<le> i then prb else Some (ks!i))
   &
   (wf_bounds (plb,pi,prb) pis))"
 

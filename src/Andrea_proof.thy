@@ -874,8 +874,16 @@ apply(case_tac f)
       using order_key_lt apply blast
 
      (*lb' = Some ab *)
+     apply (rename_tac lbk')
+     apply simp
+     apply (thin_tac "aa =_")
      apply (case_tac rb')
       (*rb' = None*)
+      apply (rule,blast,rule+)
+      apply (simp add:keys_Cons rev_apply_def)
+      apply (subgoal_tac "lb = Some lbk'") prefer 2 apply (force intro:FIXME)
+      apply simp
+      (*FIXME this is solvable for keys_consistent -- we need to know that the old keys respected the key_le *)
       apply (force intro:FIXME)
       
       (*rb' = Some ac*)
