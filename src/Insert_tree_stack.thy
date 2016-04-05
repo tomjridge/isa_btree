@@ -6,13 +6,6 @@ definition subtree_indexes :: "node_t \<Rightarrow> nat set" where
 "subtree_indexes n == (
   case n of (l,_) \<Rightarrow>  { 0 .. (length l)})"
 
-definition wellformed_context_1 :: "(left_bound *(node_t * nat) * right_bound) \<Rightarrow> bool" where
-"wellformed_context_1 lcsi = (
-let (_,((l,cs),i),_) = lcsi in
-wellformed_tree (Rmbs False) (Node(l,cs))
-& i : (subtree_indexes (l,cs))
-)"
-
 definition is_subnode :: "(node_t * nat) \<Rightarrow> (node_t * nat) \<Rightarrow> bool" where
 "is_subnode ni pi == (
   let (n,_) = ni in
@@ -24,16 +17,32 @@ fun linked_context :: "(left_bound * (node_t * nat) * right_bound) \<Rightarrow>
 "linked_context (lb,ni,rb) ((plb,pi,prb)#pis) = (
   is_subnode ni pi \<and> linked_context (plb,pi,prb) pis)"
 
-definition wellformed_context :: "context_t \<Rightarrow> bool" where
-"wellformed_context xs == (
-case xs of Nil \<Rightarrow> True
-| _ \<Rightarrow> (
-let (_,((l,cs),i),_) = last xs in
-wellformed_tree (Rmbs True) (Node(l,cs))
-& linked_context (hd xs) (tl xs)
-& i : (subtree_indexes (l,cs))
-& List.list_all wellformed_context_1 (butlast xs)
-))
+definition wellformed_context_1 :: "rmbs_t \<Rightarrow> (left_bound * (node_t * nat) * right_bound) \<Rightarrow> bool " where
+"wellformed_context_1 rmbs lbnirb == (
+let (lb,((l,cs),i),rb) = lbnirb in
+let node = (Node(l,cs)) in(
+wellformed_tree rmbs node
+& i : (subtree_indexes (l,cs)))
+& check_keys lb (keys node) rb)"
+
+definition get_lower_upper_keys_for_node_t :: "(left_bound * (node_t * nat) * right_bound) \<Rightarrow> (key option * key option)" where
+"get_lower_upper_keys_for_node_t ni == (
+let (lb,((ls,_),i),rb) = ni in (
+let l = if (i = 0) then lb else Some(ls ! (i - 1))     in
+let u = if (i = (length ls)) then rb else Some(ls ! i) in
+(l,u)
+))"
+
+fun wellformed_context :: "context_t \<Rightarrow> bool" where
+"wellformed_context Nil = True" |
+"wellformed_context (x # Nil) = wellformed_context_1 (Rmbs True) x" |
+"wellformed_context (x1 # (x2 # rest)) = (
+let (l2,u2) = get_lower_upper_keys_for_node_t x2 in
+let (l1,_,u1) = x1 in
+wellformed_context_1 (Rmbs False) x1
+& (l1,u1) = (l2,u2)
+& wellformed_context (x2#rest)
+)
 "
 
 definition wellformed_focus :: "focus_t \<Rightarrow> bool \<Rightarrow> bool" where
@@ -57,14 +66,7 @@ let (f,stk) = dest_ts ts in
 Nil \<Rightarrow> (True) (* Nil - focus is wf *)
 
 | ((lb,((l,cs),i),rb)#nis) \<Rightarrow> (
-  let kl = (case i=0 of 
-  True \<Rightarrow> None
-  | False \<Rightarrow> Some(l!(i-1)))
-  in
-  let kr = (case i < length l of
-  True \<Rightarrow> Some(l!i)
-  | False \<Rightarrow> None)
-  in
+let (kl,kr) = get_lower_upper_keys_for_node_t (lb,((l,cs),i),rb) in
 case f of
 Inserting_one t \<Rightarrow> (
 (* size not checked; we assume focus is wf *)
