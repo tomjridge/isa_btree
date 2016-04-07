@@ -79,15 +79,17 @@ apply(simp add:rev_apply_def)
 done
   
 lemma wellformed_context_hereditary: "wellformed_context (x#xs) \<Longrightarrow> wellformed_context xs"
-apply (case_tac xs)
- apply (force simp add:wellformed_context_def wellformed_context_1_def)+
+apply (case_tac xs,auto)
+done
+
+lemma wellformed_context_1_i_less_than_length_rs:
+"wellformed_context_1 (Rbms b) ((lb,((ks, rs), i),rb)) \<Longrightarrow> i \<le> length ks \<and> i < length rs"
+ apply (force simp add:Let_def wellformed_tree_def wellformed_context_1_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def subtree_indexes_def)+
 done
 
 lemma wellformed_context_i_less_than_length_rs:
 "wellformed_context ((lb,((ks, rs), i),rb) # stk) \<Longrightarrow> i \<le> length ks \<and> i < length rs"
-apply (simp add:wellformed_context_def)
-apply (simp add:list_all_iff wellformed_tree_def wellformed_context_1_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def subtree_indexes_def)
-apply (case_tac stk) apply (force )+
+apply (case_tac stk,(force simp add:wellformed_context_1_i_less_than_length_rs)+)
 done
 
 lemma wf_size_ks_not_empty: "wf_size rmbs (Node(ks,rs)) \<longrightarrow> 1\<le>length ks"
@@ -200,21 +202,7 @@ apply(intro conjI)
  apply (subgoal_tac "i<length rs") prefer 2 apply (force simp add:wellformed_context_i_less_than_length_rs)
  apply(subgoal_tac "wellformed_tree (Rmbs (stk=[])) (Node (ks,rs))") (* A: given that the tree without update is wf, we just need to check that rs was wf (replacing an element will leave it as before)*)
   prefer 2
-   apply(simp add: wellformed_context_def)
-   apply (subgoal_tac "\<exists> lb' ks' rs' i' rb'. (if stk = [] then (lb,((ks, rs), i),rb) else last stk) = (lb',((ks', rs'), i'),rb')")
-   prefer 2
-    apply force
-   apply (elim exE)+
-   apply simp
-   apply (elim conjE)
-   apply (case_tac stk)
-    (*stk = [] *)
-    apply force
-   
-    (* stk \<noteq> [] *)
-    apply simp
-    apply (elim conjE)
-    apply (force simp add:wellformed_context_1_def)
+   apply (case_tac stk, (force simp add:wellformed_context_1_def Let_def)+)
  apply(case_tac f)
   (* inserting_one *) (*A: this case is easier, because the stepped focus can be only insert_one *)
   apply(rename_tac t)
@@ -291,7 +279,7 @@ apply(intro conjI)
       apply (case_tac "i' = length ys")
        (* i' = i *)
        apply (simp add:wellformed_ts_1_def dest_ts_def check_keys_def)
-       apply (force simp add:key_indexes_def atLeast0LessThan lessThan_def)
+       apply (force simp add:get_lower_upper_keys_for_node_t_def key_indexes_def atLeast0LessThan lessThan_def)
        
        (*i' > length ys*)
        apply (subgoal_tac "i' \<in> set (key_indexes (Node (ks, ys @ x # zs)))") prefer 2 apply (force simp add:key_indexes_def)
@@ -310,7 +298,7 @@ apply(intro conjI)
       apply simp
       apply (case_tac "Suc i' = length ys")
        (* Suc i' = i *)
-       apply (simp add:wellformed_ts_1_def dest_ts_def check_keys_def)
+       apply (simp add:get_lower_upper_keys_for_node_t_def wellformed_ts_1_def dest_ts_def check_keys_def)
        apply (case_tac ys, force, force)
        
        (*i' > length ys*)
@@ -451,7 +439,7 @@ apply(intro conjI)
        apply (case_tac "i' = Suc i")
         (*i' = Suc i, we are in tright*)
         apply (subgoal_tac "length ys \<noteq> 0") prefer 2 apply (force simp add:key_indexes_def)
-        apply (simp add: Let_def wellformed_ts_1_def dest_ts_def check_keys_def del:height.simps)
+        apply (simp add: Let_def get_lower_upper_keys_for_node_t_def wellformed_ts_1_def dest_ts_def check_keys_def del:height.simps)
         apply (force simp add:nth_append)
         
         (*i' \<noteq> Suc i*)
@@ -484,7 +472,7 @@ apply(intro conjI)
        (*i' = i*) (* here  i may be equal to 0*)
        apply (subgoal_tac "Suc i' = length xs") prefer 2 apply force
        apply (drule_tac t=rs2 in sym)
-       apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def del:height.simps)
+       apply (simp add:get_lower_upper_keys_for_node_t_def wellformed_ts_1_def dest_ts_def Let_def check_keys_def del:height.simps)
        apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
        apply (simp add:nth_append key_indexes_def)
        apply (metis One_nat_def diff_Suc_1)
@@ -496,7 +484,6 @@ apply(intro conjI)
        (*if Suc i' = Suc i, we are in tright*)
        apply (case_tac "Suc i' = Suc i")
         (*Suc i' = Suc i, we are in tright*)
-        apply (simp add: Let_def wellformed_ts_1_def dest_ts_def check_keys_def del:height.simps)
         apply (force simp add:nth_append)
         
         (*Suc i' \<noteq> Suc i*)
@@ -564,7 +551,7 @@ apply(intro conjI)
       apply (subgoal_tac "\<exists> k. k \<in> set(keys(tleft)) \<and> key_le (xs ! (length xs - Suc 0)) k \<and> key_lt k k0") prefer 2 apply (force intro:FIXME)
       apply (erule exE)
       apply (erule conjE)+
-      using order_key_le
+      using order_key_le_lt
       apply fast
 
       (*Suc i' \<noteq> length xs*)
@@ -572,7 +559,7 @@ apply(intro conjI)
       apply (subgoal_tac "Suc i' \<in> set (key_indexes (Node (xs @ k0 # ys, rs2)))") prefer 2 apply (force simp add:key_indexes_def set_butlast_lessThan)  
       apply (case_tac "i' = length xs")
        (* i' = length xs *)
-       apply (simp add:wellformed_ts_1_def dest_ts_def Let_def check_keys_def nth_append)
+       apply (simp add:get_lower_upper_keys_for_node_t_def wellformed_ts_1_def dest_ts_def Let_def check_keys_def nth_append)
        apply (force simp add:key_indexes_def atLeast0LessThan lessThan_def nth_append)
        
        (* length xs < i' *)
@@ -800,13 +787,15 @@ apply(simp add: update_focus_at_position_def)
 apply(case_tac f)
  (* i1 *)
  apply (rename_tac "new_focus")
- apply(simp add:wellformed_ts_def wellformed_ts_1_def dest_ts_def Let_def del:height.simps)
+ apply(simp add: wellformed_ts_def wellformed_ts_1_def dest_ts_def Let_def del:height.simps)
  apply (case_tac "stk") apply force
+ 
  (* stk = (lb,((l,c) i'),rb) *)
+ apply (rename_tac hd_stk tl_stk)
  apply simp
- apply (subgoal_tac "\<exists> lb' l cs i' rb'. a = (lb',((l, cs), i'),rb')") prefer 2 apply force
+ apply (subgoal_tac "\<exists> lb' l cs i' rb'. hd_stk = (lb',((l, cs), i'),rb')") prefer 2 apply force
  apply (erule exE)+
- apply (subgoal_tac "cs ! i' = Node(ks,rs)") prefer 2 apply (force simp add:wellformed_context_def is_subnode_def)+
+ apply (subgoal_tac "cs ! i' = Node(ks,rs)") prefer 2 apply (force intro:FIXME)
  apply (simp add:list_replace_1_at_n_def)
  apply rule
   (*height of old focus equal to height of new focus*)
@@ -818,33 +807,130 @@ apply(case_tac f)
   apply (subgoal_tac "0 < length l \<and> i \<le> length ks \<and> i' \<le> length l \<and> keys_consistent(Node(l,cs)) ") prefer 2 apply (force intro:FIXME) (*wf_context*)
   apply (subgoal_tac "keys_consistent(Node(ks,rs[i := new_focus]))") prefer 2 apply (force simp add:wellformed_focus_def wellformed_tree_def)
   apply (simp add:keys_consistent_def forall_subtrees_Cons keys_consistent_1_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def) 
-  apply (case_tac "i' = 0")
-   (*i' = 0 *)
-   apply (erule conjE)+
-   apply (subgoal_tac "\<forall>k\<in>set (keys (cs ! i')). key_lt k (l ! i')") prefer 2 apply force
-   apply (thin_tac "\<forall>i<length l. \<forall>k\<in>set (keys (cs ! i)). key_lt k (l ! i)")
-   apply (simp add:keys_Cons)
+  apply (simp add:get_lower_upper_keys_for_node_t_def)
+  apply (subgoal_tac "\<exists> l_rs r_rs rsi. rs=l_rs@rsi#r_rs \<and> (length l_rs = i) ") prefer 2 apply (metis (no_types, lifting) Cons_nth_drop_Suc diff_add_inverse2 diff_diff_cancel id_take_nth_drop length_append length_drop less_imp_le_nat wellformed_context_1_i_less_than_length_rs) 
+  apply (erule exE)+
+  apply (simp)
+  apply (subgoal_tac " ((l_rs @ rsi # r_rs)[i := new_focus] = l_rs@new_focus#r_rs)") prefer 2 apply force
+  apply (simp add:rev_apply_def) 
+  apply (subgoal_tac "(i' \<le> length l \<and> i' \<noteq> 0 \<longrightarrow> check_keys (Some (l!(i'-1))) (keys (Node (ks, rs[i := new_focus]))) None)")
+  prefer 2
    apply rule+
-   (*FIXME now we have only to show that rs!i and new_focus are ordered in the same way*)
-   apply (subgoal_tac "\<exists> l_rs r_rs rsi. rs=l_rs@rsi#r_rs \<and> (length l_rs = i) ") prefer 2 apply (metis (no_types, lifting) Cons_nth_drop_Suc diff_add_inverse2 diff_diff_cancel id_take_nth_drop length_append length_drop less_imp_le_nat upd_conv_take_nth_drop wellformed_context_i_less_than_length_rs) 
-   apply (erule exE)+
-   apply (simp)
-   apply (subgoal_tac " ((l_rs @ rsi # r_rs)[i := new_focus] = l_rs@new_focus#r_rs)") prefer 2 apply force
-   apply (simp add:rev_apply_def)
-   (*which is the relation between keys(rsi) and keys(new_focus)?*)
-   (* I need to know that ks!i< rsi \<le> ks!i+1 \<and> ks!i < new_focus \<le> ks!i+1 \<and> ks!i+1< l!0 to solve this
-    so I need keys_consistent Node(ks,rs[i:=new_focus] \<and> keys_consistent Node(ks,rs))
-   *)
-   apply (force intro:FIXME)
-   (*i' \<noteq> 0 *)
-   apply (case_tac "length l \<le> i'")
-    (*length l \<le> i'*)
-    apply (force intro:FIXME)
-   
-    (*i' < length l*)
-    apply (force intro:FIXME)
+   apply simp
+   apply (erule conjE)+
+   apply (subgoal_tac "i' - Suc 0 < length l") prefer 2 apply (force)
+   apply (drule_tac x="(i' - Suc 0)" in spec) back back back
+   apply (simp add:keys_Cons check_keys_def rev_apply_def)
+   apply rule+
+   apply (rename_tac "key")
+   apply (case_tac "i=0")
+    (*i=0*)
+    apply simp
+    apply blast
 
-  (* i2 FIXME may be worth combining with other i2 cases? *)
+    (*i\<noteq>0*)
+    apply clarsimp
+    apply (subgoal_tac "key_le (l ! (i' - Suc 0)) (ks ! (length l_rs - Suc 0))")
+    prefer 2
+     apply (simp add:wellformed_context_1_def Let_def check_keys_def keys_Cons)
+     apply clarsimp
+     apply (subgoal_tac "(ks ! (length l_rs - Suc 0)) : set ks") prefer 2 
+      apply (simp add:subtree_indexes_def)
+      apply (metis One_nat_def Suc_diff_1 Suc_less_eq le_imp_less_Suc length_greater_0_conv nth_mem)
+     apply force
+    using order_key_le apply fast
+
+  apply (subgoal_tac "(i' <  length l  --> check_keys None (keys (Node (ks, rs[i := new_focus]))) (Some (l!i')))")
+  prefer 2
+   apply simp
+   apply rule+
+   apply (erule conjE)+
+   apply (drule_tac x="i'" in spec) back back 
+   apply (simp add:keys_Cons check_keys_def rev_apply_def)
+   apply rule+
+   apply (rename_tac "key")
+   apply (case_tac "i=length ks")
+    (*i=length ks*)
+    apply simp
+    apply blast
+    
+    (*i\<noteq>length ks*)
+    apply simp
+    apply (subgoal_tac "key_lt (ks ! i) (l ! i')")
+    prefer 2
+     apply (force simp add:wellformed_context_1_def Let_def check_keys_def keys_Cons)
+    using order_key_lt apply blast
+  apply (subgoal_tac "(i' = 0 --> check_keys lb' (keys (Node (ks, rs[i := new_focus]))) None)")
+  prefer 2
+   apply simp
+   apply rule+
+   apply (erule conjE)+
+   apply (simp add:wellformed_context_1_def Let_def check_keys_def keys_Cons)
+   apply (case_tac lb')
+    (*lb' = None*)
+    apply force
+
+    apply (rename_tac lbk')
+    (*lb' = Some lbk'*)
+    apply (simp add:rev_apply_def keys_Cons)
+    apply rule+
+    apply (erule conjE)+
+    apply (case_tac "i=0")
+     (*i=0*)
+     apply simp 
+     apply blast
+    
+     (*i\<noteq>0*)
+     apply clarsimp
+     apply (subgoal_tac "key_le (lbk') (ks ! (length l_rs - Suc 0))")
+     prefer 2
+      (*FIXME: the following can be cleaned, since the demonstration are equal*)
+      apply (case_tac "tl_stk")
+       (*tl_stk=[]*)
+       apply (simp add:wellformed_context_1_def Let_def check_keys_def keys_Cons)
+       apply clarsimp
+       apply (subgoal_tac "(ks ! (length l_rs - Suc 0)) : set ks") prefer 2 
+        apply (simp add:subtree_indexes_def)
+        apply (metis One_nat_def Suc_diff_1 Suc_less_eq le_imp_less_Suc length_greater_0_conv nth_mem)
+       apply (force)
+     
+       (*tl_stk\<noteq>[]*)
+       apply simp
+       apply (simp add:wellformed_context_1_def Let_def check_keys_def keys_Cons)
+       apply clarsimp
+       apply (subgoal_tac "(ks ! (length l_rs - Suc 0)) : set ks") prefer 2 
+        apply (simp add:subtree_indexes_def)
+        apply (metis One_nat_def Suc_diff_1 Suc_less_eq le_imp_less_Suc length_greater_0_conv nth_mem)
+       apply (force)
+    using order_key_le apply fast
+     
+  apply (subgoal_tac "(i' =  length l --> check_keys None (keys (Node (ks, rs[i := new_focus]))) rb')")
+  prefer 2
+   apply simp
+   apply rule+
+   apply (erule conjE)+
+   apply (simp add:wellformed_context_1_def Let_def check_keys_def keys_Cons)
+   apply (case_tac rb')
+    (*rb' = None*)
+    apply force
+
+    apply (rename_tac rbk')
+    (*rb' = Some rbk'*)
+    apply (simp add:rev_apply_def keys_Cons)
+    apply rule+
+    apply (erule conjE)+
+    apply (case_tac "i = length ks")
+     (*i = length ks*)
+     apply simp
+     apply blast
+
+     (*i \<noteq> length ks*)
+     apply simp
+     apply (subgoal_tac "key_lt (ks ! i) rbk'") prefer 2 apply force
+     using order_key_lt apply blast
+  apply (force simp add:check_keys_def)
+
+ (* i2 FIXME may be worth combining with other i2 cases? *)
  apply(simp)
  apply(subgoal_tac "? tleft k0 tr. x2 = (tleft,k0,tr)") prefer 2 apply(force)
  apply(elim exE)
