@@ -41,6 +41,7 @@ let (l2,u2) = get_lower_upper_keys_for_node_t x2 in
 let (l1,_,u1) = x1 in
 wellformed_context_1 (Rmbs False) x1
 & (l1,u1) = (l2,u2)
+& linked_context x1 (x2#rest)
 & wellformed_context (x2#rest)
 )
 "
