@@ -814,7 +814,7 @@ apply(case_tac f)
   apply (metis height.simps list.set_map list_update_id map_update)
   
   (*keys of new focus maintain the order of the old focus*)
-  apply (subgoal_tac "0 < length l \<and> i \<le> length ks \<and> i' \<le> length l \<and> keys_consistent(Node(l,cs)) ") prefer 2 apply (force intro:FIXME) (*wf_context*)
+  apply (subgoal_tac "0 < length l \<and> i \<le> length ks \<and> i' \<le> length l \<and> keys_consistent(Node(l,cs)) ") prefer 2 apply (case_tac tl_stk,(force simp add:Let_def wellformed_context_1_def subtree_indexes_def is_subnode_def wellformed_tree_def wf_ks_rs_def wf_size_def forall_subtrees_Cons wf_ks_rs_1_def wf_size_1_def)+)
   apply (subgoal_tac "keys_consistent(Node(ks,rs[i := new_focus]))") prefer 2 apply (force simp add:wellformed_focus_def wellformed_tree_def)
   apply (simp add:keys_consistent_def forall_subtrees_Cons keys_consistent_1_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def) 
   apply (simp add:get_lower_upper_keys_for_node_t_def)
