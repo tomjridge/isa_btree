@@ -557,11 +557,13 @@ apply(intro conjI)
 
         (*tleft = Leaf x2*)
         apply (force simp add:keys_def keys_1_def rev_apply_def wf_size_1_def)
-      apply (subgoal_tac "\<exists> k. k \<in> set(keys(tleft)) \<and> key_le (xs ! (length xs - Suc 0)) k \<and> key_lt k k0") prefer 2 apply (force intro:FIXME)
-      apply (erule exE)
+      apply (subgoal_tac "\<exists> k \<in> set(keys(tleft)). key_le (xs ! (length xs - Suc 0)) k \<and> key_lt k k0")
+      prefer 2
+       apply (simp add:get_lower_upper_keys_for_node_t_def nth_append)
+       apply (case_tac "keys tleft",force,force)
       apply (erule conjE)+
-      using order_key_le_lt
-      apply fast
+      apply simp
+      using order_key_le_lt apply blast
 
       (*Suc i' \<noteq> length xs*)
       apply (subgoal_tac "length xs < Suc i'") prefer 2 apply force
