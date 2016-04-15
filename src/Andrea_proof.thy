@@ -547,7 +547,16 @@ apply(intro conjI)
       apply (simp add:key_indexes_def set_butlast_lessThan atLeast0LessThan lessThan_def)
       apply (drule_tac x="i'" in spec)
       apply simp
-      apply (subgoal_tac "keys tleft \<noteq> []") prefer 2 apply (force intro:FIXME) (*wf_size tleft*)
+      apply (subgoal_tac "keys tleft \<noteq> []")
+      prefer 2 
+       apply (simp add:wf_size_def forall_subtrees_Cons)
+       apply (case_tac "tleft")
+        (*tleft = Node x1*)
+        apply (case_tac x1)
+        apply (force simp add:keys_Cons wf_size_1_def)
+
+        (*tleft = Leaf x2*)
+        apply (force simp add:keys_def keys_1_def rev_apply_def wf_size_1_def)
       apply (subgoal_tac "\<exists> k. k \<in> set(keys(tleft)) \<and> key_le (xs ! (length xs - Suc 0)) k \<and> key_lt k k0") prefer 2 apply (force intro:FIXME)
       apply (erule exE)
       apply (erule conjE)+
