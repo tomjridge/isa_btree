@@ -939,7 +939,7 @@ apply(case_tac f)
      using order_key_lt apply blast
   apply (force simp add:check_keys_def)
 
- (* i2 FIXME may be worth combining with other i2 cases? *)
+ (* i2 *)
  apply(simp)
  apply(subgoal_tac "? tleft k0 tr. x2 = (tleft,k0,tr)") prefer 2 apply(force)
  apply(elim exE)
@@ -1123,11 +1123,23 @@ apply(case_tac f)
    apply (subgoal_tac "\<exists> hrsi.(case rs ! i of Node (xa, cs) \<Rightarrow> 1 + Max (set (map height cs)) | Leaf x \<Rightarrow> 1) = hrsi ") prefer 2 apply force
    apply (erule exE)
    apply simp
-   apply (subgoal_tac "height ` set rs2 = {hrsi}")
+   apply (subgoal_tac "set rs2 \<subseteq> set rs \<union> {tleft} \<union> {tr} \<and> rs2\<noteq>[]")
    prefer 2
-    apply (subgoal_tac "set rs2 \<subseteq> set rs \<union> {tleft} \<union> {tr} \<and> rs2 \<noteq> []") prefer 2  (*  by opening up the rs2 definition *) apply (force intro:FIXME)
+    (*set rs2 \<subseteq> set rs \<union> {tleft} \<union> {tr} \<and> rs2 \<noteq> []*)
+    apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:wellformed_tree_def wellformed_context_1_def subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
+    apply (subgoal_tac "rs2 \<noteq> []") prefer 2 apply (force simp add:list_replace_at_n_def split_at_def rev_apply_def)
+    apply (subgoal_tac "set rs2 \<subseteq> set rs \<union> {tleft} \<union> {tr}") 
+    prefer 2
+     apply (drule_tac t=rs2 in sym)
+     apply (simp add:list_replace_at_n_def split_at_def rev_apply_def)
+     apply rule
+     apply (meson insertCI set_take_subset subsetCE subsetI)
+  
+     apply (metis Cons_nth_drop_Suc in_set_dropD insert_iff list.sel(3) subsetI)
+   apply force
+  apply (subgoal_tac "height ` set rs2 = {hrsi}")
+   prefer 2  
     apply (subgoal_tac "height ` set rs2 \<subseteq> height ` (set rs \<union> {tleft} \<union> {tr})") prefer 2 apply blast
-    apply simp
     apply (subgoal_tac "height ` (set rs) = {hrsi}")
     prefer 2
      apply (simp add:wellformed_context_1_def wellformed_tree_def balanced_def Let_def forall_subtrees_Cons balanced_1_def list_all_iff)
@@ -1135,12 +1147,12 @@ apply(case_tac f)
      apply (erule conjE)+
      apply (simp (no_asm) add:image_def)
      apply clarify
-     apply simp
      apply (subgoal_tac "(case rs ! 0 of Node (xa, cs) \<Rightarrow> 1 + Max (set (map height cs)) | Leaf x \<Rightarrow> 1) = (case tleft of Node (xa, cs) \<Rightarrow> 1 + Max (set (map height cs)) | Leaf x \<Rightarrow> 1)")
      prefer 2 
       apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
-      apply force
-     apply (smt Collect_cong length_greater_0_conv nth_mem singleton_conv)
+     apply force
+    apply (smt Collect_cong length_greater_0_conv nth_mem singleton_conv)
+    
     apply simp
     apply (subgoal_tac "height ` set rs2 = {} \<or> height ` set rs2 = {hrsi}") prefer 2 apply (metis subset_singletonD)
     apply force
@@ -1148,7 +1160,16 @@ apply(case_tac f)
    apply (subgoal_tac "height ` set right_rs \<subseteq> height ` set rs2") prefer 2 apply force
    apply simp
    apply (subgoal_tac "height ` set left_rs = {hrsi} \<and> height ` set right_rs = {hrsi} ") prefer 2
-    apply (subgoal_tac "set right_rs \<noteq> {}") prefer 2 (*this is for drop Suc min_node*) apply (force intro:FIXME)
+    apply (subgoal_tac "set right_rs \<noteq> {}")
+    prefer 2 (*this is for drop Suc min_node*)
+     apply (drule_tac t="right_rs" in sym)
+     apply (subgoal_tac "length rs2 = Suc (length ks2)")
+     prefer 2
+      apply (clarsimp)
+      apply (simp add:rev_apply_def list_replace_at_n_def list_insert_at_n_def split_at_def)
+      apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:wellformed_tree_def wellformed_context_1_def subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
+      apply (force simp add:Let_def min_def wellformed_context_1_def wellformed_tree_def wf_ks_rs_def forall_subtrees_Cons wf_ks_rs_1_def)
+     apply force
     apply (subgoal_tac "\<exists> hlrs. height ` set left_rs = hlrs") prefer 2 apply force
     apply (subgoal_tac "\<exists> hrrs. height ` set right_rs = hrrs") prefer 2 apply force
     apply (erule exE)+
