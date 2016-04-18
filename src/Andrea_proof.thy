@@ -25,9 +25,11 @@ lemma forall_subtrees_Cons: "forall_subtrees P t =
  | Leaf l \<Rightarrow> P t)"
 apply (simp add: forall_subtrees_def rev_apply_def)
 apply (case_tac t)
+ (*t = Node x1*)
  apply (simp,case_tac x1,simp add:rev_apply_def)
- apply (simp add:forall_subtrees_def rev_apply_def list_all_iff)
+ apply (force simp add:forall_subtrees_def rev_apply_def list_all_iff)
 
+ (*t = Leaf x2*)
  apply force
 done
 
@@ -52,9 +54,11 @@ Leaf(l) \<Rightarrow> (length l \<le> Constants.max_leaf_size)
 lemma wf_size_implies_wf_size': "wf_size r t \<Longrightarrow> wf_size' r t"
 apply (simp add:wf_size'_def wf_size_def)
 apply (case_tac r)
+ (*r = True*)
  apply (simp,case_tac x,simp,case_tac t, simp,case_tac x1,simp)
  apply (force simp add: Let_def list_all_length)+
 
+ (*r = False*)
  apply (simp,case_tac x,simp,case_tac t, simp,case_tac x1,simp)
  apply (force simp add: Let_def wf_size_1_def forall_subtrees_Cons list_all_length)+
 done
@@ -73,10 +77,6 @@ wf
 lemma wf_tree_implies_wf_tree': "wellformed_tree rmbs t \<Longrightarrow> wellformed_tree' rmbs t"
 apply (simp add:wellformed_tree_def wellformed_tree'_def wf_size_implies_wf_size')
 done
-
-lemma fst_snd_simps: "((a,b)|>fst = a) & ((a,b)|>snd = b)"
-apply(simp add:rev_apply_def)
-done
   
 lemma wellformed_context_hereditary: "wellformed_context (x#xs) \<Longrightarrow> wellformed_context xs"
 apply (case_tac xs,auto)
@@ -92,34 +92,19 @@ lemma wellformed_context_i_less_than_length_rs:
 apply (case_tac stk,(force simp add:wellformed_context_1_i_less_than_length_rs)+)
 done
 
-lemma wf_size_ks_not_empty: "wf_size rmbs (Node(ks,rs)) \<longrightarrow> 1\<le>length ks"
+lemma wf_size_ks_not_empty: "wf_size (Rmbs (stk = [])) (Node(ks,rs)) \<Longrightarrow> 1\<le>length ks"
 apply (simp add:wf_size_def)
-apply (case_tac "rmbs")
- apply (case_tac x)
+apply (case_tac "stk")
+  (*stk = []*)
   apply (force simp add:Let_def)
 
+  (*stk = a#list*)
   apply (force simp add:forall_subtrees_def rev_apply_def wf_size_1_def Let_def)
-done
-
-lemma wf_size_ks_not_empty': "wf_size (Rmbs (stk = [])) (Node(ks,rs)) \<Longrightarrow> 1\<le>length ks"
-apply (insert wf_size_ks_not_empty,force)
 done
 
 lemma set_butlast_lessThan:"set (butlast [0..<n]) = {0..<n -1}"
 apply (case_tac n,force+)
 done
-
-lemma list_all_update: "list_all P l \<Longrightarrow> P a \<Longrightarrow> list_all P (l[i := a]) "
-by (metis length_list_update list_all_length nth_list_update_eq nth_list_update_neq) 
-
-lemma list_all_update_concat_map_subtrees: 
-"list_all P (concat (map tree_to_subtrees rs)) \<Longrightarrow> list_all P (tree_to_subtrees t) \<Longrightarrow>
-list_all P (concat (map tree_to_subtrees (rs[i := t])))"
-by (smt concat.simps(2) concat_append id_take_nth_drop list.map(2) list_all_append list_update_beyond map_append not_le upd_conv_take_nth_drop)
-
-lemma list_all_take_drop_less_one_element: 
-"list_all P xs \<Longrightarrow> (list_all P (take (i- Suc 0) xs)) \<and> (list_all P (drop i xs))"
-by (metis append_take_drop_id list_all_append)
 
 lemma list_all_of_list_replace_at_n:
 "i < length rs \<Longrightarrow>
@@ -137,13 +122,6 @@ apply (drule_tac t="rs2" in sym)
  apply (metis append_take_drop_id drop_eq_Nil list.collapse list.pred_inject(2) list_all_append not_le)
 done
 
-lemma list_all_take_drop_less_one_element_concat_map_subtrees:
-"list_all P (concat (map tree_to_subtrees xs)) \<Longrightarrow> 
-(list_all P (concat (map tree_to_subtrees (take i xs)))) 
-\<and> (list_all P (concat (map tree_to_subtrees (tl (drop i  xs)))))"
-by (metis append_take_drop_id concat_append drop_Suc list_all_append map_append tl_drop)
-
-
 lemma list_all_of_list_replace_at_n_concat_map_subtrees:
 "
 i < length rs \<Longrightarrow>
@@ -160,7 +138,8 @@ apply (case_tac "i=0")
  apply (case_tac rs,force+)
 
  (*i\<noteq>0*)
- apply (force simp add:butlast_take list_all_take_drop_less_one_element_concat_map_subtrees)
+ apply (simp add:butlast_take)
+ apply (metis append_take_drop_id concat_append drop_Suc list_all_append map_append tl_drop)
 done
 
 lemma keys_Cons: 
@@ -170,7 +149,11 @@ apply (induct cs) apply (force simp add:keys_def rev_apply_def)+
 done
 
 lemma invariant_wf_ts: "invariant_wf_ts"
+(*the following two subgoals add hypothesises necessary for this proof*)
+(*we need that the minimum and maximum constants have a minimum boundary 
+and they are related between themselves*)
 apply (subgoal_tac "1 \<le> min_leaf_size \<and> 1 \<le> min_node_keys \<and> (max_node_keys = 2 * min_node_keys \<or> max_node_keys = Suc (2 * min_node_keys))") prefer 2 apply (force intro:FIXME) (* further hypothesis*)
+(*we need that keys can be ordered*)
 apply (subgoal_tac "total_order_key_lte") prefer 2 apply (force intro:FIXME)
 
 apply(simp add: invariant_wf_ts_def)
@@ -216,16 +199,19 @@ apply(intro conjI)
    apply (simp add:wf_size_def) 
    apply (subgoal_tac "wf_size_1 t") prefer 2  apply (case_tac t) apply (force simp add:forall_subtrees_def rev_apply_def)+
    apply (case_tac "stk=[]")
-    apply (force simp add:Let_def list_all_update)
+    (*stk=[]*)
+    apply (simp add:Let_def)
+    apply (metis length_list_update list_all_length nth_list_update_eq nth_list_update_neq)
 
+    (*stk\<noteq>[]*)
     apply (simp add:Let_def forall_subtrees_def rev_apply_def wf_size_1_def list_all_iff)
     apply (subgoal_tac "set (rs[i := t]) \<subseteq> insert t (set rs)") prefer 2 apply (simp add: set_update_subset_insert)
-    apply force
+    apply fast
     
    (* wf_ks_rs (Node (ks, rs[i := t])) *)
    apply (simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def list_all_iff)
    apply (subgoal_tac "set (rs[i := t]) \<subseteq> insert t (set rs)") prefer 2 apply (simp add: set_update_subset_insert)
-   apply force
+   apply fast
 
    (* balanced (Node (ks, rs[i := t])) *)
    apply (case_tac "rs \<noteq> []")
@@ -241,7 +227,7 @@ apply(intro conjI)
      apply (smt length_list_update list_all_length nth_list_update_eq nth_list_update_neq)
      
      apply (subgoal_tac "list_all balanced_1 (tree_to_subtrees t)") prefer 2 apply force
-     apply (force simp:list_all_update_concat_map_subtrees)
+     apply (smt concat.simps(2) concat_append id_take_nth_drop list.map(2) list_all_append list_update_beyond map_append not_le upd_conv_take_nth_drop)
 
     (* rs = [] *)
     apply (simp add:wellformed_ts_1_def)
@@ -258,9 +244,9 @@ apply(intro conjI)
     apply (subgoal_tac "length ks  = length rs - 1") prefer 2 apply (force simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
     apply (subgoal_tac "1 < length rs")
     prefer 2
-     apply (subgoal_tac "1 \<le> length ks") prefer 2 apply (blast intro:wf_size_ks_not_empty')
+     apply (subgoal_tac "1 \<le> length ks") prefer 2 apply (blast intro:wf_size_ks_not_empty)
      apply force
-    apply (subgoal_tac "\<exists> ys x zs . (rs = ys@x#zs) \<and> (rs!i = x) \<and> (i = length ys)") prefer 2 using id_take_nth_drop apply fastforce 
+    apply (subgoal_tac "\<exists> ys x zs . (rs = ys@x#zs) \<and> (rs!i = x) \<and> (i = length ys)") prefer 2 using id_take_nth_drop apply fastforce
     apply (erule exE)+
     apply (erule conjE)+
     apply (intro conjI)
@@ -269,7 +255,7 @@ apply(intro conjI)
      apply (rule)
      apply (rename_tac i')
      apply (case_tac "i' < length ys")
-      (*ia < length ys*)
+      (*i' < length ys*)
       apply simp
       apply (subgoal_tac "i' \<in> set (key_indexes (Node (ks, ys @ x # zs)))") prefer 2 apply (force  simp add:key_indexes_def)
       apply (force)
@@ -303,16 +289,16 @@ apply(intro conjI)
        
        (*i' > length ys*)
        apply (subgoal_tac "i' \<in> set (key_indexes (Node (ks, ys @ x # zs)))") prefer 2 apply (force simp add:key_indexes_def)
-       apply force
+       apply fastforce
     
     (* list_all keys_consistent_1 (concat (map tree_to_subtrees (rs[i := t]))) *)
     apply (subgoal_tac "list_all keys_consistent_1 (tree_to_subtrees t)") prefer 2 apply force
-    apply (force simp:list_all_update_concat_map_subtrees)
+    apply ((smt concat.simps(2) concat_append id_take_nth_drop list.map(2) list_all_append list_update_beyond map_append not_le upd_conv_take_nth_drop))
 
    (* keys ordered *)
    apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def list_all_iff key_indexes_def)
    apply (subgoal_tac "set (rs[i := t]) \<subseteq> insert t (set rs)") prefer 2 apply (simp add: set_update_subset_insert)
-   apply force
+   apply fast
 
   (* inserting_two *)
   apply(simp)
@@ -329,6 +315,7 @@ apply(intro conjI)
   (* so we create a node that may be fat*)
   apply (subgoal_tac "? fat_node. Node(ks2,rs2) = fat_node") prefer 2 apply force
   apply (erule exE)
+  (*now we show that the fat_node is mostly wellformed (wellformed_tree')*)
   apply (subgoal_tac "wellformed_tree' (Rmbs False) fat_node") 
   prefer 2
    apply (simp add:wellformed_tree'_def wellformed_tree_def)
@@ -372,15 +359,13 @@ apply(intro conjI)
     apply (subgoal_tac "height (rs2!0) = height (rs!0)")
     prefer 2 
      apply (simp add:list_replace_at_n_def rev_apply_def split_at_def del:height.simps)
-     apply (case_tac "i=0")
-      (* i = 0 *)
-      apply force
-
+     apply (case_tac "i=0",force)
       (* i \<noteq> 0 *)
       apply (simp add: del:height.simps)
       apply (metis append_take_drop_id gr_implies_not0 length_0_conv length_greater_0_conv nth_append take_eq_Nil)
-    apply (case_tac "rs2 = []", simp)
-    apply (metis list.size(3) list_all_length list_all_of_list_replace_at_n not_less0)
+    apply (case_tac "rs2 = []", fast)
+     (*rs2 \<noteq> []*)
+     apply (metis list.size(3) list_all_length list_all_of_list_replace_at_n not_less0)
 
     (* keys_consistent (Node (ks2, take (i - Suc 0) rs @ tleft # tright # drop i rs)) *)
     apply (drule_tac t="fat_node" in sym)
@@ -390,7 +375,7 @@ apply(intro conjI)
     (*so I know already that between tleft k0 tright there is consistency,
       while I know that there is consistency ks!i and tleft and ks!i+1 and tright by wellformed_ts_1
 
-      I need to divide in bits this goal! !
+      I need to divide in bits this goal
     *)
     apply (simp add:list_replace_at_n_def split_at_def)
     apply (case_tac "rs = []") apply force
@@ -402,7 +387,7 @@ apply(intro conjI)
     apply (subgoal_tac "length ks  = length rs - 1") prefer 2 apply (force simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
     apply (subgoal_tac "1 < length rs")
     prefer 2
-     apply (subgoal_tac "1 \<le> length ks") prefer 2 apply (blast intro:wf_size_ks_not_empty')
+     apply (subgoal_tac "1 \<le> length ks") prefer 2 apply (blast intro:wf_size_ks_not_empty)
      apply force
     apply (erule exE)+
     apply (erule conjE)+
@@ -411,18 +396,13 @@ apply(intro conjI)
      (* key_lt --\<forall>i\<in>set (key_indexes (Node (xs @ k0 # ys, rs2))). \<forall>k\<in>set (keys (rs2 ! i)). key_lt k ((xs @ k0 # ys) ! i)*)
      apply rule+
      apply (rename_tac i' k)
-     apply (case_tac "i' < i") (* this assumption tells me that i < 0, because 0 < 0 is False*)
+     apply (case_tac "i' < i")
       (*i' < i*)
-      (*i' can be only elements that were already in rs before,
-      since this key_lt uses only i', the following hypothesis is enough
-      \<forall>i\<in>set (key_indexes (Node (xs @ ys, rs))). \<forall>k\<in>set (keys (rs ! i)). key_lt k ((xs @ ys) ! i)
-      *)
       apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
       apply simp
       apply (drule_tac t=rs2 in sym)
-      apply (simp add:nth_append key_indexes_def)    
-      apply (subgoal_tac "{0..<length xs} \<subset> {0..<length rs}") prefer 2 apply (force)
-      apply force
+      apply (simp add:nth_append key_indexes_def atLeast0LessThan lessThan_def)
+      apply (smt Suc_less_eq Suc_pred length_greater_0_conv less_trans_Suc)
 
       (* i' \<ge> i *)
       apply (case_tac "i' = i")
@@ -444,27 +424,23 @@ apply(intro conjI)
         
         (*i' \<noteq> Suc i*)
         apply (subgoal_tac "Suc (length xs)<i'") prefer 2 apply force
-        apply (simp add:key_indexes_def)
-        apply (case_tac "length ys =0") apply force
-        apply (subgoal_tac "{Suc (length xs)..< length rs -1} \<subset> {0..<length rs -1}") prefer 2 apply force
-        apply (subgoal_tac "(tl (drop (length xs) rs)) = (drop (length xs +1) rs)") prefer 2 apply (force simp add:drop_Suc drop_tl)
-        apply (simp add:nth_append min_def)
-        apply (smt One_nat_def Suc_lessE add_2_eq_Suc atLeastLessThan_iff diff_Suc_1 diff_Suc_eq_diff_pred le_add_diff_inverse less_2_cases less_Suc0 less_imp_le_nat not_le old.nat.distinct(2))
+        apply (simp add:key_indexes_def atLeast0LessThan lessThan_def)
+        apply (case_tac "length ys =0", force)
+         (*length ys \<noteq> 0*)
+         apply (subgoal_tac "(tl (drop (length xs) rs)) = (drop (length xs +1) rs)") prefer 2 apply (force simp add:drop_Suc drop_tl)
+         apply (simp add:nth_append min_def)
+         apply (smt One_nat_def Suc_lessE add_2_eq_Suc atLeastLessThan_iff diff_Suc_1 diff_Suc_eq_diff_pred le_add_diff_inverse less_2_cases less_Suc0 less_imp_le_nat not_le old.nat.distinct(2))
      
      (*key_le --\<forall>i\<in>set (key_indexes (Node (xs @ k0 # ys, rs2))). \<forall>x\<in>set (keys (rs2 ! Suc i)). key_le ((xs @ k0 # ys) ! i) x*)
      apply rule+
      apply (rename_tac i' k)
-     apply (case_tac "Suc i' < i") (* this assumption tells me that i < 0, because 0 < 0 is False*)
+     apply (case_tac "Suc i' < i")
       (*Suc i' < i*)
-      (*i' can be only elements that were already in rs before,
-      since this key_lt uses only i', the following hypothesis is enough
-      \<forall>i\<in>set (key_indexes (Node (xs @ ys, rs))). \<forall>k\<in>set (keys (rs ! i)). key_lt k ((xs @ ys) ! i)
-      *)
       apply (subgoal_tac "xs \<noteq> []") prefer 2 apply force
       apply simp
       apply (drule_tac t=rs2 in sym)
-      apply (simp add:nth_append key_indexes_def)    
-      apply (subgoal_tac "{0..<length xs} \<subset> {0..<length rs}") prefer 2 apply force
+      apply (simp add:nth_append key_indexes_def atLeast0LessThan lessThan_def)
+      apply (drule_tac x="i'" in spec) back
       apply force
 
       (* Suc i' \<ge> i *)
@@ -506,7 +482,7 @@ apply(intro conjI)
     apply (thin_tac "length ks2 = Suc (length ks)")
     apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def)
     apply (simp add:list_all_of_list_replace_at_n_concat_map_subtrees keys_ordered_1_def)
-    apply (subgoal_tac "1 \<le> length ks") prefer 2 apply (blast intro:wf_size_ks_not_empty')
+    apply (subgoal_tac "1 \<le> length ks") prefer 2 apply (blast intro:wf_size_ks_not_empty)
     apply (subgoal_tac "\<exists> xs ys. (ks2 = xs@k0#ys) \<and> (ks = xs @ ys) \<and> (i = length xs)")
     prefer 2
      apply (simp add:list_insert_at_n_def split_at_def)
@@ -634,12 +610,12 @@ apply(intro conjI)
        apply (metis drop_eq_Nil)
        
        apply force
-      apply (subgoal_tac "tl (drop min_node_keys ks2) = right_ks \<and> hd (drop min_node_keys ks2) = k ") prefer 2 apply force
+     apply (subgoal_tac "tl (drop min_node_keys ks2) = right_ks \<and> hd (drop min_node_keys ks2) = k ") prefer 2 apply force
      apply (thin_tac "drop min_node_keys ks2 = k # right_ks")
      apply (erule conjE)+
      apply simp
      apply (subgoal_tac "length ks = max_node_keys") prefer 2
-      apply force
+      apply fastforce
      apply force
     apply blast
    (*wf_ks_rs*)
@@ -968,9 +944,10 @@ apply(case_tac f)
     apply (drule_tac t=rs2 in sym)
     apply (simp add:list_replace_at_n_def split_at_def rev_apply_def)
     apply rule
-     
+     (*set (take i rs) \<subseteq> insert tr (insert tleft (set rs))*)
      apply (meson insert_iff set_take_subset subsetCE subsetI)
      
+     (*set (tl (drop i rs)) \<subseteq> insert tr (insert tleft (set rs))*)
      apply (metis Cons_nth_drop_Suc in_set_dropD insert_iff list.sel(3) subsetI)
   apply rule+
    (*height*)
@@ -1007,6 +984,9 @@ apply(case_tac f)
    apply (thin_tac "a=_",thin_tac "b=_")
    apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:wellformed_tree_def subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
    apply (simp add:keys_Cons rev_apply_def)
+   (*we solve this through 4 subgoals:
+     check_keys lb [k0] rb \<and> check_keys lb (keys tleft) rb \<and> check_keys lb (keys tr) rb \<and> set ks2 = (set ks \<union> {k0})
+   *)
    apply (subgoal_tac "check_keys lb [k0] rb")
    prefer 2
     (*this requires going through the cases of "get_lower_upper_keys_for_node_t (lb, ((ks, rs), i), rb)" and use the key_lt_order lemmas *)
@@ -1016,6 +996,7 @@ apply(case_tac f)
      apply (case_tac lb,force)
      apply simp
      apply (case_tac "i=0",force)
+     (*i\<noteq>0*)
      apply simp
      apply (subgoal_tac "ks!(i-1) \<in> set ks") prefer 2 apply (force simp add:subtree_indexes_def)
      apply (subgoal_tac "\<exists> kim1. ks!(i-1) = kim1") prefer 2 apply force
@@ -1026,9 +1007,9 @@ apply(case_tac f)
 
      (*case rb of None \<Rightarrow> True | Some kr \<Rightarrow> \<forall>k\<in>set [k0]. key_lt k kr*)
      apply (case_tac rb,force)
-     apply simp
-     
+     (*rb = Some a*)  
      apply (case_tac "i = length ks",force)
+      (*i \<noteq> length ks*)
       apply simp
       apply (subgoal_tac "ks!i \<in> set ks") prefer 2 apply (force simp add:subtree_indexes_def)
       apply (subgoal_tac "\<exists> ki. ks!i = ki") prefer 2 apply force
@@ -1081,6 +1062,7 @@ apply(case_tac f)
    apply rule
     apply (case_tac lb,force,simp,rule) apply blast
     apply (case_tac rb,force,simp,rule) apply blast
+ (* we can now proceed to solve the two cases of Inserting_two *)
  apply (case_tac "length ks2 \<le> max_node_keys")
   (*length ks2 \<le> max_node_keys*)
   apply force  
@@ -1088,8 +1070,7 @@ apply(case_tac f)
   (*length ks2 > max_node_keys*)
   apply simp
   apply (simp add:wellformed_ts_1_def dest_ts_def Let_def)
-  apply (case_tac stk, force)
-  
+  apply (case_tac stk, force)  
   apply (rename_tac hd_stk tl_stk)
   (*stk = hd_stk#tl_stk*)
   apply simp
@@ -1098,109 +1079,112 @@ apply(case_tac f)
   apply simp
   apply (subgoal_tac "get_lower_upper_keys_for_node_t (lb', ((l, cs), i'), rb')  = (lb,rb)") prefer 2 apply force
   apply(simp add: split_node_def)
-   apply (case_tac "case drop min_node_keys ks2 of x # xa \<Rightarrow> (x, xa)")
-   apply (rename_tac "k" "right_ks")  
-   apply (subgoal_tac "\<exists> left_ks. take min_node_keys ks2 = left_ks") prefer 2 apply force
-   apply (subgoal_tac "\<exists> right_rs. drop (Suc min_node_keys) rs2 = right_rs") prefer 2 apply force
-   apply (subgoal_tac "\<exists> left_rs. take (Suc min_node_keys) rs2 = left_rs") prefer 2 apply force
-   apply (erule exE)+
-   apply (drule_tac t=fat_node in sym)
-   apply (subgoal_tac "k \<in> set ks2")
+  apply (case_tac "case drop min_node_keys ks2 of x # xa \<Rightarrow> (x, xa)")
+  apply (rename_tac "k" "right_ks")  
+  apply (subgoal_tac "\<exists> left_ks. take min_node_keys ks2 = left_ks") prefer 2 apply force
+  apply (subgoal_tac "\<exists> right_rs. drop (Suc min_node_keys) rs2 = right_rs") prefer 2 apply force
+  apply (subgoal_tac "\<exists> left_rs. take (Suc min_node_keys) rs2 = left_rs") prefer 2 apply force
+  apply (erule exE)+
+  apply (drule_tac t=fat_node in sym)
+  apply (subgoal_tac "k \<in> set ks2")
+  prefer 2
+   apply (subgoal_tac "min_node_keys < length ks2") prefer 2 apply linarith
+   apply (metis (no_types, lifting) Cons_nth_drop_Suc in_set_conv_nth list.simps(5) prod.inject)
+  apply (subgoal_tac "((set right_rs) \<subseteq> set rs2) \<and> ((set left_rs) \<subseteq> set rs2)") prefer 2 apply (simp add:list_replace_at_n_def split_at_def rev_apply_def) apply (meson  set_drop_subset set_take_subset)
+  apply (subgoal_tac "set (keys (Node (left_ks, left_rs))) \<subseteq> set (keys fat_node) \<and> set (keys (Node (right_ks, right_rs))) \<subseteq> set (keys fat_node)")
+  prefer 2 
+   apply (subgoal_tac "min_node_keys < length ks2") prefer 2 apply linarith
+   apply (subgoal_tac "set left_ks \<subseteq> set ks2") prefer 2 apply (meson set_take_subset)
+   apply (subgoal_tac "set right_ks \<subseteq> set ks2") prefer 2 apply (smt Cons_nth_drop_Suc list.simps(5) prod.inject set_drop_subset)
+   apply (force simp add:keys_Cons rev_apply_def)
+  apply simp
+  apply (thin_tac "fat_node=_")
+  apply (erule conjE)+
+  (*we work to solve the height part of the subgoal*)
+  apply (subgoal_tac "\<exists> hrsi.(case rs ! i of Node (xa, cs) \<Rightarrow> 1 + Max (set (map height cs)) | Leaf x \<Rightarrow> 1) = hrsi ") prefer 2 apply force
+  apply (erule exE)
+  apply simp
+  apply (subgoal_tac "set rs2 \<subseteq> set rs \<union> {tleft} \<union> {tr} \<and> rs2\<noteq>[]")
+  prefer 2
+   (*set rs2 \<subseteq> set rs \<union> {tleft} \<union> {tr} \<and> rs2 \<noteq> []*)
+   apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:wellformed_tree_def wellformed_context_1_def subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
+   apply (subgoal_tac "rs2 \<noteq> []") prefer 2 apply (force simp add:list_replace_at_n_def split_at_def rev_apply_def)
+   apply (subgoal_tac "set rs2 \<subseteq> set rs \<union> {tleft} \<union> {tr}") 
    prefer 2
-    apply (subgoal_tac "min_node_keys < length ks2") prefer 2 apply linarith
-    apply (metis (no_types, lifting) Cons_nth_drop_Suc in_set_conv_nth list.simps(5) prod.inject)
-   apply (subgoal_tac "((set right_rs) \<subseteq> set rs2) \<and> ((set left_rs) \<subseteq> set rs2)") prefer 2 apply (simp add:list_replace_at_n_def split_at_def rev_apply_def) apply (meson  set_drop_subset set_take_subset)
-   apply (subgoal_tac "set (keys (Node (left_ks, left_rs))) \<subseteq> set (keys fat_node) \<and> set (keys (Node (right_ks, right_rs))) \<subseteq> set (keys fat_node)")
-   prefer 2 
-    apply (subgoal_tac "min_node_keys < length ks2") prefer 2 apply linarith
-    apply (subgoal_tac "set left_ks \<subseteq> set ks2") prefer 2 apply (meson set_take_subset)
-    apply (subgoal_tac "set right_ks \<subseteq> set ks2") prefer 2 apply (smt Cons_nth_drop_Suc list.simps(5) prod.inject set_drop_subset)
-    apply (force simp add:keys_Cons rev_apply_def)
-   apply simp
-   apply (thin_tac "fat_node=_")
-   apply (erule conjE)+
-   (*heights*)
-   apply (subgoal_tac "\<exists> hrsi.(case rs ! i of Node (xa, cs) \<Rightarrow> 1 + Max (set (map height cs)) | Leaf x \<Rightarrow> 1) = hrsi ") prefer 2 apply force
-   apply (erule exE)
-   apply simp
-   apply (subgoal_tac "set rs2 \<subseteq> set rs \<union> {tleft} \<union> {tr} \<and> rs2\<noteq>[]")
-   prefer 2
-    (*set rs2 \<subseteq> set rs \<union> {tleft} \<union> {tr} \<and> rs2 \<noteq> []*)
-    apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:wellformed_tree_def wellformed_context_1_def subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
-    apply (subgoal_tac "rs2 \<noteq> []") prefer 2 apply (force simp add:list_replace_at_n_def split_at_def rev_apply_def)
-    apply (subgoal_tac "set rs2 \<subseteq> set rs \<union> {tleft} \<union> {tr}") 
-    prefer 2
-     apply (drule_tac t=rs2 in sym)
-     apply (simp add:list_replace_at_n_def split_at_def rev_apply_def)
-     apply rule
-     apply (meson insertCI set_take_subset subsetCE subsetI)
+    apply (drule_tac t=rs2 in sym)
+    apply (simp add:list_replace_at_n_def split_at_def rev_apply_def)
+    apply rule
+    (*set (take i rs) \<subseteq> insert tr (insert tleft (set rs))*)
+    apply (meson insertCI set_take_subset subsetCE subsetI)
   
-     apply (metis Cons_nth_drop_Suc in_set_dropD insert_iff list.sel(3) subsetI)
+    (*set (tl (drop i rs)) \<subseteq> insert tr (insert tleft (set rs))*)
+    apply (metis Cons_nth_drop_Suc in_set_dropD insert_iff list.sel(3) subsetI)
    apply force
   apply (subgoal_tac "height ` set rs2 = {hrsi}")
-   prefer 2  
-    apply (subgoal_tac "height ` set rs2 \<subseteq> height ` (set rs \<union> {tleft} \<union> {tr})") prefer 2 apply blast
-    apply (subgoal_tac "height ` (set rs) = {hrsi}")
-    prefer 2
-     apply (simp add:wellformed_context_1_def wellformed_tree_def balanced_def Let_def forall_subtrees_Cons balanced_1_def list_all_iff)
-     apply (subgoal_tac "set rs \<noteq> {} ") prefer 2 apply (force simp add:subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
-     apply (erule conjE)+
-     apply (simp (no_asm) add:image_def)
-     apply clarify
-     apply (subgoal_tac "(case rs ! 0 of Node (xa, cs) \<Rightarrow> 1 + Max (set (map height cs)) | Leaf x \<Rightarrow> 1) = (case tleft of Node (xa, cs) \<Rightarrow> 1 + Max (set (map height cs)) | Leaf x \<Rightarrow> 1)")
-     prefer 2 
-      apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
-     apply force
-    apply (smt Collect_cong length_greater_0_conv nth_mem singleton_conv)
-    
-    apply simp
-    apply (subgoal_tac "height ` set rs2 = {} \<or> height ` set rs2 = {hrsi}") prefer 2 apply (metis subset_singletonD)
+  prefer 2  
+   apply (subgoal_tac "height ` set rs2 \<subseteq> height ` (set rs \<union> {tleft} \<union> {tr})") prefer 2 apply blast
+   apply (subgoal_tac "height ` (set rs) = {hrsi}")
+   prefer 2
+    apply (simp add:wellformed_context_1_def wellformed_tree_def balanced_def Let_def forall_subtrees_Cons balanced_1_def list_all_iff)
+    apply (subgoal_tac "set rs \<noteq> {} ") prefer 2 apply (force simp add:subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
+    apply (erule conjE)+
+    apply (simp (no_asm) add:image_def)
+    apply clarify
+    apply (subgoal_tac "(case rs ! 0 of Node (xa, cs) \<Rightarrow> 1 + Max (set (map height cs)) | Leaf x \<Rightarrow> 1) = (case tleft of Node (xa, cs) \<Rightarrow> 1 + Max (set (map height cs)) | Leaf x \<Rightarrow> 1)")
+    prefer 2 
+     apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
     apply force
-   apply (subgoal_tac "height ` set left_rs \<subseteq> height ` set rs2 ") prefer 2 apply force
-   apply (subgoal_tac "height ` set right_rs \<subseteq> height ` set rs2") prefer 2 apply force
-   apply simp
-   apply (subgoal_tac "height ` set left_rs = {hrsi} \<and> height ` set right_rs = {hrsi} ") prefer 2
-    apply (subgoal_tac "set right_rs \<noteq> {}")
-    prefer 2 (*this is for drop Suc min_node*)
-     apply (drule_tac t="right_rs" in sym)
-     apply (subgoal_tac "length rs2 = Suc (length ks2)")
-     prefer 2
-      apply (clarsimp)
-      apply (simp add:rev_apply_def list_replace_at_n_def list_insert_at_n_def split_at_def)
-      apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:wellformed_tree_def wellformed_context_1_def subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
-      apply (force simp add:Let_def min_def wellformed_context_1_def wellformed_tree_def wf_ks_rs_def forall_subtrees_Cons wf_ks_rs_1_def)
-     apply force
-    apply (subgoal_tac "\<exists> hlrs. height ` set left_rs = hlrs") prefer 2 apply force
-    apply (subgoal_tac "\<exists> hrrs. height ` set right_rs = hrrs") prefer 2 apply force
-    apply (erule exE)+
-    apply simp
-    apply rule
-     (*hlrs = {hrsi}*)
-     apply (subgoal_tac "hlrs = {} \<or> hlrs = {hrsi}") prefer 2 apply (metis subset_singletonD)
-     apply (subgoal_tac "hlrs \<noteq> {}") prefer 2 apply (force)
-     apply force
-     
-     (*hrrs = {hrsi}*)
-     apply (subgoal_tac "hrrs = {} \<or> hrrs = {hrsi}") prefer 2 apply (metis subset_singletonD)
-     apply (subgoal_tac "hrrs \<noteq> {}") prefer 2 apply (force)
-     apply force    
-   apply simp
-   (*check_keys*)
-   (* I need to show that k is in ks2 and that the check_keys on ks2 considers all the check_keys predicates in the goal*)
-   apply (simp add:wellformed_focus_def check_keys_def)
-   apply rule+
-    (*(case lb of None \<Rightarrow> True | Some kl \<Rightarrow> Ball (set (keys (Node (left_ks, left_rs)))) (key_le kl))*)
-    apply (case_tac lb) apply force apply force
+   apply (smt Collect_cong length_greater_0_conv nth_mem singleton_conv)
     
-   (*(case rb of None \<Rightarrow> True | Some kr \<Rightarrow> \<forall>k\<in>set (keys (Node (right_ks, right_rs))). key_lt k kr)*)
-   apply rule+
-    apply (case_tac rb) apply force apply force
+   apply simp
+   apply (subgoal_tac "height ` set rs2 = {} \<or> height ` set rs2 = {hrsi}") prefer 2 apply (metis subset_singletonD)
+   apply force
+  apply (subgoal_tac "height ` set left_rs \<subseteq> height ` set rs2 ") prefer 2 apply force
+  apply (subgoal_tac "height ` set right_rs \<subseteq> height ` set rs2") prefer 2 apply force
+  apply simp
+  (*heights*)
+  apply (subgoal_tac "height ` set left_rs = {hrsi} \<and> height ` set right_rs = {hrsi} ") prefer 2
+   apply (subgoal_tac "set right_rs \<noteq> {}")
+   prefer 2 (*this is for drop Suc min_node*)
+    apply (drule_tac t="right_rs" in sym)
+    apply (subgoal_tac "length rs2 = Suc (length ks2)")
+    prefer 2
+     apply (clarsimp)
+     apply (simp add:rev_apply_def list_replace_at_n_def list_insert_at_n_def split_at_def)
+     apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:wellformed_tree_def wellformed_context_1_def subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
+     apply (force simp add:Let_def min_def wellformed_context_1_def wellformed_tree_def wf_ks_rs_def forall_subtrees_Cons wf_ks_rs_1_def)
+    apply force
+   apply (subgoal_tac "\<exists> hlrs. height ` set left_rs = hlrs") prefer 2 apply force
+   apply (subgoal_tac "\<exists> hrrs. height ` set right_rs = hrrs") prefer 2 apply force
+   apply (erule exE)+
+   apply simp
+   apply rule
+    (*hlrs = {hrsi}*)
+    apply (subgoal_tac "hlrs = {} \<or> hlrs = {hrsi}") prefer 2 apply (metis subset_singletonD)
+    apply (subgoal_tac "hlrs \<noteq> {}") prefer 2 apply (force)
+    apply force
+     
+    (*hrrs = {hrsi}*)
+    apply (subgoal_tac "hrrs = {} \<or> hrrs = {hrsi}") prefer 2 apply (metis subset_singletonD)
+    apply (subgoal_tac "hrrs \<noteq> {}") prefer 2 apply (force)
+    apply force    
+  apply simp
+  (*check_keys*)
+  (* I need to show that k is in ks2 and that the check_keys on ks2 considers all the check_keys predicates in the goal*)
+  apply (simp add:wellformed_focus_def check_keys_def)
+  apply rule+
+   (*(case lb of None \<Rightarrow> True | Some kl \<Rightarrow> Ball (set (keys (Node (left_ks, left_rs)))) (key_le kl))*)
+   apply (case_tac lb) apply force apply force
    
-   (*(case lb of None \<Rightarrow> True | Some kl \<Rightarrow> Ball (set [k]) (key_le kl))*)
-   apply rule+
-    apply (case_tac lb) apply force apply (force simp add:keys_Cons)
+  (*(case rb of None \<Rightarrow> True | Some kr \<Rightarrow> \<forall>k\<in>set (keys (Node (right_ks, right_rs))). key_lt k kr)*)
+  apply rule+
+   apply (case_tac rb) apply force apply force
+   
+  (*(case lb of None \<Rightarrow> True | Some kl \<Rightarrow> Ball (set [k]) (key_le kl))*)
+  apply rule+
+   apply (case_tac lb) apply force apply (force simp add:keys_Cons)
 
-   (*case rb of None \<Rightarrow> True | Some kr \<Rightarrow> \<forall>k\<in>set [k]. key_lt k kr*)
-   apply (case_tac rb) apply force apply (force simp add:keys_Cons)
+  (*case rb of None \<Rightarrow> True | Some kr \<Rightarrow> \<forall>k\<in>set [k]. key_lt k kr*)
+  apply (case_tac rb) apply force apply (force simp add:keys_Cons)
 done
 end
