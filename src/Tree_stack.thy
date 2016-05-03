@@ -2,6 +2,7 @@ theory Tree_stack
 imports Tree
 begin
 
+(*begin focus definition*)
 datatype One_or_two = 
 Inserting_one "Tree"
 | Inserting_two "Tree * key * Tree"
@@ -9,6 +10,7 @@ Inserting_one "Tree"
 type_synonym inserting_two_t =  "Tree * key * Tree"
 
 type_synonym focus_t = One_or_two
+(*end focus definition*)
 
 definition split_node :: "node_t \<Rightarrow> inserting_two_t" where
 "split_node n == (
@@ -39,13 +41,17 @@ Inserting_two(split_node(ks2,rs2))
 )
 )"
 
+(*begin context definition*)
 type_synonym left_bound = "key option"
 
 type_synonym right_bound = "key option"
 
 type_synonym context_t = "(left_bound * (node_t * nat) * right_bound) list"
+(*end context definition*)
 
+(*begin treestack definition*)
 datatype tree_stack = Tree_stack "focus_t * context_t"
+(*end treestack definition*)
 
 definition dest_ts :: "tree_stack \<Rightarrow> focus_t * context_t" where
 "dest_ts ts == (case ts of Tree_stack(f,c) \<Rightarrow> (f,c))"
