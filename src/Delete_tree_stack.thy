@@ -38,6 +38,17 @@ definition dest_del_ts :: "del_tree_stack => (del_focus_t * context_t)" where
 case dts of Del_tree_stack ts => ts)
 "
 (*end delete types*)
+definition is_too_slim :: "Tree => bool" where
+"is_too_slim t = (
+case t of
+Leaf xs =>
+ let leaf_size = length xs in
+ (1 < leaf_size) & (leaf_size < min_leaf_size)
+| Node (ks,_) =>
+ let node_keys = length ks in
+ (1 < node_keys) & (node_keys < min_node_keys)
+)
+"
 
 (*begin step del tree stack*)
 definition update_del_focus_at_position :: "node_t => nat => del_focus_t => del_focus_t" where
@@ -51,8 +62,19 @@ DUp(Node(ks,rs2)))
 (* I need to delete in focus_t, and restructure by using rs if the children size of focus_t is too small*)
 let t' = (remove_key_child d_index t) in
 (*now I need to check if the current sizes require a steal or a merge*)
+(case is_too_slim t' of
+False => 
+ (let rs2 = dest_Some(list_replace_1_at_n rs i t') in
+ DUp(Node(ks,rs2)))
+| True =>
+(*in this case I can both steal or merge.
+  
+  * I will steal if the right sibling is not slim or the left sibling is not slim;
 
+  * otherwise, I will merge with the right sibling, if it exists, or with the left sibling.
+*)
 f
+)
 )
 "
 
