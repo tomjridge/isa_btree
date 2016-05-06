@@ -50,6 +50,17 @@ Leaf xs =>
 )
 "
 
+definition is_fat :: "Tree => bool" where
+"is_fat t = (
+case t of
+Leaf xs =>
+ let leaf_size = length xs in
+ (1 < leaf_size) & (min_leaf_size < leaf_size)
+| Node (ks,_) =>
+ let node_keys = length ks in
+ (1 < node_keys) & (min_node_keys < node_keys)
+)"
+
 (*begin step del tree stack*)
 definition update_del_focus_at_position :: "node_t => nat => del_focus_t => del_focus_t" where
 "update_del_focus_at_position n i f == (
@@ -66,14 +77,34 @@ let t' = (remove_key_child d_index t) in
 False => 
  (let rs2 = dest_Some(list_replace_1_at_n rs i t') in
  DUp(Node(ks,rs2)))
-| True =>
+| True => (
 (*in this case I can both steal or merge.
   
   * I will steal if the right sibling is not slim or the left sibling is not slim;
 
   * otherwise, I will merge with the right sibling, if it exists, or with the left sibling.
 *)
-f
+let right_sibling = (if (i = (length ks)) then None else Some(rs!(i+1))) in
+let left_sibling  = (if (i = 0) then None else Some(rs!(i-1))) in
+(case ((is_Some right_sibling) & (is_fat (dest_Some right_sibling))) of
+True => ( (*STEAL RIGHT*)
+(*FIXME*)
+f)
+| False => 
+(case ((is_Some left_sibling) & (is_fat (dest_Some left_sibling))) of
+True => ( (*STEAL LEFT*) 
+(*FIXME*)
+f)
+| False =>
+(case (is_Some right_sibling) of
+True => ( (*MERGE RIGHT*)
+(*FIXME*)
+f)
+| False => ( (*MERGE LEFT*)
+f))
+)
+) 
+)
 )
 )
 "
