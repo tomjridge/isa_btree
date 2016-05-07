@@ -221,7 +221,22 @@ definition step_del_tree_stack :: "del_tree_stack => del_tree_stack option" wher
 "step_del_tree_stack ts == (
 let (f,stk) = dest_del_ts ts in
 case stk of 
-Nil => None
+Nil => (*ROOT may be not well formed (i.e. redundant child)*)
+(case f of
+DUp _ => None
+| DDelete(t,i) =>
+(case t of
+Leaf l =>
+let f1 = DUp (remove_key_child i t) in
+Some(Del_tree_stack(f1,Nil))
+| Node (ks,rs) =>
+let f1 =
+(if (length ks = 1) 
+then (DUp(rs!0))
+else (DUp(remove_key_child i t)))
+in
+Some(Del_tree_stack(f1,Nil))
+))
 | ((lb,(n,i),rb)#xs) => (
 let f2 = update_del_focus_at_position n i f in
 Some(Del_tree_stack(f2,xs))
