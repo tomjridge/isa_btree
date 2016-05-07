@@ -124,17 +124,38 @@ Node(ks1,rs2)
 (*merge_right assumes that Trees are not empty and balanced *)
 definition merge_right :: "Tree => (Tree*nat) => (node_lbl_t * Tree list) => nat => Tree" where
 "merge_right r_sibling sibling_delIndex parent sibling_index_in_parent = (
-let (sibling,index) = sibling_delIndex in
-let (ks,rs) = parent in
+let (sibling, index) = sibling_delIndex in
+let (ks, rs) = parent in
 (*apply delete*)
 let sibling' = remove_key_child index sibling in
 (*merge nodes*)
 let sibling'' =
-(case (sibling',r_sibling) of
+(case (sibling', r_sibling) of
 (Leaf sl, Leaf rsl) => Leaf (sl@rsl)
-| (Node (sks,srs), Node (rsks, rsrs)) =>
+| (Node (sks, srs), Node (rsks, rsrs)) =>
 (*when I merge nodes, I need to import a key separating the last and first child of the nodes*)
 Node ((sks@((ks!sibling_index_in_parent)#rsks)), (srs@rsrs))
+| _ => undefined)
+in
+(*update parent with siblings *)
+let rs1 = list_update rs sibling_index_in_parent sibling'' in
+Node(ks,rs1)
+)"
+
+(*merge_left assumes that Trees are not empty and balanced *)
+definition merge_left :: "Tree => (Tree*nat) => (node_lbl_t * Tree list) => nat => Tree" where
+"merge_left l_sibling sibling_delIndex parent sibling_index_in_parent = (
+let (sibling, index) = sibling_delIndex in
+let (ks, rs) = parent in
+(*apply delete*)
+let sibling' = remove_key_child index sibling in
+(*merge nodes*)
+let sibling'' =
+(case (sibling', l_sibling) of
+(Leaf sl, Leaf lsl) => Leaf (lsl@sl)
+| (Node (sks, srs), Node (lsks, lsrs)) =>
+(*when I merge nodes, I need to import a key separating the last and first child of the nodes*)
+Node ((lsks@((ks!(sibling_index_in_parent-1))#sks)), (lsrs@srs))
 | _ => undefined)
 in
 (*update parent with siblings *)
@@ -155,9 +176,9 @@ DUp(Node(ks,rs2)))
 let t' = (remove_key_child d_index t) in
 (*now I need to check if the current sizes require a steal or a merge*)
 (case is_too_slim t' of
-False => 
- (let rs2 = dest_Some(list_replace_1_at_n rs i t') in
- DUp(Node(ks,rs2)))
+False =>
+(let rs2 = dest_Some(list_replace_1_at_n rs i t') in
+DUp(Node(ks,rs2)))
 | True => (
 (*in this case I can both steal or merge.
   
@@ -186,8 +207,7 @@ let parent_node = merge_right right_sibling (t,d_index) (ks,rs) i in
 DDelete (parent_node, i+1))
 | False => ( (*MERGE LEFT*)
 let left_sibling = dest_Some m_left_sibling in
-(*FIXME*)
-let parent_node = Node(ks,rs) in
+let parent_node = merge_left left_sibling (t,d_index) (ks,rs) i in
 DDelete (parent_node, i+1))
 ))
 ) 
