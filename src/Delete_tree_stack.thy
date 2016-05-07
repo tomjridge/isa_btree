@@ -17,9 +17,8 @@ definition remove_key_child :: "nat => Tree => Tree" where
 case t of 
 Leaf ls => Leaf (remove_at i ls)
 | Node (ks,rs) => (*when I remove from a Node, there has been a merge, so I know I MUST delete a key and a child*)
-  if i = length rs 
-  then Node((remove_at (i-1) ks),(remove_at i rs))
-  else Node((remove_at i ks),(remove_at i rs))
+  (*also, I know that the index is always i.e. j+1*)
+  Node((remove_at (i-1) ks),(remove_at i rs))
 )
 "
 (*END - this should go in the Utils theory*)
@@ -122,6 +121,27 @@ let ks1 = list_update ks (sibling_index_in_parent-1) rotating_key in
 Node(ks1,rs2)
 )"
 
+(*merge_right assumes that Trees are not empty and balanced *)
+definition merge_right :: "Tree => (Tree*nat) => (node_lbl_t * Tree list) => nat => Tree" where
+"merge_right r_sibling sibling_delIndex parent sibling_index_in_parent = (
+let (sibling,index) = sibling_delIndex in
+let (ks,rs) = parent in
+(*apply delete*)
+let sibling' = remove_key_child index sibling in
+(*merge nodes*)
+let sibling'' =
+(case (sibling',r_sibling) of
+(Leaf sl, Leaf rsl) => Leaf (sl@rsl)
+| (Node (sks,srs), Node (rsks, rsrs)) =>
+(*when I merge nodes, I need to import a key separating the last and first child of the nodes*)
+Node ((sks@((ks!sibling_index_in_parent)#rsks)), (srs@rsrs))
+| _ => undefined)
+in
+(*update parent with siblings *)
+let rs1 = list_update rs sibling_index_in_parent sibling'' in
+Node(ks,rs1)
+)"
+
 (*begin step del tree stack*)
 definition update_del_focus_at_position :: "node_t => nat => del_focus_t => del_focus_t" where
 "update_del_focus_at_position n i f == (
@@ -161,12 +181,15 @@ DUp parent_node)
 | False =>
 (case (is_Some m_right_sibling) of
 True => ( (*MERGE RIGHT*)
+let right_sibling = dest_Some m_right_sibling in
+let parent_node = merge_right right_sibling (t,d_index) (ks,rs) i in
+DDelete (parent_node, i+1))
+| False => ( (*MERGE LEFT*)
+let left_sibling = dest_Some m_left_sibling in
 (*FIXME*)
 let parent_node = Node(ks,rs) in
 DDelete (parent_node, i+1))
-| False => ( (*MERGE LEFT*)
-f))
-)
+))
 ) 
 )
 )
@@ -197,7 +220,7 @@ case f of
 DUp t => (wellformed_tree (Rmbs stack_empty) t)
 | DDelete (t,_) => 
 (case t of
-Leaf xs => wellformed_tree (Rmbs stack_empty) t
+Leaf xs => wellformed_tree (Rmbs stack_empty) t (*we assume that arrived to the bottom, deletion starts during the ascending phase*)
 | Node (ks,rs) => 
 list_all (wellformed_tree (Rmbs stack_empty)) rs)
 )"
