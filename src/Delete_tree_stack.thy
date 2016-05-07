@@ -70,11 +70,12 @@ let (ks,rs) = parent in
 (*apply delete*)
 let sibling' = remove_key_child index sibling in
 (*add first key and value/child of the right sibling to the end of sibling*)
-let (stolen_key,sibling'') = 
+let (rotating_key,sibling'') = 
 (case (sibling,r_sibling) of
-(Leaf sl,Leaf (fst_kv#_)) => (fst(fst_kv) , Leaf (sl@[fst_kv]))
-| (Node (s_ks,s_rs), Node ((fst_k#_),(fst_r#_))) => (fst_k,Node((s_ks@[fst_k]),(s_rs@[fst_r])))
-| _ => undefined) 
+(Leaf sl,Leaf (fst_kv#(snd_kv#_))) => (fst(snd_kv), Leaf (sl@[fst_kv]))
+| (Node (s_ks,s_rs), Node ((fst_k#_),(fst_r#_))) =>
+(fst_k,Node((s_ks@[ks!sibling_index_in_parent]),(s_rs@[fst_r])))
+| _ => undefined)
 in
 (*remove first key and child of the right sibling*)
 let r_sibling' = remove_key_child 0 r_sibling in
@@ -82,7 +83,7 @@ let r_sibling' = remove_key_child 0 r_sibling in
 let rs1 = list_update rs sibling_index_in_parent sibling'' in
 let rs2 = list_update rs1 (sibling_index_in_parent+1) r_sibling' in
 (*replace parent key*)
-let ks1 = list_update ks sibling_index_in_parent stolen_key in
+let ks1 = list_update ks sibling_index_in_parent rotating_key in
 Node(ks1,rs2)
 )"
 
