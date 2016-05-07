@@ -61,6 +61,31 @@ Leaf xs =>
  (1 < node_keys) & (min_node_keys < node_keys)
 )"
 
+
+(*steal_right assumes that Trees are not empty and balanced *)
+definition steal_right :: "Tree => (Tree*nat) => (node_lbl_t * Tree list) => nat => Tree" where
+"steal_right r_sibling sibling_delIndex parent sibling_index_in_parent = (
+let (sibling,index) = sibling_delIndex in
+let (ks,rs) = parent in
+(*apply delete*)
+let sibling' = remove_key_child index sibling in
+(*add first key and value/child of the right sibling to the end of sibling*)
+let (stolen_key,sibling'') = 
+(case (sibling,r_sibling) of
+(Leaf sl,Leaf (fst_kv#_)) => (fst(fst_kv) , Leaf (sl@[fst_kv]))
+| (Node (s_ks,s_rs), Node ((fst_k#_),(fst_r#_))) => (fst_k,Node((s_ks@[fst_k]),(s_rs@[fst_r])))
+| _ => undefined) 
+in
+(*remove first key and child of the right sibling*)
+let r_sibling' = remove_key_child 0 r_sibling in
+(*update parent with siblings *)
+let rs1 = list_update rs sibling_index_in_parent sibling'' in
+let rs2 = list_update rs1 (sibling_index_in_parent+1) r_sibling' in
+(*replace parent key*)
+let ks1 = list_update ks sibling_index_in_parent stolen_key in
+Node(ks1,rs2)
+)"
+
 (*begin step del tree stack*)
 definition update_del_focus_at_position :: "node_t => nat => del_focus_t => del_focus_t" where
 "update_del_focus_at_position n i f == (
@@ -84,19 +109,20 @@ False =>
 
   * otherwise, I will merge with the right sibling, if it exists, or with the left sibling.
 *)
-let right_sibling = (if (i = (length ks)) then None else Some(rs!(i+1))) in
-let left_sibling  = (if (i = 0) then None else Some(rs!(i-1))) in
-(case ((is_Some right_sibling) & (is_fat (dest_Some right_sibling))) of
+let m_right_sibling = (if (i = (length ks)) then None else Some(rs!(i+1))) in
+let m_left_sibling  = (if (i = 0) then None else Some(rs!(i-1))) in
+(case ((is_Some m_right_sibling) & (is_fat (dest_Some m_right_sibling))) of
 True => ( (*STEAL RIGHT*)
-(*FIXME*)
-f)
+let right_sibling = dest_Some m_right_sibling in
+let parent_node = steal_right right_sibling (t,d_index) (ks,rs) i in
+DUp parent_node)
 | False => 
-(case ((is_Some left_sibling) & (is_fat (dest_Some left_sibling))) of
+(case ((is_Some m_left_sibling) & (is_fat (dest_Some m_left_sibling))) of
 True => ( (*STEAL LEFT*) 
 (*FIXME*)
 f)
 | False =>
-(case (is_Some right_sibling) of
+(case (is_Some m_right_sibling) of
 True => ( (*MERGE RIGHT*)
 (*FIXME*)
 f)
