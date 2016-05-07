@@ -69,9 +69,9 @@ let (sibling,index) = sibling_delIndex in
 let (ks,rs) = parent in
 (*apply delete*)
 let sibling' = remove_key_child index sibling in
-(*add first key and value/child of the right sibling to the end of sibling*)
+(*add first key and value/child of the right sibling to the end of sibling (after deletion)*)
 let (rotating_key,sibling'') = 
-(case (sibling,r_sibling) of
+(case (sibling',r_sibling) of
 (Leaf sl,Leaf (fst_kv#(snd_kv#_))) => (fst(snd_kv), Leaf (sl@[fst_kv]))
 | (Node (s_ks,s_rs), Node ((fst_k#_),(fst_r#_))) =>
 (fst_k,Node((s_ks@[ks!sibling_index_in_parent]),(s_rs@[fst_r])))
@@ -84,6 +84,41 @@ let rs1 = list_update rs sibling_index_in_parent sibling'' in
 let rs2 = list_update rs1 (sibling_index_in_parent+1) r_sibling' in
 (*replace parent key*)
 let ks1 = list_update ks sibling_index_in_parent rotating_key in
+Node(ks1,rs2)
+)"
+
+(*steal_left assumes that Trees are not empty and balanced *)
+definition steal_left :: "Tree => (Tree*nat) => (node_lbl_t * Tree list) => nat => Tree" where
+"steal_left l_sibling sibling_delIndex parent sibling_index_in_parent = (
+let (sibling,index) = sibling_delIndex in
+let (ks,rs) = parent in
+let last_index_l_sibling = 
+(case l_sibling of
+Leaf l => length l
+| Node (l,_) => length l)
+in
+(*apply delete*)
+let sibling' = remove_key_child index sibling in
+(*add last key and value/child of the left sibling to the beginning of sibling*)
+let (rotating_key,sibling'') = 
+(case (sibling',l_sibling) of
+(Leaf sl,Leaf lsl) =>
+let kv = lsl!last_index_l_sibling in
+(fst kv, Leaf (kv#sl))
+| (Node (s_ks,s_rs), Node (ls_ks,ls_rs)) =>
+let key = ls_ks!last_index_l_sibling in
+let sibling_keys = ((ks!sibling_index_in_parent)#s_ks) in
+let sibling_children = (rs!last_index_l_sibling)#s_rs in
+(key,Node(sibling_keys,sibling_children))
+| _ => undefined)
+in
+(*remove last key and child of the right sibling*)
+let l_sibling' = remove_key_child last_index_l_sibling l_sibling in
+(*update parent with siblings *)
+let rs1 = list_update rs sibling_index_in_parent sibling'' in
+let rs2 = list_update rs1 (sibling_index_in_parent-1) l_sibling' in
+(*replace parent key*)
+let ks1 = list_update ks (sibling_index_in_parent-1) rotating_key in
 Node(ks1,rs2)
 )"
 
@@ -120,8 +155,9 @@ DUp parent_node)
 | False => 
 (case ((is_Some m_left_sibling) & (is_fat (dest_Some m_left_sibling))) of
 True => ( (*STEAL LEFT*) 
-(*FIXME*)
-f)
+let left_sibling = dest_Some m_left_sibling in
+let parent_node = steal_left left_sibling (t,d_index) (ks,rs) i in
+DUp parent_node)
 | False =>
 (case (is_Some m_right_sibling) of
 True => ( (*MERGE RIGHT*)
