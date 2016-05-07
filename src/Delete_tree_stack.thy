@@ -107,7 +107,7 @@ let kv = lsl!last_index_l_sibling in
 (fst kv, Leaf (kv#sl))
 | (Node (s_ks,s_rs), Node (ls_ks,ls_rs)) =>
 let key = ls_ks!last_index_l_sibling in
-let sibling_keys = ((ks!sibling_index_in_parent)#s_ks) in
+let sibling_keys = ((ks!(sibling_index_in_parent-1))#s_ks) in
 let sibling_children = (rs!last_index_l_sibling)#s_rs in
 (key,Node(sibling_keys,sibling_children))
 | _ => undefined)
@@ -162,7 +162,8 @@ DUp parent_node)
 (case (is_Some m_right_sibling) of
 True => ( (*MERGE RIGHT*)
 (*FIXME*)
-f)
+let parent_node = Node(ks,rs) in
+DDelete (parent_node, i+1))
 | False => ( (*MERGE LEFT*)
 f))
 )
@@ -194,7 +195,11 @@ definition wellformed_del_focus :: "del_focus_t => bool => bool" where
 "wellformed_del_focus f stack_empty == (
 case f of
 DUp t => (wellformed_tree (Rmbs stack_empty) t)
-| DDelete (t,_) => (wellformed_tree (Rmbs stack_empty) t)  
+| DDelete (t,_) => 
+(case t of
+Leaf xs => wellformed_tree (Rmbs stack_empty) t
+| Node (ks,rs) => 
+list_all (wellformed_tree (Rmbs stack_empty)) rs)
 )"
 
 definition wellformed_del_ts :: "del_tree_stack => bool" where
