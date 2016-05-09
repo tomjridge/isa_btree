@@ -1,0 +1,85 @@
+theory Delete_tree_stack
+imports Tree Insert_tree_stack
+begin
+(*I need new datatypes in tree stack*)
+
+
+
+(*BEGIN -this should go in the Utils theory*)
+definition remove_child :: "nat => Tree => Tree" where
+"remove_child i t == (
+case t of 
+Leaf ls => Leaf (remove1 i ls)
+| Node (ks,rs) => 
+  if i = 0 
+  then Node(ks,(remove1 i rs))
+  else Node((remove1 i ks),(remove1 i rs))
+)
+"
+
+
+(*END - this should go in the Utils theory*)
+(*BEGIN - this should go in a del_tree_stack theory*)
+
+(*begin delete types*)
+datatype up_or_delete = DUp "Tree" | DDelete "(Tree * nat)"
+
+type_synonym del_focus_t = "up_or_delete"
+
+datatype del_tree_stack = Del_tree_stack "del_focus_t * context_t"
+
+definition dest_del_ts :: "del_tree_stack => (del_focus_t * context_t)" where
+"dest_del_ts dts== (
+case dts of Del_tree_stack ts => ts)
+"
+(*end delete types*)
+
+(*begin step del tree stack*)
+definition update_del_focus_at_position :: "node_t => nat => del_focus_t => del_focus_t" where
+"update_del_focus_at_position n i f == (
+let (ks,rs) = n in
+case f of
+DUp t => 
+(let rs2 = dest_Some(list_replace_1_at_n rs i t) in
+DUp(Node(ks,rs2)))
+| DDelete (t,d_index) => 
+(*FIXME here I need to delete in focus_t, and restructure by using rs if the children size of focus_t is too small*)
+let t' = (remove_child d_index t) in
+f
+)
+"
+
+
+definition step_del_tree_stack :: "del_tree_stack => del_tree_stack option" where
+"step_del_tree_stack ts == (
+let (f,stk) = dest_del_ts ts in
+case stk of 
+Nil => None
+| ((lb,(n,i),rb)#xs) => (
+let f2 = update_del_focus_at_position n i f in
+Some(Del_tree_stack(f2,xs))
+)
+
+)
+
+"
+(*end step del tree stack*)
+(*END*)
+
+(*BEGIN delete wf statements*)
+definition wellformed_del_focus :: "del_focus_t => bool => bool" where
+"wellformed_del_focus f stack_empty == (
+case f of
+DUp t => (wellformed_tree (Rmbs stack_empty) t)
+| DDelete (t,_) => (wellformed_tree (Rmbs stack_empty) t)  
+)"
+
+definition wellformed_del_ts :: "del_tree_stack => bool" where
+"wellformed_del_ts ts == (
+let (f,stk) = dest_del_ts ts in
+wellformed_del_focus f (stk=[])
+& wellformed_context stk
+(* maybe later..
+& wellformed_del_ts_1 ts*))"
+(*END delete wf statements*)
+end
