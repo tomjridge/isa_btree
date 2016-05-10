@@ -26,7 +26,10 @@ Leaf ls => Leaf (remove_at i ls)
 (*BEGIN - this should go in a del_tree_stack theory*)
 
 (*begin delete types*)
-datatype up_or_delete = DUp "Tree" | DDelete "(Tree * nat)"
+datatype up_or_delete =
+DUp "Tree"
+| DUp_after_stealing "(Tree * Tree * key)" (*stealing_node,stolen_node,rotating_key*)
+| DDelete "(Tree * nat)"
 
 type_synonym del_focus_t = "up_or_delete"
 
@@ -62,49 +65,34 @@ Leaf xs =>
 
 
 (*steal_right assumes that Trees are not empty and balanced *)
-definition steal_right :: "Tree => (Tree*nat) => (node_lbl_t * Tree list) => nat => Tree" where
-"steal_right r_sibling sibling_delIndex parent sibling_index_in_parent = (
-let (sibling,index) = sibling_delIndex in
+definition steal_right :: "Tree => Tree => (node_lbl_t * Tree list) => nat => del_focus_t" where
+"steal_right r_sibling sibling parent sibling_index_in_parent = (
 let (ks,rs) = parent in
-(*apply delete*)
-let sibling' = remove_key_child index sibling in
 (*add first key and value/child of the right sibling to the end of sibling (after deletion)*)
-let (rotating_key,sibling'') = 
-(case (sibling',r_sibling) of
-(Leaf sl,Leaf (fst_kv#(snd_kv#_))) => (fst(snd_kv), Leaf (sl@[fst_kv]))
-| (Node (s_ks,s_rs), Node ((fst_k#_),(fst_r#_))) =>
+let (rotating_key,sibling') = 
+(case (sibling,r_sibling) of
+(Node (s_ks,s_rs), Node ((fst_k#_),(fst_r#_))) =>
 (fst_k,Node((s_ks@[ks!sibling_index_in_parent]),(s_rs@[fst_r])))
 | _ => undefined)
 in
 (*remove first key and child of the right sibling*)
 let r_sibling' = remove_key_child 0 r_sibling in
-(*update parent with siblings *)
-let rs1 = list_update rs sibling_index_in_parent sibling'' in
-let rs2 = list_update rs1 (sibling_index_in_parent+1) r_sibling' in
-(*replace parent key*)
-let ks1 = list_update ks sibling_index_in_parent rotating_key in
-Node(ks1,rs2)
+DUp_after_stealing (sibling',r_sibling',rotating_key)
 )"
 
 (*steal_left assumes that Trees are not empty and balanced *)
-definition steal_left :: "Tree => (Tree*nat) => (node_lbl_t * Tree list) => nat => Tree" where
-"steal_left l_sibling sibling_delIndex parent sibling_index_in_parent = (
-let (sibling,index) = sibling_delIndex in
+definition steal_left :: "Tree => Tree => (node_lbl_t * Tree list) => nat => del_focus_t" where
+"steal_left l_sibling sibling parent sibling_index_in_parent = (
 let (ks,rs) = parent in
 let last_index_l_sibling = 
 (case l_sibling of
 Leaf l => length l
 | Node (l,_) => length l)
 in
-(*apply delete*)
-let sibling' = remove_key_child index sibling in
 (*add last key and value/child of the left sibling to the beginning of sibling*)
-let (rotating_key,sibling'') = 
-(case (sibling',l_sibling) of
-(Leaf sl,Leaf lsl) =>
-let kv = lsl!last_index_l_sibling in
-(fst kv, Leaf (kv#sl))
-| (Node (s_ks,s_rs), Node (ls_ks,ls_rs)) =>
+let (rotating_key,sibling') = 
+(case (sibling,l_sibling) of
+(Node (s_ks,s_rs), Node (ls_ks,ls_rs)) =>
 let key = ls_ks!last_index_l_sibling in
 let sibling_keys = ((ks!(sibling_index_in_parent-1))#s_ks) in
 let sibling_children = (rs!last_index_l_sibling)#s_rs in
@@ -113,12 +101,7 @@ let sibling_children = (rs!last_index_l_sibling)#s_rs in
 in
 (*remove last key and child of the right sibling*)
 let l_sibling' = remove_key_child last_index_l_sibling l_sibling in
-(*update parent with siblings *)
-let rs1 = list_update rs sibling_index_in_parent sibling'' in
-let rs2 = list_update rs1 (sibling_index_in_parent-1) l_sibling' in
-(*replace parent key*)
-let ks1 = list_update ks (sibling_index_in_parent-1) rotating_key in
-Node(ks1,rs2)
+DUp_after_stealing(sibling',l_sibling',rotating_key)
 )"
 
 (*merge_right assumes that Trees are not empty and balanced *)
@@ -185,25 +168,19 @@ let m_left_sibling  = (if (i' = 0) then None else Some(prs!(i'-1))) in
 (case ((is_Some m_right_sibling) & (is_fat (dest_Some m_right_sibling))) of
 True => ( (*STEAL RIGHT*)
 let right_sibling = dest_Some m_right_sibling in
-(*FIXME the following should return the DUp_after_stealing focus*)
-let parent_node = steal_right right_sibling (t,d_index) (ks,rs) i in
-undefined)
+steal_right right_sibling t' (pks,prs) i)
 | False => 
 (case ((is_Some m_left_sibling) & (is_fat (dest_Some m_left_sibling))) of
 True => ( (*STEAL LEFT*) 
 let left_sibling = dest_Some m_left_sibling in
-(*FIXME the following should return the DUp_after_stealing focus*)
-let parent_node = steal_left left_sibling (t,d_index) (ks,rs) i in
-undefined)
+steal_left left_sibling t' (pks,prs) i)
 | False =>
 (case (is_Some m_right_sibling) of
 True => ( (*MERGE RIGHT*)
 let right_sibling = dest_Some m_right_sibling in
-(*FIXME the following should return a DDelete focus*)
 merge_right right_sibling t' (pks,prs) i')
 | False => ( (*MERGE LEFT*)
 let left_sibling = dest_Some m_left_sibling in
-(*FIXME the following should return a DDelete focus*)
 merge_left left_sibling t' (pks,prs) i))
 ))))
 )
@@ -244,7 +221,7 @@ Some(Del_tree_stack(f1,Nil))
 | ((lb,(n,i),rb)#((lb',(n',i'),rb')#xs)) => (
 let f2 = update_del_focus_at_position (n,i) (n',i') f in
 Some(Del_tree_stack(f2,((lb',(n',i'),rb')#xs))
-)
+))
 
 )
 
