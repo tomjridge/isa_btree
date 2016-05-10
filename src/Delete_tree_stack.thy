@@ -144,6 +144,16 @@ case f of
 DUp t => 
 (let rs2 = dest_Some(list_replace_1_at_n rs i t) in
 DUp(Node(ks,rs2)))
+| DUp_after_stealing(stealing_sibling,stolen_sibling,rotating_key) => (
+let was_steal_right = ((i+1) < (length rs)) & (~ (is_too_slim (rs!(i+1)))) in
+let stolen_index = (if was_steal_right then (i+1) else (i-1)) in
+let rotating_index = (if was_steal_right then i else (i-1)) in
+(*update parent with siblings *)
+let rs1 = list_update rs stolen_index stealing_sibling in
+let rs2 = list_update rs1 stolen_index stolen_sibling in
+(*replace parent key*)
+let ks1 = list_update ks rotating_index rotating_key in
+DUp(Node(ks1,rs2)))
 | DDelete (t,d_index) =>
 let (n',i') = ni' in
 let (pks,prs) = n' in (*focus grandparent*)
