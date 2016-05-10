@@ -122,63 +122,56 @@ Node(ks1,rs2)
 )"
 
 (*merge_right assumes that Trees are not empty and balanced *)
-definition merge_right :: "Tree => (Tree*nat) => (node_lbl_t * Tree list) => nat => Tree" where
-"merge_right r_sibling sibling_delIndex parent sibling_index_in_parent = (
-let (sibling, index) = sibling_delIndex in
+definition merge_right :: "Tree => Tree => (node_lbl_t * Tree list) => nat => del_focus_t" where
+"merge_right r_sibling sibling parent sibling_index_in_parent = (
 let (ks, rs) = parent in
-(*apply delete*)
-let sibling' = remove_key_child index sibling in
 (*merge nodes*)
-let sibling'' =
-(case (sibling', r_sibling) of
-(Leaf sl, Leaf rsl) => Leaf (sl@rsl)
-| (Node (sks, srs), Node (rsks, rsrs)) =>
+let sibling' =
+(case (sibling, r_sibling) of
+(*NB: the leaf case will be treated in the step across*)
+(Node (sks, srs), Node (rsks, rsrs)) =>
 (*when I merge nodes, I need to import a key separating the last and first child of the nodes*)
 Node ((sks@((ks!sibling_index_in_parent)#rsks)), (srs@rsrs))
 | _ => undefined)
 in
-(*update parent with siblings *)
-let rs1 = list_update rs sibling_index_in_parent sibling'' in
-Node(ks,rs1)
+DDelete(sibling',(sibling_index_in_parent+1))
 )"
 
 (*merge_left assumes that Trees are not empty and balanced *)
-definition merge_left :: "Tree => (Tree*nat) => (node_lbl_t * Tree list) => nat => Tree" where
-"merge_left l_sibling sibling_delIndex parent sibling_index_in_parent = (
-let (sibling, index) = sibling_delIndex in
+definition merge_left :: "Tree => Tree => (node_lbl_t * Tree list) => nat => del_focus_t" where
+"merge_left l_sibling sibling parent sibling_index_in_parent = (
 let (ks, rs) = parent in
-(*apply delete*)
-let sibling' = remove_key_child index sibling in
 (*merge nodes*)
-let sibling'' =
-(case (sibling', l_sibling) of
-(Leaf sl, Leaf lsl) => Leaf (lsl@sl)
-| (Node (sks, srs), Node (lsks, lsrs)) =>
+let sibling' =
+(case (sibling, l_sibling) of
+(Node (sks, srs), Node (lsks, lsrs)) =>
 (*when I merge nodes, I need to import a key separating the last and first child of the nodes*)
 Node ((lsks@((ks!(sibling_index_in_parent-1))#sks)), (lsrs@srs))
 | _ => undefined)
 in
-(*update parent with siblings *)
-let rs1 = list_update rs sibling_index_in_parent sibling'' in
-Node(ks,rs1)
+DDelete(sibling',sibling_index_in_parent)
 )"
 
 (*begin step del tree stack*)
-definition update_del_focus_at_position :: "node_t => nat => del_focus_t => del_focus_t" where
-"update_del_focus_at_position n i f == (
-let (ks,rs) = n in
+definition update_del_focus_at_position :: "(node_t * nat) => (node_t * nat) => del_focus_t => del_focus_t" where
+"update_del_focus_at_position ni ni' f == (
+let (n,i) = ni in
+let (ks,rs) = n in (*focus parent*)
 case f of
 DUp t => 
 (let rs2 = dest_Some(list_replace_1_at_n rs i t) in
 DUp(Node(ks,rs2)))
-| DDelete (t,d_index) => 
-(* I need to delete in focus_t, and restructure by using rs if the children size of focus_t is too small*)
-let t' = (remove_key_child d_index t) in
-(*now I need to check if the current sizes require a steal or a merge*)
+| DDelete (t,d_index) =>
+let (n',i') = ni' in
+let (pks,prs) = n' in (*focus grandparent*)
+(* I add the merged child to the focus parent*)
+let rs1 = (list_update rs i t) in 
+(* I delete the half merged to the child and the relating key from the focus parent *)
+let t' = (remove_key_child d_index (Node(ks,rs1))) in
+(*now the focus parent may need restructuring *)
 (case is_too_slim t' of
-False =>
-(let rs2 = dest_Some(list_replace_1_at_n rs i t') in
-DUp(Node(ks,rs2)))
+False => (*no restructuring*)
+(DUp t')
 | True => (
 (*in this case I can both steal or merge.
   
@@ -186,33 +179,33 @@ DUp(Node(ks,rs2)))
 
   * otherwise, I will merge with the right sibling, if it exists, or with the left sibling.
 *)
-let m_right_sibling = (if (i = (length ks)) then None else Some(rs!(i+1))) in
-let m_left_sibling  = (if (i = 0) then None else Some(rs!(i-1))) in
+(*NB: these restructuring happen only on internal nodes, leaves will be treated in the step across definitions!!*)
+let m_right_sibling = (if (i' = (length pks)) then None else Some(prs!(i'+1))) in
+let m_left_sibling  = (if (i' = 0) then None else Some(prs!(i'-1))) in
 (case ((is_Some m_right_sibling) & (is_fat (dest_Some m_right_sibling))) of
 True => ( (*STEAL RIGHT*)
 let right_sibling = dest_Some m_right_sibling in
+(*FIXME the following should return the DUp_after_stealing focus*)
 let parent_node = steal_right right_sibling (t,d_index) (ks,rs) i in
-DUp parent_node)
+undefined)
 | False => 
 (case ((is_Some m_left_sibling) & (is_fat (dest_Some m_left_sibling))) of
 True => ( (*STEAL LEFT*) 
 let left_sibling = dest_Some m_left_sibling in
+(*FIXME the following should return the DUp_after_stealing focus*)
 let parent_node = steal_left left_sibling (t,d_index) (ks,rs) i in
-DUp parent_node)
+undefined)
 | False =>
 (case (is_Some m_right_sibling) of
 True => ( (*MERGE RIGHT*)
 let right_sibling = dest_Some m_right_sibling in
-let parent_node = merge_right right_sibling (t,d_index) (ks,rs) i in
-DDelete (parent_node, i+1))
+(*FIXME the following should return a DDelete focus*)
+merge_right right_sibling t' (pks,prs) i')
 | False => ( (*MERGE LEFT*)
 let left_sibling = dest_Some m_left_sibling in
-let parent_node = merge_left left_sibling (t,d_index) (ks,rs) i in
-DDelete (parent_node, i+1))
-))
-) 
-)
-)
+(*FIXME the following should return a DDelete focus*)
+merge_left left_sibling t' (pks,prs) i))
+))))
 )
 "
 
@@ -249,8 +242,8 @@ in
 Some(Del_tree_stack(f1,Nil))
 ))
 | ((lb,(n,i),rb)#((lb',(n',i'),rb')#xs)) => (
-let f2 = update_del_focus_at_position n i f in
-Some(Del_tree_stack(f2,xs))
+let f2 = update_del_focus_at_position (n,i) (n',i') f in
+Some(Del_tree_stack(f2,((lb',(n',i'),rb')#xs))
 )
 
 )
