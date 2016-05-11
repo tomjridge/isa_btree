@@ -26,9 +26,11 @@ Leaf ls => Leaf (remove_at i ls)
 (*BEGIN - this should go in a del_tree_stack theory*)
 
 (*begin delete types*)
+datatype was_stolen_right = Was_stolen_right "bool"
+
 datatype up_or_delete =
 DUp "Tree"
-| DUp_after_stealing "(Tree * Tree * key)" (*stealing_node,stolen_node,rotating_key*)
+| DUp_after_stealing "(Tree * Tree * key * was_stolen_right)" (*stealing_node,stolen_node,rotating_key,was_stolen_right*)
 | DDelete "(Tree * nat)"
 
 type_synonym del_focus_t = "up_or_delete"
@@ -77,7 +79,7 @@ let (rotating_key,sibling') =
 in
 (*remove first key and child of the right sibling*)
 let r_sibling' = remove_key_child 0 r_sibling in
-DUp_after_stealing (sibling',r_sibling',rotating_key)
+DUp_after_stealing (sibling',r_sibling',rotating_key,(Was_stolen_right True))
 )"
 
 (*steal_left assumes that Trees are not empty and balanced *)
@@ -101,7 +103,7 @@ let sibling_children = (rs!last_index_l_sibling)#s_rs in
 in
 (*remove last key and child of the right sibling*)
 let l_sibling' = remove_key_child last_index_l_sibling l_sibling in
-DUp_after_stealing(sibling',l_sibling',rotating_key)
+DUp_after_stealing(sibling',l_sibling',rotating_key,(Was_stolen_right False))
 )"
 
 (*merge_right assumes that Trees are not empty and balanced *)
@@ -144,10 +146,9 @@ case f of
 DUp t => 
 (let rs2 = dest_Some(list_replace_1_at_n rs i t) in
 DUp(Node(ks,rs2)))
-| DUp_after_stealing(stealing_sibling,stolen_sibling,rotating_key) => (
-let was_steal_right = ((i+1) < (length rs)) & (~ (is_too_slim (rs!(i+1)))) in
-let stolen_index = (if was_steal_right then (i+1) else (i-1)) in
-let rotating_index = (if was_steal_right then i else (i-1)) in
+| DUp_after_stealing(stealing_sibling,stolen_sibling,rotating_key,(Was_stolen_right wsr)) => (
+let stolen_index = (if wsr then (i+1) else (i-1)) in
+let rotating_index = (if wsr then i else (i-1)) in
 (*update parent with siblings *)
 let rs1 = list_update rs stolen_index stealing_sibling in
 let rs2 = list_update rs1 stolen_index stolen_sibling in
@@ -243,12 +244,15 @@ Some(Del_tree_stack(f2,((lb',(n',i'),rb')#xs))
 definition wellformed_del_focus :: "del_focus_t => bool => bool" where
 "wellformed_del_focus f stack_empty == (
 case f of
-DUp t => (wellformed_tree (Rmbs stack_empty) t)
-| DDelete (t,_) => 
-(case t of
-Leaf xs => wellformed_tree (Rmbs stack_empty) t (*we assume that arrived to the bottom, deletion starts during the ascending phase*)
-| Node (ks,rs) => 
-list_all (wellformed_tree (Rmbs stack_empty)) rs)
+DUp t => wellformed_tree (Rmbs stack_empty) t
+| DUp_after_stealing(t,t',key,(Was_stolen_right wsr)) => (
+wellformed_tree (Rmbs stack_empty) t
+& wellformed_tree (Rmbs stack_empty) t'
+(*FIXME & check_keys None (keys)*)
+)
+| DDelete (t,i) => (
+wellformed_tree (Rmbs stack_empty) t
+& (case t of Leaf l => i < length l | Node (_,rs) => i < length rs))
 )"
 
 definition wellformed_del_ts :: "del_tree_stack => bool" where
