@@ -245,10 +245,17 @@ definition wellformed_del_focus :: "del_focus_t => bool => bool" where
 "wellformed_del_focus f stack_empty == (
 case f of
 DUp t => wellformed_tree (Rmbs stack_empty) t
-| DUp_after_stealing(t,t',key,(Was_stolen_right wsr)) => (
-wellformed_tree (Rmbs stack_empty) t
-& wellformed_tree (Rmbs stack_empty) t'
-(*FIXME & check_keys None (keys)*)
+| DUp_after_stealing(stealing_sibling,stolen_sibling,key,(Was_stolen_right wsr)) => (
+wellformed_tree (Rmbs stack_empty) stealing_sibling
+& wellformed_tree (Rmbs stack_empty) stolen_sibling
+& 
+(if wsr 
+then 
+ (check_keys None (keys stealing_sibling) (Some key)
+ & check_keys (Some key) (keys stolen_sibling) None)
+else
+ (check_keys None (keys stolen_sibling) (Some key)
+ & check_keys (Some key) (keys stealing_sibling) None))
 )
 | DDelete (t,i) => (
 wellformed_tree (Rmbs stack_empty) t
