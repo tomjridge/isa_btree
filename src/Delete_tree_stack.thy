@@ -144,7 +144,7 @@ let (n,i) = ni in
 let (ks,rs) = n in (*focus parent*)
 case f of
 DUp t => 
-(let rs2 = dest_Some(list_replace_1_at_n rs i t) in
+(let rs2 = list_update rs i t in
 DUp(Node(ks,rs2)))
 | DUp_after_stealing(stealing_sibling,stolen_sibling,rotating_key,(Was_stolen_right wsr)) => (
 let stolen_index = (if wsr then (i+1) else (i-1)) in
@@ -233,9 +233,7 @@ Some(Del_tree_stack(f1,Nil))
 let f2 = update_del_focus_at_position (n,i) (n',i') f in
 Some(Del_tree_stack(f2,((lb',(n',i'),rb')#xs))
 ))
-
 )
-
 "
 (*end step del tree stack*)
 (*END*)
@@ -245,9 +243,10 @@ definition wellformed_del_focus :: "del_focus_t => bool => bool" where
 "wellformed_del_focus f stack_empty == (
 case f of
 DUp t => wellformed_tree (Rmbs stack_empty) t
+(*here on the Rmbs are false because step_del_tree_stack set the focus always to a DUp when the stack is empty*)
 | DUp_after_stealing(stealing_sibling,stolen_sibling,key,(Was_stolen_right wsr)) => (
-wellformed_tree (Rmbs stack_empty) stealing_sibling
-& wellformed_tree (Rmbs stack_empty) stolen_sibling
+wellformed_tree (Rmbs False) stealing_sibling
+& wellformed_tree (Rmbs False) stolen_sibling
 & 
 (if wsr 
 then 
@@ -258,8 +257,61 @@ else
  & check_keys (Some key) (keys stealing_sibling) None))
 )
 | DDelete (t,i) => (
-wellformed_tree (Rmbs stack_empty) t
+wellformed_tree (Rmbs False) t
 & (case t of Leaf l => i < length l | Node (_,rs) => i < length rs))
+)"
+
+definition wellformed_del_ts1 :: "del_tree_stack => bool" where
+"wellformed_del_ts1 dts == (
+let (f,stk) = dest_del_ts dts in
+(case stk of
+Nil => True
+| ((lb,((l,cs),i),rb)#r_stk) =>
+let (kl,kr) = get_lower_upper_keys_for_node_t (lb,((l,cs),i),rb) in
+(case f of
+DUp t => (
+(* size not checked; we assume focus is wf *)
+let b1 = True in
+(* ksrs fine *)
+let b2 = True in
+let b3 = (height (cs!i) = height t) in
+let b4 = (check_keys kl (keys t) kr)
+in
+(* keys ordered *)
+let b5 = True in
+let wf = b1&b2&b3&b4&b5 in
+wf)
+| DUp_after_stealing (stealing_sibling,stolen_sibling,key,(Was_stolen_right wsr)) => (
+(* size not checked; we assume focus is wf *)
+let b1 = True in
+(* ksrs fine *)
+let b2 = True in
+let b3 =
+(height (cs!i) = height stealing_sibling)
+& (height (cs!i) = height stolen_sibling)
+in
+let b4 =
+(check_keys kl (keys stealing_sibling) kr)
+&
+(check_keys kl (keys stolen_sibling) kr)
+in
+(* keys ordered *)
+let b5 = True in
+let wf = b1&b2&b3&b4&b5 in
+wf)
+| DDelete(t,d_i) => (
+(* size not checked; we assume focus is wf *)
+let b1 = True in
+(* ksrs fine *)
+let b2 = True in
+let b3 = (height (cs!i) = height t) in
+let b4 = (check_keys kl (keys t) kr)
+in
+(* keys ordered *)
+let b5 = True in
+let wf = b1&b2&b3&b4&b5 in
+wf))
+)
 )"
 
 definition wellformed_del_ts :: "del_tree_stack => bool" where
