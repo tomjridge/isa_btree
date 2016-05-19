@@ -2,6 +2,7 @@ theory Andrea_proof
 imports Insert_tree_stack Key_lt_order
 begin
 
+(*begin insert up invariant*)
 definition invariant_wf_ts :: "bool" where
 "invariant_wf_ts == (
 ! ts.
@@ -15,7 +16,7 @@ wellformed_ts ts'
 )
 ))
 "
-
+(*end insert up invariant*)
 
 lemma forall_subtrees_Cons: "forall_subtrees P t = 
 (case t of 

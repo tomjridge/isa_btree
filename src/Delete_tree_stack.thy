@@ -150,7 +150,7 @@ DUp(Node(ks,rs2)))
 let stolen_index = (if wsr then (i+1) else (i-1)) in
 let rotating_index = (if wsr then i else (i-1)) in
 (*update parent with siblings *)
-let rs1 = list_update rs stolen_index stealing_sibling in
+let rs1 = list_update rs i stealing_sibling in
 let rs2 = list_update rs1 stolen_index stolen_sibling in
 (*replace parent key*)
 let ks1 = list_update ks rotating_index rotating_key in
@@ -206,6 +206,17 @@ Nil => None
 | ((lb,(n,i),rb)#Nil) => (*ROOT may be not well formed (i.e. redundant child)*)
 (case f of
 DUp _ => None
+| DUp_after_stealing(stealing_sibling,stolen_sibling,rotating_key,(Was_stolen_right wsr)) => (
+let stolen_index = (if wsr then (i+1) else (i-1)) in
+let rotating_index = (if wsr then i else (i-1)) in
+(*update parent with siblings *)
+let (ks,rs) = n in
+let rs1 = list_update rs i stealing_sibling in
+let rs2 = list_update rs1 stolen_index stolen_sibling in
+(*replace parent key*)
+let ks1 = list_update ks rotating_index rotating_key in
+let f1 = DUp(Node(ks1,rs2)) in
+Some(Del_tree_stack(f1,Nil)))
 | DDelete(t,i) =>
 (case t of
 Leaf l =>
@@ -319,7 +330,6 @@ definition wellformed_del_ts :: "del_tree_stack => bool" where
 let (f,stk) = dest_del_ts ts in
 wellformed_del_focus f (stk=[])
 & wellformed_context stk
-(* maybe later..
-& wellformed_del_ts_1 ts*))"
+& wellformed_del_ts1 ts)"
 (*END delete wf statements*)
 end
