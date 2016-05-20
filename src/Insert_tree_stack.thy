@@ -2,22 +2,23 @@ theory Insert_tree_stack
 imports Tree_stack
 begin
 
-definition subtree_indexes :: "node_t \<Rightarrow> nat set" where
+(*begin wfcontext definition*)
+definition subtree_indexes :: "node_t => nat set" where
 "subtree_indexes n == (
-  case n of (l,_) \<Rightarrow>  { 0 .. (length l)})"
+  case n of (l,_) =>  { 0 .. (length l)})"
 
-definition is_subnode :: "(node_t * nat) \<Rightarrow> (node_t * nat) \<Rightarrow> bool" where
+definition is_subnode :: "(node_t * nat) => (node_t * nat) => bool" where
 "is_subnode ni pi == (
   let (n,_) = ni in
   let ((ks,rs),i) = pi in
   Node n = (rs!i))"
                                         
-fun linked_context :: "(left_bound * (node_t * nat) * right_bound) \<Rightarrow> context_t \<Rightarrow> bool" where
+fun linked_context :: "(left_bound * (node_t * nat) * right_bound) => context_t => bool" where
 "linked_context ni [] = True" |
 "linked_context (lb,ni,rb) ((plb,pi,prb)#pis) = (
-  is_subnode ni pi \<and> linked_context (plb,pi,prb) pis)"
+  is_subnode ni pi & linked_context (plb,pi,prb) pis)"
 
-definition wellformed_context_1 :: "rmbs_t \<Rightarrow> (left_bound * (node_t * nat) * right_bound) \<Rightarrow> bool " where
+definition wellformed_context_1 :: "rmbs_t => (left_bound * (node_t * nat) * right_bound) => bool " where
 "wellformed_context_1 rmbs lbnirb == (
 let (lb,((l,cs),i),rb) = lbnirb in
 let node = (Node(l,cs)) in(
@@ -25,7 +26,7 @@ wellformed_tree rmbs node
 & i : (subtree_indexes (l,cs)))
 & check_keys lb (keys node) rb)"
 
-definition get_lower_upper_keys_for_node_t :: "(left_bound * (node_t * nat) * right_bound) \<Rightarrow> (key option * key option)" where
+definition get_lower_upper_keys_for_node_t :: "(left_bound * (node_t * nat) * right_bound) => (key option * key option)" where
 "get_lower_upper_keys_for_node_t ni == (
 let (lb,((ls,_),i),rb) = ni in (
 let l = if (i = 0) then lb else Some(ls ! (i - 1))     in
@@ -33,7 +34,9 @@ let u = if (i = (length ls)) then rb else Some(ls ! i) in
 (l,u)
 ))"
 
-fun wellformed_context :: "context_t \<Rightarrow> bool" where
+export_code get_lower_upper_keys_for_node_t in Scala module_name Problem file "/tmp/Problem.scala"
+
+fun wellformed_context :: "context_t => bool" where
 "wellformed_context Nil = True" |
 "wellformed_context (x # Nil) = wellformed_context_1 (Rmbs True) x" |
 "wellformed_context (x1 # (x2 # rest)) = (
@@ -45,31 +48,33 @@ wellformed_context_1 (Rmbs False) x1
 & wellformed_context (x2#rest)
 )
 "
+(*end wfcontext definition*)
 
-definition wellformed_focus :: "focus_t \<Rightarrow> bool \<Rightarrow> bool" where
+(*begin wffocus definition*)
+definition wellformed_focus :: "focus_t => bool => bool" where
 "wellformed_focus f stack_empty == (
 case f of
-Inserting_one t \<Rightarrow> (wellformed_tree (Rmbs stack_empty) t)
-| Inserting_two (tl_,k0,tr) \<Rightarrow> (
+Inserting_one t => (wellformed_tree (Rmbs stack_empty) t)
+| Inserting_two (tl_,k0,tr) => (
 wellformed_tree (Rmbs False) tl_ 
 & wellformed_tree (Rmbs False) tr
 & check_keys None (keys (tl_)) (Some k0)
 & check_keys (Some k0) (keys tr) None)
 )"
+(*end wffocus definition*)
 
-
-
-definition wellformed_ts_1 :: "tree_stack \<Rightarrow> bool" where
+(*begin wfts1 definition*)
+definition wellformed_ts_1 :: "tree_stack => bool" where
 "wellformed_ts_1 ts == (
 let (f,stk) = dest_ts ts in
 (case stk of 
 
-Nil \<Rightarrow> (True) (* Nil - focus is wf *)
+Nil => (True) (* Nil - focus is wf *)
 
-| ((lb,((l,cs),i),rb)#nis) \<Rightarrow> (
+| ((lb,((l,cs),i),rb)#nis) => (
 let (kl,kr) = get_lower_upper_keys_for_node_t (lb,((l,cs),i),rb) in
 case f of
-Inserting_one t \<Rightarrow> (
+Inserting_one t => (
 (* size not checked; we assume focus is wf *)
 let b1 = True in
 (* ksrs fine *)
@@ -83,7 +88,7 @@ let wf = b1&b2&b3&b4&b5 in
 wf
 )  (* Inserting_one *)
 
-| Inserting_two (tl_,k0,tr) \<Rightarrow> (
+| Inserting_two (tl_,k0,tr) => (
 let b1 = True in
 let b2 = True in
 let b3 = (
@@ -99,7 +104,7 @@ let b4 = (
 in
 (* keys ordered *)
 let b5 = (
-check_keys kl [k0] kr  (* andrea: error here! proof needs more *)
+check_keys kl [k0] kr
 )
 in
 let wf = b1&b2&b3&b4&b5 in
@@ -110,13 +115,15 @@ wf
 
 
 ))"
+(*end wfts1 definition*)
 
-definition wellformed_ts :: "tree_stack \<Rightarrow> bool" where
+(*begin wftreestack definition*)
+definition wellformed_ts :: "tree_stack => bool" where
 "wellformed_ts ts == (
 let (f,stk) = dest_ts ts in
 wellformed_focus f (stk=[])
 & wellformed_context stk
 & wellformed_ts_1 ts)"
-
+(*end wftreestack definition*)
 
 end
