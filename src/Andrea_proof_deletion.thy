@@ -49,7 +49,8 @@ apply (thin_tac "n=_")
 apply (case_tac a)
 apply simp
 apply (case_tac x)
-apply clarsimp
+apply (rename_tac ks rs)
+apply simp
 apply (rename_tac f' stk')
 apply rule
  (*begin wf_focus subproof*)
@@ -62,9 +63,24 @@ apply rule
    apply force
 
    (*f = DUp_after_stealing*)
+   apply simp
+   apply (case_tac x2)
+   apply (rename_tac "stealing" "stolen" "key" "wsr")
+   apply simp
+   apply (subgoal_tac "? tree . f' = DUp tree") prefer 2 apply (case_tac "wsr",rename_tac b, case_tac "b") apply force apply force
+   apply (erule exE)
+   apply simp
+   apply (subgoal_tac "n = (ksa,rsa)") prefer 2 apply (fast intro:FIXME)
+   apply (case_tac "wsr",rename_tac b, case_tac "b")
+    (*b = True *)
+    apply (case_tac n) apply simp
+    apply (erule conjE)
+    apply (drule_tac t="tree" in sym)
+    apply clarsimp
+    apply (fast intro:FIXME)
    
-   apply (fast intro:FIXME)
-   
+    (*b = False*)
+    apply (fast intro:FIXME)
    (*f = DDelete*)
    apply (fast intro:FIXME)
 
