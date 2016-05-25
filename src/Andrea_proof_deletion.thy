@@ -43,9 +43,6 @@ apply (thin_tac "x=_")
 apply (thin_tac "hd_stk=_")
 apply(simp add: wellformed_del_ts_def dest_del_ts_def)
 apply(elim conjE)
-apply (case_tac n,rename_tac ks rs)
-apply simp
-apply (thin_tac "n=_")
 apply (case_tac a)
 apply simp
 apply (case_tac x)
@@ -70,16 +67,13 @@ apply rule
    apply (subgoal_tac "? tree . f' = DUp tree") prefer 2 apply (case_tac "wsr",rename_tac b, case_tac "b") apply force apply force
    apply (erule exE)
    apply simp
-   apply (subgoal_tac "n = (ksa,rsa)") prefer 2 apply (fast intro:FIXME)
-   apply (case_tac "wsr",rename_tac b, case_tac "b")
-    (*b = True *)
-    apply (case_tac n) apply simp
-    apply (erule conjE)
-    apply (drule_tac t="tree" in sym)
+   apply (case_tac n) 
+   apply (case_tac "wsr",rename_tac ks rs bool, case_tac "bool")
+    (*bool = True *)
     apply clarsimp
     apply (fast intro:FIXME)
    
-    (*b = False*)
+    (*bool = False*)
     apply (fast intro:FIXME)
    (*f = DDelete*)
    apply (fast intro:FIXME)

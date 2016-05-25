@@ -1078,7 +1078,7 @@ apply(case_tac f)
   apply (subgoal_tac "? lb' l cs i' rb' . hd_stk = (lb', ((l, cs), i'), rb')") prefer 2 apply force 
   apply (erule exE)+
   apply simp
-  apply (subgoal_tac "get_lower_upper_keys_for_node_t (lb', ((l, cs), i'), rb')  = (lb,rb)") prefer 2 apply force
+  apply (subgoal_tac "get_lower_upper_keys_for_node_t l lb' i' rb'  = (lb,rb)") prefer 2 apply force
   apply(simp add: split_node_def)
   apply (case_tac "case drop min_node_keys ks2 of x # xa => (x, xa)")
   apply (rename_tac "k" "right_ks")  

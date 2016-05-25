@@ -26,13 +26,12 @@ wellformed_tree rmbs node
 & i : (subtree_indexes (l,cs)))
 & check_keys lb (keys node) rb)"
 
-definition get_lower_upper_keys_for_node_t :: "(left_bound * (node_t * nat) * right_bound) => (key option * key option)" where
-"get_lower_upper_keys_for_node_t ni == (
-let (lb,((ls,_),i),rb) = ni in (
+definition get_lower_upper_keys_for_node_t :: "key list => left_bound => nat => right_bound => (key option * key option)" where
+"get_lower_upper_keys_for_node_t ls lb i rb == (
 let l = if (i = 0) then lb else Some(ls ! (i - 1))     in
 let u = if (i = (length ls)) then rb else Some(ls ! i) in
 (l,u)
-))"
+)"
 
 export_code get_lower_upper_keys_for_node_t in Scala module_name Problem file "/tmp/Problem.scala"
 
@@ -40,7 +39,8 @@ fun wellformed_context :: "context_t => bool" where
 "wellformed_context Nil = True" |
 "wellformed_context (x # Nil) = wellformed_context_1 (Rmbs True) x" |
 "wellformed_context (x1 # (x2 # rest)) = (
-let (l2,u2) = get_lower_upper_keys_for_node_t x2 in
+let (lb,((ls,_),i),rb) = x2 in
+let (l2,u2) = get_lower_upper_keys_for_node_t ls lb i rb in
 let (l1,_,u1) = x1 in
 wellformed_context_1 (Rmbs False) x1
 & (l1,u1) = (l2,u2)
@@ -72,7 +72,7 @@ let (f,stk) = dest_ts ts in
 Nil => (True) (* Nil - focus is wf *)
 
 | ((lb,((l,cs),i),rb)#nis) => (
-let (kl,kr) = get_lower_upper_keys_for_node_t (lb,((l,cs),i),rb) in
+let (kl,kr) = get_lower_upper_keys_for_node_t l lb i rb in
 case f of
 Inserting_one t => (
 (* size not checked; we assume focus is wf *)

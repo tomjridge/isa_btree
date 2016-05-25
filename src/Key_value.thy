@@ -30,4 +30,12 @@ b1 & b2
 )"
 (*end check keys definition*)
 
+(*tr: assumes xs are sorted; returns list length if not found*)
+definition search_key_to_index :: "key list => key => nat" where
+"search_key_to_index ks k == (
+let num_keys = length ks in
+let index = List.find (% x. key_lt k (ks!x)) (upt 0 num_keys) in
+(case index of None => num_keys
+| Some x => x))"
+
 end
