@@ -39,11 +39,6 @@ termination
   apply(force intro:FIXME)
   done
 
-(*
-definition update_child_at_position :: "node_lbl_t * Tree list => nat => Tree => Tree" where
-"update_child_at_position node i child == FIXME"
-*)
-
 (* begin t2s *)
 function tree_to_subtrees :: "Tree => Tree list" where
 "tree_to_subtrees t0 = (

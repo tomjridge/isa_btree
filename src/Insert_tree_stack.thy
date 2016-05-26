@@ -33,8 +33,6 @@ let u = if (i = (length ls)) then rb else Some(ls ! i) in
 (l,u)
 )"
 
-export_code get_lower_upper_keys_for_node_t in Scala module_name Problem file "/tmp/Problem.scala"
-
 fun wellformed_context :: "context_t => bool" where
 "wellformed_context Nil = True" |
 "wellformed_context (x # Nil) = wellformed_context_1 (Rmbs True) x" |

@@ -70,4 +70,6 @@ Some(Tree_stack(f2,xs))
 
 "
 
+declare [[code abort: key_lt key_le min_node_keys max_node_keys]]
+export_code step_tree_stack in Scala module_name Insert_tree_stack file "/tmp/Insert_tree_stack.scala"
 end

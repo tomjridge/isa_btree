@@ -11,7 +11,7 @@ datatype fts_state = Fts_state "key * Tree * context_t"
 
 definition dest_fts_state :: "fts_state => (key * Tree * context_t)" where
 "dest_fts_state fts == (case fts of Fts_state (k,t,c) => (k,t,c))"
- 
+
 definition tree_to_fts :: "key => Tree => fts_state" where
 "tree_to_fts k t == (
 Fts_state (k,t,Nil))"
@@ -38,7 +38,7 @@ let (k,t,ctx) = dest_fts_state fts in
 let rmbs = Rmbs(ctx = Nil) in
 wellformed_fts_focus rmbs t
 & wellformed_context ctx
-& wellformed_fts_1 fts)"
+(*& wellformed_fts_1 fts*))"
 
 (*tr: stops when gets to leaf; no "errors"*)
 definition step_fts :: "fts_state => fts_state option" where
@@ -54,6 +54,9 @@ Leaf _ => None
  let i = search_key_to_index ks k in
  let (l,u) = get_lower_upper_keys_for_node_t ks lb i rb in
  let ctx2 = (l,((ks,rs),i),u)#ctx in
- Some(Fts_state(k,t,ctx2))
+ Some(Fts_state(k,(rs!i),ctx2))
 ))"
+
+declare [[code abort: key_lt]]
+export_code step_fts in Scala module_name Find_tree_stack file "/tmp/Find_tree_stack.scala"
 end
