@@ -95,7 +95,7 @@ let (k0,lf,stk) = dest_fts_state fts in
 Leaf kvs =>
 (*tr:need to check whether the leaf is small enough to insert directly*)
 let cond = 
-((List.find (%x. k0 = (fst x)) kvs) ~= None
+((List.find (%x. key_eq k0 (fst x)) kvs) ~= None
 | length kvs < max_leaf_size )
 in
 if (cond) then
@@ -113,7 +113,7 @@ Some(Its_up(Tree_stack(Focus focus,stk)))
 | Its_up ts => Option.bind (step_up ts) (% x . Some (Its_up x)))
 "
 
-declare [[code abort: key_lt key_le min_node_keys max_node_keys]]
+declare [[code abort: key_lt min_node_keys max_node_keys min_leaf_size max_leaf_size]]
 export_code ins_step_tree_stack in Scala module_name Insert_tree_stack file "/tmp/Insert_tree_stack.scala"
 (*end step its_tree_stack*)
 
