@@ -8,7 +8,7 @@ definition invariant_wf_ts :: "bool" where
 ! ts.
   wellformed_ts ts --> 
 (
-let ts' = step_tree_stack ts in
+let ts' = step_up ts in
 case ts' of 
 None => True
 | Some ts' => (
@@ -161,8 +161,10 @@ apply(simp add: invariant_wf_ts_def)
 apply(intro allI impI)
 apply(case_tac ts)
 apply(case_tac x)
-apply(rename_tac f stk)
-apply(simp add: step_tree_stack_def dest_ts_def)
+apply(rename_tac ff stk)
+apply(simp add: step_up_def dest_ts_def)
+apply (case_tac ff,simp)
+apply (rename_tac f)
 apply(case_tac stk) apply(force)
 apply (rename_tac hd_stk stk)
 apply (subgoal_tac "? lb n i rb. hd_stk = (lb,(n,i),rb)") prefer 2 apply force
@@ -927,7 +929,7 @@ apply(case_tac f)
  apply(simp add: Let_def)
  apply (subgoal_tac "? fat_node. Node(ks2,rs2) = fat_node") prefer 2 apply force
  apply (erule exE)
- apply (subgoal_tac "wellformed_ts_1 (Tree_stack ((Inserting_one fat_node), stk))")
+ apply (subgoal_tac "wellformed_ts_1 (Tree_stack (Focus(Inserting_one fat_node), stk))")
  prefer 2
   apply (simp add:wellformed_ts_1_def dest_ts_def)
   apply (case_tac stk,force)

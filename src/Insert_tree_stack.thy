@@ -28,8 +28,8 @@ let right_rs = drop (1+n0) cs in
 (Node(left_ks,left_rs),k,Node(right_ks,right_rs))
 )"
 
-definition step_up :: "node_t \<Rightarrow> nat \<Rightarrow> ins_focus_t \<Rightarrow> ins_focus_t" where
-"step_up n i f == (
+definition update_focus_at_position :: "node_t \<Rightarrow> nat \<Rightarrow> ins_focus_t \<Rightarrow> ins_focus_t" where
+"update_focus_at_position n i f == (
 let (ks,rs) = n in
 case f of
 Inserting_one t \<Rightarrow> (
@@ -46,18 +46,22 @@ Inserting_two(split_node(ks2,rs2))
 )
 )"
 
-definition ins_step_tree_stack :: "ins_tree_stack \<Rightarrow> (ins_tree_stack) option" where
-"ins_step_tree_stack ts == (
+
+definition step_up :: "ins_tree_stack \<Rightarrow> (ins_tree_stack) option" where
+"step_up ts == (
 let (f,stk) = dest_ts ts in
 case stk of 
 Nil \<Rightarrow> None
 | ((lb,(n,i),rb)#xs) \<Rightarrow> (
-let f2 = step_up n i f in
+let f2 = update_focus_at_position n i f in
 Some(Tree_stack((Focus f2),xs))
 )
-
 )
+"
 
+definition ins_step_tree_stack :: "ins_tree_stack \<Rightarrow> (ins_tree_stack) option" where
+"ins_step_tree_stack ts == (
+step_up ts)
 "
 
 declare [[code abort: key_lt key_le min_node_keys max_node_keys]]
