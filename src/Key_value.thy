@@ -7,8 +7,11 @@ typedecl value_t
 
 consts key_lt :: "key => key => bool"
 
+definition key_eq :: "key => key => bool" where
+  "key_eq k1 k2 == (~ (key_lt k1 k2)) & (~ (key_lt k2 k1))"
+
 definition key_le :: "key => key => bool" where
-  "key_le k1 k2 == (k1 = k2) | (key_lt k1 k2)"
+  "key_le k1 k2 == (key_eq k1 k2) | (key_lt k1 k2)"
 
 definition kv_lt :: "(key * value_t) => (key * value_t) => bool" where
   "kv_lt kv1 kv2 == (key_lt (fst kv1) (fst kv2))"

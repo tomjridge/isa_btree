@@ -4,18 +4,14 @@ begin
 
 definition total_order_key_lte :: " bool" where
 "total_order_key_lte == (\<forall> a b c. 
-   (key_le a b \<and> key_le b a \<longrightarrow> a = b) \<and>
+   (key_le a b \<and> key_le b a \<longrightarrow> key_eq a b) \<and>
    (key_le a b \<and> key_le b c \<longrightarrow> key_le a c) \<and>
    (key_le a b \<or> key_le b a))"
 
 lemma order_key_le_lt: "\<forall> a b c. total_order_key_lte \<longrightarrow> key_le a b \<and> key_lt b c \<longrightarrow> key_lt a c"
 apply rule+
 apply (unfold total_order_key_lte_def)
-apply (drule_tac x=a in spec)
-apply (drule_tac x=b in spec)
-apply (drule_tac x=c in spec)
-apply (simp add:key_le_def)
-apply auto
+apply (meson key_eq_def key_le_def)
 done
 
 lemma order_key_le: "\<forall> a b c. total_order_key_lte \<longrightarrow> key_le a b \<and> key_le b c \<longrightarrow> key_le a c"
@@ -28,7 +24,8 @@ apply (simp add:key_le_def)
 done
 
 lemma order_key_lt: "\<forall> a b c. total_order_key_lte \<longrightarrow> key_lt a b \<and> key_lt b c \<longrightarrow> key_lt a c"
-apply (simp add:total_order_key_lte_def key_le_def,auto)
+apply (simp add:total_order_key_lte_def key_le_def)
+apply (meson key_eq_def key_le_def)
 done
 
 lemma hd_smallest_in_list_sorted_by_key_lt: 
@@ -156,7 +153,7 @@ apply (case_tac ia)
  apply (force simp add:key_le_def)
  
  apply clarsimp
- apply (metis key_le_def nth_mem order_key_lt)
+ apply (meson key_le_def nth_mem total_order_key_lte_def)
 done
 
 end

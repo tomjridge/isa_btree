@@ -1,5 +1,5 @@
 theory Find_tree_stack
-imports Util Constants Tree Insert_tree_stack Key_value
+imports Util Constants Tree Key_value Tree_stack
 begin
 
 (* tr: we return a pair of a focus and the context; the focus is just

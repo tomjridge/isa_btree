@@ -71,4 +71,9 @@ value "((list_replace_at_n [0,0,0] 3 [1,2])) = None"
 definition list_replace_1_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list option" where
 "list_replace_1_at_n xs n a == (Some (list_update xs n a))"
 
+definition list_ordered_insert :: "('a => bool) => 'a => 'a list => 'a list" where
+"list_ordered_insert is_ord e l == (
+if l = [] then [e]
+else
+(takeWhile is_ord l)@e#(tl (dropWhile is_ord l)))"
 end
