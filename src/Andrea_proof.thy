@@ -1,5 +1,5 @@
 theory Andrea_proof
-imports Insert_tree_stack Key_lt_order
+imports Insert_tree_stack Key_lt_order Find_tree_stack  Find_proof
 begin
 
 (*begin insert invariant definition*)
@@ -1190,4 +1190,108 @@ apply(case_tac f)
   (*case rb of None => True | Some kr => !k : set [k]. key_lt k kr*)
   apply (case_tac rb) apply force apply (force simp add:keys_Cons)
 done
+
+definition wf_its_state :: "its_state => bool" where
+"wf_its_state its == (
+case its of
+Its_down (fts,_) => wellformed_fts fts
+| Its_up its => wellformed_ts its
+)"
+
+definition invariant_wf_its_state :: "bool" where
+"invariant_wf_its_state == (
+! its.
+  wf_its_state its --> 
+(
+let its' = its_step_tree_stack its in
+case its' of 
+None => True
+| Some its' => (
+wf_its_state its'
+)
+))
+"
+
+lemma invariant_wf_its_state : "invariant_wf_its_state"
+(*FIXME we already proofed step up, we assume find, we need to solve step across*)
+apply (simp add:invariant_wf_its_state_def)
+apply clarify
+apply (case_tac "its_step_tree_stack its",force)
+apply simp
+apply (rename_tac its')
+apply (simp add:its_step_tree_stack_def Let_def)
+apply (case_tac its)
+ (*its = Its_down*)
+ apply (simp add:Let_def)
+ apply (case_tac x1,simp)
+ apply (rename_tac fts v0)
+ apply (case_tac "step_fts fts")
+  (*None*)
+  apply (simp add:dest_fts_state_def)
+  apply (case_tac fts,simp)
+  apply (case_tac x,simp)
+  apply (rename_tac k0 node stk)
+  apply (case_tac node,force)
+  (*Leaf*)
+  apply (rename_tac kvs)
+  apply (simp add:step_fts_def dest_fts_state_def)
+  apply (subgoal_tac "? kvs2. list_ordered_insert (%x. key_lt (fst x) k0) (k0, v0) kvs = kvs2") prefer 2 apply force
+  apply (erule exE)
+  apply (subgoal_tac "length kvs2 = length kvs") prefer 2 apply (force intro:FIXME)
+  apply (subgoal_tac "keys_ordered (Leaf kvs2)") prefer 2 apply (force intro:FIXME)
+  apply (subgoal_tac "stk ~= [] --> (let (lb,_,rb) = (hd stk) in (check_keys lb (keys (Leaf kvs2)) rb))") prefer 2
+   apply (simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def)
+   apply (case_tac stk,force)
+   apply simp
+   apply (subgoal_tac "wellformed_context_1 (Rmbs (list=[])) (hd stk)") prefer 2 apply (case_tac list,force,force)
+   apply (case_tac a, simp)
+   apply (simp add:wellformed_context_1_def)
+   apply clarsimp
+   apply (simp add:check_keys_def)
+    
+  apply (case_tac "(? a b. List.find (% x. key_eq k0 (fst x)) kvs = Some (a, b)) | length kvs < max_leaf_size")
+   (*cond = true*)
+   apply (simp add:wf_its_state_def)
+   apply (drule_tac t="its'" in sym)
+   apply (simp add:wellformed_ts_def wellformed_fts_def dest_fts_state_def dest_ts_def)
+   apply (simp add:wellformed_fts_focus_def wellformed_focus_def wellformed_ts_1_def dest_ts_def)
+   apply (simp add:wellformed_tree_def wf_ks_rs_def wf_ks_rs_1_def balanced_def balanced_1_def keys_consistent_def keys_consistent_1_def forall_subtrees_def rev_apply_def)
+   apply (simp add:wf_size_def)
+   apply (case_tac stk,force)
+   apply (case_tac a)
+   apply (rename_tac lb ni rb)
+   apply (case_tac ni)
+   apply (rename_tac n i)
+   apply (case_tac n)
+   apply (rename_tac ks rs)
+   apply (simp add: wf_size_1_def forall_subtrees_def rev_apply_def)
+   apply (erule conjE)+
+   apply (subgoal_tac "rs!i = node") prefer 2 (*FIXME we should not need wf_fts_1*) apply (force intro:FIXME)
+   apply (simp add:Let_def)
+   apply (subgoal_tac "ks ~= []") prefer 2 apply (force intro:FIXME)
+   apply (simp add:wellformed_context_1_def get_lower_upper_keys_for_node_t_def)
+   apply (case_tac "i = 0")
+    apply (simp add:check_keys_def)
+    apply rule apply (case_tac lb,force) apply (erule conjE)+
+   
+   apply (force intro:FIXME)
+   (*cond = false*)
+   apply (force intro:FIXME)
+ 
+  (*Some fts'*)
+  apply (rename_tac fts')
+  apply (insert invariant_wf_fts)
+  apply (force simp add:wf_its_state_def invariant_wf_fts_def)
+  apply (thin_tac "invariant_wf_fts")
+
+ (*its = Its_up*)
+ apply (simp add:wf_its_state_def)
+ apply (case_tac "step_up x2",force)
+ apply (drule_tac t="Some its'" in sym)
+ apply simp
+ apply (insert invariant_wf_ts)
+ apply (simp add:invariant_wf_ts_def)
+ apply force
+done
+
 end

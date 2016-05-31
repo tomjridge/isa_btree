@@ -1,5 +1,5 @@
 theory Find_tree_stack
-imports Util Constants Tree Key_value Tree_stack
+imports Util Constants Tree Key_value Tree_stack "~~/src/HOL/Library/Code_Target_Nat"
 begin
 
 (* tr: we return a pair of a focus and the context; the focus is just
@@ -38,7 +38,7 @@ let (k,t,ctx) = dest_fts_state fts in
 let rmbs = Rmbs(ctx = Nil) in
 wellformed_fts_focus rmbs t
 & wellformed_context ctx
-(*& wellformed_fts_1 fts*))"
+& wellformed_fts_1 fts)"
 
 (*tr: stops when gets to leaf; no "errors"*)
 definition step_fts :: "fts_state => fts_state option" where

@@ -1,5 +1,5 @@
 theory Insert_tree_stack
-imports Tree_stack Find_tree_stack
+imports Tree_stack Find_tree_stack "~~/src/HOL/Library/Code_Target_Nat"
 begin
 
 (*begin ins focus definition*)
@@ -71,8 +71,8 @@ Some(Tree_stack((Focus f2),xs))
 )
 "
 
-definition ins_step_tree_stack :: "its_state \<Rightarrow> (its_state) option" where
-"ins_step_tree_stack ts == (
+definition its_step_tree_stack :: "its_state \<Rightarrow> (its_state) option" where
+"its_step_tree_stack ts == (
 case ts of
 Its_down (fts,v0) =>
 let fts1 = step_fts fts in
@@ -108,13 +108,13 @@ let kvs2 = list_ordered_insert (%x. key_lt (fst x) k0) (k0,v0) kvs in
 let (left,k,right) = split_leaf_kvs kvs2 in
 let focus = Inserting_two(Leaf left, k,Leaf right)in
 Some(Its_up(Tree_stack(Focus focus,stk)))
-| _ => undefined (* impossible: find returns leaf *))
+| _ => None (* impossible: find returns leaf *))
 | Some x => Some(Its_down(x,v0)))
 | Its_up ts => Option.bind (step_up ts) (% x . Some (Its_up x)))
 "
 
 declare [[code abort: key_lt min_node_keys max_node_keys min_leaf_size max_leaf_size]]
-export_code ins_step_tree_stack in Scala module_name Insert_tree_stack file "/tmp/Insert_tree_stack.scala"
+export_code its_step_tree_stack in Scala module_name Insert_tree_stack file "/tmp/Insert_tree_stack.scala"
 (*end step its_tree_stack*)
 
 (*begin wffocus definition*)

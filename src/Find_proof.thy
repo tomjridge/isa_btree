@@ -82,7 +82,7 @@ prefer 2
   (*ERROR IN DEFINITIONS*)
   apply (fast intro:FIXME)
 
-  apply (case_tac u) apply force
+  apply (case_tac u) apply (force simp add:dest_fts_state_def wellformed_fts_1_def)
   apply (fast intro:FIXME)
 
   (*ctx = a#list*)
