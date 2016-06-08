@@ -28,8 +28,10 @@ let (k,t,ctx) = dest_fts_state fts in
 Nil => True
 | x#xs =>
  let (lb,((ks,rs),i),rb) = x in
- (t = rs!i)
- (*tr: the keys of the focus are bounded by constraints on context*)
+ let (l,u) = get_lower_upper_keys_for_node_t ks lb i rb in
+ (t = rs!i) (*tr: the keys of the focus are bounded by constraints on context*)
+ &
+ (check_keys l [k] u)
 ))"
 
 definition wellformed_fts :: "fts_state => bool" where

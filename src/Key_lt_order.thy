@@ -8,6 +8,12 @@ definition total_order_key_lte :: " bool" where
    (key_le a b \<and> key_le b c \<longrightarrow> key_le a c) \<and>
    (key_le a b \<or> key_le b a))"
 
+lemma neg_key_lt: "! a b. total_order_key_lte \<longrightarrow> (~ key_lt a b) = (key_le b a)"
+apply rule+
+apply (unfold total_order_key_lte_def)
+apply (force simp add: key_eq_def key_le_def)+
+done
+
 lemma order_key_le_lt: "\<forall> a b c. total_order_key_lte \<longrightarrow> key_le a b \<and> key_lt b c \<longrightarrow> key_lt a c"
 apply rule+
 apply (unfold total_order_key_lte_def)
