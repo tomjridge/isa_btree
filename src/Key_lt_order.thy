@@ -20,6 +20,12 @@ apply (unfold total_order_key_lte_def)
 apply (meson key_eq_def key_le_def)
 done
 
+lemma order_key_lt_le: "\<forall> a b c. total_order_key_lte \<longrightarrow> key_le a b \<and> key_lt b c \<longrightarrow> key_le a c"
+apply rule+
+apply (unfold total_order_key_lte_def)
+apply (meson key_eq_def key_le_def)
+done
+
 lemma order_key_le: "\<forall> a b c. total_order_key_lte \<longrightarrow> key_le a b \<and> key_le b c \<longrightarrow> key_le a c"
 apply rule+
 apply (unfold total_order_key_lte_def)
