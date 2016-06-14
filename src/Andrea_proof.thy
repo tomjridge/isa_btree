@@ -39,14 +39,14 @@ definition wf_size' :: "rmbs_t => Tree => bool" where
 case rmbs of
 Rmbs False => (
 case t0 of 
-Leaf(l) => (length l <= Constants.max_leaf_size)
+Leaf(l) => (length l <= Constants.max_leaf_size +1)
 | Node(l,cs) => (
 1 <= length l
 & List.list_all (forall_subtrees wf_size_1) cs)
 )
 | Rmbs True => (
 case t0 of 
-Leaf(l) => (length l <= Constants.max_leaf_size)
+Leaf(l) => (length l <= Constants.max_leaf_size +1)
 | Node(l,cs) => (
 1 <= length l
 & List.list_all (forall_subtrees wf_size_1) cs)
@@ -1303,8 +1303,23 @@ wf_its_state its'
 ))
 "
 
+(*FIXME move in Key_lt_order*)
+lemma key_lt_eq: "! a b c. total_order_key_lte --> key_lt b a --> key_eq a c | key_eq c a --> key_lt b c"
+apply (unfold total_order_key_lte_def key_eq_def key_le_def)
+apply rule+
+apply simp
+apply meson
+done
+(*FIXME move in Key_lt_order*)
+lemma key_lt_rev: "! a b . total_order_key_lte --> ~ (key_lt a b) --> ~( key_eq a b) | ~ (key_eq b a) --> key_lt b a"
+apply (unfold total_order_key_lte_def key_eq_def key_le_def)
+apply rule+
+apply force
+done
+
 lemma invariant_wf_its_state : "invariant_wf_its_state"
-(*FIXME we already proofed step up, we assume find, we need to solve step across*)
+apply (subgoal_tac "total_order_key_lte") prefer 2 apply (force intro:FIXME)
+(*FIXME we already proofed step up and find, we need to solve step across*)
 apply (simp add:invariant_wf_its_state_def)
 apply clarify
 apply (case_tac "its_step_tree_stack its",force)
@@ -1326,13 +1341,282 @@ apply (case_tac its)
    (*node = Leaf kvs -- this is the only interesting case*)
    apply (rename_tac kvs)
    apply (simp add:step_fts_def dest_fts_state_def)
-   apply (subgoal_tac "? kvs2. list_ordered_insert (%x. key_lt (fst x) k0) (k0, v0) kvs = kvs2") prefer 2 apply force
+   apply (subgoal_tac "? entry_in_kvs. (\<exists>a b. List.find (\<lambda>x. key_eq k0 (fst x)) kvs = Some (a, b)) = entry_in_kvs") prefer 2 apply force
    apply (erule exE)
-   apply (subgoal_tac "length kvs2 = length kvs") prefer 2 apply (force intro:FIXME)
+   apply (subgoal_tac "? kvs2. list_ordered_insert (%x. key_lt (fst x) k0) (k0, v0) kvs entry_in_kvs = kvs2") prefer 2 apply force
+   apply (erule exE)
+   apply (subgoal_tac "set kvs2 \<subseteq> (insert (k0,v0) (set kvs))")
+   prefer 2
+    apply (subgoal_tac "kvs2 = list_ordered_insert (\<lambda>x. key_lt (fst x) k0) (k0, v0) kvs entry_in_kvs") prefer 2 apply (case_tac "entry_in_kvs \<or> length kvs < max_leaf_size",force,force)
+    apply (simp add:list_ordered_insert_def)
+    apply (case_tac "entry_in_kvs")
+     (*entry_in_kvs*)
+     apply (simp add:Let_def)
+     apply (case_tac "!x : set kvs. key_lt (fst x) k0")
+      (*!x : set kvs. key_lt (fst x) k0*)
+      apply (meson find_Some_iff key_eq_def nth_mem)
+      
+      (*~ !x : set kvs. key_lt (fst x) k0*)
+      apply (metis (no_types, lifting) append_Nil2 contra_subsetD list.set_sel(2) set_dropWhileD set_takeWhileD subsetI subset_insertI takeWhile_dropWhile_id)     
+     (*~ entry_in_kvs*)
+     apply simp
+     apply (metis (no_types, lifting) contra_subsetD set_dropWhileD set_takeWhileD subsetI subset_insertI)
+   apply (subgoal_tac "if entry_in_kvs then (length kvs2 = length kvs) else (length kvs2 = Suc (length kvs))")
+   prefer 2
+    apply (case_tac "entry_in_kvs")
+     (*entry_in_kvs*)
+     apply (simp add:list_ordered_insert_def Let_def)
+     apply (erule exE)+
+     apply (rename_tac k v)
+     apply (case_tac "!x:set kvs. key_lt (fst x) k0")
+     (*!x:set kvs. key_lt (fst x) k0*)
+     apply simp
+     apply (drule_tac t="kvs2" in sym)
+     apply simp
+     apply (metis (no_types, lifting) One_nat_def add_eq_if dropWhile_eq_Nil_conv find_Some_iff length_0_conv length_append length_tl less_nat_zero_code list.sel(2) takeWhile_dropWhile_id)
+        
+     (*~ !x:set kvs. key_lt (fst x) k0*)
+     apply simp
+     apply (drule_tac t="kvs2" in sym)
+     apply simp
+     apply (metis length_append takeWhile_dropWhile_id)
+       
+    (*~entry_in_kvs*)
+    apply (simp add:list_ordered_insert_def Let_def)
+    apply (case_tac "length kvs < max_leaf_size")
+     (*length kvs < max_leaf_size*)
+     apply simp
+     apply (drule_tac t=kvs2 in sym)
+     apply simp
+     apply (metis length_append takeWhile_dropWhile_id)
+     
+     (*~ length kvs < max_leaf_size*)
+     apply simp
+     apply (drule_tac t=kvs2 in sym)
+     apply simp
+     apply (metis length_append takeWhile_dropWhile_id)
+   apply (subgoal_tac "!i<length kvs2 - Suc 0. key_lt (fst (kvs2 ! i)) (fst (kvs2 ! Suc i))")
+   prefer 2
+    apply (subgoal_tac "keys_ordered_1 (Leaf kvs)") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def wellformed_fts_focus_def wellformed_tree_def keys_ordered_def forall_subtrees_def rev_apply_def)
+    apply (simp add:keys_ordered_1_def rev_apply_def Let_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def set_butlast_lessThan)
+    apply (case_tac "entry_in_kvs")
+     (*entry_in_kvs*)
+     apply (simp add:list_ordered_insert_def Let_def)
+     apply (erule exE)+
+     apply (rename_tac k v)
+     apply (case_tac "!x:set kvs. key_lt (fst x) k0")
+     (*!x:set kvs. key_lt (fst x) k0*)
+     apply simp
+     apply (drule_tac t="kvs2" in sym)
+     apply simp
+     apply rule+
+     apply (subgoal_tac "takeWhile (\<lambda>x. key_lt (fst x) k0) kvs = kvs") prefer 2 apply force
+     apply (drule_tac t=kvs in sym)
+     apply simp
+     apply (smt Suc_lessI Suc_pred append_butlast_last_id diff_add_inverse2 fst_conv length_Cons length_append less_SucI list.size(3) nth_append nth_append_length nth_mem old.nat.distinct(2) zero_less_Suc)
+             
+     (*~ !x:set kvs. key_lt (fst x) k0*)
+     apply simp
+     apply (simp add:find_Some_iff)
+     apply (erule conjE exE)+
+     apply (rename_tac index)
+     apply rule
+     apply (case_tac " i < length kvs - Suc 0")prefer 2 apply force
+     apply simp
+     apply (subgoal_tac "? l_kvs r_kvs. ((length l_kvs) = index) & (kvs = l_kvs@(k,v)#r_kvs)")
+     prefer 2 apply (metis (no_types, lifting) Cons_nth_drop_Suc add_diff_cancel_right' diff_diff_cancel id_take_nth_drop length_append length_drop less_imp_le_nat)
+     apply (erule exE)+
+     apply (drule_tac s="(k,v)" in sym)
+     apply simp
+     apply (subgoal_tac "kvs2 = l_kvs@(k0,v0)#r_kvs")
+     prefer 2
+       apply (simp add:nth_append)
+       apply (erule conjE)+
+       apply (subgoal_tac "! x : set l_kvs. key_lt (fst x) k0")
+       prefer 2
+        apply rule
+        apply (rename_tac "kv")
+        apply (subgoal_tac "keys_ordered_1 (Leaf kvs)") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def wellformed_fts_focus_def wellformed_tree_def keys_ordered_def forall_subtrees_def rev_apply_def)
+        apply (simp add:keys_ordered_1_def Let_def rev_apply_def key_indexes_def atLeast0LessThan lessThan_def)
+        apply (simp add:nth_append)
+        apply (subgoal_tac "? kv_index < index. kv = l_kvs ! kv_index") prefer 2 apply (metis in_set_conv_nth)
+        apply (erule exE conjE)+
+        apply simp
+        apply (drule_tac x="kv_index" in spec)
+        apply (subgoal_tac "? key. (fst (l_kvs ! kv_index)) = key") prefer 2 apply force
+        apply (erule exE)
+        apply (subgoal_tac "? l_ks. map fst l_kvs = l_ks") prefer 2 apply force
+        apply (erule exE)
+        apply simp
+        apply (subgoal_tac "key_lt key k")
+        prefer 2
+         (*I am readjusting stuff to reuse Key_lt_order lemma*)
+         apply (subgoal_tac "l_ks ~= []") prefer 2 apply force
+         apply (subgoal_tac "key_lt ((last l_ks)) k")
+         prefer 2
+          apply (simp add:last_conv_nth)
+          apply (drule_tac x="(length l_ks - Suc 0)" in spec) back
+          apply simp
+          apply (subgoal_tac "length l_ks - Suc 0 < index + length r_kvs") prefer 2 apply force
+          apply (subgoal_tac "(~ (length l_ks < index)) & length l_ks - Suc 0 < index") prefer 2 apply force
+          apply force
+         apply (subgoal_tac "\<forall>i\<in>{0..<length l_ks - Suc 0}. key_lt (((l_ks) ! i)) k")
+         prefer 2
+          apply (subgoal_tac "\<forall>i\<in>{0..<length l_ks - Suc 0}. key_lt (((l_ks ! i))) ((l_ks ! Suc i))")
+          prefer 2
+           apply (simp add: atLeast0LessThan lessThan_def)
+           apply rule
+           apply (case_tac "ia < index - Suc 0") prefer 2 apply force
+           apply (drule_tac x=ia in spec) back
+           apply (subgoal_tac "Suc ia < index") prefer 2 apply force
+           apply force
+          using bigger_than_last_in_list_sorted_by_key_lt apply blast
+         apply (simp add:keys_ordered_1_def Let_def rev_apply_def key_indexes_def atLeast0LessThan lessThan_def)
+         apply (drule_tac x="kv_index" in spec) back back
+         apply (case_tac "kv_index < index - Suc 0")
+          apply force
+          
+          apply (subgoal_tac "kv_index = index -1") prefer 2 apply force
+          apply (case_tac "index = 0",force)
+          apply (subgoal_tac "key = fst(last l_kvs)")
+          prefer 2
+           apply (force simp add:last_conv_nth)
+          apply (simp)
+        using key_lt_eq apply blast
+       apply (force simp add:key_eq_def)
+     apply (simp add:nth_append)
+     apply (drule_tac x="i" in spec)
+     apply (case_tac "Suc i < length l_kvs")
+      (*Suc i < length l_kvs*)
+      apply force
+
+      (*~ Suc i < length l_kvs*)
+      apply simp
+      apply (case_tac "Suc i = length l_kvs")
+       apply simp
+       apply (meson key_eq_def neg_key_lt order_key_le_lt) 
+       
+       (*Suc i ~= length l_kvs*)
+       apply (case_tac "i = length l_kvs")
+        (*i = length l_kvs*)
+        apply simp
+        apply (meson key_eq_def neg_key_lt order_key_le_lt)
+
+        (*i ~= length l_kvs*)
+        apply force
+
+    (*~entry_in_kvs*)
+    apply (simp add:list_ordered_insert_def Let_def)
+    apply (drule_tac t=kvs2 in sym)
+    apply simp
+    apply rule
+    apply (subgoal_tac "? index. length (takeWhile (\<lambda>x. key_lt (fst x) k0) kvs) = index") prefer 2 apply force
+    apply (erule conjE exE)+
+    apply rule
+    apply (subgoal_tac "1 < length kvs") prefer 2 apply (fast intro:FIXME) (*wf_size*)
+    apply (subgoal_tac "? l_kvs r_kvs. ((length l_kvs) = index) & (kvs = l_kvs@r_kvs)") prefer 2 apply (metis takeWhile_dropWhile_id) 
+    apply (erule exE)+
+    apply simp
+    apply (subgoal_tac "kvs2 = l_kvs@(k0,v0)#r_kvs") prefer 2 apply (metis append_eq_append_conv takeWhile_dropWhile_id) 
+    apply (simp add:nth_append)
+    apply (subgoal_tac "l_kvs ~= [] --> key_lt (fst(last l_kvs)) k0")
+    prefer 2
+     apply (simp add:last_conv_nth)
+     apply (metis diff_Suc_less length_greater_0_conv nth_mem set_takeWhileD)
+    apply (subgoal_tac "r_kvs ~= [] --> key_lt  k0 (fst(hd r_kvs))")
+    prefer 2 
+     apply rule+
+     apply (simp add:hd_def,case_tac r_kvs,force,clarsimp)
+     apply (case_tac "List.find (\<lambda>x. key_eq k0 (fst x)) (l_kvs @ (ac, bb) # list)") prefer 2 apply force
+     apply (simp add:find_None_iff)
+     apply (metis dropWhile_eq_Cons_conv fst_conv key_lt_rev)
+    apply (subgoal_tac "r_kvs ~= [] --> key_lt (fst (((k0, v0) # r_kvs) ! (i - index))) (fst (r_kvs ! (i-index)))")
+    prefer 2
+     apply (rule)+
+     apply (subgoal_tac "? i' . (i - index) = i'") prefer 2 apply force
+     apply (erule exE conjE)+
+     apply simp
+     apply (subgoal_tac "i' < (length r_kvs)") prefer 2 apply clarsimp apply (metis add.commute length_greater_0_conv less_diff_conv2 less_imp_le_nat neq0_conv zero_less_diff)
+     apply (case_tac "i' = 0")
+      (*i' = 0*)
+      apply (simp add:hd_def,case_tac "r_kvs",force,force)
+      
+      (*i' ~= 0 *)
+      apply simp
+      apply (drule_tac x="i'+index-1" in spec)
+      apply simp
+      apply (subgoal_tac "i' + index - Suc 0 < index + length r_kvs - Suc 0") prefer 2 apply force
+      apply (subgoal_tac "~ (i' + index - Suc 0 < index) ") prefer 2 apply force
+      apply force
+    apply (subgoal_tac "l_kvs ~= [] --> (Suc i < index --> key_lt (fst (l_kvs ! i)) (fst (l_kvs ! Suc i))) & (Suc i = index --> key_lt (fst (l_kvs ! i)) k0)")
+    prefer 2
+     apply (case_tac "Suc i < index")
+      (*Suc i < index*)
+      apply simp
+      apply rule+
+      apply (drule_tac x="i" in spec)
+      apply force
+
+      (*~ Suc i < index*)
+      apply simp
+      apply (case_tac "Suc i ~= index",force)
+      apply (case_tac "l_kvs = []",force)
+      apply (simp add:last_conv_nth)
+      apply force
+    apply (case_tac "l_kvs = []")
+     (*l_kvs = []*)
+     apply (case_tac "r_kvs = []",force,force)
+
+     (*l_kvs ~= []*)
+     apply (case_tac "r_kvs = []",force,force)
    (*we show that the fat leaf is partially wellformed*)
-   apply (subgoal_tac "wellformed_tree' (Rmbs (stk=[])) (Leaf kvs2)") prefer 2 apply (force intro:FIXME)
+   apply (subgoal_tac "wellformed_tree' (Rmbs (stk=[])) (Leaf kvs2)")
+   prefer 2
+    apply (simp add:wellformed_tree'_def)
+    apply rule
+     (*wf_size'*)
+     apply (simp add:wf_size'_def)
+     apply (subgoal_tac "wf_size (Rmbs (stk=[])) (Leaf kvs)") prefer 2 apply (fast intro:FIXME)
+     apply (case_tac "stk=[]")
+      (*stk=[]*)
+      apply (simp add:wf_size_def forall_subtrees_def wf_size_1_def)
+      apply (simp add:list_ordered_insert_def Let_def)
+      apply (case_tac "entry_in_kvs")
+       apply force+
+             
+      (*stk~=[]*)
+      apply (simp add:wf_size_def forall_subtrees_def wf_size_1_def)
+      apply (simp add:list_ordered_insert_def Let_def)
+      apply (case_tac "entry_in_kvs")
+       apply (simp add:forall_subtrees_def rev_apply_def wf_size_1_def Let_def)+
+    apply rule
+     (*wf_ks_rs*)
+     apply (force simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
+    apply rule
+     (*balanced*)
+     apply (force simp add:balanced_def forall_subtrees_def rev_apply_def balanced_1_def)
+    apply rule
+     (* keys_consistent *)
+     apply (force simp add:keys_consistent_def forall_subtrees_def rev_apply_def keys_consistent_1_def) 
+    (* keys_ordered *)
+    apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def)
+    apply (force simp add:Let_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def set_butlast_lessThan)
    apply (subgoal_tac "wellformed_context stk") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def)
-   apply (subgoal_tac "case stk of (lb,((ks,rs),i),rb)#_ =>  let (l,u) = get_lower_upper_keys_for_node_t ks lb i rb in check_keys l [k0] u | _ => True") prefer 2 apply (force intro:FIXME) (*I sent an email to Tom about this*)
+   apply (subgoal_tac "case stk of (lb,((ks,rs),i),rb)#_ =>  let (l,u) = get_lower_upper_keys_for_node_t ks lb i rb in check_keys l [k0] u | _ => True")
+   prefer 2
+    apply (case_tac stk,force)
+    apply (rename_tac hd_stk stk')
+    apply simp
+    apply (case_tac hd_stk,simp,case_tac b,simp,case_tac aa,simp)
+    apply (case_tac stk')
+    (*FIXME each of the following generates many cases: we want to summarize them as much as we can*)
+     (*stk' = []*)
+     apply (simp add:get_lower_upper_keys_for_node_t_def)
+     apply clarsimp
+     apply (simp add: check_keys_def)
+     apply (force intro:FIXME)
+     (*stk' ~= []*)
+     apply (force intro:FIXME)
    apply (case_tac "(? a b. List.find (% x. key_eq k0 (fst x)) kvs = Some (a, b)) | length kvs < max_leaf_size")
     (*cond = true*)
     apply (drule_tac t="Some its'" in sym)
@@ -1340,8 +1624,18 @@ apply (case_tac its)
     apply (subgoal_tac "wellformed_focus (Inserting_one (Leaf kvs2)) (stk = [])")
     prefer 2
      apply (simp add:wellformed_focus_def wellformed_tree_def wellformed_tree'_def wf_size_def wellformed_fts_def dest_fts_state_def wellformed_fts_focus_def)
-     apply (case_tac stk,force)
-      apply (force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
+     apply (case_tac "length kvs2 <= max_leaf_size & min_leaf_size < length kvs2")
+     prefer 2
+      apply (erule conjE)+
+      apply (erule disjE)
+       (*entry_in_kvs*)       
+       apply (case_tac "stk=[]",force,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
+
+       (*length kvs < max_leaf_size*)
+       apply (case_tac "entry_in_kvs")
+        apply (case_tac "stk = []",force,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
+        apply (case_tac "stk = []",force,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
+      apply (case_tac "stk = []",force,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
     apply (subgoal_tac "wellformed_ts_1 (Tree_stack (Focus (Inserting_one (Leaf kvs2)), stk))")
     prefer 2
      apply (simp add:wellformed_ts_1_def dest_ts_def)
@@ -1354,7 +1648,7 @@ apply (case_tac its)
      apply (case_tac n)
      apply (rename_tac ks rs)
      apply simp
-     apply (subgoal_tac "wellformed_context_1 (Rmbs (stk' = [])) ((lb, ((ks, rs), i), rb))") prefer 2 apply (force intro:FIXME)
+     apply (subgoal_tac "wellformed_context_1 (Rmbs (stk' = [])) ((lb, ((ks, rs), i), rb))") prefer 2 apply (case_tac stk',force,force)
      apply (simp add:wellformed_context_1_def)
      apply (simp add:wellformed_fts_def dest_fts_state_def wellformed_fts_1_def)
      apply (erule conjE)+
@@ -1362,35 +1656,32 @@ apply (case_tac its)
      apply (drule_tac t="rs!i" in sym)
      apply simp
      apply (simp add:get_lower_upper_keys_for_node_t_def)
-     apply (subgoal_tac "ks ~= []") prefer 2 apply (force intro:FIXME) (*wf_size*)
+     apply (subgoal_tac "ks ~= []") prefer 2 apply (simp add:wellformed_focus_def wellformed_tree_def wf_size_def,case_tac stk',force simp add: Let_def wf_size_1_def,force simp add:Let_def forall_subtrees_def rev_apply_def wf_size_1_def)
      apply simp
      apply (case_tac "i=0")
       (*i=0*)
       apply (simp add:check_keys_def)
-      apply (simp add: list_ordered_insert_def)
-      apply (drule_tac t=kvs2 in sym)
-      apply (simp)
-      apply (subgoal_tac "keys_consistent (Node(ks,rs))") prefer 2 apply (force intro:FIXME)
+      apply (subgoal_tac "keys_consistent (Node(ks,rs))") prefer 2 apply (force simp add:wellformed_focus_def wellformed_tree_def)
       apply (simp add:keys_consistent_def forall_subtrees_def rev_apply_def keys_consistent_1_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def)
       apply (erule conjE)+
       apply (drule_tac x=0 in spec)
       apply (simp add:keys_def rev_apply_def keys_1_def)
-      apply (subgoal_tac "? ss.  set (takeWhile (\<lambda>x. key_lt (fst x) k0) kvs) \<union>  set (tl (dropWhile (\<lambda>x. key_lt (fst x) k0) kvs)) = ss") prefer 2 apply force
-      apply (erule exE)
-       apply (subgoal_tac "! s : ss. s : (set kvs)")
-      prefer 2
-       apply (subgoal_tac "! x: set(tl (dropWhile (%y. key_lt (fst y) k0) kvs)) . x : set kvs") prefer 2 apply rule apply (case_tac kvs,force) using list.set_sel(2) set_dropWhileD apply (metis (no_types, lifting) append_Nil2 lessI not_add_less1 takeWhile_dropWhile_id) 
-       apply (subgoal_tac "! x: set(takeWhile (%y. key_lt (fst y) k0) kvs) . x : set kvs") prefer 2 using set_takeWhileD apply fast
-       apply blast
       apply rule
        apply (case_tac lb,force)
        apply (simp add:keys_def rev_apply_def keys_1_def)
-       apply fast+
-            
+       apply fastforce+
+                          
       (*i~=0*)
       apply (case_tac "i = length ks")
        (*i = length ks*)
-       (*FIMXE I suspect that I'll need to extract the hypothesis developed in the i=0 case*)
+       apply simp
+       apply (simp add:check_keys_def)
+       apply rule
+        (*\<forall>x\<in>set (keys (Leaf kvs2)). key_le (ks ! (length ks - Suc 0)) x*)
+        apply rule
+        apply (simp add:keys_def rev_apply_def keys_1_def)
+        (*FIXME this is true for key_consistent, also I need a subgoal about the find: ks!i \<le> k0 < ks!i+1*)
+        apply (force intro:FIXME)
        apply (force intro:FIXME)
 
        (*i ~= length ks*)
