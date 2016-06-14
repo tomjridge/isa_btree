@@ -94,17 +94,17 @@ let (k0,lf,stk) = dest_fts_state fts in
 (case lf of
 Leaf kvs =>
 (*tr:need to check whether the leaf is small enough to insert directly*)
-let cond = 
-((List.find (%x. key_eq k0 (fst x)) kvs) ~= None
-| length kvs < max_leaf_size )
+let entry_in_kvs = (List.find (%x. key_eq k0 (fst x)) kvs) ~= None in
+let cond =
+( entry_in_kvs | length kvs < max_leaf_size )
 in
 if (cond) then
-let kvs2 = list_ordered_insert (%x. key_lt (fst x) k0) (k0,v0) kvs in
+let kvs2 = list_ordered_insert (%x. key_lt (fst x) k0) (k0,v0) kvs entry_in_kvs in
 let focus = (Inserting_one(Leaf kvs2)) in
 Some(Its_up (Tree_stack(Focus focus,stk)))
 else
 (*tr:we need to split*)
-let kvs2 = list_ordered_insert (%x. key_lt (fst x) k0) (k0,v0) kvs in 
+let kvs2 = list_ordered_insert (%x. key_lt (fst x) k0) (k0,v0) kvs entry_in_kvs in 
 let (left,k,right) = split_leaf_kvs kvs2 in
 let focus = Inserting_two(Leaf left, k,Leaf right)in
 Some(Its_up(Tree_stack(Focus focus,stk)))
