@@ -40,6 +40,20 @@ apply (simp add:total_order_key_lte_def key_le_def)
 apply (meson key_eq_def key_le_def)
 done
 
+lemma key_lt_eq: "! a b c. total_order_key_lte --> key_lt b a --> key_eq a c | key_eq c a --> key_lt b c"
+apply (unfold total_order_key_lte_def key_eq_def key_le_def)
+apply rule+
+apply simp
+apply meson
+done
+
+lemma key_lt_rev: "! a b . total_order_key_lte --> ~ (key_lt a b) --> ~( key_eq a b) | ~ (key_eq b a) --> key_lt b a"
+apply (unfold total_order_key_lte_def key_eq_def key_le_def)
+apply rule+
+apply force
+done
+
+
 lemma hd_smallest_in_list_sorted_by_key_lt: 
 "total_order_key_lte \<Longrightarrow> 
 l \<noteq> [] \<Longrightarrow>
