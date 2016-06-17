@@ -5,6 +5,7 @@ begin
 definition invariant_wf_fts :: "bool" where
 "invariant_wf_fts == (
 ! fts.
+ total_order_key_lte -->
  wellformed_fts fts -->
 (
 let fts' = step_fts fts in
@@ -92,7 +93,6 @@ prefer 2
   prefer 2
    apply rule
    apply (simp add:search_key_to_index_def Let_def)
-   apply (subgoal_tac "total_order_key_lte") prefer 2 apply (force intro:FIXME) (*move in assumptions*)
    apply (case_tac "List.find (\<lambda>x. key_lt k (ks ! x)) [0..<length ks]")
     (*None*)
     apply (simp add:find_None_iff)
