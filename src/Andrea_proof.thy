@@ -1,139 +1,7 @@
 theory Andrea_proof
-imports Insert_tree_stack Key_lt_order Find_tree_stack  Find_proof (*FIXME uncomment when finished step_across_proof: Insert_step_up_proof *)
+imports Insert_tree_stack Key_lt_order Find_tree_stack  Find_proof Insert_step_up_proof
 begin
 
-(*FIXME begin: delete all*)
-lemma forall_subtrees_Cons: "forall_subtrees P t = 
-(case t of 
- Node(l,cs) => 
-  (P t & 
-  List.list_all (forall_subtrees P) cs)
- | Leaf l => P t)"
-apply (simp add: forall_subtrees_def rev_apply_def)
-apply (case_tac t)
- (*t = Node x1*)
- apply (simp,case_tac x1,simp add:rev_apply_def)
- apply (force simp add:forall_subtrees_def rev_apply_def list_all_iff)
-
- (*t = Leaf x2*)
- apply force
-done
-
-definition wf_size' :: "rmbs_t => Tree => bool" where
-"wf_size' rmbs t0 == (
-case rmbs of
-Rmbs False => (
-case t0 of 
-Leaf(l) => (length l <= Constants.max_leaf_size +1)
-| Node(l,cs) => (
-1 <= length l
-& List.list_all (forall_subtrees wf_size_1) cs)
-)
-| Rmbs True => (
-case t0 of 
-Leaf(l) => (length l <= Constants.max_leaf_size +1)
-| Node(l,cs) => (
-1 <= length l
-& List.list_all (forall_subtrees wf_size_1) cs)
-))"
-
-lemma wf_size_implies_wf_size': "wf_size r t ==> wf_size' r t"
-apply (simp add:wf_size'_def wf_size_def)
-apply (case_tac r)
- (*r = True*)
- apply (simp,case_tac x,simp,case_tac t, simp,case_tac x1,simp)
- apply (force simp add: Let_def list_all_length)+
-
- (*r = False*)
- apply (simp,case_tac x,simp,case_tac t, simp,case_tac x1,simp)
- apply (force simp add: Let_def wf_size_1_def forall_subtrees_Cons list_all_length)+
-done
-
-definition wellformed_tree' :: "rmbs_t => Tree => bool" where
-"wellformed_tree' rmbs t0 == (
-let b1 = wf_size' rmbs t0 in
-let b2 = wf_ks_rs t0 in
-let b3 = balanced t0 in
-let b4 = keys_consistent t0 in
-let b5 = keys_ordered t0 in
-let wf = b1&b2&b3&b4&b5 in
-wf
-)"
-
-lemma wf_tree_implies_wf_tree': "wellformed_tree rmbs t ==> wellformed_tree' rmbs t"
-apply (simp add:wellformed_tree_def wellformed_tree'_def wf_size_implies_wf_size')
-done
-  
-lemma wellformed_context_hereditary: "wellformed_context (x#xs) ==> wellformed_context xs"
-apply (case_tac xs,auto)
-done
-
-lemma wellformed_context_1_i_less_than_length_rs:
-"wellformed_context_1 (Rbms b) ((lb,((ks, rs), i),rb)) ==> i <= length ks \<and> i < length rs \<and> rs ~= []"
- apply (force simp add:Let_def wellformed_tree_def wellformed_context_1_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def subtree_indexes_def)+
-done
-
-lemma wellformed_context_i_less_than_length_rs:
-"wellformed_context ((lb,((ks, rs), i),rb) # stk) ==> i <= length ks \<and> i < length rs"
-apply (case_tac stk,(force simp add:wellformed_context_1_i_less_than_length_rs)+)
-done
-
-lemma wf_size_ks_not_empty: "wf_size (Rmbs (stk = [])) (Node(ks,rs)) ==> 1<=length ks"
-apply (simp add:wf_size_def)
-apply (case_tac "stk")
-  (*stk = []*)
-  apply (force simp add:Let_def)
-
-  (*stk = a#list*)
-  apply (force simp add:forall_subtrees_def rev_apply_def wf_size_1_def Let_def)
-done
-
-lemma set_butlast_lessThan:"set (butlast [0..<n]) = {0..<n -1}"
-apply (case_tac n,force+)
-done
-
-lemma list_all_of_list_replace_at_n:
-"i < length rs ==>
- list_replace_at_n rs i [tleft, tright] |> dest_Some = rs2 ==>
- P tleft ==>
- P tright ==>
- list_all P rs ==> list_all P rs2"
-apply (simp_all add:list_replace_at_n_def rev_apply_def split_at_def)
-apply (drule_tac t="rs2" in sym)
- apply (case_tac "i=0")
- (*i=0*)
- apply (case_tac rs,simp+)
-
- (*i\<noteq>0*)
- apply (metis append_take_drop_id drop_eq_Nil list.collapse list.pred_inject(2) list_all_append not_le)
-done
-
-lemma list_all_of_list_replace_at_n_concat_map_subtrees:
-"
-i < length rs ==>
-dest_Some (list_replace_at_n rs i [tleft, tright]) = rs2 ==>
-list_all P (concat (map tree_to_subtrees rs)) ==>
-list_all P (tree_to_subtrees tleft) ==>
-list_all P (tree_to_subtrees tright) ==>
-list_all P (concat (map tree_to_subtrees rs2))
-"
-apply (simp_all add:list_replace_at_n_def rev_apply_def split_at_def)
-apply (drule_tac t="rs2" in sym)
-apply (case_tac "i=0")
- (*i=0*)
- apply (case_tac rs,force+)
-
- (*i\<noteq>0*)
- apply (simp add:butlast_take)
- apply (metis append_take_drop_id concat_append drop_Suc list_all_append map_append tl_drop)
-done
-
-lemma keys_Cons: 
-"keys (Node (l, cs)) = l@((List.map keys cs) |> List.concat)"
-apply (simp add:keys_def rev_apply_def keys_1_def)
-apply (induct cs) apply (force simp add:keys_def rev_apply_def)+
-done
-(*FIXME edn: delete all*)
 definition wf_its_state :: "its_state => bool" where
 "wf_its_state its == (
 case its of
@@ -144,6 +12,8 @@ Its_down (fts,_) => wellformed_fts fts
 definition invariant_wf_its_state :: "bool" where
 "invariant_wf_its_state == (
 ! its.
+  total_order_key_lte -->
+  wellformed_constants -->
   wf_its_state its --> 
 (
 let its' = its_step_tree_stack its in
@@ -156,8 +26,6 @@ wf_its_state its'
 "
 
 lemma invariant_wf_its_state : "invariant_wf_its_state"
-apply (subgoal_tac "total_order_key_lte") prefer 2 apply (force intro:FIXME)
-(*FIXME we already proofed step up and find, we need to solve step across*)
 apply (simp add:invariant_wf_its_state_def)
 apply clarify
 apply (case_tac "its_step_tree_stack its",force)
@@ -558,7 +426,7 @@ apply (case_tac its)
       apply (subgoal_tac "? left_lks2. (map fst left_kvs2) = left_lks2") prefer 2 apply force
       apply (subgoal_tac "? right_lks2. (map fst right_kvs2) = right_lks2") prefer 2 apply force
       apply (erule exE)+
-      apply (subgoal_tac "right_kvs2 ~= []") prefer 2 apply (fast intro:FIXME) (*need to add min max hypothesis*)
+      apply (subgoal_tac "right_kvs2 ~= []") prefer 2 apply (force simp add:wellformed_constants_def)
       apply (case_tac right_lks2,force)
       apply (rename_tac hd_right_lks2 right_lks2')
       apply simp
@@ -611,10 +479,9 @@ apply (case_tac its)
      apply (simp add:balanced_def forall_subtrees_def rev_apply_def balanced_1_def wf_ks_rs_def wf_ks_rs_1_def keys_consistent_def keys_consistent_1_def)
      apply (subgoal_tac "wf_size (Rmbs False) (Leaf left_kvs2) & wf_size (Rmbs False) (Leaf right_kvs2)")
      prefer 2
-      apply (subgoal_tac "1 <= min_leaf_size & 1 <= min_node_keys & (max_leaf_size = 2 * min_leaf_size | max_leaf_size = Suc (2 * min_leaf_size))") prefer 2 apply (force intro:FIXME) (* further hypothesis to add to a wf_constants -- these are different from the ones I got in step up*)
       apply (simp add:wf_size_def forall_subtrees_def rev_apply_def wf_size_1_def wf_size'_def)
       apply (subgoal_tac "length kvs = max_leaf_size") prefer 2 apply (erule conjE)+ apply (case_tac stk,force,force)
-      apply (force simp add:Let_def)
+      apply (force simp add:Let_def wellformed_constants_def)
      apply (subgoal_tac "keys_ordered (Leaf left_kvs2) & keys_ordered (Leaf right_kvs2)")
      prefer 2
       apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def Let_def  key_indexes_def atLeast0LessThan lessThan_def check_keys_def set_butlast_lessThan)
@@ -635,8 +502,7 @@ apply (case_tac its)
      apply rule apply (case_tac rb,force) apply simp apply (meson in_set_dropD)
      apply (subgoal_tac "median_k : set (keys (Leaf kvs2))")
      prefer 2
-      apply (subgoal_tac "1 <= min_leaf_size & 1 <= min_node_keys & (max_leaf_size = 2 * min_leaf_size | max_leaf_size = Suc (2 * min_leaf_size))") prefer 2 apply (force intro:FIXME) (* further hypothesis to add to a wf_constants -- these are different from the ones I got in step up*)
-      apply (simp add:list.set_sel(1))
+      apply (simp add:wellformed_constants_def list.set_sel(1))
       apply (simp add:keys_def rev_apply_def keys_1_def)
       apply (metis Suc_1 Suc_le_lessD hd_Cons_tl image_eqI le_SucI length_drop length_greater_0_conv list.set_intros(1) mult_Suc nat_mult_1 not_le set_drop_subset subsetCE trans_le_add2 zero_less_diff)
      apply rule apply (case_tac lb,force) apply (force simp add:keys_def rev_apply_def keys_1_def)
@@ -654,12 +520,9 @@ apply (case_tac its)
  apply (case_tac "step_up x2",force)
  apply (drule_tac t="Some its'" in sym)
  apply simp
-(* FIXME uncomment when finished step across proof
  apply (insert invariant_wf_ts)
  apply (simp add:invariant_wf_ts_def)
  apply force
-*)
- apply (fast intro:FIXME)
 done
 
 end

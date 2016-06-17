@@ -7,6 +7,8 @@ begin
 definition invariant_wf_ts :: "bool" where
 "invariant_wf_ts == (
 ! ts.
+  total_order_key_lte -->
+  wellformed_constants -->
   wellformed_ts ts --> 
 (
 let ts' = step_up ts in
@@ -151,13 +153,6 @@ apply (induct cs) apply (force simp add:keys_def rev_apply_def)+
 done
 
 lemma invariant_wf_ts: "invariant_wf_ts"
-(*the following two subgoals add hypothesises necessary for this proof*)
-(*we need that the minimum and maximum constants have a minimum boundary 
-and they are related between themselves*)
-apply (subgoal_tac "1 <= min_leaf_size & 1 <= min_node_keys & (max_node_keys = 2 * min_node_keys | max_node_keys = Suc (2 * min_node_keys))") prefer 2 apply (force intro:FIXME) (* further hypothesis*)
-(*we need that keys can be ordered*)
-apply (subgoal_tac "total_order_key_lte") prefer 2 apply (force intro:FIXME)
-
 apply(simp add: invariant_wf_ts_def)
 apply(intro allI impI)
 apply(case_tac ts)
@@ -536,7 +531,7 @@ apply(intro conjI)
         apply (force simp add:keys_Cons wf_size_1_def)
 
         (*tleft = Leaf x2*)
-        apply (force simp add:keys_def keys_1_def rev_apply_def wf_size_1_def)
+        apply (force simp add:keys_def keys_1_def rev_apply_def wf_size_1_def wellformed_constants_def)
       apply (subgoal_tac "? k  :  set(keys(tleft)). key_le (xs ! (length xs - Suc 0)) k & key_lt k k0")
       prefer 2
        apply (simp add:get_lower_upper_keys_for_node_t_def nth_append)
@@ -604,13 +599,13 @@ apply(intro conjI)
     prefer 2
      (*here we need the hypothesis 1<= min_node_size and max_node_size= 2*min_node_size etc*)
      apply (simp add:wf_size_1_def Let_def)
-     apply (subgoal_tac "0 < length ks") prefer 2 apply force
-     apply (subgoal_tac "(length ks) <= max_node_keys") prefer 2 apply (case_tac stk) apply force apply (force simp add:forall_subtrees_def rev_apply_def Let_def wf_size_1_def)
+     apply (subgoal_tac "0 < length ks") prefer 2 apply (force simp add:wellformed_constants_def)
+     apply (subgoal_tac "(length ks) <= max_node_keys") prefer 2 apply (case_tac stk) apply (force simp add:wellformed_constants_def) apply (force simp add:forall_subtrees_def rev_apply_def Let_def wf_size_1_def)
      apply (subgoal_tac "drop min_node_keys ks2 = k#right_ks")
      prefer 2
       apply (case_tac "drop min_node_keys ks2")
        (*drop min_node_keys ks2 = []*)
-       apply (subgoal_tac "\<not> (length ks2 <= min_node_keys)") prefer 2 apply (force simp add:wf_size_def wf_size_1_def forall_subtrees_def rev_apply_def Let_def)
+       apply (subgoal_tac "\<not> (length ks2 <= min_node_keys)") prefer 2 apply (force simp add:wellformed_constants_def wf_size_def wf_size_1_def forall_subtrees_def rev_apply_def Let_def)
        apply (metis drop_eq_Nil)
        
        apply force
@@ -620,7 +615,7 @@ apply(intro conjI)
      apply simp
      apply (subgoal_tac "length ks = max_node_keys") prefer 2
       apply fastforce
-     apply force
+     apply (force simp add:wellformed_constants_def)
     apply blast
    (*wf_ks_rs*)
    apply (subgoal_tac "wf_ks_rs (Node (left_ks, left_rs)) & wf_ks_rs (Node (right_ks, right_rs))")
@@ -690,7 +685,7 @@ apply(intro conjI)
      apply (subgoal_tac "Suc (length ks2) = length rs2") prefer 2 apply (force simp add:wf_ks_rs_def wf_ks_rs_1_def forall_subtrees_def rev_apply_def Let_def)
      apply (simp add:min_def)
      apply (simp add:hd_conv_nth last_conv_nth)
-     apply (metis (no_types, lifting) One_nat_def Suc_leD Suc_mono append_take_drop_id atLeastLessThan_iff diff_Suc_1 diff_add_inverse2 diff_diff_cancel length_append length_drop length_take less_imp_le_nat)
+     apply (metis (no_types, lifting) One_nat_def Suc_mono append_take_drop_id atLeastLessThan_iff diff_Suc_1 diff_add_inverse2 diff_diff_cancel length_append length_drop length_take less_imp_le_nat)
     apply blast
    (*keys_ordered*)
    apply (subgoal_tac "keys_ordered  (Node (left_ks, left_rs)) & key_lt (last left_ks) k & key_lt k (hd right_ks)  & keys_ordered  (Node (right_ks, right_rs))")
@@ -744,7 +739,7 @@ apply(intro conjI)
     apply (simp add:keys_Cons)
     apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def list_all_iff keys_ordered_1_def Let_def)
     apply (simp add:key_indexes_def set_butlast_lessThan)
-    apply (subgoal_tac "left_ks ~= []") prefer 2 apply force
+    apply (subgoal_tac "left_ks ~= []") prefer 2 apply (force simp add:wellformed_constants_def)
     apply rule+
      apply (subgoal_tac "!  x  :  set left_ks. key_lt x k")
      prefer 2
@@ -1182,12 +1177,12 @@ apply(case_tac f)
   apply (drule_tac t=fat_node in sym)
   apply (subgoal_tac "k  :  set ks2")
   prefer 2
-   apply (subgoal_tac "min_node_keys < length ks2") prefer 2 apply linarith
+   apply (subgoal_tac "min_node_keys < length ks2") prefer 2 apply (simp add:wellformed_constants_def) apply linarith
    apply (metis (no_types, lifting) Cons_nth_drop_Suc in_set_conv_nth list.simps(5) prod.inject)
   apply (subgoal_tac "((set right_rs) \<subseteq> set rs2) & ((set left_rs) \<subseteq> set rs2)") prefer 2 apply (simp add:list_replace_at_n_def split_at_def rev_apply_def) apply (meson  set_drop_subset set_take_subset)
   apply (subgoal_tac "set (keys (Node (left_ks, left_rs))) \<subseteq> set (keys fat_node) & set (keys (Node (right_ks, right_rs))) \<subseteq> set (keys fat_node)")
   prefer 2 
-   apply (subgoal_tac "min_node_keys < length ks2") prefer 2 apply linarith
+   apply (subgoal_tac "min_node_keys < length ks2") prefer 2 apply (simp add: wellformed_constants_def) apply linarith
    apply (subgoal_tac "set left_ks \<subseteq> set ks2") prefer 2 apply (meson set_take_subset)
    apply (subgoal_tac "set right_ks \<subseteq> set ks2") prefer 2 apply (smt Cons_nth_drop_Suc list.simps(5) prod.inject set_drop_subset)
    apply (simp add:keys_Cons rev_apply_def)
@@ -1248,7 +1243,7 @@ apply(case_tac f)
      apply (simp add:rev_apply_def list_replace_at_n_def list_insert_at_n_def split_at_def)
      apply (subgoal_tac "i < length rs") prefer 2 apply (force simp add:wellformed_tree_def wellformed_context_1_def subtree_indexes_def wf_ks_rs_def Let_def forall_subtrees_Cons wf_ks_rs_1_def)
      apply (force simp add:Let_def min_def wellformed_context_1_def wellformed_tree_def wf_ks_rs_def forall_subtrees_Cons wf_ks_rs_1_def)
-    apply force
+    apply (force simp add:wellformed_constants_def)
    apply (subgoal_tac "? hlrs. height ` set left_rs = hlrs") prefer 2 apply force
    apply (subgoal_tac "? hrrs. height ` set right_rs = hrrs") prefer 2 apply force
    apply (erule exE)+
