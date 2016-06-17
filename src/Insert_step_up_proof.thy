@@ -1,4 +1,4 @@
-theory Insert_step_up
+theory Insert_step_up_proof
 imports Insert_tree_stack Key_lt_order
 begin
 

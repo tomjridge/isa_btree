@@ -6,12 +6,19 @@ definition total_order_key_lte :: " bool" where
 "total_order_key_lte == (\<forall> a b c. 
    (key_le a b \<and> key_le b a \<longrightarrow> key_eq a b) \<and>
    (key_le a b \<and> key_le b c \<longrightarrow> key_le a c) \<and>
-   (key_le a b \<or> key_le b a))"
+   (key_le a b \<or> key_le b a)
+\<and> (a = b \<longrightarrow> (key_le a b)))"
 
 lemma neg_key_lt: "! a b. total_order_key_lte \<longrightarrow> (~ key_lt a b) = (key_le b a)"
 apply rule+
 apply (unfold total_order_key_lte_def)
 apply (force simp add: key_eq_def key_le_def)+
+done
+
+lemma eq_implies_key_le: "! a b. total_order_key_lte \<longrightarrow> ((a = b) \<longrightarrow> (key_le a b))"
+apply rule+
+apply (unfold total_order_key_lte_def)
+apply meson
 done
 
 lemma order_key_le_lt: "\<forall> a b c. total_order_key_lte \<longrightarrow> key_le a b \<and> key_lt b c \<longrightarrow> key_lt a c"
@@ -159,6 +166,23 @@ apply simp
 apply clarsimp
 apply (smt Suc_le_lessD Suc_pred atLeastLessThan_iff hd_smallest_in_list_sorted_by_key_lt less_Suc0 less_antisym less_or_eq_imp_le not_le order_key_lt)
 done
+
+lemma k_kle_hd_kle_all: "
+total_order_key_lte \<Longrightarrow>
+l \<noteq> [] \<Longrightarrow>
+key_le k (hd l) \<Longrightarrow> 
+(\<forall>i\<in>{0..<length l - Suc 0}. key_lt (l ! i) (l ! Suc i)) \<Longrightarrow> 
+\<forall>x\<in>set l. key_le k x"
+apply (simp add:hd_conv_nth atLeast0LessThan lessThan_def)
+apply rule+
+apply (subgoal_tac "\<exists> i < length l. x = l!i") prefer 2 apply (metis in_set_conv_nth) 
+apply (erule exE)
+apply (erule conjE)+
+apply simp
+apply clarsimp
+
+sorry
+
 
 lemma k_klt_hdsubkeys_kle_allsubkeys: "
 total_order_key_lte \<Longrightarrow> 
