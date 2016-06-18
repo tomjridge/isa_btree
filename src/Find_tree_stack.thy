@@ -17,9 +17,9 @@ definition tree_to_fts :: "key => Tree => fts_state" where
 Fts_state (k,t,Nil))"
 
 (* tr: link between focus and context?*)
-definition wellformed_fts_focus :: "rmbs_t => Tree => bool" where
-"wellformed_fts_focus rmbs t == (
-wellformed_tree rmbs t)"
+definition wellformed_fts_focus :: "ms_t => Tree => bool" where
+"wellformed_fts_focus ms t == (
+wellformed_tree ms t)"
 
 definition wellformed_fts_1 :: "fts_state => bool" where
 "wellformed_fts_1 fts == (
@@ -37,8 +37,8 @@ Nil => True
 definition wellformed_fts :: "fts_state => bool" where
 "wellformed_fts fts == (
 let (k,t,ctx) = dest_fts_state fts in
-let rmbs = Rmbs(ctx = Nil) in
-wellformed_fts_focus rmbs t
+let ms = if (ctx = Nil) then (Some Small_root_node_or_leaf) else None in
+wellformed_fts_focus ms t
 & wellformed_context ctx
 & wellformed_fts_1 fts)"
 
@@ -62,3 +62,4 @@ Leaf _ => None
 declare [[code abort: key_lt]]
 export_code step_fts in Scala module_name Find_tree_stack file "/tmp/Find_tree_stack.scala"
 end
+

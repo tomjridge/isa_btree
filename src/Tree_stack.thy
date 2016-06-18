@@ -28,7 +28,7 @@ definition is_subnode :: "(node_t * nat) => (node_t * nat) => bool" where
   let (n,_) = ni in
   let ((ks,rs),i) = pi in
   Node n = (rs!i))"
-                                        
+
 fun linked_context :: "(left_bound * (node_t * nat) * right_bound) => context_t => bool" where
 "linked_context ni [] = True" |
 "linked_context (lb,ni,rb) ((plb,pi,prb)#pis) = (
@@ -41,12 +41,12 @@ let u = if (i = (length ls)) then rb else Some(ls ! i) in
 (l,u)
 )"
 
-definition wellformed_context_1 :: "rmbs_t => (left_bound * (node_t * nat) * right_bound) => bool " where
-"wellformed_context_1 rmbs lbnirb == (
+definition wellformed_context_1 :: "ms_t => (left_bound * (node_t * nat) * right_bound) => bool " where
+"wellformed_context_1 ms lbnirb == (
 let (lb,((ls,cs),i),rb) = lbnirb in
 let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
 let node = (Node(ls,cs)) in
-wellformed_tree rmbs node
+wellformed_tree ms node
 & i : (subtree_indexes (ls,cs))
 & check_keys lb (keys (cs!i)) rb)"
 
@@ -59,11 +59,11 @@ let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
 &
 (if i = length ls then rb = None else rb = u)
 &
-wellformed_context_1 (Rmbs True) (lb,((ls,rs),i),rb))" |
+wellformed_context_1 (Some Small_root_node_or_leaf) (lb,((ls,rs),i),rb))" |
 "wellformed_context (x1 # (x2 # rest)) = (
 let (lb,((ls,_),i),rb) = x1 in
 let (lb',_,rb') = x2 in
-wellformed_context_1 (Rmbs False) x1
+wellformed_context_1 None x1
 & 
 (let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
  (if i = 0 then lb = lb' else lb = l)

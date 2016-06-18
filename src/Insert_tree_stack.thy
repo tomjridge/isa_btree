@@ -121,10 +121,12 @@ export_code its_step_tree_stack in Scala module_name Insert_tree_stack file "/tm
 definition wellformed_focus :: "its_focus_t => bool => bool" where
 "wellformed_focus f stack_empty == (
 case f of
-Inserting_one t => (wellformed_tree (Rmbs stack_empty) t)
+Inserting_one t =>
+let ms = if stack_empty then (Some Small_root_node_or_leaf) else None in
+(wellformed_tree ms t)
 | Inserting_two (tl_,k0,tr) => (
-wellformed_tree (Rmbs False) tl_ 
-& wellformed_tree (Rmbs False) tr
+wellformed_tree None tl_ 
+& wellformed_tree None tr
 & check_keys None (keys (tl_)) (Some k0)
 & check_keys (Some k0) (keys tr) None)
 )"

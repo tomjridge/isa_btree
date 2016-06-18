@@ -74,6 +74,17 @@ definition balanced :: "Tree => bool" where
 (*end wfbalanced*)
 
 (* begin wfsize*)
+definition get_min_size :: "(min_size_t * Tree) => nat" where
+"
+get_min_size mt == (
+case mt of
+(Small_root_node_or_leaf,Node _) => 1
+| (Small_root_node_or_leaf,Leaf _) => 0
+| (Small_node, Node _) => min_node_keys-1
+| (Small_leaf,Leaf _) => min_leaf_size-1
+| (_,_) => undefined
+)
+"
 definition wf_size_1 :: "Tree => bool" where
 "wf_size_1 t1 == (
 case t1 of
@@ -91,18 +102,19 @@ let n = length l in
 (* root may be small *)
 datatype rmbs_t = Rmbs bool
 
-definition wf_size :: "rmbs_t => Tree => bool" where
-"wf_size rmbs t0 == (
-case rmbs of
-Rmbs False => (forall_subtrees wf_size_1 t0)
-| Rmbs True => (
+definition wf_size :: "ms_t => Tree => bool" where
+"wf_size ms t0 == (
+case ms of
+None => (forall_subtrees wf_size_1 t0)
+| Some m => (
+let min = get_min_size (m,t0) in
 case t0 of 
 Leaf xs =>
 let n = length xs in
-(n <= max_leaf_size)
+(min <= n) & (n <= max_leaf_size)
 | Node(l,cs) => (
 let n = length l in
-(1 <= n) & (n <= max_node_keys) 
+(min <= n) & (n <= max_node_keys) 
 & (List.list_all (forall_subtrees wf_size_1) cs))
 ))"
 (* end wfsize *)
@@ -190,9 +202,9 @@ wf
 *)
 
 (* begin wf tree definition *)
-definition wellformed_tree :: "rmbs_t => Tree => bool" where
-"wellformed_tree rmbs t0 == (
-let b1 = wf_size rmbs t0 in
+definition wellformed_tree :: "ms_t => Tree => bool" where
+"wellformed_tree ms t0 == (
+let b1 = wf_size ms t0 in
 let b2 = wf_ks_rs t0 in
 let b3 = balanced t0 in
 let b4 = keys_consistent t0 in
@@ -203,3 +215,4 @@ wf
 (* end wf tree definition *)
 
 end
+
