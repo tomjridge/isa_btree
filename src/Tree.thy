@@ -99,9 +99,6 @@ let n = length l in
 )
 "
 
-(* root may be small *)
-datatype rmbs_t = Rmbs bool
-
 definition wf_size :: "ms_t => Tree => bool" where
 "wf_size ms t0 == (
 case ms of

@@ -276,19 +276,19 @@ apply (case_tac its)
      (*l_kvs ~= []*)
      apply (case_tac "r_kvs = []",force,force)
    (*we show that the fat leaf is partially wellformed*)
-   apply (subgoal_tac "wellformed_tree' (Rmbs (stk=[])) (Leaf kvs2)")
+   apply (subgoal_tac "wellformed_tree' (case (stk=[]) of True => Some Small_root_node_or_leaf | _ => None) (Leaf kvs2)")
    prefer 2
     apply (simp add:wellformed_tree'_def)
     apply rule
      (*wf_size'*)
      apply (simp add:wf_size'_def)
-     apply (subgoal_tac "wf_size (Rmbs (stk=[])) (Leaf kvs)") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def wellformed_fts_focus_def wellformed_tree_def)
+     apply (subgoal_tac "wf_size (if (stk=[]) then Some Small_root_node_or_leaf else None) (Leaf kvs)") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def wellformed_fts_focus_def wellformed_tree_def)
      apply (case_tac "stk=[]")
       (*stk=[]*)
       apply (simp add:wf_size_def forall_subtrees_def wf_size_1_def)
       apply (simp add:list_ordered_insert_def Let_def)
       apply (case_tac "entry_in_kvs")
-       apply force+
+       apply (force simp add:get_min_size_def)+
              
       (*stk~=[]*)
       apply (simp add:wf_size_def forall_subtrees_def wf_size_1_def)
@@ -320,7 +320,7 @@ apply (case_tac its)
      apply (case_tac n)
      apply (rename_tac ks rs)
      apply simp
-     apply (subgoal_tac "wellformed_context_1 (Rmbs (stk' = [])) ((lb, ((ks, rs), i), rb))") prefer 2 apply (case_tac stk',force,force)
+     apply (subgoal_tac "wellformed_context_1 (if (stk' = []) then Some Small_root_node_or_leaf else None) ((lb, ((ks, rs), i), rb))") prefer 2 apply (case_tac stk',force,force)
      apply (simp add:wellformed_context_1_def)
      apply (simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def wellformed_fts_1_def)
      apply (erule conjE)+
@@ -328,7 +328,7 @@ apply (case_tac its)
      apply (drule_tac t="rs!i" in sym)
      apply simp
      apply (simp add:get_lower_upper_keys_for_node_t_def)
-     apply (subgoal_tac "ks ~= []") prefer 2 apply (simp add:wellformed_focus_def wellformed_tree_def wf_size_def,case_tac stk',force simp add: Let_def wf_size_1_def,force simp add:Let_def forall_subtrees_def rev_apply_def wf_size_1_def)
+     apply (subgoal_tac "ks ~= []") prefer 2 apply (simp add:wellformed_focus_def wellformed_tree_def wf_size_def,case_tac stk',force simp add: Let_def get_min_size_def wf_size_1_def,force simp add:Let_def forall_subtrees_def rev_apply_def wf_size_1_def)
      apply simp
      apply (case_tac "i=0")
       (*i=0*)
@@ -400,13 +400,13 @@ apply (case_tac its)
       apply (erule conjE)+
       apply (erule disjE)
        (*entry_in_kvs*)       
-       apply (case_tac "stk=[]",force,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
+       apply (case_tac "stk=[]",force simp add:get_min_size_def,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def )
 
        (*length kvs < max_leaf_size*)
        apply (case_tac "entry_in_kvs")
-        apply (case_tac "stk = []",force,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
-        apply (case_tac "stk = []",force,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
-      apply (case_tac "stk = []",force,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
+        apply (case_tac "stk = []",force simp add:get_min_size_def,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
+        apply (case_tac "stk = []",force simp add:get_min_size_def,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
+      apply (case_tac "stk = []",force simp add:get_min_size_def,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def)
     apply force
     
     (*cond = false*)
@@ -477,11 +477,11 @@ apply (case_tac its)
      apply (simp add:wellformed_tree'_def wellformed_tree_def)
      (*let's get rid of the uninteresting*)
      apply (simp add:balanced_def forall_subtrees_def rev_apply_def balanced_1_def wf_ks_rs_def wf_ks_rs_1_def keys_consistent_def keys_consistent_1_def)
-     apply (subgoal_tac "wf_size (Rmbs False) (Leaf left_kvs2) & wf_size (Rmbs False) (Leaf right_kvs2)")
+     apply (subgoal_tac "wf_size (None) (Leaf left_kvs2) & wf_size (None) (Leaf right_kvs2)")
      prefer 2
       apply (simp add:wf_size_def forall_subtrees_def rev_apply_def wf_size_1_def wf_size'_def)
       apply (subgoal_tac "length kvs = max_leaf_size") prefer 2 apply (erule conjE)+ apply (case_tac stk,force,force)
-      apply (force simp add:Let_def wellformed_constants_def)
+      apply (force simp add:Let_def wellformed_constants_def get_min_size_def)
      apply (subgoal_tac "keys_ordered (Leaf left_kvs2) & keys_ordered (Leaf right_kvs2)")
      prefer 2
       apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def Let_def  key_indexes_def atLeast0LessThan lessThan_def check_keys_def set_butlast_lessThan)

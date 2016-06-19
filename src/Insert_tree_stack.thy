@@ -122,7 +122,7 @@ definition wellformed_focus :: "its_focus_t => bool => bool" where
 "wellformed_focus f stack_empty == (
 case f of
 Inserting_one t =>
-let ms = if stack_empty then (Some Small_root_node_or_leaf) else None in
+let ms = case stack_empty of True => (Some Small_root_node_or_leaf) | _ => None in
 (wellformed_tree ms t)
 | Inserting_two (tl_,k0,tr) => (
 wellformed_tree None tl_ 

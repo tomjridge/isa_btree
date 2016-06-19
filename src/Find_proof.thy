@@ -66,17 +66,17 @@ prefer 2
  apply (erule exE)
  apply simp
  apply (subgoal_tac "child : set rs") prefer 2 apply force 
- apply (subgoal_tac "wellformed_fts_focus (Rmbs False) (rs ! index) ")
+ apply (subgoal_tac "wellformed_fts_focus None (rs ! index) ")
  prefer 2
   apply (simp add:wellformed_fts_focus_def wellformed_tree_def)
-  apply (subgoal_tac "wf_size (Rmbs False) child") prefer 2 apply (case_tac "ctx = []",(force simp add:Let_def wf_size_def forall_subtrees_def rev_apply_def list_all_iff)+)
+  apply (subgoal_tac "wf_size None child") prefer 2 apply (case_tac "ctx = []",(force simp add:Let_def wf_size_def forall_subtrees_def rev_apply_def list_all_iff)+)
   apply (subgoal_tac "wf_ks_rs child") prefer 2 apply (force simp add:wf_ks_rs_def forall_subtrees_def rev_apply_def list_all_iff)
   apply (subgoal_tac "balanced child") prefer 2 apply (force simp add:balanced_def forall_subtrees_def rev_apply_def list_all_iff)
   apply (subgoal_tac "keys_consistent child") prefer 2 apply (force simp add:keys_consistent_def forall_subtrees_def rev_apply_def list_all_iff)
   apply (subgoal_tac "keys_ordered child") prefer 2 apply (force simp add:keys_ordered_def forall_subtrees_def rev_apply_def list_all_iff)
   apply force
  apply simp
- apply (subgoal_tac "ks ~= []") prefer 2 apply (simp add:wellformed_fts_focus_def wellformed_tree_def wf_size_def,case_tac ctx,force,force simp add:forall_subtrees_def rev_apply_def wf_size_1_def Let_def)
+ apply (subgoal_tac "ks ~= []") prefer 2 apply (simp add:wellformed_fts_focus_def wellformed_tree_def wf_size_def,case_tac ctx,force simp add:Let_def get_min_size_def,force simp add: get_min_size_def forall_subtrees_def rev_apply_def wf_size_1_def Let_def)
  apply (subgoal_tac "wellformed_fts_1 (Fts_state (k, child, (l, ((ks, rs), index), u) # ctx))")
  prefer 2
   apply (simp add:dest_fts_state_def wellformed_fts_1_def)
