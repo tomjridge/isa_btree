@@ -30,11 +30,10 @@ apply (case_tac "step_fts fts",force)
 (*step_fts = Some fts'*)
 apply simp
 apply (rename_tac fts')
-apply (simp add:step_fts_def dest_fts_state_def)
+apply (simp add:step_fts_def)
 apply (case_tac fts,simp)
-apply (case_tac x,simp)
-apply (rename_tac k node_or_leaf ctx)
-apply (thin_tac "x=_")
+apply (subgoal_tac "? k node_or_leaf ctx . dest_f_tree_stack fts = (k,node_or_leaf,ctx)") prefer 2 apply (meson prod_cases3)
+apply (erule exE)+
 apply simp
 apply (case_tac "case ctx of [] \<Rightarrow> (None, None) | (lb, xb, xc) # xa \<Rightarrow> (lb, xc)")
 apply simp
@@ -55,7 +54,7 @@ prefer 2
  apply (case_tac "get_lower_upper_keys_for_node_t ks lb index rb")
  apply simp
  apply (rename_tac l u)
- apply (simp add:wellformed_fts_def dest_fts_state_def)
+ apply (simp add:wellformed_fts_def dest_f_tree_stack_def)
  apply (drule_tac t="fts'" in sym,simp)
  apply (subgoal_tac "length rs = length ks + 1") prefer 2 apply (force simp add:wellformed_fts_focus_def wellformed_tree_def wf_ks_rs_def forall_subtrees_def rev_apply_def wf_ks_rs_1_def)
  apply (subgoal_tac "index < length rs")
@@ -77,9 +76,10 @@ prefer 2
   apply force
  apply simp
  apply (subgoal_tac "ks ~= []") prefer 2 apply (simp add:wellformed_fts_focus_def wellformed_tree_def wf_size_def,case_tac ctx,force simp add:Let_def get_min_size_def,force simp add: get_min_size_def forall_subtrees_def rev_apply_def wf_size_1_def Let_def)
- apply (subgoal_tac "wellformed_fts_1 (Fts_state (k, child, (l, ((ks, rs), index), u) # ctx))")
+ apply (subgoal_tac "wellformed_fts_1 (Tree_stack (Focus(k, child), (l, ((ks, rs), index), u) # ctx))")
  prefer 2
-  apply (simp add:dest_fts_state_def wellformed_fts_1_def)
+  apply (simp add: wellformed_fts_1_def)
+  apply (subgoal_tac "dest_f_tree_stack (Tree_stack x) = (k, Node (ks, rs), ctx)") prefer 2 apply (force simp add: dest_f_tree_stack_def)
   apply (simp add:get_lower_upper_keys_for_node_t_def check_keys_def)
   apply (subgoal_tac "index < length ks --> key_lt k (ks ! index)")
   prefer 2
@@ -107,40 +107,45 @@ prefer 2
     apply (force simp add:neg_key_lt)
     
   apply (case_tac "index = 0")
+   apply (simp add:dest_f_tree_stack_def)
    apply (case_tac ctx,force,simp)
-   apply (case_tac list)
+   apply (rename_tac hd_ctx tl_ctx)
+   apply (case_tac tl_ctx)
     apply clarsimp
-    apply (case_tac x,simp add:get_lower_upper_keys_for_node_t_def Let_def,case_tac ba,force,force)
+    apply (rename_tac parent parent_l parent_ks i l u)
+    apply (case_tac l,simp add:get_lower_upper_keys_for_node_t_def Let_def,case_tac parent,force,force)
     apply (simp add:get_lower_upper_keys_for_node_t_def Let_def check_keys_def)
     apply (simp add:wellformed_context_1_def check_keys_def )
     apply clarsimp
-    apply (case_tac l,force)
-    apply (case_tac "ba = 0",force,force)
+    apply (case_tac parent,force)
+    apply (case_tac "i = 0",force,force)
    
-    (*list ~= []*)
+    (*tl_ctx ~= []*)
     apply clarsimp
     apply (case_tac l,force)
     apply (rename_tac kl)
     apply (simp add:get_lower_upper_keys_for_node_t_def Let_def check_keys_def)
-    apply (case_tac ba,force)
+    apply (case_tac bb,force)
     apply force
    (*index = length ks*)
-   apply simp
+   apply (simp add:dest_f_tree_stack_def)
    apply (case_tac u,force)
    apply (rename_tac kr)
    apply (case_tac ctx,force,simp)
-   apply (case_tac list)
+   apply (rename_tac hd_ctx tl_ctx)
+   apply (case_tac tl_ctx)
     apply clarsimp
     apply (simp add:get_lower_upper_keys_for_node_t_def Let_def check_keys_def)
     apply (simp add:wellformed_context_1_def check_keys_def )
     apply clarsimp
-    apply (case_tac "ba = length aa",force,force)
+    apply (rename_tac parent_ks parent_rs i)
+    apply (case_tac "i = length parent_ks",force,force)
    
-    (*list ~= []*)
+    (*tl_ctx ~= []*)
     apply clarsimp
-    apply (rename_tac kl)
+    apply (rename_tac ks rs i parent_kl parent_ks parent_rs parent_i parent_ku tl_tl_ctx kl ku)
     apply (simp add:get_lower_upper_keys_for_node_t_def Let_def check_keys_def)
-    apply (case_tac "ba=length aa",force)
+    apply (case_tac "i =length ks",force)
     apply force
  apply (case_tac ctx)
  (*ctx = [] *)
@@ -179,14 +184,14 @@ prefer 2
    apply (simp add:get_lower_upper_keys_for_node_t_def)
    apply (case_tac a,simp)
    apply (erule conjE)+
-   apply (subgoal_tac "wellformed_context_1 (Rmbs (list = [])) (lb, b, rb)") prefer 2 apply (case_tac list, force,force) 
+   apply (subgoal_tac "wellformed_context_1 (if (list = []) then Some Small_root_node_or_leaf else None) (lb, b, rb)") prefer 2 apply (case_tac list, force,force) 
    apply (rule)
     (*case l of None \<Rightarrow> True | Some kl \<Rightarrow> Ball (set (keys child)) (key_le kl)*)
     apply (case_tac l,force)
     apply (rename_tac kl)
     apply (simp add:wellformed_context_1_def,case_tac b,case_tac ab,simp)
     apply (case_tac "index = 0")
-     apply (simp add:check_keys_def wellformed_fts_1_def dest_fts_state_def)
+     apply (simp add:check_keys_def wellformed_fts_1_def dest_f_tree_stack_def)
      apply (erule conjE)+
      apply (drule_tac t="bb!ba" in sym) back
      apply (simp add:keys_def rev_apply_def keys_1_def)
@@ -207,7 +212,7 @@ prefer 2
     apply (simp add:wellformed_context_1_def,case_tac b,case_tac ab,simp)
     apply (case_tac "index = length ks")
      (*index = length ks*)
-     apply (simp add:check_keys_def wellformed_fts_1_def dest_fts_state_def)
+     apply (simp add:check_keys_def wellformed_fts_1_def dest_f_tree_stack_def)
      apply (erule conjE)+
      apply (drule_tac t="bb!ba" in sym) back
      apply (simp add:keys_def rev_apply_def keys_1_def)
@@ -226,12 +231,12 @@ prefer 2
   prefer 2
   apply (case_tac "list")
    (*list = []*)
-   apply (simp add:is_subnode_def,case_tac b,case_tac ab,force simp add:wellformed_context_1_def wellformed_fts_1_def dest_fts_state_def)
+   apply (simp add:is_subnode_def,case_tac b,case_tac ab,force simp add:wellformed_context_1_def wellformed_fts_1_def dest_f_tree_stack_def)
   
    (*list ~= []*)
    apply simp
    apply (case_tac b,case_tac ac,case_tac ab,simp)
-   apply (simp add:is_subnode_def,case_tac b,case_tac ab,force simp add:wellformed_context_1_def wellformed_fts_1_def dest_fts_state_def)  
+   apply (simp add:is_subnode_def,case_tac b,case_tac ab,force simp add:wellformed_context_1_def wellformed_fts_1_def dest_f_tree_stack_def)  
   apply (case_tac "index = 0")
    (*index = 0*)
    apply (force simp add:get_lower_upper_keys_for_node_t_def)
