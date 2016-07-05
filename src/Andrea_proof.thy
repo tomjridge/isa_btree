@@ -39,14 +39,12 @@ apply (case_tac its)
  apply (rename_tac fts v0)
  apply (case_tac "step_fts fts")
   (*step_fts fts = None*)
-  apply (simp add:dest_fts_state_def)
-  apply (case_tac fts,simp)
-  apply (case_tac x,simp)
-  apply (rename_tac k0 node stk)
+  apply (subgoal_tac "? k0 node stk. dest_f_tree_stack fts = (k0,node,stk)") prefer 2  apply (meson prod_cases3)
+  apply (erule exE)+
   apply (case_tac node,force)
    (*node = Leaf kvs -- this is the only interesting case*)
    apply (rename_tac kvs)
-   apply (simp add:step_fts_def dest_fts_state_def)
+   apply (simp add:step_fts_def)
    apply (subgoal_tac "? entry_in_kvs. (\<exists>a b. List.find (\<lambda>x. key_eq k0 (fst x)) kvs = Some (a, b)) = entry_in_kvs") prefer 2 apply force
    apply (erule exE)
    apply (subgoal_tac "? kvs2. list_ordered_insert (%x. key_lt (fst x) k0) (k0, v0) kvs entry_in_kvs = kvs2") prefer 2 apply force
@@ -103,7 +101,7 @@ apply (case_tac its)
      apply (metis length_append takeWhile_dropWhile_id)
    apply (subgoal_tac "!i<length kvs2 - Suc 0. key_lt (fst (kvs2 ! i)) (fst (kvs2 ! Suc i))")
    prefer 2
-    apply (subgoal_tac "keys_ordered_1 (Leaf kvs)") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def wellformed_fts_focus_def wellformed_tree_def keys_ordered_def forall_subtrees_def rev_apply_def)
+    apply (subgoal_tac "keys_ordered_1 (Leaf kvs)") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def  wellformed_fts_focus_def wellformed_tree_def keys_ordered_def forall_subtrees_def rev_apply_def)
     apply (simp add:keys_ordered_1_def rev_apply_def Let_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def set_butlast_lessThan)
     apply (case_tac "entry_in_kvs")
      (*entry_in_kvs*)
@@ -142,7 +140,7 @@ apply (case_tac its)
        prefer 2
         apply rule
         apply (rename_tac "kv")
-        apply (subgoal_tac "keys_ordered_1 (Leaf kvs)") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def wellformed_fts_focus_def wellformed_tree_def keys_ordered_def forall_subtrees_def rev_apply_def)
+        apply (subgoal_tac "keys_ordered_1 (Leaf kvs)") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def wellformed_fts_focus_def wellformed_tree_def keys_ordered_def forall_subtrees_def rev_apply_def)
         apply (simp add:keys_ordered_1_def Let_def rev_apply_def key_indexes_def atLeast0LessThan lessThan_def)
         apply (simp add:nth_append)
         apply (subgoal_tac "? kv_index < index. kv = l_kvs ! kv_index") prefer 2 apply (metis in_set_conv_nth)
@@ -233,7 +231,7 @@ apply (case_tac its)
     prefer 2 
      apply rule+
      apply (simp add:hd_def,case_tac r_kvs,force,clarsimp)
-     apply (case_tac "List.find (\<lambda>x. key_eq k0 (fst x)) (l_kvs @ (ac, bb) # list)") prefer 2 apply force
+     apply (case_tac "List.find (\<lambda>x. key_eq k0 (fst x)) (l_kvs @ (aa, ba) # list)") prefer 2 apply force
      apply (simp add:find_None_iff)
      apply (metis dropWhile_eq_Cons_conv fst_conv key_lt_rev)
     apply (subgoal_tac "r_kvs ~= [] --> key_lt (fst (((k0, v0) # r_kvs) ! (i - index))) (fst (r_kvs ! (i-index)))")
@@ -282,7 +280,7 @@ apply (case_tac its)
     apply rule
      (*wf_size'*)
      apply (simp add:wf_size'_def)
-     apply (subgoal_tac "wf_size (if (stk=[]) then Some Small_root_node_or_leaf else None) (Leaf kvs)") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def wellformed_fts_focus_def wellformed_tree_def)
+     apply (subgoal_tac "wf_size (if (stk=[]) then Some Small_root_node_or_leaf else None) (Leaf kvs)") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def wellformed_fts_focus_def wellformed_tree_def)
      apply (case_tac "stk=[]")
       (*stk=[]*)
       apply (simp add:wf_size_def forall_subtrees_def wf_size_1_def)
@@ -307,7 +305,7 @@ apply (case_tac its)
     (* keys_ordered *)
     apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def)
     apply (force simp add:Let_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def set_butlast_lessThan)
-   apply (subgoal_tac "wellformed_context stk") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def)
+   apply (subgoal_tac "wellformed_context stk") prefer 2 apply (force simp add:wf_its_state_def wellformed_fts_def)
    apply (subgoal_tac "wellformed_ts_1 (Tree_stack (Focus (Inserting_one (Leaf kvs2)), stk))")
     prefer 2
      apply (simp add:wellformed_ts_1_def dest_ts_def)
@@ -322,7 +320,7 @@ apply (case_tac its)
      apply simp
      apply (subgoal_tac "wellformed_context_1 (if (stk' = []) then Some Small_root_node_or_leaf else None) ((lb, ((ks, rs), i), rb))") prefer 2 apply (case_tac stk',force,force)
      apply (simp add:wellformed_context_1_def)
-     apply (simp add:wf_its_state_def wellformed_fts_def dest_fts_state_def wellformed_fts_1_def)
+     apply (simp add:wf_its_state_def wellformed_fts_def wellformed_fts_1_def)
      apply (erule conjE)+
      apply (thin_tac "node=_")
      apply (drule_tac t="rs!i" in sym)
@@ -394,7 +392,7 @@ apply (case_tac its)
     apply (simp add:wf_its_state_def wellformed_ts_def dest_ts_def)
     apply (subgoal_tac "wellformed_focus (Inserting_one (Leaf kvs2)) (stk = [])")
     prefer 2
-     apply (simp add:wellformed_focus_def wellformed_tree_def wellformed_tree'_def wf_size_def wellformed_fts_def dest_fts_state_def wellformed_fts_focus_def)
+     apply (simp add:wellformed_focus_def wellformed_tree_def wellformed_tree'_def wf_size_def wellformed_fts_def wellformed_fts_focus_def)
      apply (case_tac "length kvs2 <= max_leaf_size & min_leaf_size < length kvs2")
      prefer 2
       apply (erule conjE)+

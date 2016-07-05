@@ -6,9 +6,9 @@ begin
 datatype its_focus_t = 
 Inserting_one "Tree"
 | Inserting_two "Tree * key * Tree"
+(*end ins focus definition*)
 
 type_synonym inserting_two_t =  "Tree * key * Tree"
-(*end ins focus definition*)
 
 (*begin its_tree_stack definition*)
 type_synonym its_tree_stack = "its_focus_t tree_stack"
@@ -16,7 +16,7 @@ type_synonym its_tree_stack = "its_focus_t tree_stack"
 
 (*begin step its_tree_stack*)
 datatype its_state =
-Its_down "(fts_state * value_t)"
+Its_down "(f_tree_stack * value_t)"
 | Its_up "its_tree_stack"
 
 definition split_node :: "node_t \<Rightarrow> inserting_two_t" where
@@ -90,7 +90,7 @@ None =>
               // need to distinguish whether the updated leaf is too
               // big or not; would be nice to combine these cases, but
               // this seems somewhat difficult*)
-let (k0,lf,stk) = dest_fts_state fts in
+let (k0,lf,stk) = dest_f_tree_stack fts in
 (case lf of
 Leaf kvs =>
 (*tr:need to check whether the leaf is small enough to insert directly*)
