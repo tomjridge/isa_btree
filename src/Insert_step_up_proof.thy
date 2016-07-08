@@ -209,7 +209,7 @@ apply(intro conjI)
     apply (elim conjE)+
     (* now I know that height rs!i = height t, so a substitution should not do any harm*)
     apply (intro conjI)
-     apply (smt length_list_update list_all_length nth_list_update_eq nth_list_update_neq)
+     apply (metis length_list_update list_all_length nth_list_update_eq nth_list_update_neq)
      
      apply (subgoal_tac "list_all balanced_1 (tree_to_subtrees t)") prefer 2 apply force
      apply (smt concat.simps(2) concat_append id_take_nth_drop list.map(2) list_all_append list_update_beyond map_append not_le upd_conv_take_nth_drop)
@@ -379,7 +379,7 @@ apply(intro conjI)
     apply simp
     apply rule
      (* key_lt --! i : set (key_indexes (Node (xs @ k0 # ys, rs2))). ! k : set (keys (rs2 ! i)). key_lt k ((xs @ k0 # ys) ! i)*)
-     apply rule+
+     apply (rule ballI)+
      apply (rename_tac i' k)
      apply (case_tac "i' < i")
       (*i' < i*)
@@ -417,7 +417,7 @@ apply(intro conjI)
          apply (smt One_nat_def Suc_lessE add_2_eq_Suc atLeastLessThan_iff diff_Suc_1 diff_Suc_eq_diff_pred le_add_diff_inverse less_2_cases less_Suc0 less_imp_le_nat not_le old.nat.distinct(2))
      
      (*key_le --! i : set (key_indexes (Node (xs @ k0 # ys, rs2))). ! x : set (keys (rs2 ! Suc i)). key_le ((xs @ k0 # ys) ! i) x*)
-     apply rule+
+     apply (rule ballI)+
      apply (rename_tac i' k)
      apply (case_tac "Suc i' < i")
       (*Suc i' < i*)
@@ -726,7 +726,7 @@ apply(intro conjI)
     apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def list_all_iff keys_ordered_1_def Let_def)
     apply (simp add:key_indexes_def set_butlast_lessThan)
     apply (subgoal_tac "left_ks ~= []") prefer 2 apply (force simp add:wellformed_constants_def)
-    apply rule+
+    apply (rule ballI conjI)+
      apply (subgoal_tac "!  x  :  set left_ks. key_lt x k")
      prefer 2
       using bigger_than_last_in_list_sorted_by_key_lt' apply presburger
@@ -776,7 +776,7 @@ apply(case_tac f)
   apply (metis height.simps list.set_map list_update_id map_update)
   
   (*keys of new focus maintain the order of the old focus*)
-  apply rule+
+  apply (rule splitI2)+
   apply (subgoal_tac "0 < length l & i <= length ks & i' <= length l & keys_consistent(Node(l,cs)) ") prefer 2 apply (case_tac tl_stk,(force simp add:Let_def get_min_size_def wellformed_context_1_def subtree_indexes_def is_subnode_def wellformed_tree_def wf_ks_rs_def wf_size_def forall_subtrees_Cons wf_ks_rs_1_def wf_size_1_def)+)
   apply (subgoal_tac "keys_consistent(Node(ks,rs[i := new_focus]))") prefer 2 apply (force simp add:wellformed_focus_def wellformed_tree_def)
   apply (simp add:keys_consistent_def forall_subtrees_Cons keys_consistent_1_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def) 
@@ -961,7 +961,7 @@ apply(case_tac f)
      
      (*set (tl (drop i rs)) \<subseteq> insert tr (insert tleft (set rs))*)
      apply (metis Cons_nth_drop_Suc in_set_dropD insert_iff list.sel(3) subsetI)
-  apply rule+
+  apply (rule conjI refl iffI equalityI ext prod_eqI)+
    (*height*)
    apply (subgoal_tac "cs ! i' = Node(ks,rs)") prefer 2 apply (force simp add: is_subnode_def Let_def)
    apply (subgoal_tac "? hrsi. (case rs ! i of Node (xa, cs) => 1 + Max (set (map height cs)) | Leaf x => 1) = hrsi") prefer 2 apply force
@@ -986,7 +986,7 @@ apply(case_tac f)
    apply (subgoal_tac "height ` set rs2 = {} | height ` set rs2 = {hrsi}") prefer 2 apply (metis subset_singletonD)
    apply force
    (*check_keys*)
-   apply rule+
+   apply (rule splitI2)+
    apply (rename_tac lbk ubk)
    apply (simp add:get_lower_upper_keys_for_node_t_def Let_def)
    apply (simp add:wellformed_focus_def Let_def)
@@ -1248,16 +1248,16 @@ apply(case_tac f)
   (*check_keys*)
   (* I need to show that k is in ks2 and that the check_keys on ks2 considers all the check_keys predicates in the goal*)
   apply (simp add:wellformed_focus_def check_keys_def)
-  apply rule+
+  apply (rule conjI)+
    (*(case lb of None => True | Some kl => Ball (set (keys (Node (left_ks, left_rs)))) (key_le kl))*)
    apply (case_tac lb) apply force apply force
    
   (*(case rb of None => True | Some kr => !k : set (keys (Node (right_ks, right_rs))). key_lt k kr)*)
-  apply rule+
+  apply (rule conjI)+
    apply (case_tac rb) apply force apply force
    
   (*(case lb of None => True | Some kl => Ball (set [k]) (key_le kl))*)
-  apply rule+
+  apply (rule conjI)+
    apply (case_tac lb) apply force apply (force simp add:keys_Cons)
 
   (*case rb of None => True | Some kr => !k : set [k]. key_lt k kr*)

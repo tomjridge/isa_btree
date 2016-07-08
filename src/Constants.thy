@@ -2,11 +2,15 @@ theory Constants
 imports Main
 begin
 
+(*begin constants*)
 consts min_leaf_size :: nat
 consts max_leaf_size :: nat
 consts min_node_keys :: nat
 consts max_node_keys :: nat
+(*end constants*)
 
+
+(*begin wf constants*)
 definition wellformed_constants :: "bool" where
 "wellformed_constants == (
 let wf_node_constants =
@@ -25,6 +29,7 @@ let (wf_leaf_constants) =
 in
 wf_node_constants & wf_leaf_constants
 )"
+(*end wf constants*)
 
 (*
 occasionally we need to allow the root to be small, or perhaps
@@ -41,10 +46,12 @@ leaf or a node, based on rmbs; note that we only ever consider
 all other nodes, we check as normal
 *)
 
+(*begin min size type def*)
 datatype min_size_t = Small_root_node_or_leaf
   | Small_node
   | Small_leaf
 
 
 type_synonym ms_t = "min_size_t option"
+(*end min size type def*)
 end

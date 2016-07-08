@@ -60,7 +60,7 @@ prefer 2
  apply (subgoal_tac "index < length rs")
  prefer 2
   apply (simp add:search_key_to_index_def Let_def, case_tac " List.find (\<lambda>x. key_lt k (ks ! x)) [0..<length ks]",force,simp)
-  apply (smt diff_zero find_Some_iff length_upt less_Suc_eq less_diff_conv nth_upt zero_less_diff)
+  apply (force simp add: find_Some_iff)
  apply (subgoal_tac "? child. rs ! index =  child") prefer 2 apply force
  apply (erule exE)
  apply simp

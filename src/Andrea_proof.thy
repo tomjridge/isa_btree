@@ -113,7 +113,7 @@ apply (case_tac its)
      apply simp
      apply (drule_tac t="kvs2" in sym)
      apply simp
-     apply rule+
+     apply (rule impI allI not_None_eq)+
      apply (subgoal_tac "takeWhile (\<lambda>x. key_lt (fst x) k0) kvs = kvs") prefer 2 apply force
      apply (drule_tac t=kvs in sym)
      apply simp
@@ -228,8 +228,8 @@ apply (case_tac its)
      apply (simp add:last_conv_nth)
      apply (metis diff_Suc_less length_greater_0_conv nth_mem set_takeWhileD)
     apply (subgoal_tac "r_kvs ~= [] --> key_lt  k0 (fst(hd r_kvs))")
-    prefer 2 
-     apply rule+
+    prefer 2
+     apply (rule impI)+
      apply (simp add:hd_def,case_tac r_kvs,force,clarsimp)
      apply (case_tac "List.find (\<lambda>x. key_eq k0 (fst x)) (l_kvs @ (aa, ba) # list)") prefer 2 apply force
      apply (simp add:find_None_iff)
@@ -257,7 +257,7 @@ apply (case_tac its)
      apply (case_tac "Suc i < index")
       (*Suc i < index*)
       apply simp
-      apply rule+
+      apply (rule impI)+
       apply (drule_tac x="i" in spec)
       apply force
 
@@ -447,7 +447,7 @@ apply (case_tac its)
        apply (subgoal_tac "(\<forall>i\<in>{0..<length left_lks2 - Suc 0}. key_lt (left_lks2 ! i) (left_lks2 ! Suc i))")
        prefer 2
         apply (simp add:atLeast0LessThan lessThan_def)
-        apply rule+
+        apply (rule impI allI not_None_eq)+
         apply (drule_tac x=i in spec)
         apply (subgoal_tac "i < length kvs") prefer 2 apply force
         apply force
@@ -459,7 +459,7 @@ apply (case_tac its)
        apply (subgoal_tac "(\<forall>i\<in>{0..<length right_lks2 - Suc 0}. key_lt (right_lks2 ! i) (right_lks2 ! Suc i))")
        prefer 2
         apply (simp add:atLeast0LessThan lessThan_def)
-        apply rule+
+        apply (rule impI allI not_None_eq)+
         apply (drule_tac x="i+(length left_kvs2)" in spec) back
         apply (subgoal_tac "lks2 = left_lks2@right_lks2") prefer 2 apply (metis append_take_drop_id map_append)
         apply (simp add:nth_append)
