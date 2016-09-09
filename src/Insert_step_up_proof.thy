@@ -7,17 +7,19 @@ begin
 definition invariant_wf_ts :: "bool" where
 "invariant_wf_ts == (
 ! ts.
-  total_order_key_lte -->
-  wellformed_constants -->
-  wellformed_ts ts --> 
+let wellformed_ts' =
 (
 let ts' = step_up ts in
 case ts' of 
 None => True
 | Some ts' => (
 wellformed_ts ts'
-)
 ))
+in
+  total_order_key_lte -->
+  wellformed_constants -->
+  wellformed_ts ts --> wellformed_ts'
+)
 "
 (*end insert invariant definition*)
 
@@ -776,7 +778,7 @@ apply(case_tac f)
   apply (metis height.simps list.set_map list_update_id map_update)
   
   (*keys of new focus maintain the order of the old focus*)
-  apply (rule splitI2)+
+  apply (rule)+
   apply (subgoal_tac "0 < length l & i <= length ks & i' <= length l & keys_consistent(Node(l,cs)) ") prefer 2 apply (case_tac tl_stk,(force simp add:Let_def get_min_size_def wellformed_context_1_def subtree_indexes_def is_subnode_def wellformed_tree_def wf_ks_rs_def wf_size_def forall_subtrees_Cons wf_ks_rs_1_def wf_size_1_def)+)
   apply (subgoal_tac "keys_consistent(Node(ks,rs[i := new_focus]))") prefer 2 apply (force simp add:wellformed_focus_def wellformed_tree_def)
   apply (simp add:keys_consistent_def forall_subtrees_Cons keys_consistent_1_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def) 
@@ -986,7 +988,7 @@ apply(case_tac f)
    apply (subgoal_tac "height ` set rs2 = {} | height ` set rs2 = {hrsi}") prefer 2 apply (metis subset_singletonD)
    apply force
    (*check_keys*)
-   apply (rule splitI2)+
+   apply (rule)+
    apply (rename_tac lbk ubk)
    apply (simp add:get_lower_upper_keys_for_node_t_def Let_def)
    apply (simp add:wellformed_focus_def Let_def)

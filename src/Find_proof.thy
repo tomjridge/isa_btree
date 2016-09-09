@@ -2,16 +2,21 @@ theory Find_proof
 imports Key_lt_order Find_tree_stack
 begin
 
+(*begin find invariant*)
 definition invariant_wf_fts :: "bool" where
 "invariant_wf_fts == (
 ! fts.
- total_order_key_lte -->
- wellformed_fts fts -->
+let wellformed_fts' =
 (
 let fts' = step_fts fts in
 case fts' of None => True
 | Some fts' => wellformed_fts fts'
-))"
+)
+in
+ total_order_key_lte -->
+ wellformed_fts fts --> wellformed_fts'
+)"
+(*end find invariant*)
 
 lemma set_butlast_lessThan:"set (butlast [0..<n]) = {0..<n -1}"
 apply (case_tac n,force+)
@@ -225,18 +230,20 @@ prefer 2
      apply (simp add:wellformed_tree_def keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def key_indexes_def set_butlast_lessThan atLeast0LessThan lessThan_def check_keys_def)
      apply (force simp add:keys_consistent_def forall_subtrees_def rev_apply_def keys_consistent_1_def check_keys_def key_indexes_def atLeast0LessThan lessThan_def)    
   
+  apply (rename_tac ctx_h ctx_t)
   apply (subgoal_tac "ks ~= []") prefer 2 apply (force simp add:wellformed_fts_focus_def wellformed_tree_def wf_size_def forall_subtrees_def rev_apply_def wf_size_1_def)
-  apply (case_tac a,simp)
-  apply (subgoal_tac "is_subnode ((ks, rs), index) b \<and> linked_context (lb, b, rb) list")
+  apply (case_tac ctx_h,simp)
+  apply (rename_tac l1 ni1 u1)
+  apply (subgoal_tac "is_subnode (ks, rs) ni1 \<and> linked_context (lb, ni1, rb) ctx_t")
   prefer 2
-  apply (case_tac "list")
+  apply (case_tac ctx_t)
    (*list = []*)
-   apply (simp add:is_subnode_def,case_tac b,case_tac ab,force simp add:wellformed_context_1_def wellformed_fts_1_def dest_f_tree_stack_def)
+   apply (case_tac ni1,rename_tac ksrs1 i1,case_tac ksrs1,rename_tac ks1 rs1, simp add:is_subnode_def wellformed_context_1_def wellformed_fts_1_def dest_f_tree_stack_def)
   
    (*list ~= []*)
    apply simp
-   apply (case_tac b,case_tac ac,case_tac ab,simp)
-   apply (simp add:is_subnode_def,case_tac b,case_tac ab,force simp add:wellformed_context_1_def wellformed_fts_1_def dest_f_tree_stack_def)  
+   apply (case_tac ni1,rename_tac ksrs1 i1,case_tac ksrs1,rename_tac ks1 rs1, simp add:is_subnode_def wellformed_context_1_def wellformed_fts_1_def dest_f_tree_stack_def)
+   apply force
   apply (case_tac "index = 0")
    (*index = 0*)
    apply (force simp add:get_lower_upper_keys_for_node_t_def)

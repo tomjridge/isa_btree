@@ -1,5 +1,6 @@
+(* [[file:~/workspace/agenda/myTasks.org::*=ts_to_map=][=ts_to_map=:1]] *)
 theory Find_tree_stack
-imports Util Constants Tree Key_value Tree_stack "~~/src/HOL/Library/Code_Target_Nat"
+imports Tree_stack "~~/src/HOL/Library/Code_Target_Nat"
 begin
 
 (* tr: we return a pair of a focus and the context; the focus is just
@@ -14,18 +15,33 @@ type_synonym f_focus_t = "key * Tree"
 
 type_synonym f_tree_stack = "f_focus_t tree_stack"
 
-definition dest_f_tree_stack :: "f_tree_stack => (key * Tree * context_t)" where
-"dest_f_tree_stack fts = (case fts of (Tree_stack (Focus (k,t), ctx)) => (k,t,ctx))"
+definition dest_f_tree_stack 
+ :: "f_tree_stack => (key * Tree * context_t)"
+where
+"dest_f_tree_stack fts = (
+case fts of (Tree_stack (Focus (k,t), ctx)) => (k,t,ctx))
+"
+
+definition fts_to_map
+ :: "f_tree_stack => (key,value_t) map"
+where
+"fts_to_map fts = (
+let (_,t,ctx) = dest_f_tree_stack fts in
+tree_to_map t ++ ctx_to_map(ctx)
+)"
 
 definition tree_to_fts :: "key => Tree => f_tree_stack" where
 "tree_to_fts k t == (
 Tree_stack (Focus (k,t),Nil))"
 
 (* tr: link between focus and context?*)
+(*begin wf fts focus definition*)
 definition wellformed_fts_focus :: "ms_t => Tree => bool" where
 "wellformed_fts_focus ms t == (
 wellformed_tree ms t)"
+(*end wf fts focus definition*)
 
+(*begin wf fts1 definition*)
 definition wellformed_fts_1 :: "f_tree_stack => bool" where
 "wellformed_fts_1 fts == (
 let (k,t,ctx) = dest_f_tree_stack fts in
@@ -38,17 +54,27 @@ Nil => True
  &
  (check_keys l [k] u)
 ))"
+(*end wf fts1 definition*)
 
+(*begin wf fts definition*)
 definition wellformed_fts :: "f_tree_stack => bool" where
 "wellformed_fts fts == (
 let (k,t,ctx) = dest_f_tree_stack fts in
-let ms = if (ctx = Nil) then (Some Small_root_node_or_leaf) else None in
+let ms =
+ if (ctx = Nil)
+ then (Some Small_root_node_or_leaf)
+ else None
+in
 wellformed_fts_focus ms t
 & wellformed_context ctx
 & wellformed_fts_1 fts)"
+(*end wf fts definition*)
 
 (*tr: stops when gets to leaf; no "errors"*)
-definition step_fts :: "f_tree_stack => f_tree_stack option" where
+(*begin find step definition*)
+definition step_fts
+ :: "f_tree_stack => f_tree_stack option"
+where
 "step_fts fts == (
 let (k,t,ctx) = dest_f_tree_stack fts in
 let (lb,rb) =
@@ -63,8 +89,9 @@ Leaf _ => None
  let ctx2 = (l,((ks,rs),i),u)#ctx in
  Some(Tree_stack(Focus(k,(rs!i)),ctx2))
 ))"
+(*end find step definition*)
 
 declare [[code abort: key_lt]]
 export_code step_fts in Scala module_name Find_tree_stack file "/tmp/Find_tree_stack.scala"
 end
-
+(* =ts_to_map=:1 ends here *)

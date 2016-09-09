@@ -39,6 +39,14 @@ termination
   apply(force intro:FIXME)
   done
 
+definition tree_to_map
+ :: "Tree => (key,value_t) map"
+where
+"tree_to_map t = (
+map_of (List.concat(tree_to_leaves t))
+)"
+
+
 (* begin t2s *)
 function tree_to_subtrees :: "Tree => Tree list" where
 "tree_to_subtrees t0 = (

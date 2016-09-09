@@ -2,6 +2,7 @@ theory Andrea_proof
 imports Insert_tree_stack Key_lt_order Find_tree_stack  Find_proof Insert_step_up_proof
 begin
 
+(*begin insert invariant*)
 definition wf_its_state :: "its_state => bool" where
 "wf_its_state its == (
 case its of
@@ -12,18 +13,20 @@ Its_down (fts,_) => wellformed_fts fts
 definition invariant_wf_its_state :: "bool" where
 "invariant_wf_its_state == (
 ! its.
-  total_order_key_lte -->
-  wellformed_constants -->
-  wf_its_state its --> 
+let wf_its_state_its' =
 (
 let its' = its_step_tree_stack its in
 case its' of 
 None => True
 | Some its' => (
-wf_its_state its'
+wf_its_state its'))
+in
+  total_order_key_lte -->
+  wellformed_constants -->
+  wf_its_state its --> wf_its_state_its'
 )
-))
 "
+(*end insert invariant*)
 
 lemma invariant_wf_its_state : "invariant_wf_its_state"
 apply (simp add:invariant_wf_its_state_def)
@@ -41,6 +44,7 @@ apply (case_tac its)
   (*step_fts fts = None*)
   apply (subgoal_tac "? k0 node stk. dest_f_tree_stack fts = (k0,node,stk)") prefer 2  apply (meson prod_cases3)
   apply (erule exE)+
+  apply (simp add:step_bottom_def)
   apply (case_tac node,force)
    (*node = Leaf kvs -- this is the only interesting case*)
    apply (rename_tac kvs)

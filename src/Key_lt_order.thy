@@ -1,5 +1,5 @@
 theory Key_lt_order
-imports  "~/workspace/isa_btree/src/Insert_tree_stack" 
+imports  "~/workspace/isa_btree/src/Insert_tree_stack"
 begin
 
 definition total_order_key_lte :: " bool" where
@@ -15,10 +15,26 @@ apply (unfold total_order_key_lte_def)
 apply (force simp add: key_eq_def key_le_def)+
 done
 
+lemma key_lt_not_key_le: "! a b. total_order_key_lte \<longrightarrow> (key_lt a b) = (~ key_le b a)"
+apply (simp add: neg_key_lt)
+using neg_key_lt apply blast
+done
+
 lemma eq_implies_key_le: "! a b. total_order_key_lte \<longrightarrow> ((a = b) \<longrightarrow> (key_le a b))"
 apply rule+
 apply (unfold total_order_key_lte_def)
 apply meson
+done
+
+lemma key_le_implies_neq: "! a b. total_order_key_lte \<longrightarrow> (~(key_eq a b) \<longrightarrow> (a ~= b))"
+apply rule+
+apply (unfold total_order_key_lte_def)
+apply meson
+done
+
+lemma key_lt_implies_neq: "! a b. total_order_key_lte \<longrightarrow> ((key_lt a b) \<longrightarrow> (a ~= b))"
+apply (simp add:key_lt_not_key_le)
+using eq_implies_key_le apply blast
 done
 
 lemma order_key_le_lt: "\<forall> a b c. total_order_key_lte \<longrightarrow> key_le a b \<and> key_lt b c \<longrightarrow> key_lt a c"
@@ -96,6 +112,7 @@ apply (induct i)
  apply (drule_tac s="length ll" in sym)
  apply (simp add:nth_append)
  apply (case_tac "lr = []")
+  
   apply force
  
   apply clarsimp

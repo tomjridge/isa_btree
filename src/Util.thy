@@ -68,10 +68,15 @@ value "(dest_Some(list_replace_at_n [0,0,0] 2 [1,2])) = [0,0,1,2]"
 value "((list_replace_at_n [0,0,0] 3 [1,2])) = None"
 *)
 
-definition list_replace_1_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list option" where
+definition list_replace_1_at_n 
+ :: "'a list \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list option"
+where
 "list_replace_1_at_n xs n a == (Some (list_update xs n a))"
 
-definition list_ordered_insert :: "('a => bool) => 'a => 'a list => bool => 'a list" where
+(*begin ordered insert definition*)
+definition list_ordered_insert
+ :: "('a => bool) => 'a => 'a list => bool => 'a list"
+where
 "list_ordered_insert is_ord e l is_subst == (
 let left = (takeWhile is_ord l) in
 let right = dropWhile is_ord l in
@@ -80,4 +85,18 @@ let right' = tl right in
 if is_subst
 then left'@e#right'
 else left@e#right)"
+(*end ordered insert definition*)
+
+(*no termination proof for the following*)
+(*begin iterator*)
+function iter_step :: "('a => 'a option) => 'a => 'a" where
+"iter_step f x = (
+let r = f x in
+(case r of
+None => x
+| Some x => iter_step f x
+))"
+(*end iterator*)
+apply (force)+ done
+
 end
