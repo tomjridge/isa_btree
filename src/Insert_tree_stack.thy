@@ -38,7 +38,6 @@ let (f,ctx) = dest_ts its in
 ctx_to_map ctx ++ its_f_to_map f
 )"
 
-
 (*begin split node definition *)
 definition split_node :: "node_t => inserting_two_t" where
 "split_node n == (
@@ -86,6 +85,19 @@ Inserting_two(split_node(ks2,rs2))
 )
 )
 )"
+
+function its_to_tree
+ :: "its_tree_stack => Tree"
+where
+"its_to_tree (Tree_stack(Focus f, [])) = (
+case f of
+Inserting_one t => t
+| Inserting_two (tl_,k,tr_) => Node([k],[tl_,tr_])
+)" |
+"its_to_tree (Tree_stack(Focus f, (_,(ksrs,i),_)#t)) = (
+its_to_tree (Tree_stack((Focus (update_focus_at_position ksrs i f)),t))
+)"
+by pat_completeness auto
 
 definition step_up
  :: "its_tree_stack => (its_tree_stack) option"
