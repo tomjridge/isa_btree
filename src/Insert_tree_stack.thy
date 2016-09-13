@@ -21,14 +21,21 @@ Its_down "(f_tree_stack * value_t)"
 | Its_up "its_tree_stack"
 (*end step its_state definition *)
 
+definition its_f_to_map
+ :: "its_focus_t => (key,value_t) map"
+where
+"its_f_to_map f = (
+(case f of
+(*note that the focus map must be after the ++ in order to consider the new entry in case of an update*)
+Inserting_one t => (tree_to_map t)
+| Inserting_two (tl_,_,tr_) => (tree_to_map tl_)++(tree_to_map tr_) )
+)"
 definition its_to_map
  :: "its_tree_stack => (key,value_t) map"
 where
 "its_to_map its = (
 let (f,ctx) = dest_ts its in
-(case f of
-Inserting_one t => (tree_to_map t) ++ ctx_to_map(ctx)
-| Inserting_two (tl_,_,tr_) => (tree_to_map tl_)++(tree_to_map tr_)++ctx_to_map(ctx) )
+ctx_to_map ctx ++ its_f_to_map f
 )"
 
 
