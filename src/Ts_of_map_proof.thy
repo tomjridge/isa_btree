@@ -191,8 +191,62 @@ m_eq_m')
 "
 (*end findmapts invariant*)
 
+
 lemma invariant_find_map_fts: "invariant_find_map_fts"
 apply (simp add:invariant_find_map_fts_def Let_def)
+apply rule+
+apply (case_tac "step_fts fts",force)
+apply simp
+apply (rename_tac fts')
+apply (simp add:step_fts_def)
+apply (subgoal_tac "? f ctx. (Tree_stack((Focus f),ctx)) = fts") prefer 2 apply (case_tac fts,rename_tac fc,simp,case_tac fc,rename_tac f ctx,simp,case_tac f,force)
+apply (erule exE)+
+apply (subgoal_tac "? k t. dest_f_tree_stack (Tree_stack (Focus f, ctx)) = (k,t,ctx)") prefer 2 apply (simp add:dest_f_tree_stack_def,case_tac f,force)
+apply (erule exE)+
+apply simp
+apply (subgoal_tac "? lb rb. ((case ctx of [] \<Rightarrow> (None, None) | (lb, xb, xc) # xa => (lb, xc)) = (lb,rb))") prefer 2 apply force
+apply (erule exE)+
+apply simp
+apply (case_tac "t") prefer 2 apply force
+apply simp
+apply (rename_tac ksrs)
+apply (case_tac ksrs)
+apply (rename_tac ks rs)
+apply (simp add:Let_def)
+apply (subgoal_tac "? l u. get_lower_upper_keys_for_node_t ks lb (search_key_to_index ks k) rb = (l,u)") prefer 2 apply force
+apply (erule exE)+
+apply simp
+apply (thin_tac "ksrs=_")
+apply (thin_tac "t=_")
+apply simp
+apply (subgoal_tac "(fts_to_tree fts) = (fts_to_tree fts')")
+prefer 2
+ apply (drule_tac t="fts" in sym)
+ apply (drule_tac t="fts'" in sym)
+ apply simp
+ apply (case_tac ctx)
+  apply (force simp add:list_replace_1_at_n_def dest_f_tree_stack_def)+
+apply (force simp add:fts_to_map_def rev_apply_def)
+done
+
+definition invariant_find_map_fts1 :: "bool" where
+"invariant_find_map_fts1 = (
+!fts.
+let fts' = step_fts fts in
+let m_eq_m' = (
+ let m = fts_to_map1 fts in
+ (case fts' of None => True
+ | Some fts' =>
+ let m' = fts_to_map1 fts' in
+ m = m'))
+in
+total_order_key_lte -->
+wellformed_fts fts -->
+(case fts' of None => True | Some fts' => wellformed_fts fts') -->  (*FIXME: remove! this is given by Insert_step_up_proof*)
+m_eq_m')
+"
+lemma invariant_find_map_fts1: "invariant_find_map_fts1"
+apply (simp add:invariant_find_map_fts1_def Let_def)
 apply rule+
 apply (case_tac "step_fts fts",force)
 apply simp
@@ -222,7 +276,7 @@ apply (erule exE)+
 apply simp
 apply (thin_tac "ksrs=_")
 apply (thin_tac "t=_")
-apply (simp add:fts_to_map_def)
+apply (simp add:fts_to_map1_def)
 apply (subgoal_tac "? t' ctx'. dest_f_tree_stack fts' = (k,t',ctx')")
 prefer 2
  apply (case_tac fts)
@@ -351,22 +405,7 @@ apply simp
 apply (drule_tac t = ts in sym)
 apply (subgoal_tac "? f' . (update_focus_at_position (ks, rs) i f) = f' ") prefer 2 apply (force)
 apply (erule exE)
-apply (simp add:its_to_map_def dest_ts_def)
-apply (subgoal_tac "(ctx_to_map ((l, ((ks, rs), i), u) # Nil)  ++ its_f_to_map f) = (its_f_to_map f')")
-(*FIXME move demonstration @ here*)
-apply (case_tac "ctx_t = []")
- (*ctx_t = []*)
- apply (subgoal_tac "ctx_to_map [] = empty") prefer 2 apply (force simp add:ctx_to_map_def)
- apply force
-
- (*ctx_t ~= []*)
- apply (simp add:ctx_to_map_def)
- apply (metis map_add_assoc)
-(*FIXME demonstration @ begin*)
-(*I want to show that the f' subtrees are composed by rs1++x@rs2 where x is f*)
-
-apply (simp add:ctx_to_map_def) (*I want to say that f' is composed by rs1@f++rs2*)
-apply (force intro:FIXME)
+apply (force simp add:its_to_map_def dest_ts_def rev_apply_def)
 done
 
 (*begin stepbottommapts invariant*)
@@ -389,6 +428,28 @@ m_eq_m')
 (*end stepbottommapts invariant*)
 
 lemma invariant_step_bottom_map_its: "invariant_step_bottom_map_its"
-sorry
+apply (simp add:invariant_step_bottom_map_its_def Let_def)
+apply rule+
+apply (case_tac "step_bottom fts v",force)
+apply (rename_tac ts')
+apply simp
+apply (simp add:step_bottom_def)
+apply (subgoal_tac "? f ctx. (Tree_stack(Focus f,ctx)) = fts") prefer 2 apply (case_tac fts,rename_tac fc,case_tac fc,rename_tac f ctx,case_tac f,force)
+apply (erule exE)+
+apply (subgoal_tac "? k0 t. dest_f_tree_stack fts = (k0, t, ctx)") prefer 2 apply (drule_tac t=fts in sym,simp add:dest_f_tree_stack_def,case_tac f,force)
+apply (erule exE)+
+apply simp
+apply (case_tac t,force)
+apply (rename_tac kvs)
+apply (simp add:Let_def)
+apply (case_tac "(\<exists>a b. find (\<lambda>x. key_eq k0 (fst x)) kvs = Some (a, b)) \<or>
+           length kvs < max_leaf_size")
+ (*cond = true*)
+ apply (simp add:fts_to_map_def rev_apply_def)
+ (*FIXME maybe I have to generalize in order to minimise cases*)
+ apply (force intro:FIXME)
+ (*cond = false*)
+ apply (force intro:FIXME)
+done
 end
 (* proof\ ts_to_map_invariant\ \[2/5\]:1 ends here *)

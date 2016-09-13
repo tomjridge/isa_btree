@@ -22,10 +22,10 @@ where
 case fts of (Tree_stack (Focus (k,t), ctx)) => (k,t,ctx))
 "
 
-definition fts_to_map
+definition fts_to_map1
  :: "f_tree_stack => (key,value_t) map"
 where
-"fts_to_map fts = (
+"fts_to_map1 fts = (
 let (_,t,ctx) = dest_f_tree_stack fts in
 tree_to_map t ++ ctx_to_map(ctx)
 )"
@@ -90,6 +90,31 @@ Leaf _ => None
  Some(Tree_stack(Focus(k,(rs!i)),ctx2))
 ))"
 (*end find step definition*)
+
+function fts_to_tree
+ :: "f_tree_stack => Tree"
+where
+"fts_to_tree (Tree_stack(Focus f,[])) = (
+let (k,t) = f in
+t)" |
+"fts_to_tree (Tree_stack(Focus f,(_,((ks,rs),i),_)#ctx_t)) = (
+let (k,t) = f in
+let rs' = the (list_replace_1_at_n rs i t) in
+fts_to_tree (Tree_stack(Focus (k,Node(ks,rs')),ctx_t))
+)"
+by pat_completeness auto
+termination fts_to_tree
+ apply (relation "measure (\<lambda>ts. case ts of (Tree_stack(Focus _,ctx)) => length ctx)")
+ apply auto
+done
+
+definition fts_to_map
+ :: "f_tree_stack => (key,value_t) map"
+where
+"fts_to_map fts = (
+fts |> fts_to_tree |> tree_to_map
+)"
+
 
 declare [[code abort: key_lt]]
 export_code step_fts in Scala module_name Find_tree_stack file "/tmp/Find_tree_stack.scala"

@@ -98,5 +98,7 @@ None => x
 ))"
 (*end iterator*)
 apply (force)+ done
+termination iter_step
+ by (force intro:FIXME)
 
 end

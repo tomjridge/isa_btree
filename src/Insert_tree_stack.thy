@@ -30,14 +30,6 @@ where
 Inserting_one t => (tree_to_map t)
 | Inserting_two (tl_,_,tr_) => (tree_to_map tl_)++(tree_to_map tr_) )
 )"
-definition its_to_map
- :: "its_tree_stack => (key,value_t) map"
-where
-"its_to_map its = (
-let (f,ctx) = dest_ts its in
-ctx_to_map ctx ++ its_f_to_map f
-)"
-
 
 (*begin split node definition *)
 definition split_node :: "node_t => inserting_two_t" where
@@ -86,6 +78,31 @@ Inserting_two(split_node(ks2,rs2))
 )
 )
 )"
+
+function its_to_tree
+ :: "its_tree_stack => Tree"
+where
+"its_to_tree (Tree_stack(Focus f, [])) = (
+case f of
+Inserting_one t => t
+| Inserting_two (tl_,k,tr_) => Node([k],[tl_,tr_])
+)" |
+"its_to_tree (Tree_stack(Focus f, (_,((ks,rs),i),_)#t)) = (
+its_to_tree (Tree_stack((Focus (update_focus_at_position (ks,rs) i f)),t))
+)"
+by pat_completeness auto
+termination its_to_tree
+apply (relation "measure (\<lambda>ts. case ts of (Tree_stack(Focus _,ctx)) => length ctx)")
+apply auto
+done
+
+definition its_to_map
+ :: "its_tree_stack => (key,value_t) map"
+where
+"its_to_map its = (
+its |> its_to_tree |> tree_to_map
+)"
+
 
 definition step_up
  :: "its_tree_stack => (its_tree_stack) option"
