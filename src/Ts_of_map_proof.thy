@@ -351,22 +351,7 @@ apply simp
 apply (drule_tac t = ts in sym)
 apply (subgoal_tac "? f' . (update_focus_at_position (ks, rs) i f) = f' ") prefer 2 apply (force)
 apply (erule exE)
-apply (simp add:its_to_map_def dest_ts_def)
-apply (subgoal_tac "(ctx_to_map ((l, ((ks, rs), i), u) # Nil)  ++ its_f_to_map f) = (its_f_to_map f')")
-(*FIXME move demonstration @ here*)
-apply (case_tac "ctx_t = []")
- (*ctx_t = []*)
- apply (subgoal_tac "ctx_to_map [] = empty") prefer 2 apply (force simp add:ctx_to_map_def)
- apply force
-
- (*ctx_t ~= []*)
- apply (simp add:ctx_to_map_def)
- apply (metis map_add_assoc)
-(*FIXME demonstration @ begin*)
-(*I want to show that the f' subtrees are composed by rs1++x@rs2 where x is f*)
-
-apply (simp add:ctx_to_map_def) (*I want to say that f' is composed by rs1@f++rs2*)
-apply (force intro:FIXME)
+apply (force simp add:its_to_map_def dest_ts_def rev_apply_def)
 done
 
 (*begin stepbottommapts invariant*)
@@ -389,6 +374,34 @@ m_eq_m')
 (*end stepbottommapts invariant*)
 
 lemma invariant_step_bottom_map_its: "invariant_step_bottom_map_its"
-sorry
+apply (simp add:invariant_step_bottom_map_its_def Let_def)
+apply rule+
+apply (case_tac "step_bottom fts v",force)
+apply (rename_tac its)
+apply (subgoal_tac "? k f ctx. Tree_stack(Focus f,ctx) = fts") prefer 2 apply (force intro:FIXME)
+apply (erule exE)+
+apply (simp add:step_bottom_def)
+apply (subgoal_tac "dest_f_tree_stack fts = (k, snd f, ctx)") prefer 2 apply (force intro:FIXME)
+apply simp
+apply (case_tac "snd f",force)
+apply (rename_tac kvs)
+apply (simp add:Let_def)
+apply (subgoal_tac "? kvs2. list_ordered_insert (λx. key_lt (fst x) k) (k, v) kvs (∃a b. find (λx. key_eq k (fst x)) kvs = Some (a, b)) = kvs2 ") prefer 2 apply force
+apply (erule exE)
+apply (subgoal_tac "? some_keys some_other_keys. its_to_map its = map_of (some_keys@kvs2@some_other_keys) 
+  & fts_to_map fts = map_of (some_keys@kvs@some_other_keys)")
+prefer 2
+ apply (simp add:its_to_map_def fts_to_map_def rev_apply_def)
+ apply (force intro:FIXME)
+apply (erule exE)+
+apply (simp add:list_ordered_insert_def Let_def)
+apply (subgoal_tac "map_of kvs2 = map_of kvs (k \<mapsto> v)")
+prefer 2
+ apply (force intro:FIXME)
+apply simp
+apply (subgoal_tac "k ~: dom (map_of some_keys)")
+prefer 2 apply (force intro:FIXME)
+apply (simp add: map_add_upd_left)
+done
 end
 (* proof\ ts_to_map_invariant\ \[2/5\]:1 ends here *)

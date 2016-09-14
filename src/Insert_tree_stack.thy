@@ -21,23 +21,6 @@ Its_down "(f_tree_stack * value_t)"
 | Its_up "its_tree_stack"
 (*end step its_state definition *)
 
-definition its_f_to_map
- :: "its_focus_t => (key,value_t) map"
-where
-"its_f_to_map f = (
-(case f of
-(*note that the focus map must be after the ++ in order to consider the new entry in case of an update*)
-Inserting_one t => (tree_to_map t)
-| Inserting_two (tl_,_,tr_) => (tree_to_map tl_)++(tree_to_map tr_) )
-)"
-definition its_to_map
- :: "its_tree_stack => (key,value_t) map"
-where
-"its_to_map its = (
-let (f,ctx) = dest_ts its in
-ctx_to_map ctx ++ its_f_to_map f
-)"
-
 (*begin split node definition *)
 definition split_node :: "node_t => inserting_two_t" where
 "split_node n == (
@@ -98,6 +81,16 @@ Inserting_one t => t
 its_to_tree (Tree_stack((Focus (update_focus_at_position ksrs i f)),t))
 )"
 by pat_completeness auto
+termination its_to_tree
+ by (force intro:FIXME) (*this is provable by measure --see documentation*)
+
+definition its_to_map
+ :: "its_tree_stack => (key,value_t) map"
+where
+"its_to_map its = (
+its |> its_to_tree |> tree_to_map
+)"
+
 
 definition step_up
  :: "its_tree_stack => (its_tree_stack) option"
