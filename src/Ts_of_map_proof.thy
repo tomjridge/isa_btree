@@ -55,27 +55,30 @@ apply rule+
 apply (subgoal_tac "keys_consistent t") prefer 2 apply (force simp add:wellformed_tree_def)
 apply (subgoal_tac "! kvs. t = Leaf kvs --> distinct (map fst (List.concat (tree_to_leaves t)))") prefer 2 apply (metis distinct_keys_in_leaf)
 apply (thin_tac "wellformed_tree ms t")
-apply (induct t) prefer 2
+apply (induct t rule:Tree.induct) prefer 2
  apply (metis distinct_zipI1 zip_map_fst_snd)
-  
+ 
+ 
  apply (case_tac x)
  apply (rename_tac ks rs)
+ apply simp
  apply (simp add:snds_def sndsp.simps del:tree_to_leaves.simps)
- apply (subgoal_tac "distinct (tree_to_leaves (Node (ks, rs)))")
- prefer 2 
-  (* this goal should somehow use keys_consistent*)
+ apply (simp add:rev_apply_def)
+ apply (subgoal_tac "keys_ordered (Node(ks,rs))") prefer 2 apply (force intro:FIXME)
+ apply (induct_tac rs) (*FIXME I am not sure it is allowed*)
+ apply force
+ (*inductive step on rs*)
+ apply (rename_tac h tl)
+ apply simp
+ apply (subgoal_tac "h : set rs") prefer 2  apply (force intro:FIXME)
+ apply rule+
+  (* distinct concat tree_to_leaves h *)
+  apply (subgoal_tac "keys_consistent h") prefer 2 apply (force intro:FIXME)
+  apply (subgoal_tac "∀kvs. h = Leaf kvs ⟶ distinct (map fst kvs)") prefer 2 apply (force intro:FIXME)
+  apply force
+  
+  (*this should be solvable with keys_consistent*)
   apply (force intro:FIXME)
- apply (subgoal_tac "! ys : set (tree_to_leaves (Node (ks, rs))). distinct ys")
- prefer 2 
-  (*this goal should open the hp keys_consistent to allow the induction *)
-  apply (force intro:FIXME)
- apply (subgoal_tac "!ys zs. ys \<in> set ((tree_to_leaves (Node (ks, rs)))) --> 
-                             zs \<in> set ((tree_to_leaves (Node (ks, rs)))) --> 
-                              ys \<noteq> zs --> set ys \<inter> set zs = {}")
- prefer 2
-  (*this goal may be related to distinct (tree_to_leaves (Node (ks, rs)))*)
-  apply (force intro:FIXME)
- apply (force simp add: distinct_concat)
 sorry
 
 lemma distinct_keys_in_leaves:
@@ -373,6 +376,43 @@ m_eq_m')
 "
 (*end stepbottommapts invariant*)
 
+definition invariant_step_bottom_map_its1 :: "bool" where
+"invariant_step_bottom_map_its1 = (
+!fts k v.
+let its = step_bottom fts v in
+let m_eq_m' = (
+ let m = fts_to_map fts in
+ (case its of None => True
+ | Some its =>
+ let m' = its_to_map1 its in
+ m' = m(k \<mapsto> v)))
+in
+total_order_key_lte -->
+wellformed_fts fts -->
+(case its of None => True | Some its => wellformed_ts its) -->  (*FIXME: remove! this is given by Insert_step_bottom_proof*)
+m_eq_m')
+"
+
+lemma invariant_step_bottom_map_its1: "invariant_step_bottom_map_its1"
+apply (simp add:invariant_step_bottom_map_its1_def Let_def)
+apply rule+
+apply (case_tac "step_bottom fts v",force)
+apply (rename_tac its)
+apply (subgoal_tac "? k f ctx. Tree_stack(Focus f,ctx) = fts") prefer 2 apply (force intro:FIXME)
+apply (erule exE)+
+apply (simp add:step_bottom_def)
+apply (subgoal_tac "dest_f_tree_stack fts = (k, snd f, ctx)") prefer 2 apply (force intro:FIXME)
+apply simp
+apply (case_tac "snd f",force)
+apply (rename_tac kvs)
+apply (simp add:Let_def)
+apply (subgoal_tac "? kvs2. list_ordered_insert (λx. key_lt (fst x) k) (k, v) kvs (∃a b. find (λx. key_eq k (fst x)) kvs = Some (a, b)) = kvs2 ") prefer 2 apply force
+apply (erule exE)
+apply (simp add:fts_to_map_def its_to_map1_def)
+(*this can be solved by case_tac ts, case_tac ctx, ctx_map_le and map_le_subtrees*)
+(*FIXME the only big problem is that I still do not know how to show that keys are distinct in a node*)
+sorry
+
 lemma invariant_step_bottom_map_its: "invariant_step_bottom_map_its"
 apply (simp add:invariant_step_bottom_map_its_def Let_def)
 apply rule+
@@ -389,18 +429,33 @@ apply (simp add:Let_def)
 apply (subgoal_tac "? kvs2. list_ordered_insert (λx. key_lt (fst x) k) (k, v) kvs (∃a b. find (λx. key_eq k (fst x)) kvs = Some (a, b)) = kvs2 ") prefer 2 apply force
 apply (erule exE)
 apply (subgoal_tac "? some_keys some_other_keys. its_to_map its = map_of (some_keys@kvs2@some_other_keys) 
-  & fts_to_map fts = map_of (some_keys@kvs@some_other_keys)")
+  ")
 prefer 2
- apply (simp add:its_to_map_def fts_to_map_def rev_apply_def)
- apply (force intro:FIXME)
+ apply (simp add:its_to_map_def rev_apply_def tree_to_map_def)
+ apply (case_tac "(∃a b. find (λx. key_eq k (fst x)) kvs = Some (a, b)) ∨ length kvs < max_leaf_size")
+  apply simp
+  apply (drule_tac t=its in sym)
+  apply simp
+  apply (force intro:FIXME)
+  apply (force intro:FIXME)
 apply (erule exE)+
+apply (subgoal_tac "fts_to_map fts = map_of (some_keys@kvs@some_other_keys)")
+prefer 2
+ (*FIXME the solution should be equivalent to the previous subgoal,
+ I need to change the fts_to_tree def
+ *)
+ apply (force intro:FIXME)
 apply (simp add:list_ordered_insert_def Let_def)
 apply (subgoal_tac "map_of kvs2 = map_of kvs (k \<mapsto> v)")
 prefer 2
+ (*here I need the distinct*)
  apply (force intro:FIXME)
 apply simp
 apply (subgoal_tac "k ~: dom (map_of some_keys)")
-prefer 2 apply (force intro:FIXME)
+prefer 2
+ (*here I need the distinct*)
+ 
+ apply (force intro:FIXME)
 apply (simp add: map_add_upd_left)
 done
 end
