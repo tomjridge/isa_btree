@@ -79,6 +79,17 @@ Inserting_two(split_node(ks2,rs2))
 )
 )"
 
+definition its_to_map1 
+ :: "its_tree_stack => (key,value_t) map"
+where
+"its_to_map1 ts = (
+let (f,ctx) = dest_ts ts in
+ctx_to_map ctx ++
+(case f of
+Inserting_one t => tree_to_map t
+| Inserting_two (t1,_,t2) => tree_to_map t1 ++ tree_to_map t2)
+)"
+
 function its_to_tree
  :: "its_tree_stack => Tree"
 where
