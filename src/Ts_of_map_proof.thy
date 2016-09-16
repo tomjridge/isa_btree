@@ -21,13 +21,10 @@ apply (case_tac " f x",force,force)
 done
 
 lemma distinct_keys_in_leaf:
-"!  ms. total_order_key_lte --> wellformed_tree ms (Leaf(kvs)) --> distinct (map fst (List.concat (tree_to_leaves (Leaf(kvs)))))"
+"!  ms. total_order_key_lte --> keys_ordered (Leaf(kvs)) --> distinct (map fst (List.concat (tree_to_leaves (Leaf(kvs)))))"
 apply simp
 apply rule+
-apply (erule exE)
-apply (subgoal_tac "keys_ordered (Leaf kvs)") prefer 2 apply (force simp add:wellformed_tree_def)
 apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def keys_ordered_1_def key_indexes_def set_butlast_lessThan Let_def atLeast0LessThan lessThan_def check_keys_def)
-apply (thin_tac "wellformed_tree ms (Leaf kvs)")
 apply (induct kvs,force)
 (*(a # kvs)*)
 apply simp
@@ -52,32 +49,34 @@ done
 lemma distinct_kv_in_tree:
 "!  ms. total_order_key_lte --> wellformed_tree ms t --> distinct (List.concat (tree_to_leaves t))"
 apply rule+
-apply (subgoal_tac "keys_consistent t") prefer 2 apply (force simp add:wellformed_tree_def)
-apply (subgoal_tac "! kvs. t = Leaf kvs --> distinct (map fst (List.concat (tree_to_leaves t)))") prefer 2 apply (metis distinct_keys_in_leaf)
+apply (subgoal_tac "keys_ordered t & keys_consistent t") prefer 2 apply (force simp add:wellformed_tree_def)
+apply (erule conjE)
 apply (thin_tac "wellformed_tree ms t")
-apply (induct t rule:Tree.induct) prefer 2
+apply (induct t) prefer 2
+ apply (subgoal_tac "distinct (map fst (List.concat (tree_to_leaves (Leaf x))))") prefer 2 using distinct_keys_in_leaf apply fast
  apply (metis distinct_zipI1 zip_map_fst_snd)
- 
- 
+  
  apply (case_tac x)
  apply (rename_tac ks rs)
  apply simp
  apply (simp add:snds_def sndsp.simps del:tree_to_leaves.simps)
  apply (simp add:rev_apply_def)
- apply (subgoal_tac "keys_ordered (Node(ks,rs))") prefer 2 apply (force intro:FIXME)
  apply (induct_tac rs) (*FIXME I am not sure it is allowed*)
  apply force
  (*inductive step on rs*)
  apply (rename_tac h tl)
  apply simp
- apply (subgoal_tac "h : set rs") prefer 2  apply (force intro:FIXME)
+ apply (subgoal_tac "h : set rs")
+ prefer 2
+  apply (subgoal_tac "rs = h#tl") prefer 2   apply (force intro:FIXME)
+  apply (force)
  apply rule+
   (* distinct concat tree_to_leaves h *)
-  apply (subgoal_tac "keys_consistent h") prefer 2 apply (force intro:FIXME)
-  apply (subgoal_tac "\<forall>kvs. h = Leaf kvs \<longrightarrow> distinct (map fst kvs)") prefer 2 apply (force intro:FIXME)
+  apply (subgoal_tac "keys_consistent h & keys_ordered h") prefer 2 apply (force simp add:keys_ordered_def keys_consistent_def rev_apply_def forall_subtrees_def list_all_iff)
   apply force
   
   (*this should be solvable with keys_consistent*)
+  
   apply (force intro:FIXME)
 sorry
 
