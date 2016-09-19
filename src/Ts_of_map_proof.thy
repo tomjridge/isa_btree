@@ -46,56 +46,98 @@ apply rule
  apply (case_tac "kvs",force+)
 done
 
-lemma distinct_kv_in_tree:
-"!  ms. total_order_key_lte --> wellformed_tree ms t --> distinct (List.concat (tree_to_leaves t))"
+declare tree_to_leaves.simps[simp del]
+declare tree_to_subtrees.simps[simp del]
+lemma distinct_keys_in_leaves:
+"!  ms. total_order_key_lte --> wellformed_tree ms t --> distinct (map fst (List.concat (tree_to_leaves t)))"
+
 apply rule+
 apply (subgoal_tac "keys_ordered t & keys_consistent t") prefer 2 apply (force simp add:wellformed_tree_def)
 apply (erule conjE)
 apply (thin_tac "wellformed_tree ms t")
 apply (induct t) prefer 2
- apply (subgoal_tac "distinct (map fst (List.concat (tree_to_leaves (Leaf x))))") prefer 2 using distinct_keys_in_leaf apply fast
- apply (metis distinct_zipI1 zip_map_fst_snd)
+ using distinct_keys_in_leaf apply fast
   
  apply (case_tac x)
  apply (rename_tac ks rs)
  apply simp
- apply (simp add:snds_def sndsp.simps del:tree_to_leaves.simps)
- apply (simp add:rev_apply_def)
+ apply (simp add:snds_def sndsp.simps)
+ apply (simp add:rev_apply_def tree_to_leaves.simps)
  apply (induct_tac rs) (*FIXME I am not sure it is allowed*)
  apply force
  (*inductive step on rs*)
- apply (rename_tac h tl)
+ apply (rename_tac h t)
  apply simp
- apply (subgoal_tac "h : set rs")
+ apply (subgoal_tac "rs = h#t")
  prefer 2
-  apply (subgoal_tac "rs = h#tl") prefer 2   apply (force intro:FIXME)
-  apply (force)
- apply rule+
-  (* distinct concat tree_to_leaves h *)
-  apply (subgoal_tac "keys_consistent h & keys_ordered h") prefer 2 apply (force simp add:keys_ordered_def keys_consistent_def rev_apply_def forall_subtrees_def list_all_iff)
-  apply force
-  
-  (*this should be solvable with keys_consistent*)
-  
   apply (force intro:FIXME)
-sorry
-
-lemma distinct_keys_in_leaves:
-"!  ms. total_order_key_lte --> wellformed_tree ms t --> distinct (map fst (List.concat (tree_to_leaves t)))"
-apply rule+
-apply (subgoal_tac "distinct (List.concat (tree_to_leaves t))") prefer 2 apply (simp add:distinct_kv_in_tree del:tree_to_leaves.simps)
-apply (unfold distinct_map inj_on_def id_def)
-apply rule+
- apply force
-apply rule+
- apply force
-apply clarsimp
-apply (subgoal_tac "(aa, b) = (aa,ba)") prefer 2
- apply (subgoal_tac "x ~= xa --> (inter (set x) (set xa)) = {}") prefer 2 apply (fast intro:FIXME)
- (*probably better to show directly that keys are unique?*)
- apply (fast intro:FIXME)
-apply force
+ apply rule+
+ (* distinct concat tree_to_leaves h *)
+ apply (subgoal_tac "keys_consistent h & keys_ordered h") prefer 2 apply (force simp add:keys_ordered_def keys_consistent_def rev_apply_def forall_subtrees_def list_all_iff tree_to_subtrees.simps)
+ apply (force simp add:tree_to_leaves.simps)
+  
+ (*this should be solvable with keys_consistent*)
+ apply (thin_tac "(\<And>xa xaa. xa = rs \<Longrightarrow>
+                  xaa \<in> set rs \<Longrightarrow>
+                  keys_ordered xaa \<Longrightarrow>
+                  keys_consistent xaa \<Longrightarrow>
+                  distinct (map fst (concat (case xaa of Node (l, cs) \<Rightarrow> cs |> map tree_to_leaves |> concat | Leaf l \<Rightarrow> [l]))))")
+ apply (thin_tac "x = (ks, rs) ")
+ (* we can show that all keys are different through keys_consistent and keys_ordered*)
+ apply (subgoal_tac "? h_kvs_set.  UNION (set (tree_to_leaves h)) set = h_kvs_set ") prefer 2 apply force
+ apply (subgoal_tac "? t_kvs_set. (\<Union>x\<in>set t. UNION (set (tree_to_leaves x)) set) = t_kvs_set") prefer 2 apply force
+ apply (erule exE)+
+ apply (subgoal_tac "? h_ks_set. (fst ` h_kvs_set) = h_ks_set ") prefer 2 apply force
+ apply (subgoal_tac "? t_ks_set. (fst ` t_kvs_set) = t_ks_set ") prefer 2 apply force
+ apply (erule exE)+
+ apply simp
+ apply simp
+ apply (subgoal_tac "! t. (fst ` (set(concat (tree_to_leaves t)))) \<subseteq> set (keys t)")
+ prefer 2 apply (force intro:FIXME) (*this needs to be proved somewhere else through recursion -- I think no need of wf hps*)
+ apply (subgoal_tac "h_ks_set \<subseteq> set(keys h)") prefer 2 apply force
+ apply (subgoal_tac "t_ks_set \<subseteq> (\<Union>x\<in>set t. set (keys x)) ") prefer 2 apply force
+ apply (subgoal_tac "! e : set(keys h). ! e1 : (\<Union>x\<in>set t. set (keys x)).  e ~= e1")
+ prefer 2
+  apply rule
+  apply rule
+  apply (subgoal_tac "key_lt e e1")
+  prefer 2
+   apply (subgoal_tac "length ks = length rs-1") prefer 2 (*I need to use wf_tree in the hp and have a lemma that shows that wf_tree --> wf_subtree -- I think I showed this in insert_step_up*) apply (force intro:FIXME)
+   apply (simp add:keys_consistent_def forall_subtrees_def rev_apply_def keys_consistent_1_def tree_to_subtrees.simps) 
+   apply (subgoal_tac "key_lt e (ks!0)")
+   prefer 2
+    apply (simp add:key_indexes_def check_keys_def) apply (erule conjE)+
+    apply (metis Suc_n_not_le_n atLeastLessThan_iff in_set_conv_nth length_greater_0_conv less_nat_zero_code list.size(3) not_less_eq_eq nth_Cons_0)
+    apply (subgoal_tac "key_le (ks!0) e1")
+    prefer 2
+     (*FIXME this is a bit tricky: 
+     we need to show that ks!0 is smaller than any other ks,
+     then we need to know that e1 is bigger than any other key
+     *)
+     apply (subgoal_tac "? i < length t. e1 : set (keys(rs!Suc i))") prefer 2 apply (metis nth_Cons_Suc in_set_conv_nth)
+     apply (erule exE)
+     apply (erule conjE)+
+     apply (subgoal_tac "key_le (ks!i) e1")
+     prefer 2 
+      apply (force simp add: key_indexes_def atLeast0LessThan lessThan_def check_keys_def)
+     apply (subgoal_tac "i~=0 --> key_lt (ks!0) (ks!i)")
+     prefer 2
+      apply (simp add:keys_ordered_def forall_subtrees_def rev_apply_def tree_to_subtrees.simps set_butlast_lessThan keys_ordered_1_def key_indexes_def atLeast0LessThan lessThan_def check_keys_def nth_append)
+      apply (force intro:FIXME) (*apply (smt One_nat_def Suc_less_eq atLeastLessThan_iff diff_Suc_1 gr0_conv_Suc hd_smallest_in_list_sorted_by_key_lt length_greater_0_conv less_trans_Suc) (*1min proof, may find a better solution but was too cool to have it for free*)*)
+    apply (case_tac i,blast)
+    apply (metis neg_key_lt order_key_lt_le)
+   using key_lt_not_key_le total_order_key_lte_def apply auto[1]
+  apply (simp add: key_lt_implies_neq)
+ apply fastforce
 done
+lemma distinct_kv_in_tree:
+"!  ms. total_order_key_lte --> wellformed_tree ms t --> distinct (List.concat (tree_to_leaves t))"
+apply rule+
+apply (subgoal_tac "distinct (map fst (List.concat (tree_to_leaves t)))") prefer 2 using distinct_keys_in_leaves apply force
+apply (force simp add:distinct_map)
+done
+declare tree_to_leaves.simps[simp add]
+declare tree_to_subtrees.simps[simp add]
 
 lemma map_le_subtrees:
 "! t ks rs ms. 
@@ -130,7 +172,7 @@ prefer 2
  apply (subgoal_tac "? ysks. fst ` (\<Union>x\<in>set ys. \<Union>x\<in>set (case x of Node (l, cs) \<Rightarrow> cs |> map tree_to_leaves |> concat | Leaf l \<Rightarrow> [l]). set x) = ysks") prefer 2 apply force
  apply (erule exE)
  apply simp
- apply (blast)
+ apply fast
 apply (simp add:map_add_dom_app_simps(1) map_add_dom_app_simps(3))
 done
 
