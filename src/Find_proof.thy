@@ -1,5 +1,5 @@
 theory Find_proof
-imports Key_lt_order Find_tree_stack
+imports Key_value_proof Find_tree_stack
 begin
 
 (*begin find invariant*)

@@ -1,6 +1,8 @@
-theory Key_lt_order
-imports  "~/workspace/isa_btree/src/Insert_tree_stack"
+theory Key_value_proof
+imports  "Insert_tree_stack"  (* FIXME shouldn't need to - just key_value *)
 begin
+
+(* FIXME rename Key_value_proof? *)
 
 definition total_order_key_lte :: " bool" where
 "total_order_key_lte == (\<forall> a b c. 
