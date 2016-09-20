@@ -21,6 +21,7 @@ definition ctx_to_map :: "context_t => (key,value_t) map" where
 let leaves = List.map (% (_,(n,_),_). List.concat(tree_to_leaves (Node(n)))) ctx in
 map_of(List.concat leaves))"
 
+
 (*begin treestack definition*)
 datatype 'f tree_stack = Tree_stack "'f focus_t * context_t"
 (*end treestack definition*)

@@ -81,6 +81,7 @@ definition balanced :: "Tree => bool" where
 "balanced t == forall_subtrees balanced_1 t"
 (*end wfbalanced*)
 
+(* scala: Tree_kv.scala *)
 (* begin wfsize*)
 definition get_min_size :: "(min_size_t * Tree) => nat" where
 "
@@ -124,6 +125,7 @@ let n = length l in
 ))"
 (* end wfsize *)
 
+(* Tree_kv.scala *)
 (* begin wfksrs*)
 definition wf_ks_rs_1 :: "Tree => bool" where
 "wf_ks_rs_1 t0 == (
@@ -135,7 +137,6 @@ definition wf_ks_rs :: "Tree => bool" where
 "wf_ks_rs t0 == forall_subtrees wf_ks_rs_1 t0"
 (* end wfksrs*)
 export_code wf_ks_rs in Scala module_name Problem file "/tmp/Problem.scala"
-
 
 (*begin wfkeysconsistent*)
 definition keys_1 :: "Tree => key list" where
