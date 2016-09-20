@@ -13,6 +13,8 @@ datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
 (* label at node and children ie a Node *)
 type_synonym node_t = "node_lbl_t * Tree list"
 
+(* height ---------------------------------------- *)
+
 (*begin height definition*)
 function height :: "Tree => nat" where
 "height t0 = (
@@ -25,6 +27,8 @@ by auto
 termination
   apply(force intro:FIXME)
   done
+
+(* setting up tree_kv.to_map ---------------------------------------- *)
 
 function tree_to_leaves :: "Tree => leaf_lbl_t list" where
 "tree_to_leaves t0 = (case t0 of
@@ -39,6 +43,9 @@ termination
   apply(force intro:FIXME)
   done
 
+
+(* conversion to map ---------------------------------------- *)
+
 definition tree_to_map
  :: "Tree => (key,value_t) map"
 where
@@ -46,6 +53,8 @@ where
 map_of (List.concat(tree_to_leaves t))
 )"
 
+
+(* to subtrees ---------------------------------------- *)
 
 (* begin t2s *)
 function tree_to_subtrees :: "Tree => Tree list" where
@@ -68,6 +77,8 @@ definition forall_subtrees :: "(Tree => bool) => Tree => bool" where
 List.list_all P (t |> tree_to_subtrees) 
 )"
 
+(* balanced ---------------------------------------- *)
+
 (*begin wfbalanced*)
 definition balanced_1 :: "Tree => bool" where
 "balanced_1 t0 == (
@@ -81,6 +92,9 @@ definition balanced :: "Tree => bool" where
 "balanced t == forall_subtrees balanced_1 t"
 (*end wfbalanced*)
 
+
+(* get min size ---------------------------------------- *)
+
 (* begin wfsize*)
 definition get_min_size :: "(min_size_t * Tree) => nat" where
 "
@@ -93,6 +107,9 @@ case mt of
 | (_,_) => undefined
 )
 "
+
+(* wf size ---------------------------------------- *)
+
 definition wf_size_1 :: "Tree => bool" where
 "wf_size_1 t1 == (
 case t1 of
@@ -124,6 +141,8 @@ let n = length l in
 ))"
 (* end wfsize *)
 
+(* wf_ks_rs ---------------------------------------- *)
+
 (* begin wfksrs*)
 definition wf_ks_rs_1 :: "Tree => bool" where
 "wf_ks_rs_1 t0 == (
@@ -137,6 +156,8 @@ definition wf_ks_rs :: "Tree => bool" where
 export_code wf_ks_rs in Scala module_name Problem file "/tmp/Problem.scala"
 
 
+(* keys ---------------------------------------- *)
+
 (*begin wfkeysconsistent*)
 definition keys_1 :: "Tree => key list" where
 "keys_1 t0 == (case t0 of
@@ -147,6 +168,8 @@ Leaf xs => (List.map fst xs)
 definition keys :: "Tree => key list" where
 "keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)
 " 
+
+(* keys consistent ---------------------------------------- *)
 
 definition key_indexes :: "Tree => nat list" where
 "key_indexes t == (
@@ -176,6 +199,9 @@ definition keys_consistent :: "Tree => bool" where
 "keys_consistent t == forall_subtrees keys_consistent_1 t"
 (*end wfkeysconsistent*)
 
+
+(* keys_ordered ---------------------------------------- *)
+
 (* begin wfordered*)
 definition keys_ordered_1 :: "Tree => bool" where
 "keys_ordered_1 t0 == (
@@ -192,6 +218,9 @@ Leaf xs =>
 definition keys_ordered :: "Tree => bool" where
 "keys_ordered t == forall_subtrees keys_ordered_1 t"
 (*end wfordered*)
+
+
+(* wf_kv_tree ---------------------------------------- *)
 
 (*
 definition wellformed_subtree :: "Tree => bool" where

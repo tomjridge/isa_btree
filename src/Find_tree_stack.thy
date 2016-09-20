@@ -9,6 +9,8 @@ begin
    for; also include bounds on the keys that we may find
 *)
 
+(* FIXME tr: prefer to bring types into line with scala? *)
+
 (*begin f focus definition*)
 type_synonym f_focus_t = "key * Tree"
 (*end f focus definition*)
@@ -33,6 +35,8 @@ tree_to_map t ++ ctx_to_map(ctx)
 definition tree_to_fts :: "key => Tree => f_tree_stack" where
 "tree_to_fts k t == (
 Tree_stack (Focus (k,t),Nil))"
+
+(* wellformed_fts ---------------------------------------- *)
 
 (* tr: link between focus and context?*)
 (*begin wf fts focus definition*)
@@ -70,6 +74,9 @@ wellformed_fts_focus ms t
 & wellformed_fts_1 fts)"
 (*end wf fts definition*)
 
+
+(* step_fts ---------------------------------------- *)
+
 (*tr: stops when gets to leaf; no "errors"*)
 (*begin find step definition*)
 definition step_fts
@@ -90,6 +97,8 @@ Leaf _ => None
  Some(Tree_stack(Focus(k,(rs!i)),ctx2))
 ))"
 (*end find step definition*)
+
+(* FIXME tr: iter_step_fts? find defn? *)
 
 function fts_to_tree
  :: "f_tree_stack => Tree"

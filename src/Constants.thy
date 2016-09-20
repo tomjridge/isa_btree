@@ -9,6 +9,7 @@ consts min_node_keys :: nat
 consts max_node_keys :: nat
 (*end constants*)
 
+(* FIXME tr: check these are the right restrictions - where are they used in proof?  *)
 
 (*begin wf constants*)
 definition wellformed_constants :: "bool" where
