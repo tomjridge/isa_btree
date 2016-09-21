@@ -1,40 +1,89 @@
-(* [[file:~/workspace/agenda/myTasks.org::tree_stack_src][tree_stack_src]] *)
-theory Tree_stack
-imports Tree
-begin
+theory Tree_stack imports Tree begin
 
-(*begin focus definition*)
-datatype 'f focus_t = Focus 'f
-(*end focus definition*)
+datatype xtra_t = Xtra "(key option * key option)"  (* l,u *)
+definition dest_xtra_t :: "xtra_t \<Rightarrow> key option * key option" where
+"dest_xtra_t x = (case x of Xtra x \<Rightarrow> x)"
 
-(*begin context definition*)
-type_synonym left_bound = "key option"
+datatype cnode_t = Cnode "node_t * nat * xtra_t"  (* n,i,x *)
+definition dest_cnode_t :: "cnode_t \<Rightarrow> node_t * nat * xtra_t" where
+"dest_cnode_t c = (case c of Cnode x \<Rightarrow> x)"
 
-type_synonym right_bound = "key option"
+(* FIXME remove *)
+type_synonym context_t = "cnode_t list"
 
-(* FIXME tr: context_t clashes with scala type; order of tuple elts? use cnode_t *)
+type_synonym tree_stack_t = "cnode_t list"
 
-type_synonym context_t =
- "(left_bound * (node_t * nat) * right_bound) list"
-(*end context definition*)
+(* wellformed_context ---------------------------------------- *)
+
+definition wellformed_cnode :: "ms_t => cnode_t => bool " where
+"wellformed_cnode ms cn = (
+  let (n,i,x) = dest_cnode_t cn in 
+  let (l,u) = dest_xtra_t x in
+  let (ks,rs) = n in
+  let b1 = wellformed_tree ms (Node(ks,rs)) in  (* FIXME wellformed_kv_tree *)
+  let b2 = i : set(subtree_indexes (ks,rs)) in
+  let b3 = check_keys l (keys (rs!i)) u in
+  let b4 = (
+    let (l0,u0) = get_lu_for_child(n,i) in
+    (if (i > min_child_index) then (l=l0) else True) &
+    (if (i < max_child_index(n)) then (u=u0) else True))
+  in  
+  b1&b2&b3&b4)
+"
+
+definition wellformed_context_1 :: "context_t \<Rightarrow> bool" where
+"wellformed_context_1 xs = (case xs of
+  Nil \<Rightarrow> True
+  | cn#Nil \<Rightarrow> (
+    let (n,i,x) = dest_cnode_t cn in
+    let (l,u) = dest_xtra_t x in
+    wellformed_cnode (Some(Small_root_node_or_leaf)) cn &
+    (l = None) & (u = None))
+  | cn1#cn2#_ \<Rightarrow> (
+    let (n1,i1,x1) = dest_cnode_t cn1 in
+    let (l1,u1) = dest_xtra_t x1 in
+    let (n2,i2,x2) = dest_cnode_t cn2 in
+    let (l2,u2) = dest_xtra_t x2 in
+    (if (i1 = min_child_index) then (l1 = l2) else True) &
+    (if (i1 = max_child_index(n1)) then (u1 = u2) else True)))"
+
+
+(* FIXME tr check these defns are right *)
+(* FIXME defn could be improved *)
+fun wellformed_context :: "context_t => bool" where
+"wellformed_context xs = (
+  wellformed_context_1 xs & (
+    case xs of
+    Nil \<Rightarrow> True
+    | x#xs \<Rightarrow> wellformed_context xs))"
+(*end wfcontext definition*)
+
+
+
+(* old ---------------------------------------- *)
+
+(* old defintiions? *)
 
 definition ctx_to_map :: "context_t => (key,value_t) map" where
 "ctx_to_map ctx == (
-let leaves = List.map (% (_,(n,_),_). List.concat(tree_to_leaves (Node(n)))) ctx in
+let leaves = List.map (% cn. let (n,i,x) = dest_cnode_t cn in List.concat(tree_to_leaves (Node(n)))) ctx in
 map_of(List.concat leaves))"
 
 (* FIXME tr: above should use tree to map fun *)
 
 (* FIXME tr: use tree_stack_t for context_t *)
 
+
+(* FIXME move elsewhere *)
+(*begin focus definition*)
+datatype 'f focus_t = Focus 'f
+(*end focus definition*)
+
+
+
 (*begin treestack definition*)
 datatype 'f tree_stack = Tree_stack "'f focus_t * context_t"
 (*end treestack definition*)
-
-(*begin wfcontext definition*)
-definition subtree_indexes :: "node_t => nat set" where
-"subtree_indexes n == (
-  case n of (l,_) =>  { 0 .. (length l)})"
 
 definition is_subnode 
  :: "node_t => (node_t * nat) => bool"
@@ -45,67 +94,10 @@ where
 
 (* FIXME in above, make sure is is an index *)
 
-fun linked_context 
- :: "(left_bound * (node_t * nat) * right_bound) => context_t => bool"
-where
-"linked_context ni [] = True" |
-"linked_context (lb,(n,i),rb) ((plb,pi,prb)#pis) = (
-  is_subnode n pi & linked_context (plb,pi,prb) pis)"
-
-(* FIXME move to key_value, add description *)
-
-definition get_lower_upper_keys_for_node_t
- :: "key list => left_bound => nat => right_bound => (key option * key option)"
-where
-"get_lower_upper_keys_for_node_t ls lb i rb == (
-let l = if (i = 0) then lb else Some(ls ! (i - 1))     in
-let u = if (i = (length ls)) then rb else Some(ls ! i) in
-(l,u)
-)"
-
-(* FIXME rename following *)
-
-definition wellformed_context_1
- :: "ms_t => (left_bound * (node_t * nat) * right_bound) => bool "
-where
-"wellformed_context_1 ms lbnirb == (
-let (lb,((ls,cs),i),rb) = lbnirb in
-let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
-let node = (Node(ls,cs)) in
-wellformed_tree ms node
-& i : (subtree_indexes (ls,cs)) (* FIXME not needed if in is_subnode *)
-& check_keys lb (keys (cs!i)) rb)"
-
-(* FIXME tr check these defns are right *)
-
-fun wellformed_context :: "context_t => bool" where
-"wellformed_context Nil = True" |
-"wellformed_context ((lb,((ls,rs),i),rb) # Nil) =
-(
-let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
-(if i = 0 then lb = None else lb = l)
-&
-(if i = length ls then rb = None else rb = u)
-&
-wellformed_context_1 (Some Small_root_node_or_leaf) (lb,((ls,rs),i),rb))" |
-"wellformed_context (x1 # (x2 # rest)) = (
-let (lb,((ls,_),i),rb) = x1 in
-let (lb',_,rb') = x2 in
-wellformed_context_1 None x1
-& 
-(let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
- (if i = 0 then lb = lb' else lb = l)
- & (if i = (length ls) then rb = rb' else rb = u)
-)
-& linked_context x1 (x2#rest)  (* FIXME prefer to avoid double recursion? *)
-& wellformed_context (x2#rest)
-)
-"
-(*end wfcontext definition*)
-
 
 definition dest_ts :: "'f tree_stack => 'f * context_t" where
 "dest_ts ts == (case ts of Tree_stack((Focus f),c) => (f,c))"
+
 
 end
 (* tree_stack_src ends here *)

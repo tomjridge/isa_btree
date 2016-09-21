@@ -13,14 +13,28 @@ datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
 (* label at node and children ie a Node *)
 type_synonym node_t = "node_lbl_t * Tree list"
 
+(* util ---------------------------------------- *)
+
+definition min_child_index  :: nat where "min_child_index = 0"
+
+definition max_child_index :: "node_t \<Rightarrow> nat" where
+"max_child_index node = (
+  let (ks,rs) = node in
+  length rs - 1)"
+
+
+definition subtree_indexes :: "node_t \<Rightarrow> nat list" where
+"subtree_indexes node = from_to min_child_index (max_child_index node)"
+
+
 (* height ---------------------------------------- *)
 
 (*begin height definition*)
 function height :: "Tree => nat" where
 "height t0 = (
-case t0 of
-Leaf _ => (1::nat)
-| Node(_,cs) => (1 + Max(set(List.map height cs)))
+  case t0 of
+  Leaf _ => (1::nat)
+  | Node(_,cs) => (1 + Max(set(List.map height cs)))
 )"
 (*end height definition*)
 by auto
@@ -31,12 +45,10 @@ termination
 (* setting up tree_kv.to_map ---------------------------------------- *)
 
 function tree_to_leaves :: "Tree => leaf_lbl_t list" where
-"tree_to_leaves t0 = (case t0 of
-Node(l,cs) => (
-(cs |> (List.map tree_to_leaves)) |> List.concat
-)
-| Leaf(l) => [l]
-)
+"tree_to_leaves t0 = (
+  case t0 of
+  Node(l,cs) => ((cs |> (List.map tree_to_leaves)) |> List.concat)
+  | Leaf(l) => [l])
 "
 by auto
 termination
@@ -104,7 +116,7 @@ case mt of
 | (Small_root_node_or_leaf,Leaf _) => 0
 | (Small_node, Node _) => min_node_keys-1
 | (Small_leaf,Leaf _) => min_leaf_size-1
-| (_,_) => undefined
+| (_,_) => undefined  (* FIXME failwith *)
 )
 "
 
@@ -118,7 +130,7 @@ let n = length xs in
 (n >= min_leaf_size) & ( n <= max_leaf_size))
 | Node(l,cs) => (
 let n = length l in
-(1 <= n) & (n >= min_node_keys) & (n <= max_node_keys)
+(1 <= n) & (n >= min_node_keys) & (n <= max_node_keys)  (* FIXME 1\<le>n not needed since constants enforce this *)
 
 )
 )
@@ -174,25 +186,23 @@ definition keys :: "Tree => key list" where
 definition key_indexes :: "Tree => nat list" where
 "key_indexes t == (
   case t of 
-  Leaf xs => (upt 0 (length xs))
-  | Node (l,_) => (upt 0 (length l)))"  
+  Leaf xs => (from_to 0 (length xs - 1))
+  | Node (l,_) => (from_to 0 (length l - 1)))"  
+
+definition get_lu_for_child :: "(node_t*nat) \<Rightarrow> (key option * key option)" where
+"get_lu_for_child ni = (
+  let ((ks,rs),i) = ni in
+  let l = if (i=min_child_index) then None else Some(ks!(i-1)) in
+  let u = if (i=max_child_index (ks,rs)) then None else Some(ks!i) in
+  (l,u))"
 
 definition keys_consistent_1 :: "Tree => bool" where
 "keys_consistent_1 t0 == (
 case t0 of Leaf(l) => True
-| Node(label,children) => (
-let b1 = (! i : set(key_indexes t0). 
-  let k0 = label!i in
-  let kls = keys(children!i) in
-  check_keys None kls (Some k0))
-in
-let b2 = (! i : set(key_indexes t0). 
-  let k0 = label!i in
-  let krs = keys(children!(i+1)) in
-  check_keys (Some k0) krs None)
-in
-b1 & b2
-))
+| Node(ks,rs) => (
+  ! i : set(subtree_indexes (ks,rs)). 
+  let (l,u) = get_lu_for_child((ks,rs),i) in
+  check_keys l (keys(rs!i)) u))
 "
 
 definition keys_consistent :: "Tree => bool" where
@@ -205,15 +215,7 @@ definition keys_consistent :: "Tree => bool" where
 (* begin wfordered*)
 definition keys_ordered_1 :: "Tree => bool" where
 "keys_ordered_1 t0 == (
-let is = set (butlast (key_indexes t0)) in
-case t0 of
-Leaf xs =>
-  let ks = (xs |> List.map fst) in
-  ! i : is. key_lt (ks!i) (ks!(i+1))
-| Node (ks,_) => 
-  ! i : is . key_lt (ks!i) (ks!(i+1))
-)
-"
+t0 |> keys_1 |> ordered_key_list)"
 
 definition keys_ordered :: "Tree => bool" where
 "keys_ordered t == forall_subtrees keys_ordered_1 t"
@@ -221,19 +223,6 @@ definition keys_ordered :: "Tree => bool" where
 
 
 (* wf_kv_tree ---------------------------------------- *)
-
-(*
-definition wellformed_subtree :: "Tree => bool" where
-"wellformed_subtree t0 == (
-let b1 = wf_size t0 in
-let b2 = wf_ks_rs t0 in
-let b3 = balanced t0 in
-let b4 = keys_consistent t0 in
-let b5 = keys_ordered t0 in
-let wf = b1&b2&b3&b4&b5 in
-wf
-)"
-*)
 
 (* begin wf tree definition *)
 definition wellformed_tree :: "ms_t => Tree => bool" where

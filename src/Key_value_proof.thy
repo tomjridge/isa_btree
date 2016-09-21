@@ -2,20 +2,23 @@ theory Key_value_proof
 imports  "Insert_tree_stack"  (* FIXME shouldn't need to - just key_value *)
 begin
 
-(* FIXME rename Key_value_proof? *)
+(* FIXME most of these lemmas should be unnecessary - they are all solvable with 1st order proof *)
 
+
+(* FIXME might like to use strict total order with key_lt and aim to always eliminate key_le - better automation *)
 definition total_order_key_lte :: " bool" where
 "total_order_key_lte == (\<forall> a b c. 
    (key_le a b \<and> key_le b a \<longrightarrow> key_eq a b) \<and>
    (key_le a b \<and> key_le b c \<longrightarrow> key_le a c) \<and>
    (key_le a b \<or> key_le b a)
-\<and> (a = b \<longrightarrow> (key_le a b)))"
+\<and> (a = b \<longrightarrow> (key_le a b)))" (* FIXME just use defn of key_le, with = *)
 
 lemma neg_key_lt: "! a b. total_order_key_lte \<longrightarrow> (~ key_lt a b) = (key_le b a)"
 apply rule+
 apply (unfold total_order_key_lte_def)
 apply (force simp add: key_eq_def key_le_def)+
 done
+
 
 lemma key_lt_not_key_le: "! a b. total_order_key_lte \<longrightarrow> (key_lt a b) = (~ key_le b a)"
 apply (simp add: neg_key_lt)
