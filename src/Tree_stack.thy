@@ -2,11 +2,11 @@ theory Tree_stack imports Tree begin
 
 datatype xtra_t = Xtra "(key option * key option)"  (* l,u *)
 definition dest_xtra_t :: "xtra_t \<Rightarrow> key option * key option" where
-"dest_xtra_t x = (case x of Xtra x \<Rightarrow> x)"
+"dest_xtra_t x = (case x of Xtra (l,u) \<Rightarrow> (l,u))"
 
 datatype cnode_t = Cnode "node_t * nat * xtra_t"  (* n,i,x *)
 definition dest_cnode_t :: "cnode_t \<Rightarrow> node_t * nat * xtra_t" where
-"dest_cnode_t c = (case c of Cnode x \<Rightarrow> x)"
+"dest_cnode_t c = (case c of Cnode (n,i,x) \<Rightarrow> (n,i,x))"
 
 (* FIXME remove *)
 type_synonym context_t = "cnode_t list"
@@ -25,8 +25,8 @@ definition wellformed_cnode :: "ms_t => cnode_t => bool " where
   let b3 = check_keys l (keys (rs!i)) u in
   let b4 = (
     let (l0,u0) = get_lu_for_child(n,i) in
-    (if (i > min_child_index) then (l=l0) else True) &
-    (if (i < max_child_index(n)) then (u=u0) else True))
+    (case (i > min_child_index) of True \<Rightarrow> (l=l0) | False \<Rightarrow> True) &
+    (case (i < max_child_index(n)) of True \<Rightarrow> (u=u0) | False \<Rightarrow> True))
   in  
   b1&b2&b3&b4)
 "
@@ -37,15 +37,14 @@ definition wellformed_context_1 :: "context_t \<Rightarrow> bool" where
   | cn#Nil \<Rightarrow> (
     let (n,i,x) = dest_cnode_t cn in
     let (l,u) = dest_xtra_t x in
-    wellformed_cnode (Some(Small_root_node_or_leaf)) cn &
-    (l = None) & (u = None))
+    wellformed_cnode (Some(Small_root_node_or_leaf)) cn & True (* (l = None) & (u = None) *) )
   | cn1#cn2#_ \<Rightarrow> (
     let (n1,i1,x1) = dest_cnode_t cn1 in
     let (l1,u1) = dest_xtra_t x1 in
     let (n2,i2,x2) = dest_cnode_t cn2 in
     let (l2,u2) = dest_xtra_t x2 in
-    (if (i1 = min_child_index) then (l1 = l2) else True) &
-    (if (i1 = max_child_index(n1)) then (u1 = u2) else True)))"
+    (case (i1 = min_child_index) of True \<Rightarrow> (l1 = l2) | False \<Rightarrow> True) &
+    (case (i1 = max_child_index(n1)) of True \<Rightarrow> (u1 = u2) | False \<Rightarrow> True)))"
 
 
 (* FIXME tr check these defns are right *)

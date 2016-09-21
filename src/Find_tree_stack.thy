@@ -59,14 +59,14 @@ definition wellformed_fts :: "fts_state_t => bool" where
 definition step_fts :: "fts_state_t => fts_state_t option" where
 "step_fts fts = (
   let (k,t,ts) = dest_fts_state_t fts in
-  let parent_bounds = (
-    case ts of Nil \<Rightarrow> Xtra(None,None) | cn# a_ \<Rightarrow> (let (n,i,x) = dest_cnode_t cn in x)) in
   case (t :: Tree) of
   Leaf kvs => None
   | Node(ks,rs) => (
     let i = search_key_to_index ks k in
     let xtra :: xtra_t = (
       let (l1,u1) = get_lu_for_child ((ks,rs),i) in
+      let parent_bounds = (
+        case ts of Nil \<Rightarrow> Xtra(None,None) | cn# a_ \<Rightarrow> (let (n,i,x) = dest_cnode_t cn in x)) in
       let (pb_l,pb_u) = dest_xtra_t parent_bounds in
       let l2 = (case l1 of None \<Rightarrow> pb_l | _ \<Rightarrow> l1) in
       let u2 = (case u1 of None \<Rightarrow> pb_u | _ \<Rightarrow> u1) in
@@ -78,7 +78,10 @@ definition step_fts :: "fts_state_t => fts_state_t option" where
 "
 
 
-(* old
+(* old ---------------------------------------- *)
+
+
+(* old 
 
 (*begin f focus definition*)
 type_synonym f_focus_t = "key * Tree"
