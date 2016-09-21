@@ -21,12 +21,14 @@ definition tree_to_fts :: "key => Tree => fts_state_t" where
 
 (* tr: link between focus and context?*)
 (*begin wf fts focus definition*)
+
 definition wellformed_fts_focus :: "ms_t => Tree => bool" where
-"wellformed_fts_focus ms t =
-  (wellformed_tree ms t)"
+"wellformed_fts_focus ms t = wellformed_tree ms t"
+
 (*end wf fts focus definition*)
 
 (*begin wf fts1 definition*)
+(* tr: interaction between k,t and ts *)
 definition wellformed_fts_1 :: "fts_state_t => bool" where
 "wellformed_fts_1 fts == (
   let (k,t,ts) = dest_fts_state_t fts in
@@ -34,9 +36,10 @@ definition wellformed_fts_1 :: "fts_state_t => bool" where
   Nil => True
   | x#xs => (
     let (n,i,x) = dest_cnode_t x in
-    let (l,u) = dest_xtra_t x in
+    let (l,u) = x in
+    let (ks,rs) = n in
     let b1 = check_keys l [k] u in
-    let b2 = t = (let (ks,rs) = n in rs!i) in
+    let b2 = (t = rs!i) in
     b1&b2))
 "
 (*end wf fts1 definition*)
@@ -59,21 +62,12 @@ definition wellformed_fts :: "fts_state_t => bool" where
 definition step_fts :: "fts_state_t => fts_state_t option" where
 "step_fts fts = (
   let (k,t,ts) = dest_fts_state_t fts in
-  case (t :: Tree) of
-  Leaf kvs => None
+  case t of Leaf kvs => None
   | Node(ks,rs) => (
     let i = search_key_to_index ks k in
-    let xtra :: xtra_t = (
-      let (l1,u1) = get_lu_for_child ((ks,rs),i) in
-      let parent_bounds = (
-        case ts of Nil \<Rightarrow> Xtra(None,None) | cn# a_ \<Rightarrow> (let (n,i,x) = dest_cnode_t cn in x)) in
-      let (pb_l,pb_u) = dest_xtra_t parent_bounds in
-      let l2 = (case l1 of None \<Rightarrow> pb_l | _ \<Rightarrow> l1) in
-      let u2 = (case u1 of None \<Rightarrow> pb_u | _ \<Rightarrow> u1) in
-      Xtra(l2,u2))
-    in
-    let cn :: cnode_t = Cnode((ks,rs),i,xtra) in
-    let ts2 :: cnode_t list = (cn # ts) in
+    let xtra = (get_lu_for_child_with_parent_default (get_parent_bounds ts) ((ks,rs),i)) in
+    let cn = Cnode((ks,rs),i,xtra) in
+    let ts2 = (cn # ts) in
     Some(Fts_state(k,rs!i,ts2)) ))
 "
 

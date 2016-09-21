@@ -20,9 +20,12 @@ lemma wellformed_tree_children: "wellformed_tree x (Node(ks,rs)) \<longrightarro
   apply(force intro: FIXME)
   done
 
-lemma wellformed_context_cons: "wellformed_context (x#xs) = (wellformed_context_1 (x#xs) & wellformed_context xs)"
+
+(*
+lemma wellformed_context_cons: "wellformed_context (x#xs) = (wellformed_context_1 (x#xs) & wellformed_cnodewellformed_context xs)"
   apply(simp)
   done
+*)
 
 (* FIXME move *)
 lemma keys_Cons: 
@@ -45,18 +48,14 @@ apply(erule disjE)
  apply(elim exE, simp)
  apply(subgoal_tac "? i. search_key_to_index ks k = i") prefer 2 apply(force)
  apply(elim exE, simp)
- apply(subgoal_tac "? xtra. (
-      let (l1,u1) = get_lu_for_child ((ks,rs),i) in
-      let parent_bounds = (
-        case ts of Nil \<Rightarrow> Xtra(None,None) | cn# a_ \<Rightarrow> (let (n,i,x) = dest_cnode_t cn in x)) in
-      let (pb_l,pb_u) = dest_xtra_t parent_bounds in
-      let l2 = (case l1 of None \<Rightarrow> pb_l | _ \<Rightarrow> l1) in
-      let u2 = (case u1 of None \<Rightarrow> pb_u | _ \<Rightarrow> u1) in
-      Xtra(l2,u2)) = xtra") prefer 2 apply(force)
+ apply(subgoal_tac "
+   ? xtra. (get_lu_for_child_with_parent_default (get_parent_bounds ts) ((ks, rs), i) = xtra)") prefer 2 apply(force)
  apply(elim exE, simp)
- apply(subgoal_tac "? l0 u0. xtra = Xtra(l0,u0)") prefer 2 apply(force intro: FIXME)
+ apply(subgoal_tac "? l0 u0. xtra = (l0,u0)") prefer 2 apply(force intro: FIXME)
  apply(elim exE)
+ apply(simp)
  apply(thin_tac "t=_")
+ apply(thin_tac "xtra = _")
  apply(subgoal_tac "i : set(subtree_indexes (ks,rs))") prefer 2 apply(force intro:FIXME)
  apply(subgoal_tac "? r. r : set(rs) &  (rs ! i) = r") prefer 2 apply(force intro:FIXME)
  apply(elim exE conjE, simp)
@@ -71,67 +70,26 @@ apply(erule disjE)
   apply(elim exE)
   using wellformed_tree_children apply blast
 
-  (* want wellformed_context_1 _#ts *)
-  apply(subgoal_tac "ts = Nil | (? cn2 rest. ts = cn2#rest)") prefer 2 apply(force intro: FIXME)
-  apply(elim disjE)
-
-   (* ts = [] *)
-   apply(simp add: wellformed_context_1_def)
-   apply(simp add: wellformed_cnode_def)
-   apply(simp add: dest_cnode_t_def)
-   apply(simp add: dest_xtra_t_def)
-   apply(intro conjI) 
-    (* 3 subgoals *)
-    (* wf_tree Node(ks,rs) - from wf_fts_focus *)
+  (* want wellformed_cnode *)
+  apply(simp add: wellformed_cnode_def dest_cnode_t_def)
+  apply(rule conjI)
+   (* want wellformed_tree *)
+   apply(subgoal_tac "ts = Nil | (? cn2 rest. ts = cn2#rest)") prefer 2 apply(force intro: FIXME)
+   apply(elim disjE)
+    apply(simp)
     apply(force simp add: wellformed_fts_focus_def)
 
-    (* check_keys *)
+    apply(elim exE, simp)
+    apply(force simp add: wellformed_fts_focus_def)
+
+   (* check_keys l0 (keys r) u0 ; suppose pb is a bound for rs, then lget_lu_with_def is a bound for rs!i *)
     apply(force intro: FIXME)
 
-    (* link *)
-    apply(force intro: FIXME)
-
-   (* ts = cn2#rest *)
-   apply(elim exE, simp)
-   apply(subgoal_tac "? cn1. (Cnode ((ks, rs), i, Xtra (l0, u0)) = cn1)") prefer 2 apply(force intro:FIXME)
-   apply(elim exE, simp)
-   (* want wf_context_1 cn1#cn2#rest *)
-   apply(simp (no_asm) add: wellformed_context_1_def)
-   apply(drule_tac t="cn1" in sym) apply(simp add: dest_cnode_t_def dest_xtra_t_def)
-   apply(subgoal_tac "? n2 i2 x2. cn2 = Cnode(n2,i2,x2)") prefer 2 apply(force intro:FIXME)
-   apply(elim exE, simp)
-   apply(subgoal_tac "? l2 u2. x2 = Xtra(l2,u2)") prefer 2 apply(force intro:FIXME)
-   apply(elim exE, simp)
-   (* link *)
-   apply(rule conjI)
-    (* min_child_index *)
-    apply(case_tac "i=min_child_index") prefer 2 apply(force)
-    apply(simp)
-    (* should follow from looking at l0 and u0 *)
-    apply(force simp add: get_lu_for_child_def)
-
-    (* max_child_index *)
-    apply(case_tac "i=max_child_index(ks,rs)") prefer 2 apply(force)
-    apply(force simp add: get_lu_for_child_def)
-  
-
-  (* want wellformed_fts_1 *)
-  apply(simp add: wellformed_fts_1_def dest_fts_state_t_def dest_cnode_t_def dest_xtra_t_def)
-  apply(subgoal_tac "(ts = []) | (? cn2 rest. ts = cn2#rest)") prefer 2 apply(force intro: FIXME)
-  apply(erule disjE) 
-   apply(simp)
-   (* want check_keys l0 [k] u0 - this comes from the fact that k is the search key, and this is bounded *)
-   (* FIXME need lemma about get_lu_for_child *)
-   apply(force intro: FIXME)
-
-   (* ts = cn2#rest *)
-   apply(elim exE, simp)
-   apply(subgoal_tac "? n2 i2 x2. cn2 = Cnode(n2,i2,x2)") prefer 2 apply(force intro:FIXME)
-   apply(elim exE, simp)
-   apply(subgoal_tac "? l2 u2. x2 = Xtra(l2,u2)") prefer 2 apply(force intro:FIXME)
-   apply(elim exE, simp)
-   (* want check_keys l0 [k] u0; again same as above - unless i is extremal *)
-   apply(force intro:FIXME)
+  (* want wellformed_fts_1 k,r,cn1#ts *)
+  apply(simp add: wellformed_fts_1_def dest_fts_state_t_def dest_cnode_t_def)
+  (* want check_keys l0 [k] u0 - this comes from the fact that k is the search key, and this is bounded *)
+  (* FIXME need lemma about get_lu_for_child *)
+  apply(force intro: FIXME)
 
  (* Leaf *)
  apply(force)
