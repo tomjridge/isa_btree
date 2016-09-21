@@ -46,8 +46,40 @@ apply rule
  apply (case_tac "kvs",force+)
 done
 
+lemma tree_induction: 
+"(! cs lbl. (! c : set cs. P c) --> 
+P (Node(lbl,cs))) & (! lbl. P(Leaf(lbl))) ==> P(t)"
+sorry
+
 declare tree_to_leaves.simps[simp del]
 declare tree_to_subtrees.simps[simp del]
+lemma distinct_keys_in_leaves1:
+"  total_order_key_lte --> ((% t. wellformed_tree ms t --> (distinct (map fst (List.concat (tree_to_leaves t))))) = P) --> (P t)"
+apply (rule)
+apply (rule_tac tree_induction) apply rule prefer 2
+ (*Leaf*)
+ apply (simp add:wellformed_tree_def)
+ using distinct_keys_in_leaf apply fast
+
+ (*Tree*)
+ apply simp
+ apply (intro impI allI conjI)
+ apply (subgoal_tac "\<forall>c\<in>set cs.
+         wellformed_tree ms c \<longrightarrow> distinct (map fst (concat (tree_to_leaves c))) ") prefer 2  apply force
+ apply (drule_tac sym)
+ apply simp
+ apply (thin_tac "P = _")
+ apply (thin_tac "_")
+ apply (induct_tac cs)
+ apply (force simp add: tree_to_leaves.simps rev_apply_def)
+
+ apply (rename_tac h t)
+ apply (subgoal_tac "? rs. rs =  h#t ") prefer 2 apply force
+ apply (erule exE)+
+ apply (subgoal_tac "keys_consistent h & keys_ordered h") prefer 2 apply (simp add:wellformed_tree_def) apply rule+
+ 
+ 
+sorry
 lemma distinct_keys_in_leaves:
 "!  ms. total_order_key_lte --> wellformed_tree ms t --> distinct (map fst (List.concat (tree_to_leaves t)))"
 
@@ -216,6 +248,36 @@ apply (case_tac ctx_t1)
  using map_addE1 map_le_trans apply fastforce
 done
 
+lemma ctx_to_map_Cons: "
+(ctx = ctx_h#ctx_t) -->
+wellformed_context ctx --> (
+let (_,((ks,rs),i),_) = ctx_h in 
+(ctx_to_map ctx) = tree_to_map (Node(ks,rs))++(ctx_to_map ctx_t))"
+apply rule+
+apply (case_tac ctx) apply force
+ apply (simp add:Let_def hd_def)
+ apply (subgoal_tac "? l ks rs i u. ctx_h = (l,((ks,rs),i),u)") prefer 2 apply (case_tac ctx_h, rename_tac l ksrsi u,case_tac ksrsi, rename_tac ksrs i,case_tac ksrs, rename_tac ks rs,force)
+ apply (erule exE)+
+ apply simp
+ apply (subgoal_tac "? map_of_ctx'_h . tree_to_map (Node(ks,rs)) = map_of_ctx'_h") prefer 2 apply force
+ apply (subgoal_tac "? map_of_ctx. (ctx_to_map ctx_t) = map_of_ctx") prefer 2 apply force
+ apply (erule exE)+
+ apply (subgoal_tac "ctx_t ~= [] --> map_le map_of_ctx'_h map_of_ctx")
+ prefer 2
+  apply rule+
+  apply (subgoal_tac "1 < length ctx")
+  prefer 2 
+   apply force
+  using ctx_map_le apply (force)
+ apply (subgoal_tac "ctx_t ~= [] --> ctx_to_map ctx_t = map_of_ctx ++ map_of_ctx'_h")
+ prefer 2
+  apply (force simp add: map_addE2)
+ apply simp
+ apply (simp add:ctx_to_map_def rev_apply_def)
+ apply (subgoal_tac " map_of (concat (concat (map tree_to_leaves rs))) = map_of_ctx'_h") prefer 2 apply (force simp add:tree_to_map_def rev_apply_def)
+ apply (force simp add: map_addE1)
+done
+
 (*begin findmapts invariant*)
 definition invariant_find_map_fts :: "bool" where
 "invariant_find_map_fts = (
@@ -350,14 +412,8 @@ apply (subgoal_tac "ctx ~= [] --> ctx_to_map ctx' = map_of_ctx'_h++(map_of_ctx)"
 prefer 2
  apply (case_tac ctx) apply force
  apply simp
- apply (rename_tac ctx_h ctx_t)
- apply (subgoal_tac "map_le map_of_ctx'_h map_of_ctx")
- prefer 2
-  apply (subgoal_tac "wellformed_context ctx'") prefer 2 apply (force simp add:wellformed_fts_def)
-  apply (subgoal_tac "1 < length ctx'") prefer 2 apply force
-  using ctx_map_le apply (fastforce)
- apply (subgoal_tac "ctx_to_map ctx' = map_of_ctx ++ map_of_ctx'_h") prefer 2 apply (force simp add: tree_to_map_def ctx_to_map_def)
- apply (metis map_le_iff_map_add_commute map_le_map_add map_le_trans)
+ apply (subgoal_tac "wellformed_context ctx'") prefer 2 apply (force simp add:wellformed_fts_def)
+ using ctx_to_map_Cons apply force
 apply (simp add:rev_apply_def)
 apply (subgoal_tac "m_kvs ++ map_of_ctx'_h = map_of_ctx'_h")
 prefer 2
@@ -515,9 +571,38 @@ apply (subgoal_tac "(case f' of Inserting_one x \<Rightarrow> tree_to_map x | In
 prefer 2 apply (force intro:FIXME)
 apply simp
 apply (simp add:tree_to_map_def)
-apply (subgoal_tac "map_le (map_of kvs) (ctx_to_map ctx)")
+apply (subgoal_tac "ctx ~= [] --> map_le (map_of kvs) (ctx_to_map ctx)")
 prefer 2
- apply (force intro:FIXME)
+ apply (case_tac ctx,force)
+ apply (rename_tac ctx_h ctx_t)
+ apply (subgoal_tac "? l ks rs i u. ctx_h = (l,((ks,rs),i),u)") prefer 2 apply (case_tac ctx_h, rename_tac l ksrsi u,case_tac ksrsi, rename_tac ksrs i,case_tac ksrs, rename_tac ks rs,force)
+ apply (erule exE)+
+ apply (subgoal_tac "wellformed_context ctx") prefer 2 apply (force simp add:wellformed_fts_def)
+ apply (subgoal_tac "(ctx_to_map ctx) = tree_to_map (Node(ks,rs))++(ctx_to_map ctx_t)") prefer 2 using ctx_to_map_Cons apply force 
+ apply simp
+ apply (subgoal_tac "map_le (tree_to_map (Leaf kvs)) (tree_to_map (Node (ks, rs)))")
+ prefer 2
+  apply (subgoal_tac "(Leaf kvs) : set rs & wellformed_tree (case ctx_t of Nil => (Some Small_root_node_or_leaf) | _ => None) (Node(ks,rs))")
+  prefer 2
+   apply (subgoal_tac "i < length rs") prefer 2 apply (force intro:FIXME)
+   apply (subgoal_tac "length ks = length rs -1") 
+   prefer 2
+    apply (force intro:FIXME) 
+   apply (case_tac ctx_t)
+    apply (simp add:wellformed_fts_def wellformed_fts_1_def subtree_indexes_def wellformed_context_1_def)
+    apply (case_tac " get_lower_upper_keys_for_node_t ks l i u",force)
+   
+    apply (force simp add:wellformed_fts_def wellformed_fts_1_def subtree_indexes_def wellformed_context_1_def)
+  using map_le_subtrees apply meson
+ apply (subgoal_tac "ctx_t ~= [] --> map_le (tree_to_map (Node (ks, rs))) (ctx_to_map ctx_t)")
+ prefer 2
+  apply rule+
+  apply (subgoal_tac "1 < length ctx") prefer 2 apply force
+  apply (subgoal_tac "wellformed_context ctx") prefer 2 apply blast
+  using ctx_map_le apply force
+ apply (case_tac ctx_t) apply (force simp add:tree_to_map_def rev_apply_def ctx_to_map_def)
+ using map_addE1 tree_to_map_def map_le_trans apply fastforce
+apply (case_tac ctx,force simp add:ctx_to_map_def)
 apply (force simp add: map_addE1 map_addE2)
 done
 
