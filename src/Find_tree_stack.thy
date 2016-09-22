@@ -11,6 +11,10 @@ datatype fts_state_t = Fts_state "key * Tree * tree_stack_t"  (* k,t,ts *)
 definition dest_fts_state_t :: "fts_state_t \<Rightarrow> key * Tree * tree_stack_t" where 
 "dest_fts_state_t fts = (case fts of Fts_state (k,t,ts) \<Rightarrow> (k,t,ts))"
 
+lemma dest_fts_state_t_def_2: "dest_fts_state_t (Fts_state (k,t,ts)) = (k,t,ts)"
+apply(simp add: dest_fts_state_t_def)
+done
+
 (* FIXME tr: prefer to bring types into line with scala? *)
 
 
@@ -38,9 +42,10 @@ definition wellformed_fts_1 :: "fts_state_t => bool" where
     let (n,i,x) = dest_cnode_t x in
     let (l,u) = x in
     let (ks,rs) = n in
+    let b0 = (t = rs!i) in
     let b1 = check_keys l [k] u in
-    let b2 = (t = rs!i) in
-    b1&b2))
+    (* let b2 = check_keys l (keys t) u in this follows from the fact that t = rs!i *)
+    b0&b1))
 "
 (*end wf fts1 definition*)
 
@@ -48,7 +53,7 @@ definition wellformed_fts_1 :: "fts_state_t => bool" where
 definition wellformed_fts :: "fts_state_t => bool" where
 "wellformed_fts fts = (
   let (k,t,ts) = dest_fts_state_t fts in
-  let ms = if (ts = Nil) then (Some Small_root_node_or_leaf) else None in
+  let ms = ts_to_ms ts in
   wellformed_fts_focus ms t
   & wellformed_context ts
   & wellformed_fts_1 fts)"
