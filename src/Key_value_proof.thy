@@ -1,5 +1,5 @@
 theory Key_value_proof
-imports  "Insert_tree_stack"  (* FIXME shouldn't need to - just key_value *)
+imports  "Key_value" 
 begin
 
 (* FIXME most of these lemmas should be unnecessary - they are all solvable with 1st order proof *)

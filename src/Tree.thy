@@ -18,12 +18,6 @@ type_synonym node_t = "node_lbl_t * Tree list"
 
 definition min_child_index  :: nat where "min_child_index = 0"
 
-(* FIXME remove *)
-definition max_child_index' :: "node_t \<Rightarrow> nat" where
-"max_child_index' node = (
-  let (ks,rs) = node in
-  length rs - 1)"
-
 definition ks_to_max_child_index :: "key list \<Rightarrow> nat" where
 "ks_to_max_child_index ks = length ks"
 

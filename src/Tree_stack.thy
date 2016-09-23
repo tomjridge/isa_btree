@@ -7,6 +7,10 @@ datatype cnode_t = Cnode "node_t * nat * bound_t"  (* n,i,b *)
 definition dest_cnode_t :: "cnode_t \<Rightarrow> node_t * nat * bound_t" where
 "dest_cnode_t c = (case c of Cnode (n,i,b) \<Rightarrow> (n,i,b))"
 
+lemma dest_cnode_t_def_2: "dest_cnode_t (Cnode(n,i,b)) = (n,i,b)"
+apply(simp add: dest_cnode_t_def)
+done
+
 (* FIXME remove *)
 type_synonym context_t = "cnode_t list"
 
@@ -25,17 +29,6 @@ definition cnode_to_bound :: "cnode_t \<Rightarrow> bound_t" where
   index_to_bound ks i |> with_parent_bound b)"
 
 
-(* bound from tree stack ---- *)
-
-(* FIXME disappears ?*)
-(*
-definition get_parent_bounds :: "context_t \<Rightarrow> bound_t" where
-"get_parent_bounds ts = (
-  case ts of 
-  Nil \<Rightarrow> (None,None)
-  | cn#_ \<Rightarrow> (let (n,i,x) = dest_cnode_t cn in x))"
-*)
-
 
 (* wellformed_cnode ---------------------------------------- *)
 
@@ -53,6 +46,10 @@ definition wellformed_cnode :: "ms_t => cnode_t => bool " where
   b1&b2&b3)
 "
 
+
+(* wellformed_context ---------------------------------------- *)
+
+
 definition ts_to_ms :: "tree_stack_t \<Rightarrow> ms_t" where
 "ts_to_ms ts = (case ts of Nil \<Rightarrow> (Some Small_root_node_or_leaf) | _ \<Rightarrow> None)"
 
@@ -61,9 +58,6 @@ lemma ts_to_ms_def_2: "
   (! x xs. ts_to_ms (x#xs) = None)"
   apply(simp add:ts_to_ms_def)
   done
-
-
-(* wellformed_context ---------------------------------------- *)
 
 
 fun wellformed_context :: "context_t => bool" where

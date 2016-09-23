@@ -1,11 +1,5 @@
 theory Find_tree_stack imports Tree_stack "~~/src/HOL/Library/Code_Target_Nat" begin
 
-(* tr: we return a pair of a focus and the context; the focus is just
-   the tree at the position; at the end of Find, this is
-   guaranteed to be a leaf; also include the key we are looking
-   for; also include bounds on the keys that we may find
-*)
-
 
 record fts_focus_t = 
   fts_key :: key
@@ -32,10 +26,12 @@ definition tree_to_fts :: "key => Tree => fts_state_t" where
 (* tr: link between focus and context?*)
 (*begin wf fts focus definition*)
 
-definition wellformed_fts_focus :: "fts_focus_t => bool" where
-"wellformed_fts_focus f = (
+definition wellformed_fts_focus :: "ms_t \<Rightarrow> fts_focus_t => bool" where
+"wellformed_fts_focus ms f = (
   let (k,l,t,u) = dest_fts_focus f in
-  check_keys l (k#(keys t)) u)"
+  let b1 = wellformed_tree ms t in
+  let b2 = check_keys l (k#(keys t)) u in
+  b1&b2)"
 
 (*end wf fts focus definition*)
 
@@ -60,8 +56,9 @@ definition wellformed_fts_1 :: "fts_state_t => bool" where
 definition wellformed_fts :: "fts_state_t => bool" where
 "wellformed_fts fts = (
   let (f,ts) = fts in
+  let ms = ts_to_ms ts in
   wellformed_context ts
-  & wellformed_fts_focus f
+  & wellformed_fts_focus ms f
   & wellformed_fts_1 fts)"
 (*end wf fts definition*)
 
