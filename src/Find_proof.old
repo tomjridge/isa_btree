@@ -110,3 +110,25 @@ apply(rule conjI)
    apply(force intro: FIXME)
 done 
 *)
+
+
+
+(* the following is about merging maps together; this must be in isa lib somewhere *)
+
+definition set_as_map :: "('a*'b) set \<Rightarrow> ('a,'b) map \<Rightarrow> bool" where
+"set_as_map xys f = (
+(! a. (f a = None) = (~ (? b. (a,b) : xys))) 
+  & (! a b. (f a = Some b) = ((a,b) : xys)))"
+
+(* defining a function from a set *)
+definition set_to_map :: "('a * 'b) set \<Rightarrow> ('a,'b) map" where
+"set_to_map xys = (SOME f. set_as_map xys f)"
+
+(* FIXME we don't need this? *)
+lemma set_to_map_exists: "
+(! a b b'. (a,b) : xys & (a,b') : xys \<longrightarrow> (b'=b)) \<longrightarrow> (set_as_map xys (set_to_map xys))"
+apply(force intro:FIXME)
+done
+
+definition map_to_set :: "('a,'b) map \<Rightarrow> ('a * 'b) set" where
+"map_to_set m = { (x,y). m x = Some y }"

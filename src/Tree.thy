@@ -14,6 +14,11 @@ datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
 type_synonym node_t = "node_lbl_t * Tree list"
 
 
+fun is_Leaf :: "Tree \<Rightarrow> bool" where
+"is_Leaf (Leaf l) = True" |
+"is_Leaf (Node _) = False"
+
+
 (* util ---------------------------------------- *)
 
 definition min_child_index  :: nat where "min_child_index = 0"
@@ -91,12 +96,17 @@ termination
 
 (* conversion to map ---------------------------------------- *)
 
-definition tree_to_map
- :: "Tree => (key,value_t) map"
-where
+(* this seemed the most natural defn *)
+function tree_to_map :: "Tree => (key,value_t) map" where
 "tree_to_map t = (
-map_of (List.concat(tree_to_leaves t))
-)"
+  case t of Leaf kvs \<Rightarrow> (map_of kvs)
+  | Node(ks,rs) \<Rightarrow> (
+    let ms = List.map tree_to_map rs in
+    merge_maps (set(ms))))"
+by auto
+termination
+  apply(force intro:FIXME)
+  done
 
 
 (* to subtrees ---------------------------------------- *)
@@ -104,12 +114,9 @@ map_of (List.concat(tree_to_leaves t))
 (* begin t2s *)
 function tree_to_subtrees :: "Tree => Tree list" where
 "tree_to_subtrees t0 = (
-case t0 of
-Leaf _ => [t0]
-| Node(l,cs) => (
-t0#((List.map tree_to_subtrees cs) |> List.concat)
-)
-)
+  case t0 of Leaf _ => [t0]
+  | Node(l,cs) => (
+    t0#((List.map tree_to_subtrees cs) |> List.concat)))
 "
 (* end t2s *)
 by auto
@@ -118,20 +125,16 @@ termination
   done
 
 definition forall_subtrees :: "(Tree => bool) => Tree => bool" where
-"forall_subtrees P t == (
-List.list_all P (t |> tree_to_subtrees) 
-)"
+"forall_subtrees P t == (List.list_all P (t |> tree_to_subtrees))"
 
 (* balanced ---------------------------------------- *)
 
 (*begin wfbalanced*)
 definition balanced_1 :: "Tree => bool" where
 "balanced_1 t0 == (
-case t0 of Leaf(l) => True
-| Node(l,cs) => (
-(cs = []) | (
-List.list_all (% c. height c = height (cs!0)) cs))
-)"
+  case t0 of Leaf(l) => True
+  | Node(l,cs) => (
+  (cs = []) | (List.list_all (% c. height c = height (cs!0)) cs)))"
 
 definition balanced :: "Tree => bool" where
 "balanced t == forall_subtrees balanced_1 t"
@@ -157,32 +160,30 @@ case mt of
 
 definition wf_size_1 :: "Tree => bool" where
 "wf_size_1 t1 == (
-case t1 of
-Leaf xs => (
-let n = length xs in
-(n >= min_leaf_size) & ( n <= max_leaf_size))
-| Node(l,cs) => (
-let n = length l in
-(1 <= n) & (n >= min_node_keys) & (n <= max_node_keys)  (* FIXME 1\<le>n not needed since constants enforce this *)
-
-)
-)
+  case t1 of
+  Leaf xs => (
+    let n = length xs in
+    (n >= min_leaf_size) & ( n <= max_leaf_size))
+  | Node(l,cs) => (
+    let n = length l in
+    (1 <= n) & (n >= min_node_keys) & (n <= max_node_keys)  (* FIXME 1\<le>n not needed since constants enforce this *)
+))
 "
 
 definition wf_size :: "ms_t => Tree => bool" where
 "wf_size ms t0 == (
-case ms of
-None => (forall_subtrees wf_size_1 t0)
-| Some m => (
-let min = get_min_size (m,t0) in
-case t0 of 
-Leaf xs =>
-let n = length xs in
-(min <= n) & (n <= max_leaf_size)
-| Node(l,cs) => (
-let n = length l in
-(min <= n) & (n <= max_node_keys) 
-& (List.list_all (forall_subtrees wf_size_1) cs))
+  case ms of
+  None => (forall_subtrees wf_size_1 t0)
+  | Some m => (
+    let min = get_min_size (m,t0) in
+    case t0 of 
+    Leaf xs =>
+      let n = length xs in
+      (min <= n) & (n <= max_leaf_size)
+    | Node(l,cs) => (
+      let n = length l in
+      (min <= n) & (n <= max_node_keys) 
+      & (List.list_all (forall_subtrees wf_size_1) cs))
 ))"
 (* end wfsize *)
 
@@ -191,9 +192,8 @@ let n = length l in
 (* begin wfksrs*)
 definition wf_ks_rs_1 :: "Tree => bool" where
 "wf_ks_rs_1 t0 == (
-case t0 of Leaf _ => True
-| Node(l,cs) => ((1+ length l) = (length cs))
-)"
+  case t0 of Leaf _ => True
+  | Node(l,cs) => ((1+ length l) = (length cs)))"
 
 definition wf_ks_rs :: "Tree => bool" where
 "wf_ks_rs t0 == forall_subtrees wf_ks_rs_1 t0"
@@ -254,14 +254,13 @@ definition keys_ordered :: "Tree => bool" where
 (* begin wf tree definition *)
 definition wellformed_tree :: "ms_t => Tree => bool" where
 "wellformed_tree ms t0 == (
-let b1 = wf_size ms t0 in
-let b2 = wf_ks_rs t0 in
-let b3 = balanced t0 in
-let b4 = keys_consistent t0 in
-let b5 = keys_ordered t0 in
-let wf = b1&b2&b3&b4&b5 in
-wf
-)"
+  let b1 = wf_size ms t0 in
+  let b2 = wf_ks_rs t0 in
+  let b3 = balanced t0 in
+  let b4 = keys_consistent t0 in
+  let b5 = keys_ordered t0 in
+  let wf = b1&b2&b3&b4&b5 in
+  wf)"
 (* end wf tree definition *)
 
 

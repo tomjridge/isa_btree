@@ -126,4 +126,59 @@ apply(erule disjE)
 
 done
 
+(* we can now prove the equivalence between the btree and the usual map.find *)
+
+(* start by showing that if the map at k is equal to b, then this is preserved by step_fts *)
+(* FIXME need that k is in f *)
+lemma focus_to_map_k_invariant: "
+(step_fts (f,ts) = Some (f',ts')) \<longrightarrow>
+(focus_to_map f' k = focus_to_map f k)"
+apply(force intro:FIXME)
+done
+
+definition trace_set :: "('s * 's) set \<Rightarrow> (nat \<Rightarrow> 's) set" where
+"trace_set trns = { f .  (! (n::nat). (f n, f(n+1)) : trns) }"
+
+lemma btree_find_correct: "
+total_order_key_lte &
+(trns = { (s,s'). case s of None \<Rightarrow> s'=None | Some fts \<Rightarrow> step_fts fts = s' }) &
+f : (trace trns) \<longrightarrow> (
+
+(tree_to_fts k0 t0 = (f0,ts0)) &
+(Some(f0,ts0) = f 0) &
+(focus_to_map f0 k0 = v0) \<longrightarrow> (
+
+! n f_n ts_n. (f (n::nat) = Some(f_n,ts_n)) \<longrightarrow>
+(focus_to_map f_n k0 = v0)))
+"
+apply(rule impI, rule impI, elim conjE)
+(* strengthen *)
+apply(subgoal_tac "
+! n f_n ts_n. (f (n::nat) = Some(f_n,ts_n)) \<longrightarrow>
+wellformed_fts (f_n,ts_n) & (focus_to_map f_n k0 = v0)
+") apply(force)
+apply(rule)
+apply(rule_tac nat_induct) 
+ apply(simp) 
+ (* wf_fts (tree_to_fts t) *)
+ apply(force intro: FIXME)
+ 
+ (* P n \<longrightarrow> P (n+1) *)
+ apply(rename_tac na n)
+ apply(intro allI)
+ apply(rename_tac f' ts')
+ apply(rule impI)
+ apply(rule conjI)
+  (* wellformed_fts (f',ts'), because this is invariant *)
+  apply(force intro: FIXME)
+
+  apply(subgoal_tac "? f_n ts_n. f n = Some(f_n,ts_n)") prefer 2 apply(force intro: FIXME)
+  apply(elim exE conjE)
+  apply(simp) apply(elim conjE)
+  apply(drule_tac t=v0 in sym) back
+  apply(simp)
+  apply(subgoal_tac "step_fts (f_n,ts_n) = Some(f',ts')") prefer 2 apply(force intro: FIXME)
+  using focus_to_map_k_invariant apply(force)
+done
+
 end

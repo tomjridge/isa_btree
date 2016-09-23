@@ -10,7 +10,7 @@ record fts_focus_t =
 type_synonym fts_state_t = "fts_focus_t * tree_stack_t"
 
 definition dest_fts_focus :: "fts_focus_t \<Rightarrow> key * key option * Tree * key option" where 
-"dest_fts_focus fts = (fts|>fts_key,fts|>fts_l,fts|>fts_t,fts|>fts_u)"
+"dest_fts_focus f = (f|>fts_key,f|>fts_l,f|>fts_t,f|>fts_u)"
 
 lemma dest_fts_focus_def_2: "dest_fts_focus \<lparr> fts_key=k, fts_l=l, fts_t=t, fts_u=u\<rparr>
  = (k,l,t,u)"
@@ -19,6 +19,11 @@ by (simp add: rev_apply_def)
 
 definition tree_to_fts :: "key => Tree => fts_state_t" where
 "tree_to_fts k t = (\<lparr> fts_key=k,fts_l=None,fts_t=t,fts_u=None \<rparr>,Nil)"
+
+definition focus_to_map :: "fts_focus_t \<Rightarrow> (key \<Rightarrow> value_t option)" where
+"focus_to_map f = (
+  let (k,l,t,u) = dest_fts_focus f in
+  tree_to_map t)"
 
 
 (* wellformed_fts ---------------------------------------- *)
