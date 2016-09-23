@@ -7,55 +7,61 @@ theory Find_tree_stack imports Tree_stack "~~/src/HOL/Library/Code_Target_Nat" b
 *)
 
 
-datatype fts_state_t = Fts_state "key * Tree * tree_stack_t"  (* k,t,ts *)
-definition dest_fts_state_t :: "fts_state_t \<Rightarrow> key * Tree * tree_stack_t" where 
-"dest_fts_state_t fts = (case fts of Fts_state (k,t,ts) \<Rightarrow> (k,t,ts))"
+record fts_focus_t = 
+  fts_key :: key
+  fts_l :: "key option"
+  fts_t :: Tree
+  fts_u :: "key option"
 
-lemma dest_fts_state_t_def_2: "dest_fts_state_t (Fts_state (k,t,ts)) = (k,t,ts)"
-apply(simp add: dest_fts_state_t_def)
-done
+type_synonym fts_state_t = "fts_focus_t * tree_stack_t"
 
-(* FIXME tr: prefer to bring types into line with scala? *)
+definition dest_fts_focus :: "fts_focus_t \<Rightarrow> key * key option * Tree * key option" where 
+"dest_fts_focus fts = (fts|>fts_key,fts|>fts_l,fts|>fts_t,fts|>fts_u)"
 
+lemma dest_fts_focus_def_2: "dest_fts_focus \<lparr> fts_key=k, fts_l=l, fts_t=t, fts_u=u\<rparr>
+ = (k,l,t,u)"
+apply(simp add: dest_fts_focus_def)
+by (simp add: rev_apply_def)
 
 definition tree_to_fts :: "key => Tree => fts_state_t" where
-"tree_to_fts k t = (Fts_state (k,t,Nil))"
+"tree_to_fts k t = (\<lparr> fts_key=k,fts_l=None,fts_t=t,fts_u=None \<rparr>,Nil)"
+
 
 (* wellformed_fts ---------------------------------------- *)
 
 (* tr: link between focus and context?*)
 (*begin wf fts focus definition*)
 
-definition wellformed_fts_focus :: "ms_t => Tree => bool" where
-"wellformed_fts_focus ms t = wellformed_tree ms t"
+definition wellformed_fts_focus :: "fts_focus_t => bool" where
+"wellformed_fts_focus f = (
+  let (k,l,t,u) = dest_fts_focus f in
+  check_keys l (k#(keys t)) u)"
 
 (*end wf fts focus definition*)
 
 (*begin wf fts1 definition*)
-(* tr: interaction between k,t and ts *)
+(* tr: interaction between focus and context *)
 definition wellformed_fts_1 :: "fts_state_t => bool" where
 "wellformed_fts_1 fts == (
-  let (k,t,ts) = dest_fts_state_t fts in
+  let (f,ts) = fts in
   case ts of
   Nil => True
-  | x#xs => (
-    let (n,i,x) = dest_cnode_t x in
-    let (l,u) = x in
+  | cn#xs => (    
+    let (k,l,t,u) = dest_fts_focus f in
+    let (n,i,b) = dest_cnode_t cn in
     let (ks,rs) = n in
     let b0 = (t = rs!i) in
-    let b1 = check_keys l [k] u in
-    (* let b2 = check_keys l (keys t) u in this follows from the fact that t = rs!i *)
-    b0&b1))
+    let b2 = (cnode_to_bound cn = (l,u)) in  (* ensure bounds are linked *)
+    b0&b2))
 "
 (*end wf fts1 definition*)
 
 (*begin wf fts definition*)
 definition wellformed_fts :: "fts_state_t => bool" where
 "wellformed_fts fts = (
-  let (k,t,ts) = dest_fts_state_t fts in
-  let ms = ts_to_ms ts in
-  wellformed_fts_focus ms t
-  & wellformed_context ts
+  let (f,ts) = fts in
+  wellformed_context ts
+  & wellformed_fts_focus f
   & wellformed_fts_1 fts)"
 (*end wf fts definition*)
 
@@ -66,69 +72,18 @@ definition wellformed_fts :: "fts_state_t => bool" where
 (*begin find step definition*)
 definition step_fts :: "fts_state_t => fts_state_t option" where
 "step_fts fts = (
-  let (k,t,ts) = dest_fts_state_t fts in
+  let (f,ts) = fts in
+  let (k,l,t,u) = dest_fts_focus f in
   case t of Leaf kvs => None
   | Node(ks,rs) => (
     let i = search_key_to_index ks k in
-    let xtra = (get_lu_for_child_with_parent_default (get_parent_bounds ts) ((ks,rs),i)) in
-    let cn = Cnode((ks,rs),i,xtra) in
+    let cn = Cnode((ks,rs),i,(l,u)) in
     let ts2 = (cn # ts) in
-    Some(Fts_state(k,rs!i,ts2)) ))
+    let t2 = rs!i in
+    let (l2,u2) = cnode_to_bound cn in
+    let f2 = \<lparr> fts_key=k,fts_l=l2,fts_t=t2,fts_u=u2 \<rparr> in
+    Some(f2,ts2) ))
 "
-
-
-(* old ---------------------------------------- *)
-
-
-(* old 
-
-(*begin f focus definition*)
-type_synonym f_focus_t = "key * Tree"
-(*end f focus definition*)
-
-type_synonym f_tree_stack = "f_focus_t tree_stack"
-
-definition dest_f_tree_stack 
- :: "f_tree_stack => (key * Tree * context_t)"
-where
-"dest_f_tree_stack fts = (
-case fts of (Tree_stack (Focus (k,t), ctx)) => (k,t,ctx))
-"
-
-definition fts_to_map1
- :: "f_tree_stack => (key,value_t) map"
-where
-"fts_to_map1 fts = (
-let (_,t,ctx) = dest_f_tree_stack fts in
-tree_to_map t ++ ctx_to_map(ctx)
-)"
-
-function fts_to_tree
- :: "f_tree_stack => Tree"
-where
-"fts_to_tree (Tree_stack(Focus f,[])) = (
-let (k,t) = f in
-t)" |
-"fts_to_tree (Tree_stack(Focus f,(_,((ks,rs),i),_)#ctx_t)) = (
-let (k,t) = f in
-let rs' = the (list_replace_1_at_n rs i t) in
-fts_to_tree (Tree_stack(Focus (k,Node(ks,rs')),ctx_t))
-)"
-by pat_completeness auto
-termination fts_to_tree
- apply (relation "measure (\<lambda>ts. case ts of (Tree_stack(Focus _,ctx)) => length ctx)")
- apply auto
-done
-
-definition fts_to_map
- :: "f_tree_stack => (key,value_t) map"
-where
-"fts_to_map fts = (
-fts |> fts_to_tree |> tree_to_map
-)"
-
-
-*)
 
 declare [[code abort: key_lt]]
 export_code step_fts in Scala module_name Find_tree_stack file "/tmp/Find_tree_stack.scala"

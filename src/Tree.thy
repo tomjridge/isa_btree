@@ -13,18 +13,57 @@ datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
 (* label at node and children ie a Node *)
 type_synonym node_t = "node_lbl_t * Tree list"
 
+
 (* util ---------------------------------------- *)
 
 definition min_child_index  :: nat where "min_child_index = 0"
 
-definition max_child_index :: "node_t \<Rightarrow> nat" where
-"max_child_index node = (
+(* FIXME remove *)
+definition max_child_index' :: "node_t \<Rightarrow> nat" where
+"max_child_index' node = (
   let (ks,rs) = node in
   length rs - 1)"
 
+definition ks_to_max_child_index :: "key list \<Rightarrow> nat" where
+"ks_to_max_child_index ks = length ks"
 
 definition subtree_indexes :: "node_t \<Rightarrow> nat list" where
-"subtree_indexes node = from_to min_child_index (max_child_index node)"
+"subtree_indexes node = (let (ks,rs) = node in from_to min_child_index (ks_to_max_child_index ks))"
+
+
+
+(* bounds ----------------------------------------- *)
+
+type_synonym bound_t = "(key option * key option)"  (* l,u *)
+
+(*tr: assumes xs are sorted; returns list length if not found*)
+(*begin search key to index definition *)
+definition search_key_to_index :: "key list => key => nat" where
+"search_key_to_index ks k = (
+let num_keys = length ks in
+let i = List.find (% x. key_lt k (ks!x)) (upt 0 num_keys) in
+let i' = (case i of None => num_keys | Some x => x) in
+i')"
+(*end search key to index definition *)
+
+(* perhaps we keep this defn? otherwise painful to state keys_consistent?*)
+definition index_to_bound :: "key list \<Rightarrow> nat \<Rightarrow> (key option * key option)" where
+"index_to_bound ks i = (
+  let l = if (i=min_child_index) then None else Some(ks!(i-1)) in
+  let u = if (i=ks_to_max_child_index ks) then None else Some(ks!i) in
+  (l,u))"
+
+(* if the bound lu1 comes from a child, and one of the bounds is none, substitute with the relevant bound lu2 from the parent *)
+definition with_parent_bound :: "bound_t \<Rightarrow> bound_t \<Rightarrow> bound_t" where
+"with_parent_bound lu2 lu1 = (
+  let (l1,u1) = lu1 in
+  let (l2,u2) = lu2 in
+  let l = (case l1 = None of True \<Rightarrow> l2 | _ \<Rightarrow> l1) in
+  let u = (case u1 = None of True \<Rightarrow> u2 | _ \<Rightarrow> u1) in
+  (l,u)
+)"
+
+
 
 
 (* height ---------------------------------------- *)
@@ -189,19 +228,13 @@ definition key_indexes :: "Tree => nat list" where
   Leaf xs => (from_to 0 (length xs - 1))
   | Node (l,_) => (from_to 0 (length l - 1)))"  
 
-definition get_lu_for_child :: "(node_t*nat) \<Rightarrow> (key option * key option)" where
-"get_lu_for_child ni = (
-  let ((ks,rs),i) = ni in
-  let l = if (i=min_child_index) then None else Some(ks!(i-1)) in
-  let u = if (i=max_child_index (ks,rs)) then None else Some(ks!i) in
-  (l,u))"
 
 definition keys_consistent_1 :: "Tree => bool" where
 "keys_consistent_1 t0 == (
 case t0 of Leaf(l) => True
 | Node(ks,rs) => (
   ! i : set(subtree_indexes (ks,rs)). 
-  let (l,u) = get_lu_for_child((ks,rs),i) in
+  let (l,u) = index_to_bound ks i in
   check_keys l (keys(rs!i)) u))
 "
 
@@ -236,6 +269,10 @@ let wf = b1&b2&b3&b4&b5 in
 wf
 )"
 (* end wf tree definition *)
+
+
+
+
 
 end
 
