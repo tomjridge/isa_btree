@@ -1,68 +1,98 @@
+(* [[file:~/workspace/agenda/myTasks.org::tree_stack_src][tree_stack_src]] *)
 theory Tree_stack
 imports Tree
 begin
 
-(* scala: declared and defined in Insert_tree_stack *)
-datatype One_or_two = 
-Inserting_one "Tree"
-| Inserting_two "Tree * key * Tree"
+(*begin focus definition*)
+datatype 'f focus_t = Focus 'f
+(*end focus definition*)
 
-type_synonym inserting_two_t =  "Tree * key * Tree"
+(*begin context definition*)
+type_synonym left_bound = "key option"
 
-(* scala: declared in Tree_stack, defined in Insert_tree_stack *)
-type_synonym focus_t = One_or_two
+type_synonym right_bound = "key option"
 
-(* scala: declared and defined in Insert_tree_stack *)
-definition split_node :: "node_t \<Rightarrow> inserting_two_t" where
-"split_node n == (
-let (l,cs) = n in
-let n0 = min_node_keys in
-let left_ks = take n0 l in
-let (k,right_ks) = (case drop n0 l of (k#ks) \<Rightarrow> (k,ks)) in
-let left_rs = take (1+n0) cs in
-let right_rs = drop (1+n0) cs in
-(Node(left_ks,left_rs),k,Node(right_ks,right_rs))
+type_synonym context_t =
+ "(left_bound * (node_t * nat) * right_bound) list"
+(*end context definition*)
+
+definition ctx_to_map :: "context_t => (key,value_t) map" where
+"ctx_to_map ctx == (
+let leaves = List.map (% (_,(n,_),_). List.concat(tree_to_leaves (Node(n)))) ctx in
+map_of(List.concat leaves))"
+
+
+(*begin treestack definition*)
+datatype 'f tree_stack = Tree_stack "'f focus_t * context_t"
+(*end treestack definition*)
+
+(*begin wfcontext definition*)
+definition subtree_indexes :: "node_t => nat set" where
+"subtree_indexes n == (
+  case n of (l,_) =>  { 0 .. (length l)})"
+
+definition is_subnode 
+ :: "node_t => (node_t * nat) => bool"
+where
+"is_subnode n pi == (
+  let ((ks,rs),i) = pi in
+  Node n = (rs!i))"
+
+fun linked_context 
+ :: "(left_bound * (node_t * nat) * right_bound) => context_t => bool"
+where
+"linked_context ni [] = True" |
+"linked_context (lb,(n,i),rb) ((plb,pi,prb)#pis) = (
+  is_subnode n pi & linked_context (plb,pi,prb) pis)"
+
+definition get_lower_upper_keys_for_node_t
+ :: "key list => left_bound => nat => right_bound => (key option * key option)"
+where
+"get_lower_upper_keys_for_node_t ls lb i rb == (
+let l = if (i = 0) then lb else Some(ls ! (i - 1))     in
+let u = if (i = (length ls)) then rb else Some(ls ! i) in
+(l,u)
 )"
 
-(* scala: declared in Tree_stack; defined in Insert_tree_stack *)
-definition update_focus_at_position :: "node_t \<Rightarrow> nat \<Rightarrow> focus_t \<Rightarrow> focus_t" where
-"update_focus_at_position n i f == (
-let (ks,rs) = n in
-case f of
-Inserting_one t \<Rightarrow> (
-let rs2 = dest_Some(list_replace_1_at_n rs i t) in
-Inserting_one(Node(ks,rs2)))
-| Inserting_two (tl_,k,tr) \<Rightarrow> (
-let ks2 = list_insert_at_n ks i [k] in
-let rs2 = list_replace_at_n rs i [tl_,tr] |> dest_Some in
-case (length ks2 \<le> max_node_keys) of
-True \<Rightarrow> Inserting_one(Node(ks2,rs2))
-| False \<Rightarrow> (
-Inserting_two(split_node(ks2,rs2))
+definition wellformed_context_1
+ :: "ms_t => (left_bound * (node_t * nat) * right_bound) => bool "
+where
+"wellformed_context_1 ms lbnirb == (
+let (lb,((ls,cs),i),rb) = lbnirb in
+let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
+let node = (Node(ls,cs)) in
+wellformed_tree ms node
+& i : (subtree_indexes (ls,cs))
+& check_keys lb (keys (cs!i)) rb)"
+
+fun wellformed_context :: "context_t => bool" where
+"wellformed_context Nil = True" |
+"wellformed_context ((lb,((ls,rs),i),rb) # Nil) =
+(
+let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
+(if i = 0 then lb = None else lb = l)
+&
+(if i = length ls then rb = None else rb = u)
+&
+wellformed_context_1 (Some Small_root_node_or_leaf) (lb,((ls,rs),i),rb))" |
+"wellformed_context (x1 # (x2 # rest)) = (
+let (lb,((ls,_),i),rb) = x1 in
+let (lb',_,rb') = x2 in
+wellformed_context_1 None x1
+& 
+(let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
+ (if i = 0 then lb = lb' else lb = l)
+ & (if i = (length ls) then rb = rb' else rb = u)
 )
+& linked_context x1 (x2#rest)
+& wellformed_context (x2#rest)
 )
-)"
-
-type_synonym context_t = "(node_t * nat) list"
-
-datatype tree_stack = Tree_stack "focus_t * context_t"
-
-definition dest_ts :: "tree_stack \<Rightarrow> focus_t * context_t" where
-"dest_ts ts == (case ts of Tree_stack(f,c) \<Rightarrow> (f,c))"
-
-definition step_tree_stack :: "tree_stack \<Rightarrow> tree_stack option" where
-"step_tree_stack ts == (
-let (f,stk) = dest_ts ts in
-case stk of 
-Nil \<Rightarrow> None
-| ((n,i)#xs) \<Rightarrow> (
-let f2 = update_focus_at_position n i f in
-Some(Tree_stack(f2,xs))
-)
-
-)
-
 "
+(*end wfcontext definition*)
 
+
+definition dest_ts :: "'f tree_stack => 'f * context_t" where
+"dest_ts ts == (case ts of Tree_stack((Focus f),c) => (f,c))"
 
 end
+(* tree_stack_src ends here *)

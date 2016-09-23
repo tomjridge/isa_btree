@@ -2,37 +2,36 @@ theory Tree
 imports Util Constants Key_value
 begin
 
+(* begin tree types*)
 type_synonym leaf_lbl_t = "(key * value_t) list"
 type_synonym node_lbl_t = "key list"
 
 
 datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
+(* end tree types*)
 
 (* label at node and children ie a Node *)
 type_synonym node_t = "node_lbl_t * Tree list"
 
-definition subtree_indexes :: "node_t \<Rightarrow> nat set" where
-"subtree_indexes n == (
-  case n of (_,cs) \<Rightarrow>  { 0 .. (length cs)-1})"
-
-
-function height :: "Tree \<Rightarrow> nat" where
+(*begin height definition*)
+function height :: "Tree => nat" where
 "height t0 = (
 case t0 of
-Leaf _ \<Rightarrow> (1::nat)
-| Node(_,cs) \<Rightarrow> (1 + Max(set(List.map height cs)))
+Leaf _ => (1::nat)
+| Node(_,cs) => (1 + Max(set(List.map height cs)))
 )"
+(*end height definition*)
 by auto
 termination
   apply(force intro:FIXME)
   done
 
-function tree_to_leaves :: "Tree \<Rightarrow> leaf_lbl_t list" where
+function tree_to_leaves :: "Tree => leaf_lbl_t list" where
 "tree_to_leaves t0 = (case t0 of
-Node(l,cs) \<Rightarrow> (
+Node(l,cs) => (
 (cs |> (List.map tree_to_leaves)) |> List.concat
 )
-| Leaf(l) \<Rightarrow> [l]
+| Leaf(l) => [l]
 )
 "
 by auto
@@ -40,111 +39,126 @@ termination
   apply(force intro:FIXME)
   done
 
-(*
-definition update_child_at_position :: "node_lbl_t * Tree list \<Rightarrow> nat \<Rightarrow> Tree \<Rightarrow> Tree" where
-"update_child_at_position node i child == FIXME"
-*)
+definition tree_to_map
+ :: "Tree => (key,value_t) map"
+where
+"tree_to_map t = (
+map_of (List.concat(tree_to_leaves t))
+)"
 
-function tree_to_subtrees :: "Tree \<Rightarrow> Tree list" where
+
+(* begin t2s *)
+function tree_to_subtrees :: "Tree => Tree list" where
 "tree_to_subtrees t0 = (
 case t0 of
-Leaf _ \<Rightarrow> [t0]
-| Node(l,cs) \<Rightarrow> (
+Leaf _ => [t0]
+| Node(l,cs) => (
 t0#((List.map tree_to_subtrees cs) |> List.concat)
 )
 )
 "
+(* end t2s *)
 by auto
 termination
   apply(force intro:FIXME)
   done
 
-definition forall_subtrees :: "(Tree \<Rightarrow> bool) \<Rightarrow> Tree \<Rightarrow> bool" where
+definition forall_subtrees :: "(Tree => bool) => Tree => bool" where
 "forall_subtrees P t == (
 List.list_all P (t |> tree_to_subtrees) 
 )"
 
-definition balanced_1 :: "Tree \<Rightarrow> bool" where
+(*begin wfbalanced*)
+definition balanced_1 :: "Tree => bool" where
 "balanced_1 t0 == (
-case t0 of Leaf(l) \<Rightarrow> True
-| Node(l,cs) \<Rightarrow> (
+case t0 of Leaf(l) => True
+| Node(l,cs) => (
 (cs = []) | (
 List.list_all (% c. height c = height (cs!0)) cs))
 )"
 
-definition balanced :: "Tree \<Rightarrow> bool" where
+definition balanced :: "Tree => bool" where
 "balanced t == forall_subtrees balanced_1 t"
-
-
+(*end wfbalanced*)
 
 (* scala: Tree_kv.scala *)
-definition wf_size_1 :: "Tree \<Rightarrow> bool" where
+(* begin wfsize*)
+definition get_min_size :: "(min_size_t * Tree) => nat" where
+"
+get_min_size mt == (
+case mt of
+(Small_root_node_or_leaf,Node _) => 1
+| (Small_root_node_or_leaf,Leaf _) => 0
+| (Small_node, Node _) => min_node_keys-1
+| (Small_leaf,Leaf _) => min_leaf_size-1
+| (_,_) => undefined
+)
+"
+definition wf_size_1 :: "Tree => bool" where
 "wf_size_1 t1 == (
 case t1 of
-Leaf xs \<Rightarrow> (
+Leaf xs => (
 let n = length xs in
-(n \<ge> min_leaf_size) & ( n \<le> max_leaf_size))
-| Node(l,cs) \<Rightarrow> (
+(n >= min_leaf_size) & ( n <= max_leaf_size))
+| Node(l,cs) => (
 let n = length l in
-(1 \<le> length l) & (n \<ge> min_node_keys) & (n \<le> max_node_keys)
+(1 <= n) & (n >= min_node_keys) & (n <= max_node_keys)
 
 )
 )
 "
 
-(* Tree_kv.scala *)
-(* root may be small *)
-datatype rmbs_t = Rmbs bool
-
-(* Tree_kv.scala *)
-definition wf_size :: "rmbs_t \<Rightarrow> Tree \<Rightarrow> bool" where
-"wf_size rmbs t0 == (
-case rmbs of
-Rmbs False \<Rightarrow> (forall_subtrees wf_size_1 t0)
-| Rmbs True \<Rightarrow> (
+definition wf_size :: "ms_t => Tree => bool" where
+"wf_size ms t0 == (
+case ms of
+None => (forall_subtrees wf_size_1 t0)
+| Some m => (
+let min = get_min_size (m,t0) in
 case t0 of 
-Leaf(l) \<Rightarrow> (length l \<le> Constants.max_leaf_size)
-| Node(l,cs) \<Rightarrow> (
-1 \<le> length l &
-length l \<le> max_node_keys 
-& List.list_all wf_size_1 cs)
+Leaf xs =>
+let n = length xs in
+(min <= n) & (n <= max_leaf_size)
+| Node(l,cs) => (
+let n = length l in
+(min <= n) & (n <= max_node_keys) 
+& (List.list_all (forall_subtrees wf_size_1) cs))
 ))"
+(* end wfsize *)
 
 (* Tree_kv.scala *)
-definition wf_ks_rs_1 :: "Tree \<Rightarrow> bool" where
+(* begin wfksrs*)
+definition wf_ks_rs_1 :: "Tree => bool" where
 "wf_ks_rs_1 t0 == (
-case t0 of Leaf _ \<Rightarrow> True
-| Node(l,cs) \<Rightarrow> ((1+ length l) = (length cs))
+case t0 of Leaf _ => True
+| Node(l,cs) => ((1+ length l) = (length cs))
 )"
 
-(* Tree_kv.scala *)
-definition wf_ks_rs :: "Tree \<Rightarrow> bool" where
+definition wf_ks_rs :: "Tree => bool" where
 "wf_ks_rs t0 == forall_subtrees wf_ks_rs_1 t0"
+(* end wfksrs*)
+export_code wf_ks_rs in Scala module_name Problem file "/tmp/Problem.scala"
 
-(* Tree_kv.scala *)
-definition keys_1 :: "Tree \<Rightarrow> key list" where
+(*begin wfkeysconsistent*)
+definition keys_1 :: "Tree => key list" where
 "keys_1 t0 == (case t0 of
-Leaf xs \<Rightarrow> (List.map fst xs)
-| Node (l,cs) \<Rightarrow> (l)
+Leaf xs => (List.map fst xs)
+| Node (l,cs) => (l)
 )"
 
-(* Tree_kv.scala *)
-definition keys :: "Tree \<Rightarrow> key list" where
+definition keys :: "Tree => key list" where
 "keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)
 " 
 
-(* Tree_kv.scala *)
-definition key_indexes :: "Tree \<Rightarrow> nat list" where
+definition key_indexes :: "Tree => nat list" where
 "key_indexes t == (
   case t of 
-  Leaf xs \<Rightarrow> (upt 0 (length xs))
-  | Node (l,_) \<Rightarrow> (upt 0 (length l)))"  
+  Leaf xs => (upt 0 (length xs))
+  | Node (l,_) => (upt 0 (length l)))"  
 
-(* Tree_kv.scala *)
-definition keys_consistent_1 :: "Tree \<Rightarrow> bool" where
+definition keys_consistent_1 :: "Tree => bool" where
 "keys_consistent_1 t0 == (
-case t0 of Leaf(l) \<Rightarrow> True
-| Node(label,children) \<Rightarrow> (
+case t0 of Leaf(l) => True
+| Node(label,children) => (
 let b1 = (! i : set(key_indexes t0). 
   let k0 = label!i in
   let kls = keys(children!i) in
@@ -159,22 +173,29 @@ b1 & b2
 ))
 "
 
-(* Tree_kv.scala *)
-definition keys_consistent :: "Tree \<Rightarrow> bool" where
+definition keys_consistent :: "Tree => bool" where
 "keys_consistent t == forall_subtrees keys_consistent_1 t"
+(*end wfkeysconsistent*)
 
-(* Tree_kv.scala *)
-definition keys_ordered_1 :: "Tree \<Rightarrow> bool" where
+(* begin wfordered*)
+definition keys_ordered_1 :: "Tree => bool" where
 "keys_ordered_1 t0 == (
-t0 |> keys_1 |> ordered_key_list
-)"
+let is = set (butlast (key_indexes t0)) in
+case t0 of
+Leaf xs =>
+  let ks = (xs |> List.map fst) in
+  ! i : is. key_lt (ks!i) (ks!(i+1))
+| Node (ks,_) => 
+  ! i : is . key_lt (ks!i) (ks!(i+1))
+)
+"
 
-(* Tree_kv.scala *)
-definition keys_ordered :: "Tree \<Rightarrow> bool" where
+definition keys_ordered :: "Tree => bool" where
 "keys_ordered t == forall_subtrees keys_ordered_1 t"
+(*end wfordered*)
 
 (*
-definition wellformed_subtree :: "Tree \<Rightarrow> bool" where
+definition wellformed_subtree :: "Tree => bool" where
 "wellformed_subtree t0 == (
 let b1 = wf_size t0 in
 let b2 = wf_ks_rs t0 in
@@ -186,10 +207,10 @@ wf
 )"
 *)
 
-(* Tree_kv.scala *)
-definition wellformed_kv_tree :: "rmbs_t \<Rightarrow> Tree \<Rightarrow> bool" where
-"wellformed_kv_tree rmbs t0 == (
-let b1 = wf_size rmbs t0 in
+(* begin wf tree definition *)
+definition wellformed_tree :: "ms_t => Tree => bool" where
+"wellformed_tree ms t0 == (
+let b1 = wf_size ms t0 in
 let b2 = wf_ks_rs t0 in
 let b3 = balanced t0 in
 let b4 = keys_consistent t0 in
@@ -197,6 +218,7 @@ let b5 = keys_ordered t0 in
 let wf = b1&b2&b3&b4&b5 in
 wf
 )"
-
+(* end wf tree definition *)
 
 end
+

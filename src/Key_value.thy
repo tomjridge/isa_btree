@@ -5,33 +5,45 @@ begin
 typedecl key
 typedecl value_t
 
-consts key_lt :: "key \<Rightarrow> key \<Rightarrow> bool"
+(*begin key order operators definition*)
+consts key_lt :: "key => key => bool"
+
+definition key_eq :: "key => key => bool" where
+  "key_eq k1 k2 == (~ (key_lt k1 k2)) & (~ (key_lt k2 k1))"
 
 definition key_le :: "key => key => bool" where
-  "key_le k1 k2 == (k1 = k2) | (key_lt k1 k2)"
+  "key_le k1 k2 == (key_eq k1 k2) | (key_lt k1 k2)"
+(*end key order operators definition*)
 
 definition kv_lt :: "(key * value_t) => (key * value_t) => bool" where
   "kv_lt kv1 kv2 == (key_lt (fst kv1) (fst kv2))"
 
-
-definition ordered_key_list :: "key list \<Rightarrow> bool" where
-"ordered_key_list ks == (
-! i : set (upt 0 (length ks - 1)). key_lt (ks!i) (ks!(i+1)) 
-)"
-
-definition check_keys :: "key option \<Rightarrow> key list \<Rightarrow> key option \<Rightarrow> bool" where
+(*begin check keys definition*)
+definition check_keys 
+ :: "key option => key list => key option => bool"
+where
 "check_keys kl ks kr == (
 let b1 = (
-case kl of None \<Rightarrow> True 
-| Some kl \<Rightarrow> (! k : set ks. key_le kl k)
+case kl of None => True 
+| Some kl => (! k : set ks. key_le kl k)
 )
 in
 let b2 = (
-case kr of None \<Rightarrow> True 
-| Some kr \<Rightarrow> (! k : set ks. key_lt k kr)
+case kr of None => True 
+| Some kr => (! k : set ks. key_lt k kr)
 )
 in
 b1 & b2
 )"
+(*end check keys definition*)
 
+(*tr: assumes xs are sorted; returns list length if not found*)
+(*begin search key to index definition *)
+definition search_key_to_index :: "key list => key => nat" where
+"search_key_to_index ks k == (
+let num_keys = length ks in
+let index = List.find (% x. key_lt k (ks!x)) (upt 0 num_keys) in
+(case index of None => num_keys
+| Some x => x))"
+(*end search key to index definition *)
 end
