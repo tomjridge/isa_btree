@@ -36,22 +36,34 @@ definition ordered_key_list :: "key list \<Rightarrow> bool" where
 
 (*begin check keys definition*)
 definition check_keys 
- :: "key option => key list => key option => bool"
+ :: "key option => key set => key option => bool"
 where
 "check_keys kl ks kr == (
 let b1 = (
 case kl of None => True 
-| Some kl => (! k : set ks. key_le kl k)
+| Some kl => (! k : ks. key_le kl k)
 )
 in
 let b2 = (
 case kr of None => True 
-| Some kr => (! k : set ks. key_lt k kr)
+| Some kr => (! k : ks. key_lt k kr)
 )
 in
 b1 & b2
 )"
 (*end check keys definition*)
 
+
+(* lemmas --------------------------------------------------------------- *)
+
+
+(* FIXME might like to use strict total order with key_lt and aim to always eliminate key_le - better automation *)
+(* this is an assumption for the rest of the development *)
+definition total_order_key_lte :: " bool" where
+"total_order_key_lte == (\<forall> a b c. 
+   (key_le a b \<and> key_le b a \<longrightarrow> key_eq a b) \<and>
+   (key_le a b \<and> key_le b c \<longrightarrow> key_le a c) \<and>
+   (key_le a b \<or> key_le b a)
+\<and> (a = b \<longrightarrow> (key_le a b)))" (* FIXME just use defn of key_le, with = *)
 
 end

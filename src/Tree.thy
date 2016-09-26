@@ -35,16 +35,6 @@ definition subtree_indexes :: "node_t \<Rightarrow> nat list" where
 
 type_synonym bound_t = "(key option * key option)"  (* l,u *)
 
-(*tr: assumes xs are sorted; returns list length if not found*)
-(*begin search key to index definition *)
-definition search_key_to_index :: "key list => key => nat" where
-"search_key_to_index ks k = (
-let num_keys = length ks in
-let i = List.find (% x. key_lt k (ks!x)) (upt 0 num_keys) in
-let i' = (case i of None => num_keys | Some x => x) in
-i')"
-(*end search key to index definition *)
-
 (* perhaps we keep this defn? otherwise painful to state keys_consistent?*)
 definition index_to_bound :: "key list \<Rightarrow> nat \<Rightarrow> (key option * key option)" where
 "index_to_bound ks i = (
@@ -75,34 +65,6 @@ function height :: "Tree => nat" where
   | Node(_,cs) => (1 + Max(set(List.map height cs)))
 )"
 (*end height definition*)
-by auto
-termination
-  apply(force intro:FIXME)
-  done
-
-(* setting up tree_kv.to_map ---------------------------------------- *)
-
-function tree_to_leaves :: "Tree => leaf_lbl_t list" where
-"tree_to_leaves t0 = (
-  case t0 of
-  Node(l,cs) => ((cs |> (List.map tree_to_leaves)) |> List.concat)
-  | Leaf(l) => [l])
-"
-by auto
-termination
-  apply(force intro:FIXME)
-  done
-
-
-(* conversion to map ---------------------------------------- *)
-
-(* this seemed the most natural defn *)
-function tree_to_map :: "Tree => (key,value_t) map" where
-"tree_to_map t = (
-  case t of Leaf kvs \<Rightarrow> (map_of kvs)
-  | Node(ks,rs) \<Rightarrow> (
-    let ms = List.map tree_to_map rs in
-    merge_maps (set(ms))))"
 by auto
 termination
   apply(force intro:FIXME)
@@ -229,7 +191,7 @@ case t0 of Leaf(l) => True
 | Node(ks,rs) => (
   ! i : set(subtree_indexes (ks,rs)). 
   let (l,u) = index_to_bound ks i in
-  check_keys l (keys(rs!i)) u))
+  check_keys l (set (keys(rs!i))) u))
 "
 
 definition keys_consistent :: "Tree => bool" where
@@ -265,6 +227,50 @@ definition wellformed_tree :: "ms_t => Tree => bool" where
 
 
 
+(* conversion to map ---------------------------------------- *)
+
+function tree_to_leaves :: "Tree => leaf_lbl_t list" where
+"tree_to_leaves t0 = (
+  case t0 of
+  Node(l,cs) => ((cs |> (List.map tree_to_leaves)) |> List.concat)
+  | Leaf(l) => [l])
+"
+by auto
+termination
+  apply(force intro:FIXME)
+  done
+
+
+
+(* this seemed the most natural defn *)
+function tree_to_map :: "Tree => (key,value_t) map" where
+"tree_to_map t = (
+  case t of Leaf kvs \<Rightarrow> (map_of kvs)
+  | Node(ks,rs) \<Rightarrow> (
+    let ms = List.map tree_to_map rs in
+    maps_to_map (set(ms))))"
+by auto
+termination
+  apply(force intro:FIXME)
+  done
+
+
+(* this property enables easy leaves_to_map manipulation *)
+definition nice_leaves :: "leaf_lbl_t list \<Rightarrow> bool" where
+"nice_leaves ls = (distinct (ls |> List.concat |> List.map fst))"
+
+
+
+(* lemmas ------------------------------------------- *)
+
+(* FIXME here we have lemmas about forming a map from leaves of a tree *)
+
+(* the map from a tree is just the merge of the individual maps for the leaves, assuming the leaves are distinct *)
+definition lemma_tree_to_map_1 :: "bool" where
+"lemma_tree_to_map_1 = (! t.
+  (nice_leaves (t|>tree_to_leaves)) \<longrightarrow> 
+  (tree_to_map t = t |> tree_to_leaves |> leaves_to_map)
+)"
 
 
 end

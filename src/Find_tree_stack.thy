@@ -1,42 +1,44 @@
 theory Find_tree_stack imports Tree_stack "~~/src/HOL/Library/Code_Target_Nat" begin
 
-
-record fts_focus_t = 
-  fts_key :: key
-  fts_l :: "key option"
-  fts_t :: Tree
-  fts_u :: "key option"
+(* the search key is not really needed - it is a parameter of all these defns *)
+datatype fts_focus_t = Focus "key * key option * Tree * key option"
 
 type_synonym fts_state_t = "fts_focus_t * tree_stack_t"
 
 definition dest_fts_focus :: "fts_focus_t \<Rightarrow> key * key option * Tree * key option" where 
-"dest_fts_focus f = (f|>fts_key,f|>fts_l,f|>fts_t,f|>fts_u)"
+"dest_fts_focus f = (case f of Focus(k,l,t,u) \<Rightarrow> (k,l,t,u))"
 
-lemma dest_fts_focus_def_2: "dest_fts_focus \<lparr> fts_key=k, fts_l=l, fts_t=t, fts_u=u\<rparr>
- = (k,l,t,u)"
+lemma dest_fts_focus_def_2: "dest_fts_focus (Focus(k,l,t,u)) = (k,l,t,u)"
 apply(simp add: dest_fts_focus_def)
-by (simp add: rev_apply_def)
+done
 
 definition tree_to_fts :: "key => Tree => fts_state_t" where
-"tree_to_fts k t = (\<lparr> fts_key=k,fts_l=None,fts_t=t,fts_u=None \<rparr>,Nil)"
+"tree_to_fts k t = (Focus(k,None,t,None),Nil)"
 
+(*
 definition focus_to_map :: "fts_focus_t \<Rightarrow> (key \<Rightarrow> value_t option)" where
 "focus_to_map f = (
   let (k,l,t,u) = dest_fts_focus f in
   tree_to_map t)"
-
+*)
 
 (* wellformed_fts ---------------------------------------- *)
 
 (* tr: link between focus and context?*)
 (*begin wf fts focus definition*)
 
-definition wellformed_fts_focus :: "ms_t \<Rightarrow> fts_focus_t => bool" where
-"wellformed_fts_focus ms f = (
+FIXME we also need that, not only is the focus bounded, but any key in the bound must be in the leaves of this tree
+
+its not just that lu is a bound, it is that the subtree is the unique subtree which contains entries from this bound
+
+
+
+definition wellformed_fts_focus :: "key \<Rightarrow> ms_t \<Rightarrow> fts_focus_t => bool" where
+"wellformed_fts_focus k0 ms f = (
   let (k,l,t,u) = dest_fts_focus f in
   let b1 = wellformed_tree ms t in
-  let b2 = check_keys l (k#(keys t)) u in
-  b1&b2)"
+  let b2 = check_keys l (set (k#(keys t))) u in
+  b1&b2&(k=k0))"
 
 (*end wf fts focus definition*)
 
@@ -49,8 +51,7 @@ definition wellformed_fts_1 :: "fts_state_t => bool" where
   Nil => True
   | cn#xs => (    
     let (k,l,t,u) = dest_fts_focus f in
-    let (n,i,b) = dest_cnode_t cn in
-    let (ks,rs) = n in
+    let (l,ks,rs,i,u) = dest_cnode_t cn in
     let b0 = (t = rs!i) in
     let b2 = (cnode_to_bound cn = (l,u)) in  (* ensure bounds are linked *)
     b0&b2))
@@ -58,14 +59,16 @@ definition wellformed_fts_1 :: "fts_state_t => bool" where
 (*end wf fts1 definition*)
 
 (*begin wf fts definition*)
-definition wellformed_fts :: "fts_state_t => bool" where
-"wellformed_fts fts = (
+definition wellformed_fts :: "key \<Rightarrow> fts_state_t => bool" where
+"wellformed_fts k0 fts = (
   let (f,ts) = fts in
   let ms = ts_to_ms ts in
-  wellformed_context ts
-  & wellformed_fts_focus ms f
+  wellformed_context k0 ts
+  & wellformed_fts_focus k0 ms f
   & wellformed_fts_1 fts)"
 (*end wf fts definition*)
+
+
 
 
 (* step_fts ---------------------------------------- *)
@@ -79,16 +82,43 @@ definition step_fts :: "fts_state_t => fts_state_t option" where
   case t of Leaf kvs => None
   | Node(ks,rs) => (
     let i = search_key_to_index ks k in
-    let cn = Cnode((ks,rs),i,(l,u)) in
+    let cn = Cnode(l,ks,rs,i,u) in
     let ts2 = (cn # ts) in
     let t2 = rs!i in
     let (l2,u2) = cnode_to_bound cn in
-    let f2 = \<lparr> fts_key=k,fts_l=l2,fts_t=t2,fts_u=u2 \<rparr> in
+    let f2 = Focus(k,l2,t2,u2) in
     Some(f2,ts2) ))
 "
 
-declare [[code abort: key_lt]]
-export_code step_fts in Scala module_name Find_tree_stack file "/tmp/Find_tree_stack.scala"
+
+(* fts_reass ---------------------------------------- *)
+definition fts_reass :: "fts_state_t \<Rightarrow> Tree" where
+"fts_reass fts = (
+  let (f,ts) = fts in
+  let (k,l,t,u) = dest_fts_focus f in
+  reass t ts
+)"
+
+(* lemmas ------------------------------------------- *)
+
+(*begin find invariant*)
+definition invariant_wf_fts :: "key \<Rightarrow> bool" where
+"invariant_wf_fts k0 = (! fts fts'.
+  (step_fts fts = Some (fts')) &
+  wellformed_fts k0 fts \<longrightarrow> wellformed_fts k0 fts')
+"
+(*end find invariant*)
+
+definition lemma_fts_reass :: "bool" where
+"lemma_fts_reass = (! k0 f ts.
+  wellformed_fts k0 (f,ts) \<longrightarrow> (
+  let (k,l,t,u) = dest_fts_focus f in
+  ? xs zs. 
+    (fts_reass (f,ts) |> tree_to_leaves = xs@(tree_to_leaves t)@zs) & 
+    (let ks = xs |> leaves_to_map |> dom in check_keys None ks l) &
+    (check_keys l (t|>tree_to_leaves|>leaves_to_map|>dom) u) &
+    (let ks = zs |> leaves_to_map |> dom in check_keys u ks None)
+))"  
 
 
 

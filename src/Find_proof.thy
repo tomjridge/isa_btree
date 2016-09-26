@@ -1,13 +1,7 @@
 theory Find_proof imports Key_value_proof Find_tree_stack begin
 
-(*begin find invariant*)
-definition invariant_wf_fts :: "bool" where
-"invariant_wf_fts = (! fts fts'.
-  total_order_key_lte &
-  (step_fts fts = Some (fts')) &
-  wellformed_fts fts \<longrightarrow> wellformed_fts fts')
-"
-(*end find invariant*)
+
+(* FIXME move following lemmas *)
 
 (* FIXME andrea: this is a very important lemma ! ! ! *)
 lemma wellformed_tree_children: "wellformed_tree x (Node(ks,rs)) \<longrightarrow> (! r : set(rs). wellformed_tree None r)"
