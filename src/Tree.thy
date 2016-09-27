@@ -167,10 +167,11 @@ export_code wf_ks_rs in Scala module_name Problem file "/tmp/Problem.scala"
 
 (*begin wfkeysconsistent*)
 definition keys_1 :: "Tree => key list" where
-"keys_1 t0 == (case t0 of
-Leaf xs => (List.map fst xs)
-| Node (l,cs) => (l)
-)"
+"keys_1 t0 == (
+  case t0 of
+  Leaf xs => (List.map fst xs)
+  | Node (l,cs) => (l))
+"
 
 definition keys :: "Tree => key list" where
 "keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)
@@ -272,6 +273,10 @@ definition lemma_tree_to_map_1 :: "bool" where
   (tree_to_map t = t |> tree_to_leaves |> leaves_to_map)
 )"
 
+definition lemma_wellformed_tree_nice_leaves :: "bool" where
+"lemma_wellformed_tree_nice_leaves = (! ms t.
+  wellformed_tree ms t \<longrightarrow> nice_leaves (t|>tree_to_leaves)
+)"
 
 end
 

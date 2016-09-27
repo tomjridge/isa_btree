@@ -4,15 +4,14 @@ theory Tree_stack imports Tree begin
 datatype cnode_t = Cnode "key option * key list * Tree list * nat * key option"  (* l,ks,rs,i,u *)
 
 
-definition dest_cnode_t :: "cnode_t \<Rightarrow> key option * key list * Tree list * nat * key option" where
-"dest_cnode_t c = (case c of Cnode (l,ks,rs,i,u) \<Rightarrow> (l,ks,rs,i,u))"
+definition dest_cnode :: "cnode_t \<Rightarrow> key option * key list * Tree list * nat * key option" where
+"dest_cnode c = (case c of Cnode (l,ks,rs,i,u) \<Rightarrow> (l,ks,rs,i,u))"
 
-lemma dest_cnode_t_def_2: "dest_cnode_t (Cnode(l,ks,rs,i,u)) = (l,ks,rs,i,u)"
-apply(simp add: dest_cnode_t_def)
+lemma dest_cnode_t_def_2: "dest_cnode (Cnode(l,ks,rs,i,u)) = (l,ks,rs,i,u)"
+apply(simp add: dest_cnode_def)
 done
 
 (* FIXME remove *)
-type_synonym context_t = "cnode_t list"
 
 type_synonym tree_stack_t = "cnode_t list"
 
@@ -23,12 +22,11 @@ type_synonym tree_stack_t = "cnode_t list"
 (*begin search key to index definition *)
 definition search_key_to_index :: "key list => key => nat" where
 "search_key_to_index ks k = (
-let num_keys = length ks in
-let i = List.find (% x. key_lt k (ks!x)) (upt 0 num_keys) in
-let i' = (case i of None => num_keys | Some x => x) in
-i')"
+  let num_keys = length ks in
+  let i = List.find (% x. key_lt k (ks!x)) (upt 0 num_keys) in
+  let i' = (case i of None => num_keys | Some x => x) in
+  i')"
 (*end search key to index definition *)
-
 
 
 (* bound from cnode ---------------------------------------- *)
@@ -36,22 +34,20 @@ i')"
 (* make sure we use the existing bound in case i is extremal *)
 definition cnode_to_bound :: "cnode_t \<Rightarrow> bound_t" where
 "cnode_to_bound cn = (
-  let (l,ks,rs,i,u) = dest_cnode_t cn in
+  let (l,ks,rs,i,u) = dest_cnode cn in
   index_to_bound ks i |> with_parent_bound (l,u))"
 
 
 
 (* wellformed_cnode ---------------------------------------- *)
 
-
-
 (* FIXME adjust scala defns *)      
 definition wellformed_cnode :: "key \<Rightarrow> ms_t => cnode_t => bool " where
 "wellformed_cnode k0 ms cn = (
-  let (l,ks,rs,i,u) = dest_cnode_t cn in 
-  let b1 = wellformed_tree ms (Node(ks,rs)) in  (* FIXME wellformed_kv_tree *)
+  let (l,ks,rs,i,u) = dest_cnode cn in 
+  let b1 = wellformed_tree ms (Node(ks,rs)) in 
   let b2 = search_key_to_index ks k0 = i in
-  let b3 = check_keys l (set (keys (Node(ks,rs)))) u in
+  let b3 = check_keys l (set(k0#keys(Node(ks,rs)))) u in  (* k0? *)
   b1&b2&b3)
 "
 
@@ -69,16 +65,30 @@ lemma ts_to_ms_def_2: "
   done
 
 
-fun wellformed_context :: "key \<Rightarrow> tree_stack_t => bool" where
-"wellformed_context k0 xs = (
+fun wellformed_ts :: "key \<Rightarrow> tree_stack_t => bool" where
+"wellformed_ts k0 xs = (
   case xs of Nil \<Rightarrow> True
-  | cn#cns \<Rightarrow> (wellformed_cnode k0 (ts_to_ms cns) cn & wellformed_context k0 cns))"
+  | cn#cns \<Rightarrow> (wellformed_cnode k0 (ts_to_ms cns) cn & wellformed_ts k0 cns))"
 (*end wfcontext definition*)
 
-lemma wellformed_context_def_2: "
-  (wellformed_context k0 Nil = True) &
-  (wellformed_context k0 (cn#cns) = (wellformed_cnode k0 (ts_to_ms cns) cn & wellformed_context k0 cns))"
+lemma wellformed_ts_def_2: "
+  (wellformed_ts k0 Nil = True) &
+  (wellformed_ts k0 (cn#cns) = (wellformed_cnode k0 (ts_to_ms cns) cn & wellformed_ts k0 cns))"
 by simp
+
+
+(* ts_to_t0 ------------------------------------ *)
+
+(* get the initial tree from which the ts was formed *)
+definition ts_to_t0 :: "tree_stack_t \<Rightarrow> node_t option" where
+"ts_to_t0 ts = (
+  case ts of
+  Nil \<Rightarrow> None
+  | _ \<Rightarrow> ( 
+    let cn = last ts in
+    let (l,ks,rs,i,u) = dest_cnode cn in
+    Some(ks,rs)))
+"
 
 
 (* stack reassembly ----------------------------------- *)
@@ -88,10 +98,10 @@ fun reass :: "Tree \<Rightarrow> tree_stack_t \<Rightarrow> Tree" where
   case ts of
   Nil \<Rightarrow> t
   | cn#cns \<Rightarrow> (
-    let (l,ks,rs,i,u) = dest_cnode_t cn in
+    let (_,ks,rs,i,_) = dest_cnode cn in
     let t2 = Node(ks,rs[i:=t]) in
-    reass t2 cns
-))"
+    reass t2 cns)
+)"
 
 
 (* lemmas ------------------------------------------------ *)
