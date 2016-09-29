@@ -52,7 +52,7 @@ lemma invariant_wf_fts: "
 "
 apply (unfold invariant_wf_fts_def)
 apply(intro impI allI)
-apply(elim exE conjE)
+apply(elim exE conjE)Find_proof_2.thy
 (* apply(subgoal_tac "main_property fts'")
  prefer 2 apply (simp add: main_lemma option.case_eq_if) *)
 apply(simp add: step_fts_def)
@@ -130,8 +130,7 @@ lemma focus_to_map_k_invariant: "
 apply(force intro:FIXME)
 done
 
-definition trace_set :: "('s * 's) set \<Rightarrow> (nat \<Rightarrow> 's) set" where
-"trace_set trns = { f .  (! (n::nat). (f n, f(n+1)) : trns) }"
+
 
 lemma btree_find_correct: "
 total_order_key_lte &

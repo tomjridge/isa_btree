@@ -1,13 +1,15 @@
 theory Tree_stack imports Tree begin
 
+type_synonym  leaves_t = "leaf_lbl_t list" 
+
 (* the bound l,u is a bound on ALL children, not just rs!i; l,u could be calculated from the ts *)
-datatype cnode_t = Cnode "key option * key list * Tree list * nat * key option"  (* l,ks,rs,i,u *)
+datatype cnode_t = Cnode "leaves_t * key option * key list * Tree list * nat * key option * leaves_t"  (* xs,l,ks,rs,i,u,zs *)
 
 
-definition dest_cnode :: "cnode_t \<Rightarrow> key option * key list * Tree list * nat * key option" where
-"dest_cnode c = (case c of Cnode (l,ks,rs,i,u) \<Rightarrow> (l,ks,rs,i,u))"
+definition dest_cnode :: "cnode_t \<Rightarrow> leaves_t * key option * key list * Tree list * nat * key option * leaves_t" where
+"dest_cnode c = (case c of Cnode (xs,l,ks,rs,i,u,zs) \<Rightarrow> (xs,l,ks,rs,i,u,zs))"
 
-lemma dest_cnode_t_def_2: "dest_cnode (Cnode(l,ks,rs,i,u)) = (l,ks,rs,i,u)"
+lemma dest_cnode_t_def_2: "dest_cnode (Cnode(xs,l,ks,rs,i,u,zs)) = (xs,l,ks,rs,i,u,zs)"
 apply(simp add: dest_cnode_def)
 done
 
@@ -34,20 +36,21 @@ definition search_key_to_index :: "key list => key => nat" where
 (* make sure we use the existing bound in case i is extremal *)
 definition cnode_to_bound :: "cnode_t \<Rightarrow> bound_t" where
 "cnode_to_bound cn = (
-  let (l,ks,rs,i,u) = dest_cnode cn in
+  let (xs,l,ks,rs,i,u,zs) = dest_cnode cn in
   index_to_bound ks i |> with_parent_bound (l,u))"
 
 
 
 (* wellformed_cnode ---------------------------------------- *)
 
+
 (* FIXME adjust scala defns *)      
 definition wellformed_cnode :: "key \<Rightarrow> ms_t => cnode_t => bool " where
 "wellformed_cnode k0 ms cn = (
-  let (l,ks,rs,i,u) = dest_cnode cn in 
+  let (xs,l,ks,rs,i,u,zs) = dest_cnode cn in 
   let b1 = wellformed_tree ms (Node(ks,rs)) in 
   let b2 = search_key_to_index ks k0 = i in
-  let b3 = check_keys l (set(k0#keys(Node(ks,rs)))) u in  (* k0? *)
+  let b3 = check_keys_2 (xs|>leaves_to_map|>dom) l (set(k0#keys(Node(ks,rs)))) u (zs|>leaves_to_map|>dom) in  (* k0? *)
   b1&b2&b3)
 "
 
@@ -80,6 +83,7 @@ by simp
 (* ts_to_t0 ------------------------------------ *)
 
 (* get the initial tree from which the ts was formed *)
+(*
 definition ts_to_t0 :: "tree_stack_t \<Rightarrow> node_t option" where
 "ts_to_t0 ts = (
   case ts of
@@ -89,7 +93,7 @@ definition ts_to_t0 :: "tree_stack_t \<Rightarrow> node_t option" where
     let (l,ks,rs,i,u) = dest_cnode cn in
     Some(ks,rs)))
 "
-
+*)
 
 (* stack reassembly ----------------------------------- *)
 
@@ -98,7 +102,7 @@ fun reass :: "Tree \<Rightarrow> tree_stack_t \<Rightarrow> Tree" where
   case ts of
   Nil \<Rightarrow> t
   | cn#cns \<Rightarrow> (
-    let (_,ks,rs,i,_) = dest_cnode cn in
+    let (_,_,ks,rs,i,_,_) = dest_cnode cn in
     let t2 = Node(ks,rs[i:=t]) in
     reass t2 cns)
 )"

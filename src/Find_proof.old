@@ -1,3 +1,33 @@
+(* perhaps it is worth identifiying xs and zs from the tree stack? or maybe show that, 
+given starting xs and zs, when we step we extend by the leaves not in the focus *)
+
+type_synonym fts_2_t = "fts_state_t * leaf_lbl_t list * leaf_lbl_t list"
+
+definition wf_fts_2 :: "key \<Rightarrow> fts_2_t \<Rightarrow> bool" where
+"wf_fts_2 k0 fts2 = (
+  let (fts,xs,zs) = fts2 in
+  let (f,ts) = fts in
+  let (k,l,t,u) = dest_fts_focus f in
+  wellformed_fts k0 fts &
+  check_keys_2 (xs|>leaves_to_map|>dom) l {} u (zs|>leaves_to_map|>dom)
+)"
+
+definition step_fts_2 :: "fts_2_t \<Rightarrow> fts_2_t option" where
+"step_fts_2 fts2 = (
+  let (fts,xs,zs) = fts2 in
+  let x = step_fts fts in
+  case x of 
+  None \<Rightarrow> None
+  | Some fts' \<Rightarrow> (
+    let (f,ts) = fts' in
+    let (l,ks,rs,i,u) = dest_cnode (List.hd ts) in
+    let indexes_to_leaves = % is. is |> List.map (% j. tree_to_leaves (rs!j)) in
+    let xs' = (from_to 0 (i-1)) |> indexes_to_leaves in
+    let zs' = (from_to (i+1) (ks_to_max_child_index ks)) |> indexes_to_leaves in
+    Some(fts',xs@(List.concat xs'),(List.concat zs')@zs))
+)"
+
+
 (*
 
 lemma search_key_to_index: "

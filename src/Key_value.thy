@@ -53,6 +53,15 @@ b1 & b2
 )"
 (*end check keys definition*)
 
+definition check_keys_2 :: "key set \<Rightarrow> key option \<Rightarrow> key set \<Rightarrow> key option \<Rightarrow> key set \<Rightarrow> bool" where
+"check_keys_2 xs l ks u zs = (
+  (case l=None of True \<Rightarrow> xs={} | _ \<Rightarrow> True) &
+  (case u=None of True \<Rightarrow> zs={} | _ \<Rightarrow> True) &
+  (check_keys None xs l) &
+  (check_keys l ks u) &
+  (check_keys u zs None)
+)"
+
 
 (* lemmas --------------------------------------------------------------- *)
 

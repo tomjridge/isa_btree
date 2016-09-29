@@ -4,7 +4,8 @@ begin
 
 lemma FIXME: "P" sorry
 
-
+definition failwith :: "'a \<Rightarrow> 'b" where
+"failwith x = undefined"
 
 definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
   "rev_apply x f = f x"

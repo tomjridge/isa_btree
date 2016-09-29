@@ -13,6 +13,10 @@ datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
 (* label at node and children ie a Node *)
 type_synonym node_t = "node_lbl_t * Tree list"
 
+fun dest_Node :: "Tree \<Rightarrow> node_t" where
+"dest_Node (Node(ks,rs)) = (ks,rs)"
+| "dest_Node (Leaf _) = (failwith ''dest_Node'')"
+
 
 fun is_Leaf :: "Tree \<Rightarrow> bool" where
 "is_Leaf (Leaf l) = True" |
