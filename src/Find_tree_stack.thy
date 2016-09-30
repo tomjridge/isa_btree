@@ -76,6 +76,10 @@ definition wellformed_fts :: "key \<Rightarrow> fts_state_t => bool" where
 
 (* step_fts ---------------------------------------- *)
 
+
+definition indexes_to_leaves :: "Tree list \<Rightarrow> nat list \<Rightarrow> leaves_t" where
+"indexes_to_leaves rs is = (is |> List.map (% j. tree_to_leaves (rs!j)) |> List.concat)"
+
 (*tr: stops when gets to leaf; no "errors"*)
 (*begin find step definition*)
 definition step_fts :: "fts_state_t => fts_state_t option" where
@@ -89,9 +93,8 @@ definition step_fts :: "fts_state_t => fts_state_t option" where
     let ts2 = (cn # ts) in
     let t2 = rs!i in
     let (l2,u2) = cnode_to_bound cn in
-    let indexes_to_leaves = % is. is |> List.map (% j. tree_to_leaves (rs!j)) |> List.concat in
-    let xs' = (from_to 0 (i-1)) |> indexes_to_leaves in
-    let zs' = (from_to (i+1) (ks_to_max_child_index ks)) |> indexes_to_leaves in
+    let xs' = (from_to 0 (i-1)) |> indexes_to_leaves rs in
+    let zs' = (from_to (i+1) (ks_to_max_child_index ks)) |> indexes_to_leaves rs in
     let f2 = Focus(k,xs@xs',l2,t2,u2,zs'@zs) in
     Some(f2,ts2) ))
 "
@@ -105,14 +108,23 @@ definition fts_reass :: "fts_state_t \<Rightarrow> Tree" where
   reass t ts
 )"
 
+(* invariant ----------------------------------------- *)
+
+definition fts_invariant :: "(fts_state_t \<Rightarrow> bool) \<Rightarrow> bool" where
+"fts_invariant P = (
+  ! fts fts'. 
+    (step_fts fts = Some fts') & P fts \<longrightarrow> P fts'  
+)"
+
+
 (* lemmas ------------------------------------------- *)
 
 (*begin find invariant*)
 definition invariant_wf_fts :: "bool" where
-"invariant_wf_fts = (! k0 fts fts'.
-  (step_fts fts = Some (fts')) &
-  wellformed_fts k0 fts \<longrightarrow> wellformed_fts k0 fts')
-"
+"invariant_wf_fts = (! k0 P.
+  ((% fts. wellformed_fts k0 fts) = P) \<longrightarrow>
+  fts_invariant P
+)"
 (*end find invariant*)
 
 (* prefer lem2; k0 is located in the focus; proof by induction on ts; perhaps better to do this for the step case explicitly?*)
@@ -206,6 +218,36 @@ definition lem7 :: "bool" where
   (xs'@(t'|>tree_to_leaves)@zs' = xs@(t|>tree_to_leaves)@zs))) 
 )"
 
+
+definition focus_to_check_keys_2 :: "fts_focus_t \<Rightarrow> bool" where
+"focus_to_check_keys_2 f = (
+  let (k,xs',l',t',u',zs') = dest_fts_focus f in
+  check_keys_2 (xs'|>leaves_to_map|>dom) l' (t'|>tree_to_map|>dom) u' (zs'|>leaves_to_map|>dom)
+)"
+
+definition focus_to_leaves :: "fts_focus_t \<Rightarrow> leaves_t" where
+"focus_to_leaves f = (
+  let (k,xs,l,t,u,zs) = dest_fts_focus f in
+  xs@(t|>tree_to_leaves)@zs
+)"
+
+definition lem8 :: "bool" where
+"lem8 = (! ls P Q.
+  ((% fts. let (f,ts) = fts in focus_to_check_keys_2 f) = P) &
+  ((% fts. let (f,ts) = fts in focus_to_leaves f = ls) = Q) \<longrightarrow> 
+  fts_invariant (% fts. P fts & Q fts)
+)"
+
+
+(* now we need a nice way of combining the invariants: given that we know wf is invariant, show P and Q assuming wf *)
+definition lem9 :: "bool" where
+"lem9 = (! k0 ls P Q W.
+  ((% fts. wellformed_fts k0 fts) = W) &
+  ((% fts. let (f,ts) = fts in focus_to_check_keys_2 f) = P) &
+  ((% fts. let (f,ts) = fts in focus_to_leaves f = ls) = Q) \<longrightarrow>
+  fts_invariant (% fts. W fts)  \<longrightarrow>
+  fts_invariant (% fts. W fts & P fts & Q fts)
+)"
 
 lemma btree_find_correct: "! trns f k0 t0 f0 ts0 v0.
 (trns = { (s,s'). case s of None \<Rightarrow> s'=None | Some fts \<Rightarrow> step_fts fts = s' }) &
