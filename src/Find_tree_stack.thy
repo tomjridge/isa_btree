@@ -52,8 +52,9 @@ definition wellformed_fts_1 :: "fts_state_t => bool" where
   case ts of
   Nil => True
   | cn#xs => (    
+    let (c1,c2) = cn in
     let (k,xs,l,t,u,zs) = dest_fts_focus f in
-    let (rs,i) = (cn|>cc_rs,cn|>cc_i) in
+    let (rs,i) = (c2|>cc_rs,c2|>cc_i) in
     let b0 = (t = rs!i) in
     let b2 = (cnode_to_bound cn = (l,u)) in  (* ensure bounds are linked *)
     b0&b2)
@@ -94,7 +95,8 @@ definition step_fts :: "fts_state_t => fts_state_t option" where
   | Node(ks,rs) => (
     let i = search_key_to_index ks k in
     let core = mk_core (k,xs,l,t,u,zs) in
-    let cn = core_t.extend core (| cc_ks=ks,cc_rs=rs,cc_i=i |) in
+    let ksrsi = (| cc_ks=ks,cc_rs=rs,cc_i=i |) in
+    let cn = (core,ksrsi) in
     let ts2 = (cn # ts) in
     let (isx,i,isy) = (from_to 0 (i-1), i, from_to (i+1) (ks_to_max_child_index ks)) in 
     let (tsx,t2,tsy) = (indexes_to_trees rs isx, rs!i, indexes_to_trees rs isy) in 

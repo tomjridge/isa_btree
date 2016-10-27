@@ -44,15 +44,17 @@ definition mk_core :: "dest_core_t \<Rightarrow> core_t" where
 (* cnode comes from a focus, where we know the focus is not a leaf, and we have an index into the leaves *)
 (* FIXME add to wellformedness of cnode *)
 (* FIXME mvoe wf_cnode here *)
-record cnode_t = core_t +
+record ksrsi_t = 
   cc_ks :: "key list" (* invariant: cc_t is Node(ks,rs) *)
   cc_rs :: "Tree list"
   cc_i :: nat
   
-definition dest_cnode :: "cnode_t \<Rightarrow> key list * Tree list * nat" where
-"dest_cnode c = (c|>cc_ks,c|>cc_rs,c|>cc_i)"
+  
+definition dest_ksrsi :: "ksrsi_t \<Rightarrow> key list * Tree list * nat" where
+"dest_ksrsi c = (c|>cc_ks,c|>cc_rs,c|>cc_i)"
 
-
+type_synonym cnode_t = "(core_t * ksrsi_t)"
+  
 type_synonym tree_stack_t = "cnode_t list"
  
 
@@ -63,8 +65,9 @@ type_synonym tree_stack_t = "cnode_t list"
 (* FIXME adjust scala defns *)      
 definition wellformed_cnode :: "key \<Rightarrow> ms_t => cnode_t => bool " where
 "wellformed_cnode k0 ms c = (
-  let (k,xs,l,t,u,zs) = dest_core (c|>core_t.truncate) in
-  let (ks,rs,i) = dest_cnode c in
+  let (c1,c2) = c in
+  let (k,xs,l,t,u,zs) = dest_core c1 in
+  let (ks,rs,i) = dest_ksrsi c2 in
   let b1 = wellformed_tree ms (Node(ks,rs)) in 
   let b2 = search_key_to_index ks k0 = i in
   let b3 = 
@@ -81,8 +84,9 @@ definition wellformed_cnode :: "key \<Rightarrow> ms_t => cnode_t => bool " wher
 (* make sure we use the existing bound in case i is extremal *)
 definition cnode_to_bound :: "cnode_t \<Rightarrow> bound_t" where
 "cnode_to_bound c = (
-  index_to_bound (c|>cc_ks) (c|>cc_i) |> 
-  with_parent_bound (c|>cc_l,c|>cc_u))"
+  let (c1,c2) = c in
+  index_to_bound (c2|>cc_ks) (c2|>cc_i) |> 
+  with_parent_bound (c1|>cc_l,c1|>cc_u))"
 
 
 
@@ -134,7 +138,8 @@ fun reass :: "Tree \<Rightarrow> tree_stack_t \<Rightarrow> Tree" where
   case ts of
   Nil \<Rightarrow> t
   | cn#cns \<Rightarrow> (
-    let t2 = Node(cn|>cc_ks,(cn|>cc_rs)[(cn|>cc_i):=t]) in
+    let (c1,c2) = cn in
+    let t2 = Node(c2|>cc_ks,(c2|>cc_rs)[(c2|>cc_i):=t]) in
     reass t2 cns)
 )"
 
