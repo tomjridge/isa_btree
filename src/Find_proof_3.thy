@@ -1,32 +1,22 @@
 theory Find_proof_3 imports Find_tree_stack begin
 
-lemma invariant_wf_fts: "invariant_wf_fts_b"
+lemma invariant_wf_fts_lem: "invariant_wf_fts_lem"
 sorry
 
 definition guard :: "'a \<Rightarrow> 'a" where "guard a = a"
 
 lemma map_comp: "map (f o g) xs = map f (map g xs)" apply(force) done
 
-
-lemma i2: "
-! ls P Q. 
- ((% fts. wellformed_fts k0 fts) = P) \<longrightarrow>
+lemma lem_2: "! P Q.
+((% fts. wellformed_fts k0 fts) = P) \<longrightarrow>
 ((% fts. focus_to_leaves (fst fts) = ls) = Q) \<longrightarrow>
-fts_invariant P \<longrightarrow> fts_invariant (% fts. P fts & Q fts)" 
-apply(intro allI)
-apply(intro impI)
-apply(simp add:fts_invariant_def)
+invariant_assuming fts_trans P Q"
+apply(simp add: invariant_assuming_def)
 apply(simp add: invariant_def)
 apply(intro allI impI)
+apply(elim exE conjE)
 apply(rename_tac f ts f' ts')
-apply(drule_tac x=f in spec)
-apply(drule_tac x=ts in spec)
-apply(drule_tac x=f' in spec)
-apply(drule_tac x=ts' in spec)
-apply(simp)
-apply(elim conjE)
-apply(drule_tac t=Q in sym)
-apply(simp)
+apply(simp add: fts_trans_def)
 apply(clarsimp)
 apply(subgoal_tac "? k xs l t u zs. f|>dest_fts_focus|>dest_core = (k,xs,l,t,u,zs)") prefer 2 apply(force intro:FIXME)
 apply(elim exE)
@@ -66,7 +56,9 @@ apply(subgoal_tac "rs = tsx@[t2]@tsy") prefer 2 apply(force intro: FIXME)
 apply(simp)
 done
 
-lemma invariant_leaves: "invariant_leaves_b"
-using i2 sorry
+
+
+lemma invariant_leaves: "invariant_leaves_lem"
+using lem_2 sorry
 
 end

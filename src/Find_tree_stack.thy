@@ -97,21 +97,20 @@ definition fts_reass :: "fts_state_t \<Rightarrow> Tree" where
 
 (* fts_invariant ----------------------------------------- *)
 
-definition fts_invariant :: "(fts_state_t \<Rightarrow> bool) \<Rightarrow> bool" where
-"fts_invariant P = (
-  let trns = { (fts,fts'). (step_fts fts = Some fts') } in
-  invariant trns P)"
+definition fts_trans :: "fts_state_t trans_t" where
+"fts_trans = { (fts,fts'). (step_fts fts = Some fts') }"
 
+(*
+definition fts_invariant :: "(fts_state_t \<Rightarrow> bool) \<Rightarrow> bool" where
+"fts_invariant P = (invariant fts_trans P)"
+*)
 
 (* lemmas ------------------------------------------- *)
 
 (* wf_fts is invariant *)
 (*begin find invariant*)
-definition invariant_wf_fts_b :: "bool" where
-"invariant_wf_fts_b = (! k0 P.
-  ((% fts. wellformed_fts k0 fts) = P) \<longrightarrow>
-  fts_invariant P
-)"
+definition invariant_wf_fts_lem :: "bool" where
+"invariant_wf_fts_lem = (! k0 P. ((% fts. wellformed_fts k0 fts) = P) \<longrightarrow> invariant fts_trans P)"
 (*end find invariant*)
 
 definition focus_to_leaves :: "fts_focus_t \<Rightarrow> leaves_t" where
@@ -121,10 +120,9 @@ definition focus_to_leaves :: "fts_focus_t \<Rightarrow> leaves_t" where
 )"
 
 (* the focus leaves are invariant *)
-definition invariant_leaves_b :: "bool" where
-"invariant_leaves_b = (! ls P.
-  ((% fts. focus_to_leaves (fst fts) = ls) = P) \<longrightarrow>
-  fts_invariant P )"
+definition invariant_leaves_lem :: "bool" where
+"invariant_leaves_lem = (
+  ! ls P. ((% fts. focus_to_leaves (fst fts) = ls) = P) \<longrightarrow> invariant fts_trans P )"
 
 (* this is enough to ensure that the result of find is the correct leaf *)
 
