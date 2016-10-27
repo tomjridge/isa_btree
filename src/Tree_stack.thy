@@ -1,26 +1,11 @@
 theory Tree_stack imports Tree begin
 
-type_synonym  leaves_t = "leaf_lbl_t list" 
+(* search_key_to_index ------------- *)
 
-(* the bound l,u is a bound on ALL children, not just rs!i; l,u could be calculated from the ts *)
-datatype cnode_t = Cnode "leaves_t * key option * key list * Tree list * nat * key option * leaves_t"  (* xs,l,ks,rs,i,u,zs *)
+(* FIXME move *)
 
-
-definition dest_cnode :: "cnode_t \<Rightarrow> leaves_t * key option * key list * Tree list * nat * key option * leaves_t" where
-"dest_cnode c = (case c of Cnode (xs,l,ks,rs,i,u,zs) \<Rightarrow> (xs,l,ks,rs,i,u,zs))"
-
-lemma dest_cnode_t_def_2: "dest_cnode (Cnode(xs,l,ks,rs,i,u,zs)) = (xs,l,ks,rs,i,u,zs)"
-apply(simp add: dest_cnode_def)
-done
-
-(* FIXME remove *)
-
-type_synonym tree_stack_t = "cnode_t list"
-
-
-(* search_key_to_index ------ *)
-
-(*tr: assumes xs are sorted; returns list length if not found*)
+(* return the index to the first key k1 st k < k1, or length of list if not found *)
+(*tr: assumes xs are sorted *)
 (*begin search key to index definition *)
 definition search_key_to_index :: "key list => key => nat" where
 "search_key_to_index ks k = (
@@ -31,14 +16,45 @@ definition search_key_to_index :: "key list => key => nat" where
 (*end search key to index definition *)
 
 
-(* bound from cnode ---------------------------------------- *)
+(* types ------------------------------ *)
 
-(* make sure we use the existing bound in case i is extremal *)
-definition cnode_to_bound :: "cnode_t \<Rightarrow> bound_t" where
-"cnode_to_bound cn = (
-  let (xs,l,ks,rs,i,u,zs) = dest_cnode cn in
-  index_to_bound ks i |> with_parent_bound (l,u))"
+type_synonym  leaves_t = "leaf_lbl_t list" 
 
+(* FIXME record? FIXME merge with fts_focus? *)
+
+record core_t = 
+  cc_k :: key
+  cc_xs :: leaves_t
+  cc_l :: "key option"
+  cc_t :: Tree
+  cc_u :: "key option"
+  cc_zs :: leaves_t
+  
+type_synonym dest_core_t = "key * leaves_t * key option * Tree * key option * leaves_t"
+
+definition dest_core :: "core_t \<Rightarrow> dest_core_t" where
+"dest_core c = (c|>cc_k,c|>cc_xs,c|>cc_l,c|>cc_t,c|>cc_u,c|>cc_zs)"
+
+definition mk_core :: "dest_core_t \<Rightarrow> core_t" where
+"mk_core x = (let (k,xs,l,t,u,zs) = x in (| cc_k=k,cc_xs=xs,cc_l=l,cc_t=t,cc_u=u,cc_zs=zs |))"
+
+(* let (k,xs,l,t,u,zs) = dest_core c *)
+  
+(* the bound l,u is a bound on ALL children, not just rs!i; l,u could be calculated from the ts *)
+(* cnode comes from a focus, where we know the focus is not a leaf, and we have an index into the leaves *)
+(* FIXME add to wellformedness of cnode *)
+(* FIXME mvoe wf_cnode here *)
+record cnode_t = core_t +
+  cc_ks :: "key list" (* invariant: cc_t is Node(ks,rs) *)
+  cc_rs :: "Tree list"
+  cc_i :: nat
+  
+definition dest_cnode :: "cnode_t \<Rightarrow> key list * Tree list * nat" where
+"dest_cnode c = (c|>cc_ks,c|>cc_rs,c|>cc_i)"
+
+
+type_synonym tree_stack_t = "cnode_t list"
+ 
 
 
 (* wellformed_cnode ---------------------------------------- *)
@@ -46,16 +62,32 @@ definition cnode_to_bound :: "cnode_t \<Rightarrow> bound_t" where
 
 (* FIXME adjust scala defns *)      
 definition wellformed_cnode :: "key \<Rightarrow> ms_t => cnode_t => bool " where
-"wellformed_cnode k0 ms cn = (
-  let (xs,l,ks,rs,i,u,zs) = dest_cnode cn in 
+"wellformed_cnode k0 ms c = (
+  let (k,xs,l,t,u,zs) = dest_core (c|>core_t.truncate) in
+  let (ks,rs,i) = dest_cnode c in
   let b1 = wellformed_tree ms (Node(ks,rs)) in 
   let b2 = search_key_to_index ks k0 = i in
-  let b3 = check_keys_2 (xs|>leaves_to_map|>dom) l (set(k0#keys(Node(ks,rs)))) u (zs|>leaves_to_map|>dom) in  (* k0? *)
+  let b3 = 
+    check_keys_2 (xs|>leaves_to_map|>dom) l (set(k0#keys(t))) u (zs|>leaves_to_map|>dom) 
+  in 
   b1&b2&b3)
 "
+   
+  
 
 
-(* wellformed_context ---------------------------------------- *)
+(* bound from cnode ---------------------------------------- *)
+
+(* make sure we use the existing bound in case i is extremal *)
+definition cnode_to_bound :: "cnode_t \<Rightarrow> bound_t" where
+"cnode_to_bound c = (
+  index_to_bound (c|>cc_ks) (c|>cc_i) |> 
+  with_parent_bound (c|>cc_l,c|>cc_u))"
+
+
+
+
+(* wellformed_context, ts ---------------------------------------- *)
 
 
 definition ts_to_ms :: "tree_stack_t \<Rightarrow> ms_t" where
@@ -102,16 +134,16 @@ fun reass :: "Tree \<Rightarrow> tree_stack_t \<Rightarrow> Tree" where
   case ts of
   Nil \<Rightarrow> t
   | cn#cns \<Rightarrow> (
-    let (_,_,ks,rs,i,_,_) = dest_cnode cn in
-    let t2 = Node(ks,rs[i:=t]) in
+    let t2 = Node(cn|>cc_ks,(cn|>cc_rs)[(cn|>cc_i):=t]) in
     reass t2 cns)
 )"
 
 
 (* lemmas ------------------------------------------------ *)
 
-definition lemma_reass_1 :: bool where
-"lemma_reass_1 = (! ts t.
+(* FIXME needed? *)
+definition reass_tree_to_leaves_b :: bool where
+"reass_tree_to_leaves_b = (! ts t.
   ? xs zs. (reass t ts) |> tree_to_leaves = xs@(tree_to_leaves t)@zs)"
 
 

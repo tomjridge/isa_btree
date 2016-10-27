@@ -4,6 +4,8 @@ definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 "from_to x y = upt x (Suc y)"
 
 
+(* merging maps ------------------------------------------- *)
+
 definition maps_to_map_prop :: "('a,'b) map set \<Rightarrow> ('a,'b) map \<Rightarrow> bool" where
 "maps_to_map_prop ms m = (
 (! a b. (m a = Some b) = (? m' : ms. m' a = Some b)) &

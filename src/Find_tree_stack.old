@@ -1,0 +1,141 @@
+(* prefer lem2; k0 is located in the focus; proof by induction on ts; perhaps better to do this for the step case explicitly?*)
+(*
+definition lem1 :: "bool" where
+"lem1 = (
+  ! k0 f ts.
+  let (k,l,t,u) = dest_fts_focus f in
+  let (ks,rs) = ts_to_t0 ts |> dest_Some in
+  (ts \<noteq> []) &
+  wellformed_fts k0 (f,ts) & 
+  k0 : tree_to_map (Node(ks,rs)) |> dom \<longrightarrow>
+  k0 : tree_to_map t |> dom 
+)"
+*)
+
+(* for find, the following is all we need, but may be preferable to prove something stronger needed
+for insert and delete *)
+(*
+definition lem2 :: "bool" where you all very much for coming the other night: it was great to see you. Sadly we got a bit carried away by the liberation of not having a baby-sitter to get back to. Did at least
+"lem2 = (! k0 f ts f' ts'.
+  let (_,_,t,_) = dest_fts_focus f in
+  let (_,_,t',_) = dest_fts_focus f' in
+  wellformed_fts k0 (f,ts) &
+  k0 : (t|>tree_to_map|>dom) &
+  (step_fts (f,ts) = Some(f',ts')) \<longrightarrow>
+  k0 : (t'|>tree_to_map|>dom)
+)"
+*)
+
+(* want to talk about all the leaves... *)
+(*
+definition lem3 :: "bool" where
+"lem3 = (! k0 f ts f' ts'.
+  let (_,_,t,_) = dest_fts_focus f in
+  let (_,_,t',_) = dest_fts_focus f' in
+  wellformed_fts k0 (f,ts) &
+  k0 : (t|>tree_to_map|>dom) &
+  (step_fts (f,ts) = Some(f',ts')) \<longrightarrow>
+  k0 : (t'|>tree_to_map|>dom)
+)"
+*)
+
+(* this still talks about the focus
+definition lem5 :: "bool" where
+"lem5 = (! k0 f ts.
+  wellformed_fts k0 (f,ts) \<longrightarrow> (
+  let (k,_,t,_) = dest_fts_focus f in
+  ? xs zs. 
+    let t' = fts_reass (f,ts) in 
+    (t' |> tree_to_leaves = xs@(tree_to_leaves t)@zs) & 
+    (k0 : tree_to_map t' |> dom \<longrightarrow> k0 : tree_to_map t |> dom))
+)"
+*)
+
+(* the lu separate leaves of focus from other leaves of reass *)
+(*
+definition lem6 :: "bool" where
+"lem6 = (! k0 f ts.
+  wellformed_fts k0 (f,ts) \<longrightarrow> (
+    let (k,xs,l,t,u,zs) = dest_fts_focus f in
+    ? xs zs. (
+      let t' = fts_reass (f,ts) in 
+      (t' |> tree_to_leaves = xs@(tree_to_leaves t)@zs) & 
+      (* note None is functioning as +-infinity here, rather than <<dont care>> *)
+      check_keys_2 (xs |> leaves_to_map|>dom) l {} u (zs|>leaves_to_map|>dom)))
+)"  
+*)
+
+(* following should say that if we start with xs=zs={}, then the xs@(leaves of the focus)@zs are the leaves
+of the original tree - ie the leaves are invariant; then we know the ordering on xs,leaves,zs, and we
+also know the bound lu 
+
+first show that step preserves wellformedness; then show it preserves leaves and check_keys_2
+
+*)
+
+
+
+
+definition lem7 :: "bool" where
+"lem7 = (! f trns k0 t0 ts0 f0.
+  (trns = { (s,s'). case s of None \<Rightarrow> s'=None | Some fts \<Rightarrow> step_fts fts = s' }) &
+  f : (trace_set trns) &
+  (tree_to_fts k0 t0 = (f0,ts0)) &
+  (Some(f0,ts0) = f 0) 
+  \<longrightarrow> (
+  ! (n::nat). case f n of None \<Rightarrow> True | Some fn \<Rightarrow> (
+  let (f_n,ts_n) = fn in
+  let (k,xs,l,t,u,zs) = dest_fts_focus f0 in
+  let (k,xs',l',t',u',zs') = dest_fts_focus f_n in
+  let ks' = t'|>tree_to_map|>dom in (
+  wellformed_fts k0 (f_n,ts_n)) \<longrightarrow> 
+  check_keys_2 (xs'|>leaves_to_map|>dom) l' ks' u' (zs'|>leaves_to_map|>dom) &
+  (xs'@(t'|>tree_to_leaves)@zs' = xs@(t|>tree_to_leaves)@zs))) 
+)"
+
+(* FIXME shouldn't this be part of wf_fts_focus? *)
+definition focus_to_check_keys_2 :: "fts_focus_t \<Rightarrow> bool" where
+"focus_to_check_keys_2 f = (
+  let (k,xs',l',t',u',zs') = dest_fts_focus f in
+  check_keys_2 (xs'|>leaves_to_map|>dom) l' ((t'|>tree_to_map|>dom)) u' (zs'|>leaves_to_map|>dom)
+)"
+
+
+definition lem8 :: "bool" where
+"lem8 = (! ls P Q.
+  ((% fts. let (f,ts) = fts in focus_to_check_keys_2 f) = P) &
+  ((% fts. let (f,ts) = fts in focus_to_leaves f = ls) = Q) \<longrightarrow> 
+  fts_invariant (% fts. P fts & Q fts)
+)"
+
+
+(* now we need a nice way of combining the invariants: given that we know wf is invariant, show P and Q assuming wf *)
+definition lem9 :: "bool" where
+"lem9 = (! k0 ls P Q W.
+  ((% fts. wellformed_fts k0 fts) = W) &
+  ((% fts. let (f,ts) = fts in focus_to_check_keys_2 f) = P) &
+  ((% fts. let (f,ts) = fts in focus_to_leaves f = ls) = Q) \<longrightarrow>
+  fts_invariant (% fts. W fts)  \<longrightarrow>
+  fts_invariant (% fts. W fts & P fts & Q fts)
+)"
+
+(* how to get from lem9 to correctness of eg find? well, we have k bounded and the leaves are the same, so the maps are the same, and equal... *)
+
+lemma btree_find_correct: "! trns f k0 t0 f0 ts0 v0.
+(trns = { (s,s'). case s of None \<Rightarrow> s'=None | Some fts \<Rightarrow> step_fts fts = s' }) &
+f : (trace_set trns) \<longrightarrow> (
+(tree_to_fts k0 t0 = (f0,ts0)) &
+(Some(f0,ts0) = f 0) &
+(tree_to_map t0 k0 = v0) \<longrightarrow> (
+! n f_n ts_n. (f (n::nat) = Some(f_n,ts_n)) \<longrightarrow>
+(let (k,xs,l,t,u,zs) = dest_fts_focus f_n in
+(tree_to_map t k0 = v0))))
+"
+sorry
+
+(* FIXME next step to look at insert, using a lem7-like lemma *)
+
+lemma dest_fts_focus_def_2: "dest_fts_focus (Focus(k,xs,l,t,u,zs)) = (k,xs,l,t,u,zs)"
+apply(simp add: dest_fts_focus_def)
+done
+

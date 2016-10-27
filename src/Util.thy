@@ -4,12 +4,25 @@ begin
 
 lemma FIXME: "P" sorry
 
+(* various undefinedness constants ----------------------------- *)
+
 definition failwith :: "'a \<Rightarrow> 'b" where
 "failwith x = undefined"
 
+definition FIXME :: "'a" where
+"FIXME == undefined"
+
+definition arb :: "'a" where
+  "arb == undefined"  
+
+definition impossible :: "'a" where
+  "impossible == undefined"  
+
+
+(* misc ------------------------------------------ *)  
+  
 definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
   "rev_apply x f = f x"
-
 
 (* Quickcheck_Examples/Completeness.thy - should be in Main? simpler defn here*)
 definition is_Some :: "'a option => bool" where
@@ -21,16 +34,10 @@ primrec dest_Some (* :: "'a option => 'a" *) where
 
 definition is_None :: "'a option \<Rightarrow> bool" where 
 "is_None x == x = None"
+  
 
-definition FIXME :: "'a" where
-"FIXME == undefined"
-
-definition arb :: "'a" where
-  "arb == undefined"  
-
-definition impossible :: "'a" where
-  "impossible == undefined"  
-
+(* rresult -------------------------------------- *)  
+  
 datatype 'a rresult = Ok 'a | Error 
 
 definition rresult_to_option :: "'a rresult => 'a option" where
@@ -46,6 +53,8 @@ definition is_Ok :: "'a rresult \<Rightarrow> bool" where
 definition dest_Ok :: "'a rresult \<Rightarrow> 'a" where
 "dest_Ok x == x |> rresult_to_option |> dest_Some"
 
+
+(* various list lemmas ---------------------------------- *)
 
 definition split_at :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list * 'a list" where
 "split_at xs n == (take n xs,drop n xs)"
@@ -69,9 +78,7 @@ value "(dest_Some(list_replace_at_n [0,0,0] 2 [1,2])) = [0,0,1,2]"
 value "((list_replace_at_n [0,0,0] 3 [1,2])) = None"
 *)
 
-definition list_replace_1_at_n 
- :: "'a list \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list option"
-where
+definition list_replace_1_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list option" where
 "list_replace_1_at_n xs n a == (Some (list_update xs n a))"
 
 (*begin ordered insert definition*)
@@ -87,6 +94,9 @@ if is_subst
 then left'@e#right'
 else left@e#right)"
 (*end ordered insert definition*)
+
+
+(* iteration ---------------------------------------------------- *)
 
 (*no termination proof for the following*)
 (*begin iterator*)

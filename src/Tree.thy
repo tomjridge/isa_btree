@@ -14,8 +14,8 @@ datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
 type_synonym node_t = "node_lbl_t * Tree list"
 
 fun dest_Node :: "Tree \<Rightarrow> node_t" where
-"dest_Node (Node(ks,rs)) = (ks,rs)"
-| "dest_Node (Leaf _) = (failwith ''dest_Node'')"
+"dest_Node (Node(ks,rs)) = (ks,rs)" | 
+"dest_Node (Leaf _) = (failwith ''dest_Node'')"
 
 
 fun is_Leaf :: "Tree \<Rightarrow> bool" where
@@ -39,18 +39,18 @@ definition subtree_indexes :: "node_t \<Rightarrow> nat list" where
 
 type_synonym bound_t = "(key option * key option)"  (* l,u *)
 
-(* perhaps we keep this defn? otherwise painful to state keys_consistent?*)
+(* perhaps we keep this defn? otherwise painful to state keys_consistent? *)
 definition index_to_bound :: "key list \<Rightarrow> nat \<Rightarrow> (key option * key option)" where
 "index_to_bound ks i = (
   let l = if (i=min_child_index) then None else Some(ks!(i-1)) in
-  let u = if (i=ks_to_max_child_index ks) then None else Some(ks!i) in
+  let u = if (i\<ge>ks_to_max_child_index ks) then None else Some(ks!i) in (* really undefined for i> *)
   (l,u))"
 
-(* if the bound lu1 comes from a child, and one of the bounds is none, substitute with the relevant bound lu2 from the parent *)
+(* if the bound cb comes from a child, and one of the bounds is none, substitute with the relevant bound pb from the parent *)
 definition with_parent_bound :: "bound_t \<Rightarrow> bound_t \<Rightarrow> bound_t" where
-"with_parent_bound lu2 lu1 = (
-  let (l1,u1) = lu1 in
-  let (l2,u2) = lu2 in
+"with_parent_bound pb cb = (
+  let (l1,u1) = cb in
+  let (l2,u2) = pb in
   let l = (case l1 = None of True \<Rightarrow> l2 | _ \<Rightarrow> l1) in
   let u = (case u1 = None of True \<Rightarrow> u2 | _ \<Rightarrow> u1) in
   (l,u)
@@ -174,12 +174,10 @@ definition keys_1 :: "Tree => key list" where
 "keys_1 t0 == (
   case t0 of
   Leaf xs => (List.map fst xs)
-  | Node (l,cs) => (l))
-"
+  | Node (l,cs) => (l))"
 
 definition keys :: "Tree => key list" where
-"keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)
-" 
+"keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)" 
 
 (* keys consistent ---------------------------------------- *)
 
@@ -208,8 +206,7 @@ definition keys_consistent :: "Tree => bool" where
 
 (* begin wfordered*)
 definition keys_ordered_1 :: "Tree => bool" where
-"keys_ordered_1 t0 == (
-t0 |> keys_1 |> ordered_key_list)"
+"keys_ordered_1 t0 == (t0 |> keys_1 |> ordered_key_list)"
 
 definition keys_ordered :: "Tree => bool" where
 "keys_ordered t == forall_subtrees keys_ordered_1 t"
@@ -247,7 +244,7 @@ termination
 
 
 
-(* this seemed the most natural defn *)
+(* either go via leaves, or form the maps and merge them; here we merge; FIXME always go via leaves? try to avoid merging maps *)
 function tree_to_map :: "Tree => (key,value_t) map" where
 "tree_to_map t = (
   case t of Leaf kvs \<Rightarrow> (map_of kvs)
@@ -271,16 +268,16 @@ definition nice_leaves :: "leaf_lbl_t list \<Rightarrow> bool" where
 (* FIXME here we have lemmas about forming a map from leaves of a tree *)
 
 (* the map from a tree is just the merge of the individual maps for the leaves, assuming the leaves are distinct *)
-definition lemma_tree_to_map_1 :: "bool" where
-"lemma_tree_to_map_1 = (! t.
+definition tree_to_map_leaves_to_map_b :: "bool" where
+"tree_to_map_leaves_to_map_b = (! t.
   (nice_leaves (t|>tree_to_leaves)) \<longrightarrow> 
   (tree_to_map t = t |> tree_to_leaves |> leaves_to_map)
 )"
 
-definition lemma_wellformed_tree_nice_leaves :: "bool" where
-"lemma_wellformed_tree_nice_leaves = (! ms t.
-  wellformed_tree ms t \<longrightarrow> nice_leaves (t|>tree_to_leaves)
-)"
+definition wellformed_tree_nice_leaves_b :: "bool" where
+"wellformed_tree_nice_leaves_b = (
+  ! ms t.
+    wellformed_tree ms t \<longrightarrow> nice_leaves (t|>tree_to_leaves))"
 
 end
 
