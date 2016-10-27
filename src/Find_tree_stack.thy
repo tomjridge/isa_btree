@@ -98,7 +98,9 @@ definition fts_reass :: "fts_state_t \<Rightarrow> Tree" where
 (* fts_invariant ----------------------------------------- *)
 
 definition fts_invariant :: "(fts_state_t \<Rightarrow> bool) \<Rightarrow> bool" where
-"fts_invariant P = (! fts fts'. (step_fts fts = Some fts') & P fts \<longrightarrow> P fts' )"
+"fts_invariant P = (
+  let trns = { (fts,fts'). (step_fts fts = Some fts') } in
+  invariant trns P)"
 
 
 (* lemmas ------------------------------------------- *)

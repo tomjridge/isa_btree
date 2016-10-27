@@ -242,7 +242,9 @@ termination
   apply(force intro:FIXME)
   done
 
+declare tree_to_leaves.simps[simp del]
 
+lemma [simp] : "tree_to_leaves (Node(l,cs)) =  ((cs |> (List.map tree_to_leaves)) |> List.concat)" sorry
 
 (* either go via leaves, or form the maps and merge them; here we merge; FIXME always go via leaves? try to avoid merging maps *)
 function tree_to_map :: "Tree => (key,value_t) map" where
