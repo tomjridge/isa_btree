@@ -1,48 +1,22 @@
 theory Find_tree_stack imports Prelude Tree_stack "~~/src/HOL/Library/Code_Target_Nat" begin
 
 
-(* FIXME use a record type for this *)
-
 (* the search key is not really needed - it is a parameter of all these defns; the xs and zs are the other leaves not in t *)
 datatype fts_focus_t = Focus core_t
 
 type_synonym fts_state_t = "fts_focus_t * tree_stack_t"
 
-(* this is OK for a simp *)
-definition dest_fts_focus :: "fts_focus_t \<Rightarrow> dest_core_t" where 
-"dest_fts_focus f = (case f of Focus(c) \<Rightarrow> dest_core c)"
+definition dest_fts_focus :: "fts_focus_t \<Rightarrow> core_t" where 
+"dest_fts_focus f = (case f of Focus(c) \<Rightarrow> c)"
 
 definition tree_to_fts :: "key => Tree => fts_state_t" where
 "tree_to_fts k t = (Focus( mk_core (k,[],None,t,None,[])), [])"
 
 
-(*
-definition focus_to_map :: "fts_focus_t \<Rightarrow> (key \<Rightarrow> value_t option)" where
-"focus_to_map f = (
-  let (k,l,t,u) = dest_fts_focus f in
-  tree_to_map t)"
-*)
-
 (* wellformed_fts ---------------------------------------- *)
 
-(* tr: link between focus and context?*)
-(*begin wf fts focus definition*)
-
-(*
-FIXME we also need that, not only is the focus bounded, but any key in the bound must be in the leaves of this tree
-
-its not just that lu is a bound, it is that the subtree is the unique subtree which contains entries from this bound
-*)
-
-
 definition wellformed_fts_focus :: "key \<Rightarrow> ms_t \<Rightarrow> fts_focus_t => bool" where
-"wellformed_fts_focus k0 ms f = (
-  let (k,xs,l,t,u,zs) = dest_fts_focus f in
-  let b1 = wellformed_tree ms t in
-  let b2 = check_keys_2 (xs|>leaves_to_map|>dom) l (set (k#(keys t))) u (zs|>leaves_to_map|>dom) in
-  b1&b2&(k=k0))"
-
-(*end wf fts focus definition*)
+"wellformed_fts_focus k0 ms f = (wellformed_core k0 ms (dest_fts_focus f))"
 
 (*begin wf fts1 definition*)
 (* tr: interaction between focus and context *)
@@ -53,8 +27,8 @@ definition wellformed_fts_1 :: "fts_state_t => bool" where
   Nil => True
   | cn#xs => (    
     let (c1,c2) = cn in
-    let (k,xs,l,t,u,zs) = dest_fts_focus f in
-    let (rs,i) = (c2|>cc_rs,c2|>cc_i) in
+    let (k,xs,l,t,u,zs) = f|>dest_fts_focus|>dest_core in
+    let (_,rs,i) = c2|>dest_ksrsi in
     let b0 = (t = rs!i) in
     let b2 = (cnode_to_bound cn = (l,u)) in  (* ensure bounds are linked *)
     b0&b2)
@@ -90,14 +64,18 @@ definition indexes_to_leaves :: "Tree list \<Rightarrow> nat list \<Rightarrow> 
 definition step_fts :: "fts_state_t => fts_state_t option" where
 "step_fts fts = (
   let (f,ts) = fts in
-  let (k,xs,l,t,u,zs) = dest_fts_focus f in
+  let (k,xs,l,t,u,zs) = f|>dest_fts_focus|>dest_core in
   case t of Leaf kvs => None
   | Node(ks,rs) => (
     let i = search_key_to_index ks k in
-    let core = mk_core (k,xs,l,t,u,zs) in
-    let ksrsi = (| cc_ks=ks,cc_rs=rs,cc_i=i |) in
-    let cn = (core,ksrsi) in
+    (* new tree stack ----- *)
+    let cn = (
+      let core = mk_core (k,xs,l,t,u,zs) in
+      let ksrsi = (| cc_ks=ks,cc_rs=rs,cc_i=i |) in
+      (core,ksrsi))
+    in
     let ts2 = (cn # ts) in
+    (* new focus ----- *)
     let (isx,i,isy) = (from_to 0 (i-1), i, from_to (i+1) (ks_to_max_child_index ks)) in 
     let (tsx,t2,tsy) = (indexes_to_trees rs isx, rs!i, indexes_to_trees rs isy) in 
     let (xs',zs') = 
@@ -113,7 +91,7 @@ definition step_fts :: "fts_state_t => fts_state_t option" where
 definition fts_reass :: "fts_state_t \<Rightarrow> Tree" where
 "fts_reass fts = (
   let (f,ts) = fts in
-  let (k,xs,l,t,u,zs) = dest_fts_focus f in
+  let (k,xs,l,t,u,zs) = f|>dest_fts_focus|>dest_core in
   reass t ts
 )"
 
@@ -136,7 +114,7 @@ definition invariant_wf_fts_b :: "bool" where
 
 definition focus_to_leaves :: "fts_focus_t \<Rightarrow> leaves_t" where
 "focus_to_leaves f = (
-  let (k,xs,l,t,u,zs) = dest_fts_focus f in
+  let (k,xs,l,t,u,zs) = f|>dest_fts_focus|>dest_core in
   xs@(t|>tree_to_leaves)@zs
 )"
 

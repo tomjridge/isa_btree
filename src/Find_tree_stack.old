@@ -139,3 +139,17 @@ lemma dest_fts_focus_def_2: "dest_fts_focus (Focus(k,xs,l,t,u,zs)) = (k,xs,l,t,u
 apply(simp add: dest_fts_focus_def)
 done
 
+(* ts_to_t0 ------------------------------------ *)
+
+(* get the initial tree from which the ts was formed *)
+(*
+definition ts_to_t0 :: "tree_stack_t \<Rightarrow> node_t option" where
+"ts_to_t0 ts = (
+  case ts of
+  Nil \<Rightarrow> None
+  | _ \<Rightarrow> ( 
+    let cn = last ts in
+    let (l,ks,rs,i,u) = dest_cnode cn in
+    Some(ks,rs)))
+"
+*)

@@ -20,8 +20,6 @@ definition search_key_to_index :: "key list => key => nat" where
 
 type_synonym  leaves_t = "leaf_lbl_t list" 
 
-(* FIXME record? FIXME merge with fts_focus? *)
-
 record core_t = 
   cc_k :: key
   cc_xs :: leaves_t
@@ -37,19 +35,13 @@ definition dest_core :: "core_t \<Rightarrow> dest_core_t" where
 
 definition mk_core :: "dest_core_t \<Rightarrow> core_t" where
 "mk_core x = (let (k,xs,l,t,u,zs) = x in (| cc_k=k,cc_xs=xs,cc_l=l,cc_t=t,cc_u=u,cc_zs=zs |))"
-
-(* let (k,xs,l,t,u,zs) = dest_core c *)
   
-(* the bound l,u is a bound on ALL children, not just rs!i; l,u could be calculated from the ts *)
 (* cnode comes from a focus, where we know the focus is not a leaf, and we have an index into the leaves *)
-(* FIXME add to wellformedness of cnode *)
-(* FIXME mvoe wf_cnode here *)
 record ksrsi_t = 
   cc_ks :: "key list" (* invariant: cc_t is Node(ks,rs) *)
   cc_rs :: "Tree list"
   cc_i :: nat
-  
-  
+
 definition dest_ksrsi :: "ksrsi_t \<Rightarrow> key list * Tree list * nat" where
 "dest_ksrsi c = (c|>cc_ks,c|>cc_rs,c|>cc_i)"
 
@@ -57,6 +49,14 @@ type_synonym cnode_t = "(core_t * ksrsi_t)"
   
 type_synonym tree_stack_t = "cnode_t list"
  
+(* wellformed_core ------------------------------------------ *)
+
+definition wellformed_core :: "key \<Rightarrow> ms_t \<Rightarrow> core_t => bool" where
+"wellformed_core k0 ms f = (
+  let (k,xs,l,t,u,zs) = dest_core f in
+  let b1 = wellformed_tree ms t in
+  let b2 = check_keys_2 (xs|>leaves_to_map|>dom) l (set (k#(keys t))) u (zs|>leaves_to_map|>dom) in
+  b1&b2&(k=k0))"
 
 
 (* wellformed_cnode ---------------------------------------- *)
@@ -68,12 +68,10 @@ definition wellformed_cnode :: "key \<Rightarrow> ms_t => cnode_t => bool " wher
   let (c1,c2) = c in
   let (k,xs,l,t,u,zs) = dest_core c1 in
   let (ks,rs,i) = dest_ksrsi c2 in
-  let b1 = wellformed_tree ms (Node(ks,rs)) in 
+  let b1 = wellformed_core k0 ms c1 in 
   let b2 = search_key_to_index ks k0 = i in
-  let b3 = 
-    check_keys_2 (xs|>leaves_to_map|>dom) l (set(k0#keys(t))) u (zs|>leaves_to_map|>dom) 
-  in 
-  b1&b2&b3)
+  let b4 = (t = Node(ks,rs)) in
+  b1&b2&b4)
 "
    
   
@@ -116,20 +114,6 @@ lemma wellformed_ts_def_2: "
 by simp
 
 
-(* ts_to_t0 ------------------------------------ *)
-
-(* get the initial tree from which the ts was formed *)
-(*
-definition ts_to_t0 :: "tree_stack_t \<Rightarrow> node_t option" where
-"ts_to_t0 ts = (
-  case ts of
-  Nil \<Rightarrow> None
-  | _ \<Rightarrow> ( 
-    let cn = last ts in
-    let (l,ks,rs,i,u) = dest_cnode cn in
-    Some(ks,rs)))
-"
-*)
 
 (* stack reassembly ----------------------------------- *)
 
@@ -154,4 +138,3 @@ definition reass_tree_to_leaves_b :: bool where
 
 
 end
-(* tree_stack_src ends here *)
