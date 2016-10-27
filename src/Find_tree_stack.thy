@@ -218,11 +218,11 @@ definition lem7 :: "bool" where
   (xs'@(t'|>tree_to_leaves)@zs' = xs@(t|>tree_to_leaves)@zs))) 
 )"
 
-
+(* FIXME shouldn't this be part of wf_fts_focus? *)
 definition focus_to_check_keys_2 :: "fts_focus_t \<Rightarrow> bool" where
 "focus_to_check_keys_2 f = (
   let (k,xs',l',t',u',zs') = dest_fts_focus f in
-  check_keys_2 (xs'|>leaves_to_map|>dom) l' (t'|>tree_to_map|>dom) u' (zs'|>leaves_to_map|>dom)
+  check_keys_2 (xs'|>leaves_to_map|>dom) l' ((t'|>tree_to_map|>dom)) u' (zs'|>leaves_to_map|>dom)
 )"
 
 definition focus_to_leaves :: "fts_focus_t \<Rightarrow> leaves_t" where
@@ -248,6 +248,8 @@ definition lem9 :: "bool" where
   fts_invariant (% fts. W fts)  \<longrightarrow>
   fts_invariant (% fts. W fts & P fts & Q fts)
 )"
+
+(* how to get from lem9 to correctness of eg find? well, we have k bounded and the leaves are the same, so the maps are the same, and equal... *)
 
 lemma btree_find_correct: "! trns f k0 t0 f0 ts0 v0.
 (trns = { (s,s'). case s of None \<Rightarrow> s'=None | Some fts \<Rightarrow> step_fts fts = s' }) &
