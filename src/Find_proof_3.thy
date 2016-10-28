@@ -25,15 +25,14 @@ apply(subgoal_tac "
       let core = mk_core (k,xs,l,t,u,zs) in
       let ksrsi = (| cc_ks=ks,cc_rs=rs,cc_i=i |) in
       (core,ksrsi)) = cn) &
-    (? ts2. ((cn # ts) = ts2)) &
+    (? ts2. ((cn # ts) = ts2) &
     (* new focus ----- *)
-    (? isx isy. ((from_to 0 (i-1), i, from_to (i+1) (ks_to_max_child_index ks)) = (isx,i,isy)) &
-    (? tsx t2 tsy. ((indexes_to_trees rs isx, rs!i, indexes_to_trees rs isy) = (tsx,t2,tsy)) & 
+    (? tsx t2 tsy. (split_list rs i =  (tsx,t2,tsy)) & 
     (? xs' zs'. (
       (tsx |> List.map tree_to_leaves |> List.concat, tsy |> List.map tree_to_leaves |> List.concat) = (xs',zs'))
     &  
     (? l2 u2. cnode_to_bound cn  = (l2,u2)))))))
-  ") prefer 2 apply(force)
+  ") prefer 2 apply(force intro: FIXME)
 apply(elim exE conjE)
 apply(simp add: step_fts_def)
 apply(elim conjE)
@@ -75,14 +74,37 @@ apply(intro conjI)
   apply(force intro: FIXME )
   
   (* ck2 xs@xs' etc; the difficult part *)
-  apply(force intro: FIXME)
+  apply(simp add: check_keys_2_def)
+  apply(intro conjI)
+   (* 5 subgoals *)
+   (* l2 = None? *)
+   apply(case_tac l2) prefer 2 apply(force)
+   (* l2 = None *)
+   apply(simp)
+   (* if l2 is none , then cnode_to_bound cn = (None,_), so i is 0, and l is None; so xs is [] from wf_focus, and xs'  is [] from defn of split_list; *)
+   apply(force intro: FIXME)
+   
+   (* same for u2 *)
+   apply(force intro: FIXME)
+   
+   (* ck2 .. l2; xs' are less than l2; from wellformed_fts *)
+   apply(force intro: FIXME)
+   
+   (* ck2 l2 ... u2 ; from wellformed_fts *)
+   apply(force intro: FIXME)
+   
+   (* ck2 u2 ... ; from wellformed_fts *)
+   apply(force intro: FIXME)
+
   
  (* wellformed_fts_1 f' *)
  apply(simp add: wellformed_fts_1_def)
  apply(drule_tac t=cn in sym)
  apply(simp)
  apply(drule_tac t=f' in sym)
- apply(force)
+ apply(simp)
+ apply(simp add: split_list_def)
+ apply(simp add: Let_def)
 done
 
 lemma lem_2: "! P Q.
@@ -112,15 +134,14 @@ apply(subgoal_tac "
       let core = mk_core (k,xs,l,t,u,zs) in
       let ksrsi = (| cc_ks=ks,cc_rs=rs,cc_i=i |) in
       (core,ksrsi)) = cn) &
-    (? ts2. ((cn # ts) = ts2)) &
+    (? ts2. ((cn # ts) = ts2) &
     (* new focus ----- *)
-    (? isx isy. ((from_to 0 (i-1), i, from_to (i+1) (ks_to_max_child_index ks)) = (isx,i,isy)) &
-    (? tsx t2 tsy. ((indexes_to_trees rs isx, rs!i, indexes_to_trees rs isy) = (tsx,t2,tsy)) & 
+    (? tsx t2 tsy. (split_list rs i = (tsx,t2,tsy)) & 
     (? xs' zs'. (
       (tsx |> List.map tree_to_leaves |> List.concat, tsy |> List.map tree_to_leaves |> List.concat) = (xs',zs'))
     &  
     (? l2 u2. cnode_to_bound cn  = (l2,u2)))))))
-  ") prefer 2 apply(force)
+  ") prefer 2 apply(force intro: FIXME)
 apply(elim exE conjE)
 apply(simp add: focus_to_leaves_def)
 apply(simp add: step_fts_def)

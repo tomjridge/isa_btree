@@ -62,6 +62,15 @@ definition indexes_to_leaves :: "Tree list \<Rightarrow> nat list \<Rightarrow> 
 "indexes_to_leaves rs is = (indexes_to_trees rs is |> List.map tree_to_leaves |> List.concat)"
 *)
 
+definition split_list :: "'a list \<Rightarrow> nat \<Rightarrow> ('a list * 'a * 'a list)" where
+"split_list rs i = (
+  let valid = from_to 0 (length rs -1) in (* valid indexes *)
+  let xs = valid |> filter (% n. n < i) in
+  let zs = valid |> filter (% n. n > i) in
+  (xs|>map (% j. rs!j),
+   rs!i,
+   zs|>map (% j. rs!j))
+)"
 
 (*tr: stops when gets to leaf; no "errors"*)
 (*begin find step definition*)
@@ -80,8 +89,7 @@ definition step_fts :: "fts_state_t => fts_state_t option" where
     in
     let ts2 = (cn # ts) in
     (* new focus ----- *)
-    let (isx,i,isy) = (from_to 0 (i-1), i, from_to (i+1) (ks_to_max_child_index ks)) in 
-    let (tsx,t2,tsy) = (indexes_to_trees rs isx, rs!i, indexes_to_trees rs isy) in 
+    let (tsx,t2,tsy) = split_list rs i in 
     let (xs',zs') = 
       (tsx |> List.map tree_to_leaves |> List.concat, tsy |> List.map tree_to_leaves |> List.concat) 
     in 
