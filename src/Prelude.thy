@@ -6,6 +6,7 @@ definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 
 (* merging maps ------------------------------------------- *)
 
+(*
 definition maps_to_map_prop :: "('a,'b) map set \<Rightarrow> ('a,'b) map \<Rightarrow> bool" where
 "maps_to_map_prop ms m = (
 (! a b. (m a = Some b) = (? m' : ms. m' a = Some b)) &
@@ -21,8 +22,25 @@ lemma "maps_to_map_prop ms (maps_to_map ms)"
 
 definition leaves_to_map :: "('k * 'v) list list \<Rightarrow> ('k,'v) map" where
 "leaves_to_map ls = (image map_of (set ls)) |> maps_to_map"
+*)
 
+definition leaves_to_map :: "('k * 'v) list list \<Rightarrow> ('k,'v) map" where
+"leaves_to_map ls = ls |> concat |> map_of"
 
+(*
+lemma [simp]: "[] |> map_of = Map.empty"
+ apply(simp add: rev_apply_def)
+ done
+ 
+ lemma [simp]: "xs |> concat = [] \<Longrightarrow> xs |> leaves_to_map = Map.empty" sorry
+*)
+
+lemma append_leaves_to_map: "
+((xs) |> leaves_to_map |> dom = {}) \<Longrightarrow>
+((xs') |> leaves_to_map |> dom = {}) \<Longrightarrow> 
+((xs @ xs') |> leaves_to_map |> dom = {})"
+ sorry
+ 
 (* transition systems -------------------------------- *)
 
 type_synonym 's trans_t = "('s * 's) set"

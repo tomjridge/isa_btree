@@ -51,7 +51,6 @@ definition wellformed_fts :: "key \<Rightarrow> fts_state_t => bool" where
 
 
 
-
 (* step_fts ---------------------------------------- *)
 
 definition indexes_to_trees :: "Tree list \<Rightarrow> nat list \<Rightarrow> Tree list" where
