@@ -36,6 +36,15 @@ definition dest_core :: "core_t \<Rightarrow> dest_core_t" where
 definition mk_core :: "dest_core_t \<Rightarrow> core_t" where
 "mk_core x = (let (k,xs,l,t,u,zs) = x in (| cc_k=k,cc_xs=xs,cc_l=l,cc_t=t,cc_u=u,cc_zs=zs |))"
   
+lemma [simp]: "dest_core (mk_core x) = x"
+ apply(case_tac x)
+ apply(simp add: dest_core_def mk_core_def rev_apply_def)
+ done
+
+ lemma [simp] : "(mk_core x) |> dest_core = x"
+  apply(simp add: rev_apply_def)
+  done
+
 (* cnode comes from a focus, where we know the focus is not a leaf, and we have an index into the leaves *)
 record ksrsi_t = 
   cc_ks :: "key list" (* invariant: cc_t is Node(ks,rs) *)
@@ -45,6 +54,15 @@ record ksrsi_t =
 definition dest_ksrsi :: "ksrsi_t \<Rightarrow> key list * Tree list * nat" where
 "dest_ksrsi c = (c|>cc_ks,c|>cc_rs,c|>cc_i)"
 
+lemma [simp]: "dest_ksrsi \<lparr>cc_ks=ks,cc_rs=rs,cc_i=i\<rparr> = (ks,rs,i)"
+ apply(simp add: dest_ksrsi_def rev_apply_def)
+ done
+
+ lemma [simp]: "\<lparr>cc_ks=ks,cc_rs=rs,cc_i=i\<rparr> |> dest_ksrsi = (ks,rs,i)"
+  apply(simp add: rev_apply_def)
+  done
+ 
+ 
 type_synonym cnode_t = "(core_t * ksrsi_t)"
   
 type_synonym tree_stack_t = "cnode_t list"
@@ -53,7 +71,7 @@ type_synonym tree_stack_t = "cnode_t list"
 
 definition wellformed_core :: "key \<Rightarrow> ms_t \<Rightarrow> core_t => bool" where
 "wellformed_core k0 ms f = (
-  let (k,xs,l,t,u,zs) = dest_core f in
+  let (k,xs,l,t,u,zs) = f|>dest_core in
   let b1 = wellformed_tree ms t in
   let b2 = check_keys_2 (xs|>leaves_to_map|>dom) l (set (k#(keys t))) u (zs|>leaves_to_map|>dom) in
   b1&b2&(k=k0))"
@@ -66,8 +84,8 @@ definition wellformed_core :: "key \<Rightarrow> ms_t \<Rightarrow> core_t => bo
 definition wellformed_cnode :: "key \<Rightarrow> ms_t => cnode_t => bool " where
 "wellformed_cnode k0 ms c = (
   let (c1,c2) = c in
-  let (k,xs,l,t,u,zs) = dest_core c1 in
-  let (ks,rs,i) = dest_ksrsi c2 in
+  let (k,xs,l,t,u,zs) = c1|>dest_core in
+  let (ks,rs,i) = c2|>dest_ksrsi in
   let b1 = wellformed_core k0 ms c1 in 
   let b2 = search_key_to_index ks k0 = i in
   let b4 = (t = Node(ks,rs)) in
@@ -112,6 +130,8 @@ lemma wellformed_ts_def_2: "
   (wellformed_ts k0 Nil = True) &
   (wellformed_ts k0 (cn#cns) = (wellformed_cnode k0 (ts_to_ms cns) cn & wellformed_ts k0 cns))"
 by simp
+
+declare wellformed_ts.simps[simp del]
 
 
 

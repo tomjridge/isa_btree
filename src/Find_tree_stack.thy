@@ -9,6 +9,10 @@ type_synonym fts_state_t = "fts_focus_t * tree_stack_t"
 definition dest_fts_focus :: "fts_focus_t \<Rightarrow> core_t" where 
 "dest_fts_focus f = (case f of Focus(c) \<Rightarrow> c)"
 
+lemma [simp]: "(Focus c) |> dest_fts_focus = c"
+ apply(simp add: rev_apply_def dest_fts_focus_def)
+ done
+
 definition tree_to_fts :: "key => Tree => fts_state_t" where
 "tree_to_fts k t = (Focus( mk_core (k,[],None,t,None,[])), [])"
 
@@ -16,7 +20,7 @@ definition tree_to_fts :: "key => Tree => fts_state_t" where
 (* wellformed_fts ---------------------------------------- *)
 
 definition wellformed_fts_focus :: "key \<Rightarrow> ms_t \<Rightarrow> fts_focus_t => bool" where
-"wellformed_fts_focus k0 ms f = (wellformed_core k0 ms (dest_fts_focus f))"
+"wellformed_fts_focus k0 ms f = (wellformed_core k0 ms (f|>dest_fts_focus))"
 
 (*begin wf fts1 definition*)
 (* tr: interaction between focus and context *)
