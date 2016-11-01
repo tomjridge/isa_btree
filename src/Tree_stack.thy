@@ -44,6 +44,9 @@ record 'a core_t =
 definition dest_core :: "'a core_t \<Rightarrow> key * tss_t * key option * 'a * key option * tss_t" where
 "dest_core f = ( f|>f_k,f|>f_tss1,f|>f_kl,f|>f_t,f|>f_ku,f|>f_tss2 )"
 
+lemma [simp]: "f|>dest_core = (k,tss1,kl,t,ku,tss2) \<Longrightarrow> f|>f_t = t" 
+ sorry
+
 definition wf_core :: "key \<Rightarrow> key set \<Rightarrow> 'a core_t \<Rightarrow> bool" where
 "wf_core k0 t_keys x = (
   let (k,tss1,kl,_,ku,tss2) = x|>dest_core in
@@ -57,6 +60,13 @@ definition with_t :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a core_t \<Rightarrow
   let (k,tss1,kl,t,ku,tss2) = x|>dest_core in
   \<lparr> f_k=k,f_tss1=tss1,f_kl=kl,f_t=(f t), f_ku=ku,f_tss2=tss2 \<rparr>
 )"
+
+lemma rev_app_with_t [simp]: "
+x|>dest_core = (k,tss1,kl,t,ku,tss2)
+\<Longrightarrow> x|>with_t f|>dest_core = (k,tss1,kl,f t,ku,tss2)
+"
+apply(simp add:rev_apply_def dest_core_def with_t_def)
+done
 
 definition without_t :: "'a core_t \<Rightarrow> unit core_t" where
 "without_t x = (x|>with_t (% _. ()))"
