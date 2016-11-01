@@ -2,13 +2,13 @@ theory Tree
 imports Util Constants Key_value
 begin
 
-(* begin tree types*)
 type_synonym leaf_lbl_t = "(key * value_t) list"
+
 type_synonym node_lbl_t = "key list"
 
+type_synonym leaves_t = "leaf_lbl_t list" (* what you get from the fringe of the tree *)
 
 datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
-(* end tree types*)
 
 (* label at node and children ie a Node *)
 type_synonym node_t = "node_lbl_t * Tree list"
@@ -17,10 +17,12 @@ fun dest_Node :: "Tree \<Rightarrow> node_t" where
 "dest_Node (Node(ks,rs)) = (ks,rs)" | 
 "dest_Node (Leaf _) = (failwith ''dest_Node'')"
 
-
 fun is_Leaf :: "Tree \<Rightarrow> bool" where
 "is_Leaf (Leaf l) = True" |
 "is_Leaf (Node _) = False"
+
+type_synonym tss_t = "Tree list list"
+
 
 
 (* util ---------------------------------------- *)
@@ -34,29 +36,12 @@ definition subtree_indexes :: "node_t \<Rightarrow> nat list" where
 "subtree_indexes node = (let (ks,rs) = node in from_to min_child_index (ks_to_max_child_index ks))"
 
 
-
-(* bounds ----------------------------------------- *)
-
-type_synonym bound_t = "(key option * key option)"  (* l,u *)
-
 (* perhaps we keep this defn? otherwise painful to state keys_consistent? *)
 definition index_to_bound :: "key list \<Rightarrow> nat \<Rightarrow> (key option * key option)" where
 "index_to_bound ks i = (
   let l = if (i=min_child_index) then None else Some(ks!(i-1)) in
   let u = if (i\<ge>ks_to_max_child_index ks) then None else Some(ks!i) in (* really undefined for i> *)
   (l,u))"
-
-(* if the bound cb comes from a child, and one of the bounds is none, substitute with the relevant bound pb from the parent *)
-definition with_parent_bound :: "bound_t \<Rightarrow> bound_t \<Rightarrow> bound_t" where
-"with_parent_bound pb cb = (
-  let (l1,u1) = cb in
-  let (l2,u2) = pb in
-  let l = (case l1 = None of True \<Rightarrow> l2 | _ \<Rightarrow> l1) in
-  let u = (case u1 = None of True \<Rightarrow> u2 | _ \<Rightarrow> u1) in
-  (l,u)
-)"
-
-
 
 
 (* height ---------------------------------------- *)
@@ -77,14 +62,12 @@ termination
 
 (* to subtrees ---------------------------------------- *)
 
-(* begin t2s *)
 function tree_to_subtrees :: "Tree => Tree list" where
 "tree_to_subtrees t0 = (
   case t0 of Leaf _ => [t0]
   | Node(l,cs) => (
     t0#((List.map tree_to_subtrees cs) |> List.concat)))
 "
-(* end t2s *)
 by auto
 termination
   apply(force intro:FIXME)
@@ -151,42 +134,37 @@ definition wf_size :: "ms_t => Tree => bool" where
       (min <= n) & (n <= max_node_keys) 
       & (List.list_all (forall_subtrees wf_size_1) cs))
 ))"
-(* end wfsize *)
+
 
 (* wf_ks_rs ---------------------------------------- *)
 
-(* begin wfksrs*)
 definition wf_ks_rs_1 :: "Tree => bool" where
 "wf_ks_rs_1 t0 == (
-  case t0 of Leaf _ => True
-  | Node(l,cs) => ((1+ length l) = (length cs)))"
+  case t0 of Leaf _ => True | Node(l,cs) => ((1+ length l) = (length cs)))"
 
 definition wf_ks_rs :: "Tree => bool" where
 "wf_ks_rs t0 == forall_subtrees wf_ks_rs_1 t0"
-(* end wfksrs*)
+
 export_code wf_ks_rs in Scala module_name Problem file "/tmp/Problem.scala"
 
 
 (* keys ---------------------------------------- *)
 
-(*begin wfkeysconsistent*)
 definition keys_1 :: "Tree => key list" where
-"keys_1 t0 == (
-  case t0 of
-  Leaf xs => (List.map fst xs)
-  | Node (l,cs) => (l))"
+"keys_1 t0 == (case t0 of Leaf xs => (List.map fst xs) | Node (l,cs) => (l))"
 
 definition keys :: "Tree => key list" where
 "keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)" 
 
 (* keys consistent ---------------------------------------- *)
 
+(*
 definition key_indexes :: "Tree => nat list" where
 "key_indexes t == (
   case t of 
   Leaf xs => (from_to 0 (length xs - 1))
   | Node (l,_) => (from_to 0 (length l - 1)))"  
-
+*)
 
 definition keys_consistent_1 :: "Tree => bool" where
 "keys_consistent_1 t0 == (
@@ -199,23 +177,19 @@ case t0 of Leaf(l) => True
 
 definition keys_consistent :: "Tree => bool" where
 "keys_consistent t == forall_subtrees keys_consistent_1 t"
-(*end wfkeysconsistent*)
 
 
 (* keys_ordered ---------------------------------------- *)
 
-(* begin wfordered*)
 definition keys_ordered_1 :: "Tree => bool" where
 "keys_ordered_1 t0 == (t0 |> keys_1 |> ordered_key_list)"
 
 definition keys_ordered :: "Tree => bool" where
 "keys_ordered t == forall_subtrees keys_ordered_1 t"
-(*end wfordered*)
 
 
 (* wf_kv_tree ---------------------------------------- *)
 
-(* begin wf tree definition *)
 definition wellformed_tree :: "ms_t => Tree => bool" where
 "wellformed_tree ms t0 == (
   let b1 = wf_size ms t0 in
@@ -224,12 +198,12 @@ definition wellformed_tree :: "ms_t => Tree => bool" where
   let b4 = keys_consistent t0 in
   let b5 = keys_ordered t0 in
   let wf = b1&b2&b3&b4&b5 in
-  wf)"
-(* end wf tree definition *)
+  wf
+)"
 
 
 
-(* conversion to map ---------------------------------------- *)
+(* tree_to... etc ---------------------------------------- *)
 
 function tree_to_leaves :: "Tree => leaf_lbl_t list" where
 "tree_to_leaves t0 = (
@@ -246,40 +220,27 @@ declare tree_to_leaves.simps[simp del]
 
 lemma [simp] : "tree_to_leaves (Node(l,cs)) =  ((cs |> (List.map tree_to_leaves)) |> List.concat)" sorry
 
-(* either go via leaves, or form the maps and merge them; here we merge; FIXME always go via leaves? try to avoid merging maps *)
-function tree_to_map :: "Tree => (key,value_t) map" where
-"tree_to_map t = (
-  case t of Leaf kvs \<Rightarrow> (map_of kvs)
-  | Node(ks,rs) \<Rightarrow> (
-    let ms = List.map tree_to_map rs in
-    maps_to_map (set(ms))))"
-by auto
-termination
-  apply(force intro:FIXME)
-  done
-
-
 (* this property enables easy leaves_to_map manipulation *)
+(*
 definition nice_leaves :: "leaf_lbl_t list \<Rightarrow> bool" where
 "nice_leaves ls = (distinct (ls |> List.concat |> List.map fst))"
+*)
 
+definition tree_to_kvs :: "Tree \<Rightarrow> (key*value_t) list" where
+"tree_to_kvs t = (t |> tree_to_leaves |> concat)"
 
+definition tree_to_keys :: "Tree \<Rightarrow> key set" where
+"tree_to_keys t =  (t|>tree_to_kvs|>map fst|>set)"
 
-(* lemmas ------------------------------------------- *)
+definition trees_to_keys :: "Tree list \<Rightarrow> key set" where
+"trees_to_keys ts = ts|>(map tree_to_kvs)|>concat|>map fst|>set"
 
-(* FIXME here we have lemmas about forming a map from leaves of a tree *)
+definition tss_to_leaves :: "tss_t \<Rightarrow> leaves_t" where
+"tss_to_leaves tss = (tss|>concat|>map tree_to_leaves|>concat)"
 
-(* the map from a tree is just the merge of the individual maps for the leaves, assuming the leaves are distinct *)
-definition tree_to_map_leaves_to_map_b :: "bool" where
-"tree_to_map_leaves_to_map_b = (! t.
-  (nice_leaves (t|>tree_to_leaves)) \<longrightarrow> 
-  (tree_to_map t = t |> tree_to_leaves |> leaves_to_map)
-)"
+definition tss_to_keys :: "tss_t \<Rightarrow> key set" where
+"tss_to_keys tss = tss|>concat|>trees_to_keys"
 
-definition wellformed_tree_nice_leaves_b :: "bool" where
-"wellformed_tree_nice_leaves_b = (
-  ! ms t.
-    wellformed_tree ms t \<longrightarrow> nice_leaves (t|>tree_to_leaves))"
 
 end
 

@@ -153,3 +153,132 @@ definition ts_to_t0 :: "tree_stack_t \<Rightarrow> node_t option" where
     Some(ks,rs)))
 "
 *)
+
+
+
+(* either go via leaves, or form the maps and merge them; here we merge; FIXME always go via leaves? try to avoid merging maps *)
+function tree_to_map :: "Tree => (key,value_t) map" where
+"tree_to_map t = (
+  case t of Leaf kvs \<Rightarrow> (map_of kvs)
+  | Node(ks,rs) \<Rightarrow> (
+    let ms = List.map tree_to_map rs in
+    maps_to_map (set(ms))))"
+by auto
+termination
+  apply(force intro:FIXME)
+  done
+
+(* FIXME here we have lemmas about forming a map from leaves of a tree *)
+
+(* the map from a tree is just the merge of the individual maps for the leaves, assuming the leaves are distinct *)
+definition tree_to_map_leaves_to_map_b :: "bool" where
+"tree_to_map_leaves_to_map_b = (! t.
+  (nice_leaves (t|>tree_to_leaves)) \<longrightarrow> 
+  (tree_to_map t = t |> tree_to_leaves |> leaves_to_map)
+)"
+
+
+
+(* wellformed_core ------------------------------------------ *)
+
+definition wellformed_core :: "key \<Rightarrow> ms_t \<Rightarrow> core_t => bool" where
+"wellformed_core k0 ms f = (
+  let (k,xs,l,t,u,zs) = f|>dest_core in
+  let b1 = wellformed_tree ms t in
+  let b2 = check_keys_2 (xs|>leaves_to_map|>dom) l (set (k#(keys t))) u (zs|>leaves_to_map|>dom) in
+  b1&b2&(k=k0))"
+  
+  
+  
+  (* stack reassembly ----------------------------------- *)
+
+fun reass :: "key \<Rightarrow> Tree \<Rightarrow> tree_stack_t \<Rightarrow> Tree" where
+"reass k0 t ts = (
+  case ts of
+  Nil \<Rightarrow> t
+  | x#xs \<Rightarrow> (
+    let nf2 = x|> split_node k0 in
+    let (ts1,ts2) = (nf2|>nf_ts1,nf2|>nf_ts2) in
+    let (_,(ks,_),_) = x in
+    let t2 = Node(ks,ts1@[t]@ts2) in
+    reass k0 t2 xs)
+)"
+
+
+
+
+
+(* lemmas ------------------------------------------------ *)
+
+(* FIXME needed? *)
+definition reass_tree_to_leaves_b :: bool where
+"reass_tree_to_leaves_b = (! k0 ts t.
+  ? xs zs. (reass k0 t ts) |> tree_to_leaves = xs@(tree_to_leaves t)@zs)"
+
+  
+  (* fts_reass ---------------------------------------- *)
+definition fts_reass :: "fts_state_t \<Rightarrow> Tree" where
+"fts_reass fts = (
+  let (f,ts) = fts in
+  let (k,xs,l,t,u,zs) = f|>dest_fts_focus|>dest_core in
+  reass t ts
+)"
+
+
+(*
+definition fts_invariant :: "(fts_state_t \<Rightarrow> bool) \<Rightarrow> bool" where
+"fts_invariant P = (invariant fts_trans P)"
+*)
+
+
+(*
+definition indexes_to_trees :: "Tree list \<Rightarrow> nat list \<Rightarrow> Tree list" where
+"indexes_to_trees rs is = (is |> List.map (% i. rs!i))"
+*)
+
+definition subtree_indexes :: "node_t \<Rightarrow> nat list" where
+"subtree_indexes node = (let (ks,rs) = node in from_to min_child_index (ks_to_max_child_index ks))"
+
+
+
+
+(* bounds ----------------------------------------- *)
+
+type_synonym bound_t = "(key option * key option)"  (* l,u *)
+
+
+
+(* if the bound cb comes from a child, and one of the bounds is none, substitute with the relevant bound pb from the parent *)
+definition with_parent_bound :: "bound_t \<Rightarrow> bound_t \<Rightarrow> bound_t" where
+"with_parent_bound pb cb = (
+  let (l1,u1) = cb in
+  let (l2,u2) = pb in
+  let l = (case l1 = None of True \<Rightarrow> l2 | _ \<Rightarrow> l1) in
+  let u = (case u1 = None of True \<Rightarrow> u2 | _ \<Rightarrow> u1) in
+  (l,u)
+)"
+
+
+(* lemmas ------------------------------------------- *)
+
+
+definition wellformed_tree_nice_leaves_b :: "bool" where
+"wellformed_tree_nice_leaves_b = (
+  ! ms t.
+    wellformed_tree ms t \<longrightarrow> nice_leaves (t|>tree_to_leaves))"
+
+    (* bound from frame ---------------------------------------- *)
+
+
+(* make sure we use the existing bound in case i is extremal *)
+(*
+definition nf_to_bound :: "key \<Rightarrow> nf_t \<Rightarrow> nf_t \<Rightarrow> bound_t" where
+"nf_to_bound k0 p c = (
+  let (_,_,kl,_,ku,_) = p |> dest_core in
+  let (l,u) = c |> dest_coresplit_node k0 |> (% x. (x|>nf_kl,x|>nf_ku) ) in
+  (l,u) |> with_parent_bound (lp,lu)
+)"
+*)
+
+
+

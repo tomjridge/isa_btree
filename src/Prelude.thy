@@ -41,6 +41,9 @@ lemma append_leaves_to_map: "
 ((xs @ xs') |> leaves_to_map |> dom = {})"
  sorry
  
+ 
+
+ 
 (* transition systems -------------------------------- *)
 
 type_synonym 's trans_t = "('s * 's) set"
@@ -54,9 +57,9 @@ definition invariant :: "('s * 's) set \<Rightarrow> ('s \<Rightarrow> bool) \<R
 (* the main lemma about invariants FIXME prove this *)  
 definition invariant_b :: "'s trans_t \<Rightarrow> bool" where
 "invariant_b trns = (! P f.
-invariant trns P & 
-f : trace_set trns &
-P(f 0) \<longrightarrow> (! n. P (f n)) 
+  invariant trns P & 
+  f : trace_set trns &
+  P(f 0) \<longrightarrow> (! n. P (f n)) 
 )"
 
 
@@ -69,9 +72,9 @@ definition invariant_assuming :: "('s * 's) set \<Rightarrow> ('s \<Rightarrow> 
 
 definition invariant_assuming_b :: "'s trans_t \<Rightarrow>  ('s \<Rightarrow> bool) \<Rightarrow> ('s \<Rightarrow> bool) \<Rightarrow> bool" where
 "invariant_assuming_b trns P Q = (
-invariant trns P &
-invariant_assuming trns P Q 
-\<longrightarrow> invariant trns (% x. P x & Q x)
+  invariant trns P &
+  invariant_assuming trns P Q 
+  \<longrightarrow> invariant trns (% x. P x & Q x)
 )"
 
 end

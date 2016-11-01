@@ -16,98 +16,145 @@ definition search_key_to_index :: "key list => key => nat" where
 (*end search key to index definition *)
 
 
-(* types ------------------------------ *)
-
-type_synonym  leaves_t = "leaf_lbl_t list" 
-
-record core_t = 
-  cc_k :: key
-  cc_xs :: leaves_t
-  cc_l :: "key option"
-  cc_t :: Tree
-  cc_u :: "key option"
-  cc_zs :: leaves_t
-  
-type_synonym dest_core_t = "key * leaves_t * key option * Tree * key option * leaves_t"
-
-definition dest_core :: "core_t \<Rightarrow> dest_core_t" where
-"dest_core c = (c|>cc_k,c|>cc_xs,c|>cc_l,c|>cc_t,c|>cc_u,c|>cc_zs)"
-
-definition mk_core :: "dest_core_t \<Rightarrow> core_t" where
-"mk_core x = (let (k,xs,l,t,u,zs) = x in (| cc_k=k,cc_xs=xs,cc_l=l,cc_t=t,cc_u=u,cc_zs=zs |))"
-  
-lemma [simp]: "dest_core (mk_core x) = x"
- apply(case_tac x)
- apply(simp add: dest_core_def mk_core_def rev_apply_def)
- done
-
- lemma [simp] : "(mk_core x) |> dest_core = x"
-  apply(simp add: rev_apply_def)
-  done
-
-(* cnode comes from a focus, where we know the focus is not a leaf, and we have an index into the leaves *)
-record ksrsi_t = 
-  cc_ks :: "key list" (* invariant: cc_t is Node(ks,rs) *)
-  cc_rs :: "Tree list"
-  cc_i :: nat
-
-definition dest_ksrsi :: "ksrsi_t \<Rightarrow> key list * Tree list * nat" where
-"dest_ksrsi c = (c|>cc_ks,c|>cc_rs,c|>cc_i)"
-
-lemma [simp]: "dest_ksrsi \<lparr>cc_ks=ks,cc_rs=rs,cc_i=i\<rparr> = (ks,rs,i)"
- apply(simp add: dest_ksrsi_def rev_apply_def)
- done
-
- lemma [simp]: "\<lparr>cc_ks=ks,cc_rs=rs,cc_i=i\<rparr> |> dest_ksrsi = (ks,rs,i)"
-  apply(simp add: rev_apply_def)
-  done
+(* splitting lists ------------------------------------ *)
  
- 
-type_synonym cnode_t = "(core_t * ksrsi_t)"
+definition split_list :: "'a list \<Rightarrow> nat \<Rightarrow> ('a list * 'a * 'a list)" where
+"split_list rs i = (
+  let valid = from_to 0 (length rs -1) in (* valid indexes *)
+  let xs = valid |> filter (% n. n < i) in
+  let zs = valid |> filter (% n. n > i) in
+  (xs|>map (% j. rs!j),
+   rs!i,
+   zs|>map (% j. rs!j))
+)"
+
+
+(* core type ------------------------------- *)
+
+(* this is the key type *)
+record 'a core_t =
+  f_k :: key
+  f_tss1 :: tss_t
+  f_kl :: "key option"
+  f_t :: 'a (* tree or node_t *)
+  f_ku :: "key option"
+  f_tss2 :: tss_t
   
-type_synonym tree_stack_t = "cnode_t list"
- 
-(* wellformed_core ------------------------------------------ *)
 
-definition wellformed_core :: "key \<Rightarrow> ms_t \<Rightarrow> core_t => bool" where
-"wellformed_core k0 ms f = (
-  let (k,xs,l,t,u,zs) = f|>dest_core in
-  let b1 = wellformed_tree ms t in
-  let b2 = check_keys_2 (xs|>leaves_to_map|>dom) l (set (k#(keys t))) u (zs|>leaves_to_map|>dom) in
-  b1&b2&(k=k0))"
+definition dest_core :: "'a core_t \<Rightarrow> key * tss_t * key option * 'a * key option * tss_t" where
+"dest_core f = ( f|>f_k,f|>f_tss1,f|>f_kl,f|>f_t,f|>f_ku,f|>f_tss2 )"
+
+definition wf_core :: "key \<Rightarrow> key set \<Rightarrow> 'a core_t \<Rightarrow> bool" where
+"wf_core k0 t_keys x = (
+  let (k,tss1,kl,_,ku,tss2) = x|>dest_core in
+  (k=k0) &
+  check_keys_2 (tss1|>tss_to_keys) kl (insert k t_keys) ku (tss2|>tss_to_keys)
+)"
+
+(* poly types won't allow field update to different type  f\<lparr>f_t:=(x|>f_t|>f) \<rparr>*)
+definition with_t :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a core_t \<Rightarrow> 'b core_t" where
+"with_t f x = ( 
+  let (k,tss1,kl,t,ku,tss2) = x|>dest_core in
+  \<lparr> f_k=k,f_tss1=tss1,f_kl=kl,f_t=(f t), f_ku=ku,f_tss2=tss2 \<rparr>
+)"
+
+definition without_t :: "'a core_t \<Rightarrow> unit core_t" where
+"without_t x = (x|>with_t (% _. ()))"
 
 
-(* wellformed_cnode ---------------------------------------- *)
+(* node_frame ------------------------------ *)
+
+(* assume key k0 is given; then a node_frame is just a node_t: a list of keys and a list of trees *)
+
+type_synonym nf_t = "node_t core_t" 
+
+definition wf_nf :: "key \<Rightarrow> ms_t \<Rightarrow> nf_t \<Rightarrow> bool" where
+"wf_nf k0 ms f = (
+  let (ks,ts) = f|>f_t in
+  wf_core k0 (Node(ks,ts)|>tree_to_keys) f
+)"
+
+(* from ks,ts we can derive additional values *) 
+type_synonym nf2_t = (* i,ts1,ks1,t,ks2,ts2 *) 
+  "
+  nat * 
+  Tree list *
+  key list * 
+  Tree *
+  key list *
+  Tree list" 
 
 
-(* FIXME adjust scala defns *)      
-definition wellformed_cnode :: "key \<Rightarrow> ms_t => cnode_t => bool " where
-"wellformed_cnode k0 ms c = (
-  let (c1,c2) = c in
-  let (k,xs,l,t,u,zs) = c1|>dest_core in
-  let (ks,rs,i) = c2|>dest_ksrsi in
-  let b1 = wellformed_core k0 ms c1 in 
-  let b2 = search_key_to_index ks k0 = i in
-  let b4 = (t = Node(ks,rs)) in
-  b1&b2&b4)
+definition split_node :: "key \<Rightarrow> nf_t \<Rightarrow> nf2_t" where
+"split_node k0 f = (
+  let (k,tss1,kl,(ks,ts),ku,tss2) = f|>dest_core in
+  let i = search_key_to_index ks k0 in
+  let (ts1,t,ts2) = (take i ts, ts!i, drop (i+1) ts) in
+  let (ks1,ks2) = (take i ks, drop i ks) in 
+  (i,ts1,ks1,t,ks2,ts2)
+)"
+
+(* FIXME do we need this? *)
+(*
+definition split_node_lem :: "bool" where
+"split_node_lem = (! f ms k0.
+  wf_nf k0 ms f \<longrightarrow> (
+  let (k,tss1,kl,(ks,ts),ku,tss2) = f|>dest_core in
+  let (i,ts1,ks1,t,ks2,ts2) = split_node k f in
+  (ks1@ks2 = ks) &
+  (ts1@[t]@ts2 = ts)))
 "
-   
-  
+*)
+ 
+type_synonym tree_stack_t = "nf_t list"
+ 
+
+(* descending the tree ----------------------------------------------- *)
+
+(* we put this here because we also use it to relate parent and child, given arbitrary focus *)
+
+definition mk_child :: "nf_t \<Rightarrow> Tree core_t" where
+"mk_child p = (
+  let (k,tss1,kl,(ks,rs),ku,tss2) = p|>dest_core in
+  let (i,ts1,ks1,t,ks2,ts2) = split_node k p in
+  let f2 = \<lparr> 
+      f_k=k,
+      f_tss1=tss1@[ts1],
+      f_kl=(if (i=min_child_index) then kl else Some(last ks1)),
+      f_t=t,
+      f_ku=(if (i=ks_to_max_child_index ks) then ku else Some(hd ks2)),
+      f_tss2=[ts2]@tss2 \<rparr>
+  in
+  f2
+)"
+
+definition mk_next_frame :: "nf_t \<Rightarrow> nf_t option" where
+"mk_next_frame p = (
+  let c = mk_child p in
+  case c|>f_t of Leaf(_) \<Rightarrow> None 
+  | Node(ks,ts) \<Rightarrow> Some(c|>with_t (% _. (ks,ts))) 
+)"
+
+(* parent, child relation ----------------------------------- *)
+
+(* this is just that the child is the result of splitting the parent... except that we want to also 
+use it for ascending the tree - ie the focus is irrelevant *)
+
+definition wf_parent_child :: "nf_t \<Rightarrow> 'a core_t \<Rightarrow> bool" where
+"wf_parent_child p c = (
+  let c' = mk_child p in
+  c'|>without_t = c|>without_t 
+)"
+
+(* FIXME the following should derive the properties on the child *)
+definition wf_parent_child_lem :: "bool" where
+"wf_parent_child_lem = (
+True
+)"
 
 
-(* bound from cnode ---------------------------------------- *)
 
-(* make sure we use the existing bound in case i is extremal *)
-definition cnode_to_bound :: "cnode_t \<Rightarrow> bound_t" where
-"cnode_to_bound c = (
-  let (c1,c2) = c in
-  index_to_bound (c2|>cc_ks) (c2|>cc_i) |> 
-  with_parent_bound (c1|>cc_l,c1|>cc_u))"
-
-
-
-
-(* wellformed_context, ts ---------------------------------------- *)
+(* wellformed_ts ---------------------------------------- *)
 
 
 definition ts_to_ms :: "tree_stack_t \<Rightarrow> ms_t" where
@@ -122,39 +169,23 @@ lemma ts_to_ms_def_2: "
 
 fun wellformed_ts :: "key \<Rightarrow> tree_stack_t => bool" where
 "wellformed_ts k0 xs = (
-  case xs of Nil \<Rightarrow> True
-  | cn#cns \<Rightarrow> (wellformed_cnode k0 (ts_to_ms cns) cn & wellformed_ts k0 cns))"
-(*end wfcontext definition*)
+  case xs of 
+  Nil \<Rightarrow> True
+  | c#xs \<Rightarrow> (
+    wf_nf k0 (ts_to_ms xs) c & 
+    wellformed_ts k0 xs &
+    (case xs of Nil \<Rightarrow> True | p#xs \<Rightarrow> mk_next_frame p = Some c))
+)"
 
 lemma wellformed_ts_def_2: "
   (wellformed_ts k0 Nil = True) &
-  (wellformed_ts k0 (cn#cns) = (wellformed_cnode k0 (ts_to_ms cns) cn & wellformed_ts k0 cns))"
+  (wellformed_ts k0 (c#xs) = (
+    wf_nf k0 (ts_to_ms xs) c & 
+    wellformed_ts k0 xs &
+    (case xs of Nil \<Rightarrow> True | p#xs \<Rightarrow> mk_next_frame p = Some c)))"
 by simp
 
 declare wellformed_ts.simps[simp del]
-
-
-
-(* stack reassembly ----------------------------------- *)
-
-fun reass :: "Tree \<Rightarrow> tree_stack_t \<Rightarrow> Tree" where
-"reass t ts = (
-  case ts of
-  Nil \<Rightarrow> t
-  | cn#cns \<Rightarrow> (
-    let (c1,c2) = cn in
-    let t2 = Node(c2|>cc_ks,(c2|>cc_rs)[(c2|>cc_i):=t]) in
-    reass t2 cns)
-)"
-
-
-(* lemmas ------------------------------------------------ *)
-
-(* FIXME needed? *)
-definition reass_tree_to_leaves_b :: bool where
-"reass_tree_to_leaves_b = (! ts t.
-  ? xs zs. (reass t ts) |> tree_to_leaves = xs@(tree_to_leaves t)@zs)"
-
 
 
 end
