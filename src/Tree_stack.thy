@@ -95,8 +95,8 @@ type_synonym nf2_t = (* i,ts1,ks1,t,ks2,ts2 *)
   Tree list" 
 
 
-definition split_node :: "key \<Rightarrow> nf_t \<Rightarrow> nf2_t" where
-"split_node k0 f = (
+definition nf_to_aux :: "key \<Rightarrow> nf_t \<Rightarrow> nf2_t" where
+"nf_to_aux k0 f = (
   let (k,tss1,kl,(ks,ts),ku,tss2) = f|>dest_core in
   let i = search_key_to_index ks k0 in
   let (ts1,t,ts2) = (take i ts, ts!i, drop (i+1) ts) in
@@ -126,7 +126,7 @@ type_synonym tree_stack_t = "nf_t list"
 definition mk_child :: "nf_t \<Rightarrow> Tree core_t" where
 "mk_child p = (
   let (k,tss1,kl,(ks,rs),ku,tss2) = p|>dest_core in
-  let (i,ts1,ks1,t,ks2,ts2) = split_node k p in
+  let (i,ts1,ks1,t,ks2,ts2) = nf_to_aux k p in
   let f2 = \<lparr> 
       f_k=k,
       f_tss1=tss1@[ts1],

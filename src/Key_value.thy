@@ -5,6 +5,8 @@ begin
 typedecl key
 typedecl value_t
 
+type_synonym kv_t = "key * value_t"
+
 (*begin key order operators definition  *)
 datatype lt_eq_gt_t = LT | EQ | GT 
 consts key_ord :: "key => key => lt_eq_gt_t"
@@ -49,6 +51,12 @@ definition check_keys_2 :: "key set \<Rightarrow> key option \<Rightarrow> key s
   (check_keys None xs l) &
   (check_keys l ks u) &
   (check_keys u zs None)
+)"
+
+(* insert/ update assuming list ordered *)
+definition lf_ordered_insert :: "kv_t list \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> kv_t list" where
+"lf_ordered_insert kvs k v = (
+kvs (* FIXME *)
 )"
 
 

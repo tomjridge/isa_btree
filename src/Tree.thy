@@ -59,6 +59,8 @@ termination
   apply(force intro:FIXME)
   done
 
+(* tr: note that height is "special" because replacing a subtree that is wf_tree with another doesn't
+  preserve balanced property *)
 
 (* to subtrees ---------------------------------------- *)
 
