@@ -56,19 +56,22 @@ definition dest_Ok :: "'a rresult \<Rightarrow> 'a" where
 
 (* various list lemmas ---------------------------------- *)
 
-definition split_at :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list * 'a list" where
-"split_at xs n == (take n xs,drop n xs)"
+definition split_at :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a list" where
+"split_at n xs = (take n xs,drop n xs)"
+
+definition split_at_3 :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a * 'a list" where
+"split_at_3 n xs = (take n xs,xs!n,drop (n+1) xs)"
 
 definition list_insert_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list" where
 "list_insert_at_n xs n as == (
-let (ys,zs) = split_at xs n in
+let (ys,zs) = split_at n xs in
 ys@as@zs
 )"
 
 definition list_replace_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list option" where
 "list_replace_at_n xs n as ==
   (if (length xs \<le> n) then None else
-  (let (ys,zs) = split_at xs n in
+  (let (ys,zs) = split_at n xs in
   Some (ys@as@tl zs)))"
 
 (* tests for list_replace_at_n:
@@ -94,6 +97,8 @@ if is_subst
 then left'@e#right'
 else left@e#right)"
 (*end ordered insert definition*)
+
+
 
 
 (* iteration ---------------------------------------------------- *)

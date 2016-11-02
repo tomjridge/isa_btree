@@ -23,7 +23,7 @@ definition its_to_keys :: "its_t \<Rightarrow> key set" where
 "its_to_keys its = (
   case its of
   Inserting_one t \<Rightarrow> (t|>tree_to_keys)
-  | Inserting_two (t1,_,t2) \<Rightarrow> ((t1|>tree_to_keys)Un(t2|>tree_to_keys))
+  | Inserting_two (t1,_,t2) \<Rightarrow> ((t1|>tree_to_keys) Un (t2|>tree_to_keys))
 )"
 
 
@@ -90,13 +90,11 @@ definition wellformed_iup :: "key \<Rightarrow> its_up_t => bool" where
 (* FIXME isn't this elsewhere? *)
 definition split_node :: "node_t => inserting_two_t" where
 "split_node n = (
-  let (l,cs) = n in
-  let n0 = min_node_keys in
-  let left_ks = take n0 l in
-  let (k,right_ks) = (case drop n0 l of (k#ks) => (k,ks)) in
-  let left_rs = take (1+n0) cs in
-  let right_rs = drop (1+n0) cs in
-  (Node(left_ks,left_rs),k,Node(right_ks,right_rs))
+  let (ks,ts) = n in
+  let min = min_node_keys in
+  let (ks1,k,ks2) = split_at_3 min ks in
+  let (ts1,ts2) = split_at (min+1) ts in
+  (Node(ks1,ts1),k,Node(ks2,ts2))
 )"
 
 (* step focus, given parent frame *)
@@ -104,18 +102,17 @@ definition step_focus :: "nf_t => its_focus_t => its_focus_t" where
 "step_focus x f = (
   let k = x|>f_k in
   let (ks,rs) = x|>f_t in
-  let i = search_key_to_index ks k in
+  let (_,ts1,ks1,_,ks2,ts2)= nf_to_aux k x in
   let t' = (
     case f|>f_t of
     Inserting_one t => (
-      let rs2 = dest_Some(list_replace_1_at_n rs i t) in
-      Inserting_one(Node(ks,rs2)))
+      Inserting_one(Node(ks,ts1@[t]@ts2)))
     | Inserting_two (tl_,k,tr) => (
-      let ks2 = list_insert_at_n ks i [k] in
-      let rs2 = list_replace_at_n rs i [tl_,tr] |> dest_Some in
-      case (length ks2 <= max_node_keys) of
-        True => Inserting_one(Node(ks2,rs2))
-        | False => (Inserting_two(split_node(ks2,rs2)) ) ) )
+      let ks' = ks1@[k]@ks2 in
+      let ts' = ts1@[tl_,tr]@ts2 in
+      case (length ks' <= max_node_keys) of
+        True => Inserting_one(Node(ks',ts'))
+        | False => (Inserting_two(split_node(ks',ts')) ) ) )
   in
   x|>with_t (% _. t'))"
 
@@ -132,15 +129,11 @@ definition step_up :: "its_up_t => its_up_t option" where
 
 (* tr: want to split a too-large leaf *)
 
-definition split_leaf_kvs 
-  :: "(key * value_t) list => (key * value_t) list * key * (key * value_t) list"
-where
+definition split_leaf_kvs :: "kv_t list => kv_t list * key * kv_t list" where
 "split_leaf_kvs kvs = (
   let min = min_leaf_size in
-  let left = take min kvs in
-  let right = drop min kvs in
-  let k = fst(hd right) in
-  (left,k,right)
+  let (kvs1,kv,kvs2) = split_at_3 min kvs in
+  (kvs1,fst kv,kvs2)
 )"
 
 definition step_bottom :: "its_down_t => its_up_t option" where
@@ -151,17 +144,16 @@ definition step_bottom :: "its_down_t => its_up_t option" where
   case f|>f_t of
   Leaf kvs => (
     (*tr:need to check whether the leaf is small enough to insert directly*)
-    let entry_in_kvs = kvs|>map fst|>(ListMem k) in
     let kvs2 = lf_ordered_insert kvs k v0 in
-    let f2 = (
-      case (entry_in_kvs | length kvs < max_leaf_size ) of
+    let its = (
+      case (length kvs < max_leaf_size) of
       True \<Rightarrow> (Inserting_one(Leaf kvs2))
       | False \<Rightarrow> (
         (*tr:we need to split*)
         let (left,k,right) = split_leaf_kvs kvs2 in
         Inserting_two(Leaf left, k,Leaf right)))
     in
-    Some(f|>with_t (% _. f2),stk))
+    Some(f|>with_t (% _. its),stk))
   | _ => None (* impossible: find returns leaf *))
 "
 
