@@ -117,4 +117,10 @@ apply (force)+ done
 termination iter_step
  by (force intro:FIXME)
 
+ 
+(* code export ------------------------------------------------ *)
+
+export_code "Util._" in Scala module_name Util file "scala/Util.scala"
+export_code "Util._" in OCaml module_name Util file "ocaml/util.ml"
+
 end

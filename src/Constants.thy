@@ -9,6 +9,13 @@ consts min_node_keys :: nat
 consts max_node_keys :: nat
 (*end constants*)
 
+(* 9 |> Big_int.big_int_of_int |> Arith.nat_of_int *)
+code_printing
+  constant min_leaf_size => (OCaml) "(X.min'_leaf'_size |> Big'_int.big'_int'_of'_int |> Arith.nat'_of'_integer)"
+  | constant max_leaf_size => (OCaml) "(X.max'_leaf'_size |> Big'_int.big'_int'_of'_int |> Arith.nat'_of'_integer)"
+  | constant min_node_keys => (OCaml) "(X.min'_node'_keys |> Big'_int.big'_int'_of'_int |> Arith.nat'_of'_integer)"
+  | constant max_node_keys => (OCaml) "(X.max'_node'_keys |> Big'_int.big'_int'_of'_int |> Arith.nat'_of'_integer)"
+
 (* FIXME tr: check these are the right restrictions - where are they used in proof?  *)
 
 (*begin wf constants*)

@@ -3,19 +3,25 @@ imports Prelude
 begin
 
 typedecl key
+
 typedecl value_t
+
+code_printing
+  type_constructor key => (OCaml) "X.key"
+  | type_constructor value_t => (OCaml) "X.valuet"
 
 type_synonym kv_t = "key * value_t"
 
-(*begin key order operators definition  *)
-datatype lt_eq_gt_t = LT | EQ | GT 
-consts key_ord :: "key => key => lt_eq_gt_t"
+consts key_ord :: "key => key => int"  (* as ocaml compare *)
+
+code_printing
+  constant key_ord => (OCaml) "(fun k1 k2 -> X.keyord k1 k2 |> Big'_int.big'_int'_of'_int |> (fun x ->Arith.Int'_of'_integer x))"
 
 definition key_lt :: "key \<Rightarrow> key \<Rightarrow> bool" where
-"key_lt k1 k2 = (key_ord k1 k2 = LT)"
+"key_lt k1 k2 = (key_ord k1 k2 < 0)"
 
 definition key_eq :: "key \<Rightarrow> key \<Rightarrow> bool" where
-"key_eq k1 k2 = (key_ord k1 k2 = EQ)"
+"key_eq k1 k2 = (key_ord k1 k2 = 0)"
 
 definition key_le :: "key \<Rightarrow> key \<Rightarrow> bool" where
 "key_le k1 k2 = (key_lt k1 k2 \<or> key_eq k1 k2)"
@@ -24,7 +30,7 @@ definition key_le :: "key \<Rightarrow> key \<Rightarrow> bool" where
 definition wf_key_ord :: "bool" where
 "wf_key_ord = (
  strict_linear_order { (x,y). key_lt x y }
- & (! k1 k2. (key_ord k1 k2 = EQ) = (k2 = k1)) 
+ & (! k1 k2. (key_eq k1 k2) = (k2 = k1)) 
 )"
 
 (* very minor defn *)

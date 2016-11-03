@@ -146,7 +146,7 @@ definition step_bottom :: "its_down_t => its_up_t option" where
     (*tr:need to check whether the leaf is small enough to insert directly*)
     let kvs2 = lf_ordered_insert kvs k v0 in
     let its = (
-      case (length kvs < max_leaf_size) of
+      case (length kvs2 \<le> max_leaf_size) of
       True \<Rightarrow> (Inserting_one(Leaf kvs2))
       | False \<Rightarrow> (
         (*tr:we need to split*)
@@ -160,6 +160,13 @@ definition step_bottom :: "its_down_t => its_up_t option" where
 
 (* step_its ---------------------------------------- *)
 
+
+definition mk_its :: "key \<Rightarrow> value_t \<Rightarrow> Tree \<Rightarrow> its_state_t" where
+"mk_its k v t = (
+  let fts = mk_fts k t in
+  Its_down(fts,v)
+)"
+
 definition step_its :: "its_state_t => its_state_t option" where
 "step_its its = (
   case its of
@@ -171,6 +178,21 @@ definition step_its :: "its_state_t => its_state_t option" where
   | Its_up iu => (
     step_up iu |> map_option (% x. Its_up(x)))) 
 "
+
+definition dest_its :: "its_state_t \<Rightarrow> Tree option" where
+"dest_its its = (
+  case its of 
+  Its_down _ \<Rightarrow> None
+  | Its_up(f,stk) \<Rightarrow> (
+    case stk of 
+    Nil \<Rightarrow> (
+      let its = f|>f_t in
+      case its of
+      Inserting_one t \<Rightarrow> Some(t)
+      | Inserting_two _ \<Rightarrow> (failwith ''impossible''))
+    | _ \<Rightarrow> None
+  )
+)"
 
 (* to map ---------------------------------------- *)
 

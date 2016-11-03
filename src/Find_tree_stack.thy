@@ -5,12 +5,6 @@ type_synonym fts_focus_t = "Tree core_t"
   
 type_synonym fts_state_t = "fts_focus_t * tree_stack_t"
 
-definition tree_to_fts :: "key => Tree => fts_state_t" where
-"tree_to_fts k t = (
-  let f = \<lparr>f_k=k, f_tss1=[], f_kl=None,f_t=t,f_ku=None,f_tss2=[] \<rparr> in
-  (f,[])
-)"
-
 
 (* wellformed_fts ---------------------------------------- *)
 
@@ -42,6 +36,13 @@ definition wellformed_fts :: "key \<Rightarrow> fts_state_t => bool" where
 
 (* step_fts ---------------------------------------- *)
 
+
+definition mk_fts :: "key => Tree => fts_state_t" where
+"mk_fts k t = (
+  let f = \<lparr>f_k=k, f_tss1=[], f_kl=None,f_t=t,f_ku=None,f_tss2=[] \<rparr> in
+  (f,[])
+)"
+
 (*tr: stops when gets to leaf; no "errors"*)
 (*begin find step definition*)
 definition step_fts :: "fts_state_t => fts_state_t option" where
@@ -56,6 +57,14 @@ definition step_fts :: "fts_state_t => fts_state_t option" where
     Some(c,p#xs) )
 )"
 
+
+definition dest_fts :: "fts_state_t \<Rightarrow> leaf_lbl_t option" where
+"dest_fts fts = (
+  let (f,stk) = fts in
+  case (f|>f_t) of
+  Leaf kvs \<Rightarrow> Some(kvs)
+  | _ \<Rightarrow> None
+)"
 
 
 (* fts_invariant ----------------------------------------- *)
@@ -82,5 +91,6 @@ definition invariant_leaves_lem :: "bool" where
   ! ls P. ((% fts. focus_to_leaves (fst fts) = ls) = P) \<longrightarrow> invariant fts_trans P )"
 
 (* this is enough to ensure that the result of find is the correct leaf *)
+
 
 end

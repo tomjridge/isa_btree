@@ -281,4 +281,12 @@ definition nf_to_bound :: "key \<Rightarrow> nf_t \<Rightarrow> nf_t \<Rightarro
 *)
 
 
+definition minus_1 :: "nat" where
+"minus_1 = 1"
+
+definition zero :: "nat" where
+"zero = 0"
+
+definition plus_1 :: "nat" where
+"plus_1 = 1"
 
