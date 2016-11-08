@@ -1,5 +1,5 @@
 theory Constants 
-imports Main
+imports Main String
 begin
 
 (*begin constants*)

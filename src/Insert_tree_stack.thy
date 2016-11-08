@@ -13,6 +13,7 @@ type_synonym its_focus_t = "its_t core_t"
 datatype its_state_t =
   Its_down "fts_state_t * value_t"
   | Its_up "its_focus_t * tree_stack_t"
+(* Its_finished Tree? *)
 
 type_synonym its_down_t = "fts_state_t * value_t"
   

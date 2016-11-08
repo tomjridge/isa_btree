@@ -94,7 +94,6 @@ type_synonym nf2_t = (* i,ts1,ks1,t,ks2,ts2 *)
   key list *
   Tree list" 
 
-
 definition nf_to_aux :: "key \<Rightarrow> nf_t \<Rightarrow> nf2_t" where
 "nf_to_aux k0 f = (
   let (k,tss1,kl,(ks,ts),ku,tss2) = f|>dest_core in
