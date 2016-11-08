@@ -11,6 +11,7 @@ code_printing
   | type_constructor value_t => (OCaml) "X.valuet"
 
 type_synonym kv_t = "key * value_t"
+type_synonym kvs_t = "kv_t list"
 
 consts key_ord :: "key => key => int"  (* as ocaml compare *)
 
