@@ -19,13 +19,15 @@ type_synonym its_down_t = "fts_state_t * value_t"
   
 type_synonym its_up_t = "its_focus_t * tree_stack_t"
 
+definition its_to_tss :: "its_t \<Rightarrow> tss_t" where
+"its_to_tss its = (
+  case its of
+  Inserting_one t \<Rightarrow> [[t]]
+  | Inserting_two (t1,_,t2) \<Rightarrow> [[t1,t2]]
+)"
 
 definition its_to_keys :: "its_t \<Rightarrow> key set" where
-"its_to_keys its = (
-  case its of
-  Inserting_one t \<Rightarrow> (t|>tree_to_keys)
-  | Inserting_two (t1,_,t2) \<Rightarrow> ((t1|>tree_to_keys) Un (t2|>tree_to_keys))
-)"
+"its_to_keys its = (its |> its_to_tss |> tss_to_keys)"
 
 
 (* its height ------------------------- *)
@@ -85,6 +87,13 @@ definition wellformed_iup :: "key \<Rightarrow> its_up_t => bool" where
   wellformed_ts k0 stk &   (* FIXME wf_stk *)
   wellformed_iup_1 iu )"
 
+definition wellformed_its_state :: "key \<Rightarrow> its_state_t \<Rightarrow> bool" where
+"wellformed_its_state k0 its = (
+  case its of
+  Its_down(fts,v) \<Rightarrow> (wellformed_fts k0 fts)
+  | Its_up(f,stk) \<Rightarrow> (wellformed_iup k0 (f,stk)) 
+)"
+  
   
 (* step_up ---------------------------------------- *)
 
@@ -162,8 +171,8 @@ definition step_bottom :: "its_down_t => its_up_t option" where
 (* step_its ---------------------------------------- *)
 
 
-definition mk_its :: "key \<Rightarrow> value_t \<Rightarrow> Tree \<Rightarrow> its_state_t" where
-"mk_its k v t = (
+definition mk_its_state :: "key \<Rightarrow> value_t \<Rightarrow> Tree \<Rightarrow> its_state_t" where
+"mk_its_state k v t = (
   let fts = mk_fts k t in
   Its_down(fts,v)
 )"
@@ -180,8 +189,8 @@ definition step_its :: "its_state_t => its_state_t option" where
     step_up iu |> map_option (% x. Its_up(x)))) 
 "
 
-definition dest_its :: "its_state_t \<Rightarrow> Tree option" where
-"dest_its its = (
+definition dest_its_state :: "its_state_t \<Rightarrow> Tree option" where
+"dest_its_state its = (
   case its of 
   Its_down _ \<Rightarrow> None
   | Its_up(f,stk) \<Rightarrow> (
@@ -193,6 +202,23 @@ definition dest_its :: "its_state_t \<Rightarrow> Tree option" where
       | Inserting_two _ \<Rightarrow> (failwith ''impossible''))
     | _ \<Rightarrow> None
   )
+)"
+
+(* testing --------------------------------------- *)
+
+definition focus_to_leaves :: "its_focus_t \<Rightarrow> leaves_t" where
+"focus_to_leaves f = (
+  let (k,tss1,l,its,u,tss2) = f|>dest_core in
+  (tss1|>tss_to_leaves)@(its|>its_to_tss|>tss_to_leaves)@(tss2|>tss_to_leaves)
+)"
+
+definition wf_its_trans :: "its_state_t \<Rightarrow> its_state_t \<Rightarrow> bool" where
+"wf_its_trans s1 s2 = (
+  case (s1,s2) of
+  (Its_down (fts,v), Its_down (fts',v')) \<Rightarrow> (wf_fts_trans fts fts' & (v'=v))
+  | (Its_down (fts,v), Its_up (f,stk)) \<Rightarrow> True (* leaves may change according to the insert *)
+  | (Its_up (f,stk), Its_up(f',stk')) \<Rightarrow> (focus_to_leaves f' = focus_to_leaves f)
+
 )"
 
 (* to map ---------------------------------------- *)

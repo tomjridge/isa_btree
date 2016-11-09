@@ -1,20 +1,12 @@
 theory Constants 
-imports Main String
+imports Main String Util
 begin
 
-(*begin constants*)
-consts min_leaf_size :: nat
-consts max_leaf_size :: nat
-consts min_node_keys :: nat
-consts max_node_keys :: nat
-(*end constants*)
+definition min_leaf_size :: nat where "min_leaf_size = (failwith ''FIXME'')"
+definition max_leaf_size :: nat where "max_leaf_size = (failwith ''FIXME'')"
+definition min_node_keys :: nat where "min_node_keys = (failwith ''FIXME'')"
+definition max_node_keys :: nat where "max_node_keys = (failwith ''FIXME'')"
 
-(* 9 |> Big_int.big_int_of_int |> Arith.nat_of_int *)
-code_printing
-  constant min_leaf_size => (OCaml) "(X.min'_leaf'_size |> Big'_int.big'_int'_of'_int |> Arith.nat'_of'_integer)"
-  | constant max_leaf_size => (OCaml) "(X.max'_leaf'_size |> Big'_int.big'_int'_of'_int |> Arith.nat'_of'_integer)"
-  | constant min_node_keys => (OCaml) "(X.min'_node'_keys |> Big'_int.big'_int'_of'_int |> Arith.nat'_of'_integer)"
-  | constant max_node_keys => (OCaml) "(X.max'_node'_keys |> Big'_int.big'_int'_of'_int |> Arith.nat'_of'_integer)"
 
 (* FIXME tr: check these are the right restrictions - where are they used in proof?  *)
 

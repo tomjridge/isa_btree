@@ -79,6 +79,7 @@ definition fts_trans :: "fts_state_t trans_t" where
 definition invariant_wf_fts_lem :: "bool" where
 "invariant_wf_fts_lem = (! k0 P. ((% fts. wellformed_fts k0 fts) = P) \<longrightarrow> invariant fts_trans P)"
 
+
 definition focus_to_leaves :: "fts_focus_t \<Rightarrow> leaves_t" where
 "focus_to_leaves f = (
   let (k,tss1,l,t,u,tss2) = f|>dest_core in
@@ -91,6 +92,21 @@ definition invariant_leaves_lem :: "bool" where
   ! ls P. ((% fts. focus_to_leaves (fst fts) = ls) = P) \<longrightarrow> invariant fts_trans P )"
 
 (* this is enough to ensure that the result of find is the correct leaf *)
+
+
+(* testing ---------------------------------------- *)
+
+(* we want to test wf at each stage, and the focus_to_leaves invariant at each transition 
+
+for wf, it suffices to expose wellformed_fts when we export code
+
+we should also export focus_to_leaves because it is the basis of the map abstraction
+
+*)
+
+definition wf_fts_trans :: "fts_state_t \<Rightarrow> fts_state_t \<Rightarrow> bool" where
+"wf_fts_trans s1 s2 = (focus_to_leaves (fst s2) = focus_to_leaves (fst s1))"
+
 
 
 end

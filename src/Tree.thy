@@ -10,6 +10,14 @@ type_synonym leaves_t = "leaf_lbl_t list" (* what you get from the fringe of the
 
 datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
 
+(*
+(* nonsense to get code export to work *)
+instantiation Tree :: equal begin
+definition equal_Tree :: "Tree \<Rightarrow> Tree \<Rightarrow> bool" where "equal_Tree = (op = )" 
+instance by intro_classes (simp add: equal_Tree_def)
+end
+*)
+
 (* label at node and children ie a Node *)
 type_synonym node_t = "node_lbl_t * Tree list"
 

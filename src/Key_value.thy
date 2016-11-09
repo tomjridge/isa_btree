@@ -2,22 +2,32 @@ theory Key_value
 imports Prelude
 begin
 
-typedecl key
+(* this makes code export easier; of course, key is abstract *)
+datatype key = Private_key nat
 
-typedecl value_t
+(* FIXME really an abstract parameter; this for code export *)
+definition key_ord :: "key => key => int"  where (* as ocaml compare *)
+"key_ord k1 k2 = failwith ''key_ord''"
 
-code_printing
-  type_constructor key => (OCaml) "X.key"
-  | type_constructor value_t => (OCaml) "X.valuet"
+datatype value_t = Private_value nat
+
+(*
+(* nonsense to get code export to work *)
+instantiation key :: equal begin
+definition equal_key :: "key \<Rightarrow> key \<Rightarrow> bool" where "equal_key = (op = )" 
+instance by intro_classes (simp add: equal_key_def)
+end
+*)
+
+
+
 
 type_synonym kv_t = "key * value_t"
 type_synonym kvs_t = "kv_t list"
 
-consts key_ord :: "key => key => int"  (* as ocaml compare *)
 
-code_printing
-  constant key_ord => (OCaml) "(fun k1 k2 -> X.keyord k1 k2 |> Big'_int.big'_int'_of'_int |> (fun x ->Arith.Int'_of'_integer x))"
 
+  
 definition key_lt :: "key \<Rightarrow> key \<Rightarrow> bool" where
 "key_lt k1 k2 = (key_ord k1 k2 < 0)"
 
