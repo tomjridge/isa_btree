@@ -33,13 +33,12 @@ definition dest_list' :: "'a list \<Rightarrow> ('a list * 'a)" where
 
 definition node_steal_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> node_t \<Rightarrow> dts_up_t" where
 "node_steal_right k0 p stk c1 = (
-  let f = % x :: nat. failwith (''node_steal_right'',x) in
   let (c1_ks,c1_ts) = c1 in
   let q = p |> nf_to_aux k0 in
   let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
   let (q_k,q_ks2') = dest_list q_ks2 in
   let (q_c,q_ts2') = dest_list q_ts2 in
-  let c2 = (case q_c of Node(ks,ts) \<Rightarrow> (ks,ts) | _ \<Rightarrow> f 5) in
+  let c2 = dest_Node q_c in
   let (c2_ks,c2_ts) = c2 in
   let (c2_k',c2_ks') = dest_list c2_ks in
   let (c2_t',c2_ts') = dest_list c2_ts in
@@ -52,13 +51,12 @@ definition node_steal_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_
  
 definition node_steal_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> node_t \<Rightarrow> dts_up_t" where
 "node_steal_left k0 p stk c2 = (
-  let f = % x :: nat. failwith (''node_steal_left'',x) in
   let (c2_ks,c2_ts) = c2 in
   let q = p |> nf_to_aux k0 in
   let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
   let (q_ks1',q_k) = dest_list' q_ks1 in
   let (q_ts1',q_c) = dest_list' q_ts1 in
-  let c1 = (case q_c of Node(ks,ts) \<Rightarrow> (ks,ts) | _ \<Rightarrow> f 5) in
+  let c1 = dest_Node q_c in
   let (c1_ks,c1_ts) = c1 in
   let c2' = Node([q_k] @ c2_ks,[q_c] @ c2_ts) in
   let (c1_ks',c1_k') = dest_list' c1_ks in
@@ -71,12 +69,11 @@ definition node_steal_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t
 
 definition leaf_steal_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> kvs_t \<Rightarrow> dts_up_t" where
 "leaf_steal_right k0 p stk c1_kvs = (
-  let f = % x :: nat. failwith (''leaf_steal_right'',x) in
   let q = p |> nf_to_aux k0 in
   let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
   let (q_k,q_ks2') = dest_list q_ks2 in
   let (q_c,q_ts2') = dest_list q_ts2 in
-  let c2_kvs = (case q_c of Leaf(kvs) \<Rightarrow> kvs | _ \<Rightarrow> f 5) in
+  let c2_kvs = dest_Leaf q_c in
   let (c2_kv',c2_kvs') = dest_list c2_kvs in
   let c1' = Leaf(c1_kvs @ [c2_kv']) in
   let c2' = Leaf(c2_kvs') in
@@ -87,12 +84,11 @@ definition leaf_steal_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_
 
 definition leaf_steal_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> kvs_t \<Rightarrow> dts_up_t" where
 "leaf_steal_left k0 p stk c2_kvs = (
-  let f = % x :: nat. failwith (''leaf_steal_left'',x) in
   let q = p |> nf_to_aux k0 in
   let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
   let (q_ks1',q_k) = dest_list' q_ks1 in
   let (q_ts1',q_c) = dest_list' q_ts1 in
-  let c1_kvs = (case q_c of Leaf(kvs) \<Rightarrow> kvs | _ \<Rightarrow> f 5) in
+  let c1_kvs = dest_Leaf q_c in
   let (c1_kvs',c1_kv') = dest_list' c1_kvs in
   let c2' = Leaf([c1_kv']@c2_kvs) in
   let c1' = Leaf(c1_kvs') in
@@ -106,61 +102,73 @@ definition leaf_steal_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t
 
 definition node_merge_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> node_t \<Rightarrow> dts_up_t" where
 "node_merge_right k0 p stk c1 = (
-  let f = % x :: nat. failwith (''node_merge_right'',x) in
   let (c1_ks,c1_ts) = c1 in
   let q = p |> nf_to_aux k0 in
   let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
   let (q_k,q_ks2') = dest_list q_ks2 in
   let (q_c,q_ts2') = dest_list q_ts2 in
-  let c2 = (case q_c of Node(ks,ts) \<Rightarrow> (ks,ts) | _ \<Rightarrow> f 5) in
+  let c2 = dest_Node q_c in
   let (c2_ks,c2_ts) = c2 in
   let c1' = Node(c1_ks @ [q_k] @ c2_ks,c1_ts @ c2_ts) in
-  let f' = D_updated_subtree(Node(q_ks1 @ q_ks2', q_ts1 @ [c1'] @ q_ts2')) in
+  let ks' = q_ks1 @ q_ks2' in
+  let f' = D_updated_subtree(
+    (* we have to be careful here about a root node with 1 key *)
+    if ks' = [] then c1' else Node(ks', q_ts1 @ [c1'] @ q_ts2')) 
+  in
   (p|>with_t (% _. f'),stk)
 )"
 
 definition node_merge_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> node_t \<Rightarrow> dts_up_t" where
 "node_merge_left k0 p stk c2 = (
-  let f = % x :: nat. failwith (''node_merge_left'',x) in
   let (c2_ks,c2_ts) = c2 in
   let q = p |> nf_to_aux k0 in
   let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
   let (q_ks1',q_k) = dest_list' q_ks1 in
   let (q_ts1',q_c) = dest_list' q_ts1 in
-  let c1 = (case q_c of Node(ks,ts) \<Rightarrow> (ks,ts) | _ \<Rightarrow> f 5) in
+  let c1 = dest_Node q_c in
   let (c1_ks,c1_ts) = c1 in
   let c1' = Node(c1_ks @ [q_k] @c2_ks, c1_ts @ c2_ts) in
-  let f' = D_updated_subtree(Node(q_ks1' @ q_ks2, q_ts1' @ [c1'] @ q_ts2)) in
+  let ks' = q_ks1' @ q_ks2 in
+  let f' = D_updated_subtree(
+    if ks' = [] then c1' else Node(ks', q_ts1' @ [c1'] @ q_ts2)) 
+  in
   (p|>with_t (% _. f'),stk)
 )"
 
 definition leaf_merge_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> kvs_t \<Rightarrow> dts_up_t" where
 "leaf_merge_right k0 p stk c1_kvs = (
-  let f = % x :: nat. failwith (''leaf_merge_right'',x) in
   let q = p |> nf_to_aux k0 in
   let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
   let (q_k,q_ks2') = dest_list q_ks2 in
   let (q_c,q_ts2') = dest_list q_ts2 in
-  let c2_kvs = (case q_c of Leaf(kvs) \<Rightarrow> kvs | _ \<Rightarrow> f 5) in
+  let c2_kvs = dest_Leaf q_c in
   let c1' = Leaf(c1_kvs @ c2_kvs) in
-  let f' = D_updated_subtree(Node(q_ks1 @ q_ks2',q_ts1 @ [c1'] @ q_ts2')) in
+  let ks' = q_ks1 @ q_ks2' in
+  let f' = D_updated_subtree(
+    if ks'=[] then c1' else Node(ks',q_ts1 @ [c1'] @ q_ts2')) 
+  in
   (p|>with_t (% _. f'),stk)
 )"
 
 definition leaf_merge_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> kvs_t \<Rightarrow> dts_up_t" where
 "leaf_merge_left k0 p stk c2_kvs = (
-  let f = % x :: nat. failwith (''leaf_merge_left'',x) in
   let q = p |> nf_to_aux k0 in
   let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
   let (q_ks1',q_k) = dest_list' q_ks1 in
   let (q_ts1',q_c) = dest_list' q_ts1 in
-  let c1_kvs = (case q_c of Leaf(kvs) \<Rightarrow> kvs | _ \<Rightarrow> f 5) in
+  let c1_kvs = dest_Leaf q_c in
   let c1' = Leaf(c1_kvs @ c2_kvs) in
-  let f' = D_updated_subtree(Node(q_ks1' @ q_ks2, q_ts1' @ [c1'] @ q_ts2)) in
+  let ks' = q_ks1' @ q_ks2 in
+  let f' = D_updated_subtree(
+    if ks'=[] then c1' else Node(ks', q_ts1' @ [c1'] @ q_ts2)) 
+  in
   (p|>with_t (% _. f'),stk)
 )"
 
+
 (* can_steal_or_merge ---------------------------------- *)
+
+(* FIXME change these to return bool rathe rthan tree option *)
 
 definition steal_b :: "Tree \<Rightarrow> bool" where
 "steal_b t = (
@@ -210,7 +218,7 @@ definition step_up :: "key \<Rightarrow> dts_up_t \<Rightarrow> dts_state_t" whe
   Nil \<Rightarrow> (
     case f|>f_t of
     D_small_leaf(kvs) \<Rightarrow> Dts_finished(Leaf(kvs))
-    | D_small_node(ks,ts) \<Rightarrow> Dts_finished(Node(ks,ts))
+    | D_small_node(ks,ts) \<Rightarrow> (Dts_finished(Node(ks,ts)))  (* FIXME root may have lost all its keys? *)
     | D_updated_subtree(t) \<Rightarrow> Dts_finished(t))
   | p#stk' \<Rightarrow> (
     case f|>f_t of
@@ -254,6 +262,35 @@ definition step_up :: "key \<Rightarrow> dts_up_t \<Rightarrow> dts_state_t" whe
       Dts_up(p|> with_t (% _. D_updated_subtree(Node(ks1@ks2,ts1@[t]@ts2))),stk')
     )
   )
+)"
+
+definition step_dts :: "key \<Rightarrow> dts_state_t \<Rightarrow> dts_state_t option" where
+"step_dts k0 dts = (
+  case dts of
+  Dts_down(fts) \<Rightarrow> (
+    case Find_tree_stack.step_fts fts of
+    None \<Rightarrow> (
+      let (f,stk) = fts in
+      let (k,tss1,kl,t,ku,tss2) = f|>dest_core in
+      let kvs = t|>dest_Leaf in
+      case k : set (kvs|>List.map fst) of
+      True \<Rightarrow> (
+        (* something to delete *)
+        let kvs' = kvs|>List.filter (% x. ~ (key_eq (fst x) k)) in
+        case (List.length kvs' < Constants.min_leaf_size) of
+        True \<Rightarrow> Some(Dts_up(f|>with_t(% _. D_small_leaf(kvs')),stk))
+        | False \<Rightarrow> Some(Dts_up(f|>with_t(% _. D_updated_subtree(Leaf(kvs'))),stk)))
+      | False \<Rightarrow> (
+        (* nothing to delete *)
+        case stk of
+        Nil \<Rightarrow> Some(Dts_finished(Leaf(kvs)))
+        | _ \<Rightarrow> Some(Dts_finished(Node(stk|>List.last|>f_t)))
+      )
+    )
+    | Some(fts') \<Rightarrow> Some(Dts_down(fts'))
+  )
+  | Dts_up(f,stk) \<Rightarrow> (Some(step_up k0 (f,stk)))
+  | Dts_finished(_) \<Rightarrow> None (* exit *)
 )"
 
 end
