@@ -4,7 +4,7 @@ datatype dir_t = Right | Left
 
 datatype dts_t = 
   D_small_leaf "leaf_lbl_t"
-  | D_small_node "node_lbl_t"
+  | D_small_node "node_t"
   | D_updated_subtree "Tree"
 
 type_synonym dts_focus_t = "dts_t core_t"
@@ -87,7 +87,7 @@ definition leaf_steal_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_
 
 definition leaf_steal_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> kvs_t \<Rightarrow> dts_up_t" where
 "leaf_steal_left k0 p stk c2_kvs = (
-  let f = % x :: nat. failwith (''node_steal_left'',x) in
+  let f = % x :: nat. failwith (''leaf_steal_left'',x) in
   let q = p |> nf_to_aux k0 in
   let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
   let (q_ks1',q_k) = dest_list' q_ks1 in
@@ -160,5 +160,100 @@ definition leaf_merge_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t
   (p|>with_t (% _. f'),stk)
 )"
 
+(* can_steal_or_merge ---------------------------------- *)
+
+definition steal_b :: "Tree \<Rightarrow> bool" where
+"steal_b t = (
+  case t of
+  Leaf(kvs) \<Rightarrow> (List.length kvs > Constants.min_leaf_size)
+  | Node(ks,ts) \<Rightarrow> (List.length ks > Constants.min_node_keys)
+)"
+
+definition can :: "key \<Rightarrow> (Tree \<Rightarrow> bool) \<Rightarrow> dir_t \<Rightarrow> nf_t \<Rightarrow> Tree option" where
+"can k0 steal_or_merge dir p = (
+  let q = p |> nf_to_aux k0 in
+  let (i,ts1,ks1,t,ks2,ts2) = q in
+  case dir of
+  Right \<Rightarrow> (
+    case ts2 of 
+    Nil \<Rightarrow> None
+    | t#ts \<Rightarrow> (if steal_or_merge t then Some(t) else None)
+  )
+)"
+
+definition can_steal_right :: "key \<Rightarrow> nf_t \<Rightarrow> Tree option" where
+"can_steal_right k0 p = (can k0 steal_b Right p)"
+  
+definition can_steal_left :: "key \<Rightarrow> nf_t \<Rightarrow> Tree option" where
+"can_steal_left k0 p = (can k0 steal_b Left p)"
+
+definition merge_b :: "Tree \<Rightarrow> bool" where
+"merge_b t = (
+  case t of
+  Leaf(kvs) \<Rightarrow> (List.length kvs + Constants.min_leaf_size \<le> Constants.max_leaf_size +1) (* assume merging into something of size min_leaf_size  - 1 *)
+  | Node(ks,ts) \<Rightarrow> (List.length ks + Constants.min_node_keys \<le> Constants.max_node_keys +1)
+)"
+
+definition can_merge_right :: "key \<Rightarrow> nf_t \<Rightarrow> Tree option" where
+"can_merge_right k0 p = (can k0 merge_b Right p)"
+
+definition can_merge_left :: "key \<Rightarrow> nf_t \<Rightarrow> Tree option" where
+"can_merge_left k0 p = (can k0 merge_b Left p)"
+
+
+(* main routine ------------------------------------ *)
+
+definition step_up :: "key \<Rightarrow> dts_up_t \<Rightarrow> dts_state_t" where
+"step_up k0 du = (
+  let (f,stk) = du in
+  case stk of 
+  Nil \<Rightarrow> (
+    case f|>f_t of
+    D_small_leaf(kvs) \<Rightarrow> Dts_finished(Leaf(kvs))
+    | D_small_node(ks,ts) \<Rightarrow> Dts_finished(Node(ks,ts))
+    | D_updated_subtree(t) \<Rightarrow> Dts_finished(t))
+  | p#stk' \<Rightarrow> (
+    case f|>f_t of
+    D_small_leaf(kvs) \<Rightarrow> (
+      case can_steal_right k0 p of
+      Some(_) \<Rightarrow> Dts_up(leaf_steal_right k0 p stk' kvs)
+      | _ \<Rightarrow> (
+        case can_steal_left k0 p of
+        Some(_) \<Rightarrow> Dts_up(leaf_steal_left k0 p stk' kvs)
+        | _ \<Rightarrow> (
+          case can_merge_right k0 p of
+          Some(_) \<Rightarrow> Dts_up(leaf_merge_right k0 p stk' kvs)
+          | _ \<Rightarrow> (
+            case can_merge_left k0 p of
+            Some(_) \<Rightarrow> Dts_up(leaf_merge_left k0 p stk' kvs)
+            | _ \<Rightarrow> (failwith ''step_up: impossible, leaf has no siblings but stack not nil'')
+          )
+        )
+      )
+    )
+    | D_small_node(ks,ts) \<Rightarrow> (
+      case can_steal_right k0 p of
+      Some(_) \<Rightarrow> Dts_up(node_steal_right k0 p stk' (ks,ts))
+      | _ \<Rightarrow> (
+        case can_steal_left k0 p of
+        Some(_) \<Rightarrow> Dts_up(node_steal_left k0 p stk' (ks,ts))
+        | _ \<Rightarrow> (
+          case can_merge_right k0 p of
+          Some(_) \<Rightarrow> Dts_up(node_merge_right k0 p stk' (ks,ts))
+          | _ \<Rightarrow> (
+            case can_merge_left k0 p of
+            Some(_) \<Rightarrow> Dts_up(node_merge_left k0 p stk' (ks,ts))
+            | _ \<Rightarrow> (failwith ''step_up: impossible, node has no siblings but stack not nil'')
+          )
+        )
+      )
+    )
+    | D_updated_subtree(t) \<Rightarrow> (
+      let q = p |> nf_to_aux k0 in
+      let (i,ts1,ks1,t,ks2,ts2) = q in
+      Dts_up(p|> with_t (% _. D_updated_subtree(Node(ks1@ks2,ts1@[t]@ts2))),stk')
+    )
+  )
+)"
 
 end

@@ -2,7 +2,7 @@ theory Tree
 imports Util Constants Key_value
 begin
 
-type_synonym leaf_lbl_t = "(key * value_t) list"
+type_synonym leaf_lbl_t = "kvs_t"
 
 type_synonym node_lbl_t = "key list"
 
@@ -16,6 +16,10 @@ type_synonym node_t = "node_lbl_t * Tree list"
 fun dest_Node :: "Tree \<Rightarrow> node_t" where
 "dest_Node (Node(ks,rs)) = (ks,rs)" | 
 "dest_Node (Leaf _) = (failwith ''dest_Node'')"
+
+fun dest_Leaf :: "Tree \<Rightarrow> kvs_t" where
+"dest_Leaf (Leaf(kvs)) = kvs" | 
+"dest_Leaf _ = (failwith ''dest_Leaf'')"
 
 fun is_Leaf :: "Tree \<Rightarrow> bool" where
 "is_Leaf (Leaf l) = True" |
