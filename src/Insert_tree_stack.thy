@@ -46,7 +46,7 @@ definition wellformed_its :: " bool \<Rightarrow> its_t \<Rightarrow> bool" wher
 "wellformed_its stack_empty its = (
   case its of
   Inserting_one t => (
-    let ms = case stack_empty of 
+    let ms = case stack_empty of  (* FIXME define its_to_ms *) 
       True => (Some Small_root_node_or_leaf)
       | _ => None
     in
@@ -78,7 +78,6 @@ definition wellformed_iup_1 :: "its_up_t => bool" where
     (f|>f_t|>its_to_h = (p|>mk_child|>f_t|>height))
   )
 )"
-  
 
 definition wellformed_iup :: "key \<Rightarrow> its_up_t => bool" where
 "wellformed_iup k0 iu = (
@@ -109,10 +108,10 @@ definition split_node :: "node_t => inserting_two_t" where
 
 (* step focus, given parent frame *)
 definition step_focus :: "nf_t => its_focus_t => its_focus_t" where
-"step_focus x f = (
-  let k = x|>f_k in
-  let (ks,rs) = x|>f_t in
-  let (_,ts1,ks1,_,ks2,ts2)= nf_to_aux k x in
+"step_focus p f = (
+  let k = p|>f_k in
+  let (ks,rs) = p|>f_t in
+  let (_,ts1,ks1,_,ks2,ts2)= nf_to_aux k p in
   let t' = (
     case f|>f_t of
     Inserting_one t => (
@@ -124,7 +123,7 @@ definition step_focus :: "nf_t => its_focus_t => its_focus_t" where
         True => Inserting_one(Node(ks',ts'))
         | False => (Inserting_two(split_node(ks',ts')) ) ) )
   in
-  x|>with_t (% _. t'))"
+  p|>with_t (% _. t'))"
 
 definition step_up :: "its_up_t => its_up_t option" where
 "step_up iu = (

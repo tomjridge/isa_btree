@@ -67,7 +67,7 @@ definition dest_fts_state :: "fts_state_t \<Rightarrow> leaf_lbl_t option" where
 )"
 
 
-(* fts_invariant ----------------------------------------- *)
+(* fts_trans ----------------------------------------- *)
 
 definition fts_trans :: "fts_state_t trans_t" where
 "fts_trans = { (fts,fts'). (step_fts fts = Some fts') }"
@@ -83,7 +83,7 @@ definition invariant_wf_fts_lem :: "bool" where
 definition focus_to_leaves :: "fts_focus_t \<Rightarrow> leaves_t" where
 "focus_to_leaves f = (
   let (k,tss1,l,t,u,tss2) = f|>dest_core in
-  (tss1|>tss_to_leaves)@(t|>tree_to_leaves)@(tss2|>tss_to_leaves)
+  (tss1@[[t]]@tss2)|>tss_to_leaves
 )"
 
 (* the focus leaves are invariant *)

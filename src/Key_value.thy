@@ -1,33 +1,8 @@
 theory Key_value
-imports Prelude
+imports Prelude Key_value_types
 begin
 
-(* this makes code export easier; of course, key is abstract *)
-datatype key = Private_key nat
 
-(* FIXME really an abstract parameter; this for code export *)
-definition key_ord :: "key => key => int"  where (* as ocaml compare *)
-"key_ord k1 k2 = failwith ''key_ord''"
-
-datatype value_t = Private_value nat
-
-(*
-(* nonsense to get code export to work *)
-instantiation key :: equal begin
-definition equal_key :: "key \<Rightarrow> key \<Rightarrow> bool" where "equal_key = (op = )" 
-instance by intro_classes (simp add: equal_key_def)
-end
-*)
-
-
-
-
-type_synonym kv_t = "key * value_t"
-type_synonym kvs_t = "kv_t list"
-
-
-
-  
 definition key_lt :: "key \<Rightarrow> key \<Rightarrow> bool" where
 "key_lt k1 k2 = (key_ord k1 k2 < 0)"
 
@@ -36,6 +11,7 @@ definition key_eq :: "key \<Rightarrow> key \<Rightarrow> bool" where
 
 definition key_le :: "key \<Rightarrow> key \<Rightarrow> bool" where
 "key_le k1 k2 = (key_lt k1 k2 \<or> key_eq k1 k2)"
+
 
 (* FIXME assume EQ is equality *)
 definition wf_key_ord :: "bool" where
