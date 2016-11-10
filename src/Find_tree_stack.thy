@@ -37,8 +37,8 @@ definition wellformed_fts :: "key \<Rightarrow> fts_state_t => bool" where
 (* step_fts ---------------------------------------- *)
 
 
-definition mk_fts :: "key => Tree => fts_state_t" where
-"mk_fts k t = (
+definition mk_fts_state :: "key => Tree => fts_state_t" where
+"mk_fts_state k t = (
   let f = \<lparr>f_k=k, f_tss1=[], f_kl=None,f_t=t,f_ku=None,f_tss2=[] \<rparr> in
   (f,[])
 )"
@@ -57,9 +57,9 @@ definition step_fts :: "fts_state_t => fts_state_t option" where
     Some(c,p#xs) )
 )"
 
-
-definition dest_fts :: "fts_state_t \<Rightarrow> leaf_lbl_t option" where
-"dest_fts fts = (
+(* FIXME needed? remove? *)
+definition dest_fts_state :: "fts_state_t \<Rightarrow> leaf_lbl_t option" where
+"dest_fts_state fts = (
   let (f,stk) = fts in
   case (f|>f_t) of
   Leaf kvs \<Rightarrow> Some(kvs)

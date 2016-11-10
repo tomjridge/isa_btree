@@ -173,7 +173,7 @@ definition step_bottom :: "its_down_t => its_up_t option" where
 
 definition mk_its_state :: "key \<Rightarrow> value_t \<Rightarrow> Tree \<Rightarrow> its_state_t" where
 "mk_its_state k v t = (
-  let fts = mk_fts k t in
+  let fts = mk_fts_state k t in
   Its_down(fts,v)
 )"
 

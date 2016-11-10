@@ -46,6 +46,62 @@ definition dts_to_tree :: "dts_t \<Rightarrow> Tree" where
   | D_updated_subtree(t) \<Rightarrow> t
 )"
 
+definition dts_to_ms :: "bool \<Rightarrow> dts_t \<Rightarrow> ms_t" where
+"dts_to_ms stack_empty dts = (
+  case dts of
+  D_small_leaf kvs \<Rightarrow> Some(if stack_empty then Small_root_node_or_leaf else Small_leaf)
+  | D_small_node(ks,ts) \<Rightarrow> Some(if stack_empty then Small_root_node_or_leaf else Small_node)
+  | D_updated_subtree(t) \<Rightarrow> None
+)"
+
+definition mk_dts_state :: "key \<Rightarrow> Tree \<Rightarrow> dts_state_t" where
+"mk_dts_state k0 t = (Dts_down(mk_fts_state k0 t))"
+
+
+(* wellformedness ----------------------------------------- *) 
+
+definition wellformed_dts :: "key \<Rightarrow> bool \<Rightarrow> dts_t \<Rightarrow> bool" where
+"wellformed_dts k0 stack_empty dts = (
+  let t = dts |> dts_to_tree in
+  let ms = dts |> dts_to_ms stack_empty in 
+  wellformed_tree ms t
+)"
+
+definition wellformed_dts_focus :: "key \<Rightarrow> bool \<Rightarrow> dts_focus_t \<Rightarrow> bool" where
+"wellformed_dts_focus k0 stack_empty f = (
+  let dts = f|>f_t in
+  wf_core k0 (dts|>dts_to_tree|>tree_to_keys) f &
+  wellformed_dts k0 stack_empty dts
+)"
+
+definition wellformed_dup_1 :: "dts_up_t \<Rightarrow> bool" where
+"wellformed_dup_1 dup = (
+  let (f,stk) = dup in
+  case stk of 
+  Nil \<Rightarrow> True
+  | p#xs \<Rightarrow> (
+    (f|>without_t = (mk_child p |> without_t)) &
+    (f|>f_t|>dts_to_tree|>height = (p|>mk_child|>f_t|>height))
+  )
+)"
+
+definition wellformed_dup :: "key \<Rightarrow> dts_up_t \<Rightarrow> bool" where
+"wellformed_dup k0 dup = (
+  let (f,stk) = dup in
+  wellformed_dts_focus k0 (stk=[]) f &
+  wellformed_ts k0 stk &
+  wellformed_dup_1 dup
+)"
+
+
+definition wellformed_dts_state :: "key \<Rightarrow> dts_state_t \<Rightarrow> bool" where
+"wellformed_dts_state k0 dstate = (
+  case dstate of
+  Dts_down(fts) \<Rightarrow> (wellformed_fts k0 fts)
+  | Dts_up(f,stk) \<Rightarrow> (wellformed_dup k0 (f,stk))
+)"
+
+
 
 (* steal ----------------------------------------------- *)
 
