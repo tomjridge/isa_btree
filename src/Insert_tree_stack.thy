@@ -209,7 +209,7 @@ definition dest_its_state :: "its_state_t \<Rightarrow> Tree option" where
 definition focus_to_leaves :: "its_focus_t \<Rightarrow> leaves_t" where
 "focus_to_leaves f = (
   let (k,tss1,l,its,u,tss2) = f|>dest_core in
-  (tss1|>tss_to_leaves)@(its|>its_to_tss|>tss_to_leaves)@(tss2|>tss_to_leaves)
+  (tss1@(its|>its_to_tss)@tss2)|>tss_to_leaves
 )"
 
 definition wf_its_trans :: "its_state_t \<Rightarrow> its_state_t \<Rightarrow> bool" where

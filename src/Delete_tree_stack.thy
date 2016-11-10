@@ -2,6 +2,16 @@ theory Delete_tree_stack imports Find_tree_stack begin
 
 datatype dir_t = Right | Left
 
+(* 
+D_small_leaf: A small leaf arises when a minimal leaf has an key removed.
+
+D_small_node: If a small leaf is merged with a sibling, then the parent node may become small.
+
+D_updated_subtree: The usual case, where the subtree has been updated, but the width of the 
+parent is unchanged.
+
+*)
+
 datatype dts_t = 
   D_small_leaf "leaf_lbl_t"
   | D_small_node "node_t"
@@ -27,6 +37,14 @@ definition dest_list :: "'a list \<Rightarrow> ('a * 'a list)" where
 
 definition dest_list' :: "'a list \<Rightarrow> ('a list * 'a)" where
 "dest_list' xs = (case xs of [] \<Rightarrow> failwith ''dest_list' '' | _ \<Rightarrow> (butlast xs,last xs))"
+
+definition dts_to_tree :: "dts_t \<Rightarrow> Tree" where
+"dts_to_tree dts = (
+  case dts of
+  D_small_leaf kvs \<Rightarrow> Leaf(kvs)
+  | D_small_node(ks,ts) \<Rightarrow> Node(ks,ts)
+  | D_updated_subtree(t) \<Rightarrow> t
+)"
 
 
 (* steal ----------------------------------------------- *)
@@ -100,6 +118,14 @@ definition leaf_steal_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t
 
 (* merging ----------------------------------------------------------- *)
 
+definition take_care :: "key list \<Rightarrow> Tree list \<Rightarrow> Tree \<Rightarrow> dts_t" where
+"take_care ks' ts' c1' = (
+    (* we have to be careful here about a root node with 1 key *)
+    if (ks' = []) then D_updated_subtree(c1') else
+    if (List.length ks' < Constants.min_node_keys) then D_small_node(ks',ts') else 
+    D_updated_subtree(Node(ks',ts'))
+)"
+
 definition node_merge_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> node_t \<Rightarrow> dts_up_t" where
 "node_merge_right k0 p stk c1 = (
   let (c1_ks,c1_ts) = c1 in
@@ -111,10 +137,8 @@ definition node_merge_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_
   let (c2_ks,c2_ts) = c2 in
   let c1' = Node(c1_ks @ [q_k] @ c2_ks,c1_ts @ c2_ts) in
   let ks' = q_ks1 @ q_ks2' in
-  let f' = D_updated_subtree(
-    (* we have to be careful here about a root node with 1 key *)
-    if ks' = [] then c1' else Node(ks', q_ts1 @ [c1'] @ q_ts2')) 
-  in
+  let ts' = q_ts1 @ [c1'] @ q_ts2' in
+  let f' = take_care ks' ts' c1' in
   (p|>with_t (% _. f'),stk)
 )"
 
@@ -129,9 +153,8 @@ definition node_merge_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t
   let (c1_ks,c1_ts) = c1 in
   let c1' = Node(c1_ks @ [q_k] @c2_ks, c1_ts @ c2_ts) in
   let ks' = q_ks1' @ q_ks2 in
-  let f' = D_updated_subtree(
-    if ks' = [] then c1' else Node(ks', q_ts1' @ [c1'] @ q_ts2)) 
-  in
+  let ts' = q_ts1' @ [c1'] @ q_ts2 in
+  let f' = take_care ks' ts' c1' in
   (p|>with_t (% _. f'),stk)
 )"
 
@@ -144,9 +167,8 @@ definition leaf_merge_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_
   let c2_kvs = dest_Leaf q_c in
   let c1' = Leaf(c1_kvs @ c2_kvs) in
   let ks' = q_ks1 @ q_ks2' in
-  let f' = D_updated_subtree(
-    if ks'=[] then c1' else Node(ks',q_ts1 @ [c1'] @ q_ts2')) 
-  in
+  let ts' = q_ts1 @ [c1'] @ q_ts2' in
+  let f' = take_care ks' ts' c1' in
   (p|>with_t (% _. f'),stk)
 )"
 
@@ -159,9 +181,8 @@ definition leaf_merge_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t
   let c1_kvs = dest_Leaf q_c in
   let c1' = Leaf(c1_kvs @ c2_kvs) in
   let ks' = q_ks1' @ q_ks2 in
-  let f' = D_updated_subtree(
-    if ks'=[] then c1' else Node(ks', q_ts1' @ [c1'] @ q_ts2)) 
-  in
+  let ts' = q_ts1' @ [c1'] @ q_ts2 in
+  let f' = take_care ks' ts' c1' in
   (p|>with_t (% _. f'),stk)
 )"
 
@@ -216,10 +237,9 @@ definition step_up :: "key \<Rightarrow> dts_up_t \<Rightarrow> dts_state_t" whe
   let (f,stk) = du in
   case stk of 
   Nil \<Rightarrow> (
-    case f|>f_t of
-    D_small_leaf(kvs) \<Rightarrow> Dts_finished(Leaf(kvs))
-    | D_small_node(ks,ts) \<Rightarrow> (Dts_finished(Node(ks,ts)))  (* FIXME root may have lost all its keys? *)
-    | D_updated_subtree(t) \<Rightarrow> Dts_finished(t))
+    let dts = f|>f_t in
+    (* FIXME root may have lost all its keys? should we take care here or before? if here, we break invariant, so take care before *)    
+    Dts_finished(dts|>dts_to_tree))
   | p#stk' \<Rightarrow> (
     case f|>f_t of
     D_small_leaf(kvs) \<Rightarrow> (
@@ -239,7 +259,7 @@ definition step_up :: "key \<Rightarrow> dts_up_t \<Rightarrow> dts_state_t" whe
         )
       )
     )
-    | D_small_node(ks,ts) \<Rightarrow> (
+    | D_small_node(ks,ts) \<Rightarrow> (  
       case can_steal_right k0 p of
       Some(_) \<Rightarrow> Dts_up(node_steal_right k0 p stk' (ks,ts))
       | _ \<Rightarrow> (
@@ -292,5 +312,26 @@ definition step_dts :: "key \<Rightarrow> dts_state_t \<Rightarrow> dts_state_t 
   | Dts_up(f,stk) \<Rightarrow> (Some(step_up k0 (f,stk)))
   | Dts_finished(_) \<Rightarrow> None (* exit *)
 )"
+
+
+(* testing ------------------------------------------------------------ *)
+
+definition dts_to_leaves :: "dts_t \<Rightarrow> leaves_t" where
+"dts_to_leaves dts = (dts|>dts_to_tree|>tree_to_leaves)"
+
+definition focus_to_leaves :: "dts_focus_t \<Rightarrow> leaves_t" where
+"focus_to_leaves f = (
+  let (k,tss1,l,dts,u,tss2) = f|>dest_core in
+  (tss1@[[dts|>dts_to_tree]]@tss2)|>tss_to_leaves
+)"
+
+definition wf_dts_trans :: "dts_state_t \<Rightarrow> dts_state_t \<Rightarrow> bool" where
+"wf_dts_trans s1 s2 = (
+  case (s1,s2) of 
+  (Dts_down(fts),Dts_down(fts')) \<Rightarrow> (wf_fts_trans fts fts')
+  | (Dts_down(_),Dts_up(_)) \<Rightarrow> True
+  | (Dts_up(du),Dts_up(du')) \<Rightarrow> (focus_to_leaves (fst du') = focus_to_leaves (fst du))
+)"
+
 
 end
