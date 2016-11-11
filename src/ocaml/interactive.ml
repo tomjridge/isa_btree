@@ -1,6 +1,8 @@
 #load "nums.cma";;
 #load "btree.cma";;
 
+(* to debug: execute with env OCAMLRUNPARAM=b ... *)
+
 #show Btree;;
 
 (* initialize a simple int int map *)
@@ -34,6 +36,8 @@ let s1 = Btree0.Insert.insert 1 1 !s0
 
 let s2 = Btree0.Find.find 1 !s0;;
 
+let s3 = Btree0.Delete.delete 1 !s0;;
+
 let _ = 
   for i = 1 to 10 do
     s0 := Btree0.Insert.insert i (2*i) !s0
@@ -48,5 +52,27 @@ let _ =
 
 let r2 = Btree0.tree_to_leaves !s0
 
+let _ = 
+  for i = 5 to 100 do
+    s0 := Btree0.Insert.insert i (4*i) !s0
+  done;;
+
+let r3 = Btree0.tree_to_leaves !s0
+
+let _ = 
+  for i = 5 to 100 do
+    s0 := Btree0.Delete.delete i !s0
+  done;;
+
+let r4 = Btree0.tree_to_leaves !s0
+
+let w = Btree0.M.Tree.wellformed_tree None !s0
 
 ;;
+
+let _ = !Btree0.Delete.last_state;;
+let Some(s,Some s') = !Btree0.Delete.last_trans;;
+
+(* let w = s'|>Btree0.tree_to_subtrees *)
+
+let j2 = Btree0.empty |> Btree0.M.Tree.tree_to_yojson

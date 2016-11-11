@@ -1,41 +1,134 @@
-1c1
-< open Gen_isa
----
-> let string_of_chars chars = chars|>List.map (String.make 1)|>String.concat ""
-2a3,4
-> open Gen_isa
->   
-10c12
-< let rec failwitha x = failwith "undefined";;
----
-> let rec failwitha x = x|>string_of_chars|>failwith;;
-35c37
-< module Constants : sig
----
-> module type Constants_t = sig
-41c43
-< end = struct
----
-> end (*= struct
-54c56
-< end;;
----
-> end;; *)
-57c59
-< module Key_value_types : sig
----
-> module type Key_value_types_t = sig
-65c67
-< end = struct
----
-> end (*= struct
-83c85,87
-< end;;
----
-> end;; *)
-> 
-> module Make = functor (Constants : Constants_t) -> functor(Key_value_types: Key_value_types_t) -> struct
-1248a1253,1255
-> 
-> end
-> (* end file *)
+--- gen_our.ml	2016-11-11 18:28:47.172750378 +0000
++++ our.ml	2016-11-11 18:40:49.911256955 +0000
+@@ -1,5 +1,7 @@
+-open Gen_isa
++let string_of_chars chars = chars|>List.map (String.make 1)|>String.concat ""
+ 
++open Gen_isa
++  
+ module Util : sig
+   val failwitha : char list -> 'a
+   val split_at : Arith.nat -> 'a list -> 'a list * 'a list
+@@ -7,7 +9,7 @@
+   val split_at_3 : Arith.nat -> 'a list -> 'a list * ('a * 'a list)
+ end = struct
+ 
+-let rec failwitha x = failwith "undefined";;
++let rec failwitha x = x|>string_of_chars|>failwith;;
+ 
+ let rec split_at n xs = (List.take n xs, List.drop n xs);;
+ 
+@@ -32,13 +34,13 @@
+ end;;
+ 
+ 
+-module Constants : sig
++module type Constants_t = sig
+   type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf
+   val max_leaf_size : Arith.nat
+   val max_node_keys : Arith.nat
+   val min_leaf_size : Arith.nat
+   val min_node_keys : Arith.nat
+-end = struct
++end (*= struct
+ 
+ type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf;;
+ 
+@@ -51,10 +53,10 @@
+ let min_node_keys : Arith.nat = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+ 
+ 
+-end;;
++end;; *)
+ 
+ 
+-module Key_value_types : sig
++module type Key_value_types_t = sig
+   type key
+   val equal_keya : key -> key -> bool
+   val equal_key : key HOL.equal
+@@ -62,7 +64,7 @@
+   val equal_value_ta : value_t -> value_t -> bool
+   val equal_value_t : value_t HOL.equal
+   val key_ord : key -> key -> Arith.int
+-end = struct
++end (*= struct
+ 
+ type key = Private_key of Arith.nat;;
+ 
+@@ -80,7 +82,9 @@
+ let rec key_ord k1 k2 = Util.failwitha ['k'; 'e'; 'y'; '_'; 'o'; 'r'; 'd'];;
+ 
+ 
+-end;;
++end;; *)
++
++module Make = functor (Constants : Constants_t) -> functor(Key_value_types: Key_value_types_t) -> struct
+ 
+ 
+ module Key_value : sig
+@@ -1264,3 +1268,64 @@
+ 
+ end;;
+ 
++
++
++
++(* more below \/ *)
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++module Json = struct
++
++
++end
++
++
++
++
++end
++(* end file *)
++

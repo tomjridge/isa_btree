@@ -140,13 +140,15 @@ let rec check_keys_2
         (check_keys None xs l && (check_keys l ks u && check_keys u zs None)));;
 
 let rec ordered_key_list
-  ks = List.pred_list
-         (fun i ->
-           key_lt (List.nth ks i)
-             (List.nth ks (Arith.plus_nat i Arith.one_nat)))
-         (Prelude.from_to Arith.zero_nat
-           (Arith.minus_nat (List.size_list ks)
-             (Arith.nat_of_integer (Big_int.big_int_of_int 2))));;
+  ks = Arith.less_nat (List.size_list ks)
+         (Arith.nat_of_integer (Big_int.big_int_of_int 2)) ||
+         List.pred_list
+           (fun i ->
+             key_lt (List.nth ks i)
+               (List.nth ks (Arith.plus_nat i Arith.one_nat)))
+           (Prelude.from_to Arith.zero_nat
+             (Arith.minus_nat (List.size_list ks)
+               (Arith.nat_of_integer (Big_int.big_int_of_int 2))));;
 
 
 end;;
@@ -383,9 +385,7 @@ module Tree_stack : sig
         ((Tree.tree list) list *
           (Key_value_types.key option *
             ('a * (Key_value_types.key option * (Tree.tree list) list))))
-  val wf_core :
-    Key_value_types.key ->
-      Key_value_types.key Set.set -> ('a, unit) core_t_ext -> bool
+  val wf_core : Key_value_types.key Set.set -> ('a, unit) core_t_ext -> bool
   val with_t : ('a -> 'b) -> ('a, unit) core_t_ext -> ('b, unit) core_t_ext
   val nf_to_aux :
     Key_value_types.key ->
@@ -402,9 +402,7 @@ module Tree_stack : sig
       Constants.min_size_t option
   val without_t : ('a, unit) core_t_ext -> (unit, unit) core_t_ext
   val wellformed_ts :
-    Key_value_types.key ->
-      ((Key_value_types.key list * Tree.tree list), unit) core_t_ext list ->
-        bool
+    ((Key_value_types.key list * Tree.tree list), unit) core_t_ext list -> bool
 end = struct
 
 type ('a, 'b) core_t_ext =
@@ -449,17 +447,16 @@ let rec dest_core
               (Util.rev_apply f f_ku, Util.rev_apply f f_tss2)))));;
 
 let rec wf_core
-  k0 t_keys x =
+  t_keys x =
     let (k, (tss1, (kl, (_, (ku, tss2))))) = Util.rev_apply x dest_core in
-    Key_value_types.equal_keya k k0 &&
-      Key_value.check_keys_2 (Util.rev_apply tss1 Tree.tss_to_keys) kl
-        (Set.insert Key_value_types.equal_key k t_keys) ku
-        (Util.rev_apply tss2 Tree.tss_to_keys);;
+    Key_value.check_keys_2 (Util.rev_apply tss1 Tree.tss_to_keys) kl
+      (Set.insert Key_value_types.equal_key k t_keys) ku
+      (Util.rev_apply tss2 Tree.tss_to_keys);;
 
 let rec wf_nf
-  k0 ms f =
+  ms f =
     let (ks, ts) = Util.rev_apply f f_t in
-    wf_core k0 (Util.rev_apply (Tree.Node (ks, ts)) Tree.tree_to_keys) f;;
+    wf_core (Util.rev_apply (Tree.Node (ks, ts)) Tree.tree_to_keys) f;;
 
 let rec with_t
   f x = let (k, (tss1, (kl, (t, (ku, tss2))))) = Util.rev_apply x dest_core in
@@ -528,20 +525,19 @@ let rec mk_next_frame
         | Tree.Leaf _ -> None);;
 
 let rec wellformed_ts
-  k0 xs =
-    (match xs with [] -> true
-      | c :: xsa ->
-        wf_nf k0 (ts_to_ms xsa) c &&
-          (wellformed_ts k0 xsa &&
-            (match xsa with [] -> true
-              | p :: _ ->
-                Option.equal_option
-                  (equal_core_t_ext
-                    (Product_Type.equal_prod
-                      (List.equal_list Key_value_types.equal_key)
-                      (List.equal_list Tree.equal_Tree))
-                    Product_Type.equal_unit)
-                  (mk_next_frame p) (Some c))));;
+  xs = (match xs with [] -> true
+         | c :: xsa ->
+           wf_nf (ts_to_ms xsa) c &&
+             (wellformed_ts xsa &&
+               (match xsa with [] -> true
+                 | p :: _ ->
+                   Option.equal_option
+                     (equal_core_t_ext
+                       (Product_Type.equal_prod
+                         (List.equal_list Key_value_types.equal_key)
+                         (List.equal_list Tree.equal_Tree))
+                       Product_Type.equal_unit)
+                     (mk_next_frame p) (Some c))));;
 
 
 end;;
@@ -578,11 +574,10 @@ module Find_tree_stack : sig
         Tree_stack.core_t_ext list ->
       ((Key_value_types.key * Key_value_types.value_t) list) option
   val wellformed_fts :
-    Key_value_types.key ->
-      (Tree.tree, unit) Tree_stack.core_t_ext *
-        ((Key_value_types.key list * Tree.tree list), unit)
-          Tree_stack.core_t_ext list ->
-        bool
+    (Tree.tree, unit) Tree_stack.core_t_ext *
+      ((Key_value_types.key list * Tree.tree list), unit)
+        Tree_stack.core_t_ext list ->
+      bool
 end = struct
 
 let rec step_fts
@@ -618,9 +613,9 @@ let rec dest_fts_state
           | Tree.Leaf a -> Some a);;
 
 let rec wellformed_fts_focus
-  k0 ms f =
+  ms f =
     let t = Util.rev_apply f Tree_stack.f_t in
-    Tree_stack.wf_core k0 (Util.rev_apply t Tree.tree_to_keys) f &&
+    Tree_stack.wf_core (Util.rev_apply t Tree.tree_to_keys) f &&
       Tree.wellformed_tree ms t;;
 
 let rec wellformed_fts_1
@@ -630,19 +625,30 @@ let rec wellformed_fts_1
               (Tree_stack.mk_child p) c);;
 
 let rec wellformed_fts
-  k0 fts =
-    let (f, ts) = fts in
-    let ms = Tree_stack.ts_to_ms ts in
-    Tree_stack.wellformed_ts k0 ts &&
-      (wellformed_fts_focus k0 ms f && wellformed_fts_1 fts);;
+  fts = let (f, ts) = fts in
+        let ms = Tree_stack.ts_to_ms ts in
+        Tree_stack.wellformed_ts ts &&
+          (wellformed_fts_focus ms f && wellformed_fts_1 fts);;
 
 
 end;;
 
 
 module Delete_tree_stack : sig
-  type dts_t
-  type dts_state_t
+  type dts_t =
+    D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
+    D_small_node of (Key_value_types.key list * Tree.tree list) |
+    D_updated_subtree of Tree.tree
+  type dts_state_t =
+    Dts_down of
+      ((Tree.tree, unit) Tree_stack.core_t_ext *
+        ((Key_value_types.key list * Tree.tree list), unit)
+          Tree_stack.core_t_ext list)
+    | Dts_up of
+        ((dts_t, unit) Tree_stack.core_t_ext *
+          ((Key_value_types.key list * Tree.tree list), unit)
+            Tree_stack.core_t_ext list)
+    | Dts_finished of Tree.tree
   val step_dts : dts_state_t -> dts_state_t option
   val mk_dts_state : Key_value_types.key -> Tree.tree -> dts_state_t
   val focus_to_leaves :
@@ -650,7 +656,7 @@ module Delete_tree_stack : sig
       ((Key_value_types.key * Key_value_types.value_t) list) list
   val wf_dts_trans : dts_state_t -> dts_state_t -> bool
   val dest_dts_state : dts_state_t -> Tree.tree option
-  val wellformed_dts_state : Key_value_types.key -> dts_state_t -> bool
+  val wellformed_dts_state : dts_state_t -> bool
 end = struct
 
 type dir_t = Right | Left;;
@@ -671,13 +677,26 @@ type dts_state_t =
           Tree_stack.core_t_ext list)
   | Dts_finished of Tree.tree;;
 
+let rec dest_lista
+  xs = (match xs
+         with [] ->
+           Util.failwitha
+             ['d'; 'e'; 's'; 't'; '_'; 'l'; 'i'; 's'; 't'; '\039'; ' ']
+         | _ :: _ -> (List.butlast xs, List.last xs));;
+
 let rec can
   k0 steal_or_merge dir p =
-    let (_, (_, (_, (_, (_, ts2))))) =
+    let (_, (ts1, (_, (_, (_, ts2))))) =
       Util.rev_apply p (Tree_stack.nf_to_aux k0) in
-    let Right = dir in
-    (match ts2 with [] -> None
-      | t :: _ -> (if steal_or_merge t then Some t else None));;
+    (match dir
+      with Right ->
+        (match ts2 with [] -> None
+          | t :: _ -> (if steal_or_merge t then Some t else None))
+      | Left ->
+        (match ts1 with [] -> None
+          | _ :: _ ->
+            let (_, t) = dest_lista ts1 in
+            (if steal_or_merge t then Some t else None)));;
 
 let rec merge_b
   t = (match t
@@ -771,13 +790,6 @@ let rec leaf_merge_right
     let ts = q_ts1 @ [c1] @ q_ts2a in
     let f = take_care ks ts c1 in
     (Util.rev_apply p (Tree_stack.with_t (fun _ -> f)), stk);;
-
-let rec dest_lista
-  xs = (match xs
-         with [] ->
-           Util.failwitha
-             ['d'; 'e'; 's'; 't'; '_'; 'l'; 'i'; 's'; 't'; '\039'; ' ']
-         | _ :: _ -> (List.butlast xs, List.last xs));;
 
 let rec node_steal_left
   k0 p stk c2 =
@@ -1002,17 +1014,17 @@ let rec dest_dts_state
         | Dts_finished a -> Some a);;
 
 let rec wellformed_dts
-  k0 stack_empty dts =
+  stack_empty dts =
     let t = Util.rev_apply dts dts_to_tree in
     let ms = Util.rev_apply dts (dts_to_ms stack_empty) in
     Tree.wellformed_tree ms t;;
 
 let rec wellformed_dts_focus
-  k0 stack_empty f =
+  stack_empty f =
     let dts = Util.rev_apply f Tree_stack.f_t in
-    Tree_stack.wf_core k0
+    Tree_stack.wf_core
       (Util.rev_apply (Util.rev_apply dts dts_to_tree) Tree.tree_to_keys) f &&
-      wellformed_dts k0 stack_empty dts;;
+      wellformed_dts stack_empty dts;;
 
 let rec wellformed_dup_1
   dup = (match dup with (_, []) -> true
@@ -1030,23 +1042,31 @@ let rec wellformed_dup_1
                   Tree.height));;
 
 let rec wellformed_dup
-  k0 dup =
-    let (f, stk) = dup in
-    wellformed_dts_focus k0 (List.null stk) f &&
-      (Tree_stack.wellformed_ts k0 stk && wellformed_dup_1 dup);;
+  dup = let (f, stk) = dup in
+        wellformed_dts_focus (List.null stk) f &&
+          (Tree_stack.wellformed_ts stk && wellformed_dup_1 dup);;
 
 let rec wellformed_dts_state
-  k0 dstate =
-    (match dstate with Dts_down a -> Find_tree_stack.wellformed_fts k0 a
-      | Dts_up (f, stk) -> wellformed_dup k0 (f, stk));;
+  s = (match s with Dts_down a -> Find_tree_stack.wellformed_fts a
+        | Dts_up (f, stk) -> wellformed_dup (f, stk));;
 
 
 end;;
 
 
 module Insert_tree_stack : sig
-  type its_t
-  type its_state_t
+  type its_t = Inserting_one of Tree.tree |
+    Inserting_two of (Tree.tree * (Key_value_types.key * Tree.tree))
+  type its_state_t =
+    Its_down of
+      (((Tree.tree, unit) Tree_stack.core_t_ext *
+         ((Key_value_types.key list * Tree.tree list), unit)
+           Tree_stack.core_t_ext list) *
+        Key_value_types.value_t)
+    | Its_up of
+        ((its_t, unit) Tree_stack.core_t_ext *
+          ((Key_value_types.key list * Tree.tree list), unit)
+            Tree_stack.core_t_ext list)
   val step_its : its_state_t -> its_state_t option
   val mk_its_state :
     Key_value_types.key -> Key_value_types.value_t -> Tree.tree -> its_state_t
@@ -1055,7 +1075,7 @@ module Insert_tree_stack : sig
       ((Key_value_types.key * Key_value_types.value_t) list) list
   val wf_its_trans : its_state_t -> its_state_t -> bool
   val dest_its_state : its_state_t -> Tree.tree option
-  val wellformed_its_state : Key_value_types.key -> its_state_t -> bool
+  val wellformed_its_state : its_state_t -> bool
 end = struct
 
 type its_t = Inserting_one of Tree.tree |
@@ -1214,9 +1234,9 @@ let rec wellformed_its
                   (Util.rev_apply t2 Tree.tree_to_keys) None))));;
 
 let rec wellformed_its_focus
-  k0 stack_empty f =
+  stack_empty f =
     let its = Util.rev_apply f Tree_stack.f_t in
-    Tree_stack.wf_core k0 (Util.rev_apply its its_to_keys) f &&
+    Tree_stack.wf_core (Util.rev_apply its its_to_keys) f &&
       wellformed_its stack_empty its;;
 
 let rec wellformed_iup_1
@@ -1233,15 +1253,13 @@ let rec wellformed_iup_1
                  Tree.height));;
 
 let rec wellformed_iup
-  k0 iu =
-    let (f, stk) = iu in
-    wellformed_its_focus k0 (List.null stk) f &&
-      (Tree_stack.wellformed_ts k0 stk && wellformed_iup_1 iu);;
+  iu = let (f, stk) = iu in
+       wellformed_its_focus (List.null stk) f &&
+         (Tree_stack.wellformed_ts stk && wellformed_iup_1 iu);;
 
 let rec wellformed_its_state
-  k0 its =
-    (match its with Its_down (fts, _) -> Find_tree_stack.wellformed_fts k0 fts
-      | Its_up (f, stk) -> wellformed_iup k0 (f, stk));;
+  its = (match its with Its_down (fts, _) -> Find_tree_stack.wellformed_fts fts
+          | Its_up (f, stk) -> wellformed_iup (f, stk));;
 
 
 end;;

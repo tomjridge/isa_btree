@@ -172,14 +172,6 @@ definition keys :: "Tree => key list" where
 
 (* keys consistent ---------------------------------------- *)
 
-(*
-definition key_indexes :: "Tree => nat list" where
-"key_indexes t == (
-  case t of 
-  Leaf xs => (from_to 0 (length xs - 1))
-  | Node (l,_) => (from_to 0 (length l - 1)))"  
-*)
-
 definition keys_consistent_1 :: "Tree => bool" where
 "keys_consistent_1 t0 == (
 case t0 of Leaf(l) => True

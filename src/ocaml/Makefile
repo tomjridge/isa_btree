@@ -33,7 +33,7 @@ gen_our.ml: backup FORCE
 
 # make this after editing our.ml
 our.diff: backup FORCE
-	-diff gen_our.ml our.ml >$@
+	-diff -u gen_our.ml our.ml >$@
 
 our.ml: backup gen_our.ml FORCE
 	patch -i our.diff gen_our.ml -o $@

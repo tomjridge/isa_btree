@@ -61,10 +61,10 @@ definition wellformed_its :: " bool \<Rightarrow> its_t \<Rightarrow> bool" wher
 
 (* FIXME do we just want to use k from its rather than pass in a k0? this gives much the same; or perhaps we should pass in the k and the v? this gives even
 stronger guarantees and allows to check the functional invariants FIXME FIXME do this *)
-definition wellformed_its_focus :: "key \<Rightarrow> bool \<Rightarrow> its_focus_t => bool" where
-"wellformed_its_focus k0 stack_empty f = (
+definition wellformed_its_focus :: "bool \<Rightarrow> its_focus_t => bool" where
+"wellformed_its_focus stack_empty f = (
   let its = f|>f_t in
-  wf_core k0 (its|>its_to_keys) f &
+  wf_core (its|>its_to_keys) f &
   wellformed_its stack_empty its 
 )"
 
@@ -80,18 +80,18 @@ definition wellformed_iup_1 :: "its_up_t => bool" where
   )
 )"
 
-definition wellformed_iup :: "key \<Rightarrow> its_up_t => bool" where
-"wellformed_iup k0 iu = (
+definition wellformed_iup :: "its_up_t => bool" where
+"wellformed_iup iu = (
   let (f,stk) = iu in
-  wellformed_its_focus k0 (stk=[]) f &
-  wellformed_ts k0 stk &   (* FIXME wf_stk *)
+  wellformed_its_focus (stk=[]) f &
+  wellformed_ts stk &   (* FIXME wf_stk *)
   wellformed_iup_1 iu )"
 
-definition wellformed_its_state :: "key \<Rightarrow> its_state_t \<Rightarrow> bool" where
-"wellformed_its_state k0 its = (
+definition wellformed_its_state :: "its_state_t \<Rightarrow> bool" where
+"wellformed_its_state its = (
   case its of
-  Its_down(fts,v) \<Rightarrow> (wellformed_fts k0 fts)
-  | Its_up(f,stk) \<Rightarrow> (wellformed_iup k0 (f,stk)) 
+  Its_down(fts,v) \<Rightarrow> (wellformed_fts fts)
+  | Its_up(f,stk) \<Rightarrow> (wellformed_iup (f,stk)) 
 )"
   
   

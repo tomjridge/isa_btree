@@ -8,10 +8,10 @@ type_synonym fts_state_t = "fts_focus_t * tree_stack_t"
 
 (* wellformed_fts ---------------------------------------- *)
 
-definition wellformed_fts_focus :: "key \<Rightarrow> ms_t \<Rightarrow> fts_focus_t => bool" where
-"wellformed_fts_focus k0 ms f = (
+definition wellformed_fts_focus :: "ms_t \<Rightarrow> fts_focus_t => bool" where
+"wellformed_fts_focus ms f = (
   let t = f|>f_t in
-  wf_core k0 (t|>tree_to_keys) f &
+  wf_core (t|>tree_to_keys) f &
   wellformed_tree ms t
 )"
 
@@ -24,12 +24,12 @@ definition wellformed_fts_1 :: "fts_state_t => bool" where
   | p#xs => (mk_child p = c)
 )"
 
-definition wellformed_fts :: "key \<Rightarrow> fts_state_t => bool" where
-"wellformed_fts k0 fts = (
+definition wellformed_fts :: "fts_state_t => bool" where
+"wellformed_fts fts = (
   let (f,ts) = fts in
   let ms = ts_to_ms ts in
-  wellformed_ts k0 ts
-  & wellformed_fts_focus k0 ms f
+  wellformed_ts ts
+  & wellformed_fts_focus ms f
   & wellformed_fts_1 fts)"
 
 
@@ -77,7 +77,7 @@ definition fts_trans :: "fts_state_t trans_t" where
 
 (* wf_fts is invariant *)
 definition invariant_wf_fts_lem :: "bool" where
-"invariant_wf_fts_lem = (! k0 P. ((% fts. wellformed_fts k0 fts) = P) \<longrightarrow> invariant fts_trans P)"
+"invariant_wf_fts_lem = (! P. ((% fts. wellformed_fts fts) = P) \<longrightarrow> invariant fts_trans P)"
 
 
 definition focus_to_leaves :: "fts_focus_t \<Rightarrow> leaves_t" where

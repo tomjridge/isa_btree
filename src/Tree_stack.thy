@@ -20,7 +20,7 @@ definition search_key_to_index :: "key list => key => nat" where
  
 definition split_list :: "'a list \<Rightarrow> nat \<Rightarrow> ('a list * 'a * 'a list)" where
 "split_list rs i = (
-  let valid = from_to 0 (length rs -1) in (* valid indexes *)
+  let valid = from_to 0 (length rs -1) in (* valid indexes; assumes rs <> [] *)
   let xs = valid |> filter (% n. n < i) in
   let zs = valid |> filter (% n. n > i) in
   (xs|>map (% j. rs!j),
@@ -47,10 +47,9 @@ definition dest_core :: "'a core_t \<Rightarrow> key * tss_t * key option * 'a *
 lemma [simp]: "f|>dest_core = (k,tss1,kl,t,ku,tss2) \<Longrightarrow> f|>f_t = t" 
  sorry
 
-definition wf_core :: "key \<Rightarrow> key set \<Rightarrow> 'a core_t \<Rightarrow> bool" where
-"wf_core k0 t_keys x = (
+definition wf_core :: "key set \<Rightarrow> 'a core_t \<Rightarrow> bool" where
+"wf_core t_keys x = (
   let (k,tss1,kl,_,ku,tss2) = x|>dest_core in
-  (k=k0) &
   check_keys_2 (tss1|>tss_to_keys) kl (insert k t_keys) ku (tss2|>tss_to_keys)
 )"
 
@@ -78,10 +77,10 @@ definition without_t :: "'a core_t \<Rightarrow> unit core_t" where
 
 type_synonym nf_t = "node_t core_t" 
 
-definition wf_nf :: "key \<Rightarrow> ms_t \<Rightarrow> nf_t \<Rightarrow> bool" where
-"wf_nf k0 ms f = (
+definition wf_nf :: "ms_t \<Rightarrow> nf_t \<Rightarrow> bool" where
+"wf_nf ms f = (
   let (ks,ts) = f|>f_t in
-  wf_core k0 (Node(ks,ts)|>tree_to_keys) f
+  wf_core (Node(ks,ts)|>tree_to_keys) f
 )"
 
 (* from ks,ts we can derive additional values *) 
@@ -176,21 +175,21 @@ lemma ts_to_ms_def_2: "
   done
 
 
-fun wellformed_ts :: "key \<Rightarrow> tree_stack_t => bool" where
-"wellformed_ts k0 xs = (
+fun wellformed_ts :: "tree_stack_t => bool" where
+"wellformed_ts xs = (
   case xs of 
   Nil \<Rightarrow> True
   | c#xs \<Rightarrow> (
-    wf_nf k0 (ts_to_ms xs) c & 
-    wellformed_ts k0 xs &
+    wf_nf (ts_to_ms xs) c & 
+    wellformed_ts xs &
     (case xs of Nil \<Rightarrow> True | p#xs \<Rightarrow> mk_next_frame p = Some c))
 )"
 
 lemma wellformed_ts_def_2: "
-  (wellformed_ts k0 Nil = True) &
-  (wellformed_ts k0 (c#xs) = (
-    wf_nf k0 (ts_to_ms xs) c & 
-    wellformed_ts k0 xs &
+  (wellformed_ts Nil = True) &
+  (wellformed_ts (c#xs) = (
+    wf_nf (ts_to_ms xs) c & 
+    wellformed_ts xs &
     (case xs of Nil \<Rightarrow> True | p#xs \<Rightarrow> mk_next_frame p = Some c)))"
 by simp
 

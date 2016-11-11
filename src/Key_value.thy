@@ -26,7 +26,9 @@ definition kv_lt :: "(key * value_t) => (key * value_t) => bool" where
 
 definition ordered_key_list :: "key list \<Rightarrow> bool" where
 "ordered_key_list ks = (
-  ! i : set(from_to 0 (length ks -2)). key_lt (ks!i) (ks!(i+1)))"
+  (List.length ks < 2) |  
+  (! i : set(from_to 0 (length ks -2)). key_lt (ks!i) (ks!(i+1)))
+)"
 
 (*begin check keys definition*)
 definition check_keys :: "key option => key set => key option => bool" where

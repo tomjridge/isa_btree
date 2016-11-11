@@ -8,16 +8,20 @@ export_code "Code_Numeral.nat_of_integer" "Code_Numeral.int_of_integer"
 
 key_ord
 
-tree_to_leaves
+tree_to_leaves wellformed_tree
 
 dest_core
 
 mk_fts_state step_fts dest_fts_state 
   wellformed_fts wf_fts_trans Find_tree_stack.focus_to_leaves
 
+Inserting_one Inserting_two
+Its_down Its_up
 mk_its_state step_its dest_its_state  
   wellformed_its_state wf_its_trans Insert_tree_stack.focus_to_leaves
-  
+ 
+D_small_leaf D_small_node D_updated_subtree
+Dts_down Dts_up Dts_finished  
 mk_dts_state step_dts dest_dts_state
   wellformed_dts_state wf_dts_trans Delete_tree_stack.focus_to_leaves
 

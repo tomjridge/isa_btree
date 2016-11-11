@@ -60,18 +60,18 @@ definition mk_dts_state :: "key \<Rightarrow> Tree \<Rightarrow> dts_state_t" wh
 
 (* wellformedness ----------------------------------------- *) 
 
-definition wellformed_dts :: "key \<Rightarrow> bool \<Rightarrow> dts_t \<Rightarrow> bool" where
-"wellformed_dts k0 stack_empty dts = (
+definition wellformed_dts :: "bool \<Rightarrow> dts_t \<Rightarrow> bool" where
+"wellformed_dts stack_empty dts = (
   let t = dts |> dts_to_tree in
   let ms = dts |> dts_to_ms stack_empty in 
   wellformed_tree ms t
 )"
 
-definition wellformed_dts_focus :: "key \<Rightarrow> bool \<Rightarrow> dts_focus_t \<Rightarrow> bool" where
-"wellformed_dts_focus k0 stack_empty f = (
+definition wellformed_dts_focus :: "bool \<Rightarrow> dts_focus_t \<Rightarrow> bool" where
+"wellformed_dts_focus stack_empty f = (
   let dts = f|>f_t in
-  wf_core k0 (dts|>dts_to_tree|>tree_to_keys) f &
-  wellformed_dts k0 stack_empty dts
+  wf_core (dts|>dts_to_tree|>tree_to_keys) f &
+  wellformed_dts stack_empty dts
 )"
 
 definition wellformed_dup_1 :: "dts_up_t \<Rightarrow> bool" where
@@ -85,20 +85,20 @@ definition wellformed_dup_1 :: "dts_up_t \<Rightarrow> bool" where
   )
 )"
 
-definition wellformed_dup :: "key \<Rightarrow> dts_up_t \<Rightarrow> bool" where
-"wellformed_dup k0 dup = (
+definition wellformed_dup :: "dts_up_t \<Rightarrow> bool" where
+"wellformed_dup dup = (
   let (f,stk) = dup in
-  wellformed_dts_focus k0 (stk=[]) f &
-  wellformed_ts k0 stk &
+  wellformed_dts_focus (stk=[]) f &
+  wellformed_ts stk &
   wellformed_dup_1 dup
 )"
 
 
-definition wellformed_dts_state :: "key \<Rightarrow> dts_state_t \<Rightarrow> bool" where
-"wellformed_dts_state k0 dstate = (
-  case dstate of
-  Dts_down(fts) \<Rightarrow> (wellformed_fts k0 fts)
-  | Dts_up(f,stk) \<Rightarrow> (wellformed_dup k0 (f,stk))
+definition wellformed_dts_state :: "dts_state_t \<Rightarrow> bool" where
+"wellformed_dts_state s = (
+  case s of
+  Dts_down(fts) \<Rightarrow> (wellformed_fts fts)
+  | Dts_up(f,stk) \<Rightarrow> (wellformed_dup (f,stk))
 )"
 
 
@@ -263,6 +263,13 @@ definition can :: "key \<Rightarrow> (Tree \<Rightarrow> bool) \<Rightarrow> dir
     case ts2 of 
     Nil \<Rightarrow> None
     | t#ts \<Rightarrow> (if steal_or_merge t then Some(t) else None)
+  )
+  | Left \<Rightarrow> (
+    case ts1 of 
+    Nil \<Rightarrow> None
+    | _ \<Rightarrow> (
+      let (ts,t) = dest_list' ts1 in
+      if steal_or_merge t then Some(t) else None)
   )
 )"
 
