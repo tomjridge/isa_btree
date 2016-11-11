@@ -1,5 +1,5 @@
---- gen_our.ml	2016-11-11 18:28:47.172750378 +0000
-+++ our.ml	2016-11-11 18:40:49.911256955 +0000
+--- gen_our.ml	2016-11-11 18:44:39.048974210 +0000
++++ our.ml	2016-11-11 18:56:59.711742065 +0000
 @@ -1,5 +1,7 @@
 -open Gen_isa
 +let string_of_chars chars = chars|>List.map (String.make 1)|>String.concat ""
@@ -34,7 +34,7 @@
  
  type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf;;
  
-@@ -51,10 +53,10 @@
+@@ -51,18 +53,18 @@
  let min_node_keys : Arith.nat = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
  
  
@@ -43,11 +43,13 @@
  
  
 -module Key_value_types : sig
+-  type key
 +module type Key_value_types_t = sig
-   type key
++  type key [@@deriving yojson]
    val equal_keya : key -> key -> bool
    val equal_key : key HOL.equal
-@@ -62,7 +64,7 @@
+-  type value_t
++  type value_t [@@deriving yojson]
    val equal_value_ta : value_t -> value_t -> bool
    val equal_value_t : value_t HOL.equal
    val key_ord : key -> key -> Arith.int
@@ -67,6 +69,24 @@
  
  
  module Key_value : sig
+@@ -156,7 +160,7 @@
+ 
+ module Tree : sig
+   type tree = Node of (Key_value_types.key list * tree list) |
+-    Leaf of (Key_value_types.key * Key_value_types.value_t) list
++    Leaf of (Key_value_types.key * Key_value_types.value_t) list [@@deriving yojson]
+   val equal_Tree : tree HOL.equal
+   val height : tree -> Arith.nat
+   val dest_Leaf : tree -> (Key_value_types.key * Key_value_types.value_t) list
+@@ -174,7 +178,7 @@
+ end = struct
+ 
+ type tree = Node of (Key_value_types.key list * tree list) |
+-  Leaf of (Key_value_types.key * Key_value_types.value_t) list;;
++  Leaf of (Key_value_types.key * Key_value_types.value_t) list [@@deriving yojson];;
+ 
+ let rec equal_Tree () = ({HOL.equal = equal_Treea} : tree HOL.equal)
+ and equal_Treea
 @@ -1264,3 +1268,64 @@
  
  end;;
