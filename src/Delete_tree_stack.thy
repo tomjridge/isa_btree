@@ -288,9 +288,10 @@ definition can_merge_left :: "key \<Rightarrow> nf_t \<Rightarrow> Tree option" 
 
 (* main routine ------------------------------------ *)
 
-definition step_up :: "key \<Rightarrow> dts_up_t \<Rightarrow> dts_state_t" where
-"step_up k0 du = (
+definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
+"step_up du = (
   let (f,stk) = du in
+  let k0 = f|>f_k in
   case stk of 
   Nil \<Rightarrow> (
     let dts = f|>f_t in
@@ -340,8 +341,10 @@ definition step_up :: "key \<Rightarrow> dts_up_t \<Rightarrow> dts_state_t" whe
   )
 )"
 
-definition step_dts :: "key \<Rightarrow> dts_state_t \<Rightarrow> dts_state_t option" where
-"step_dts k0 dts = (
+(* NB we try to keep the executable parts self-contained (no passing -in k v); for wf, we pass in
+k v *)
+definition step_dts :: "dts_state_t \<Rightarrow> dts_state_t option" where
+"step_dts dts = (
   case dts of
   Dts_down(fts) \<Rightarrow> (
     case Find_tree_stack.step_fts fts of
@@ -365,7 +368,7 @@ definition step_dts :: "key \<Rightarrow> dts_state_t \<Rightarrow> dts_state_t 
     )
     | Some(fts') \<Rightarrow> Some(Dts_down(fts'))
   )
-  | Dts_up(f,stk) \<Rightarrow> (Some(step_up k0 (f,stk)))
+  | Dts_up(f,stk) \<Rightarrow> (Some(step_up (f,stk)))
   | Dts_finished(_) \<Rightarrow> None (* exit *)
 )"
 

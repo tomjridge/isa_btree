@@ -1,6 +1,12 @@
 set -a # export all vars
 # set -x # debug
 
+function new_bak() {
+    local n=1 
+    while [ -f "$1.bak.$n" ]; do ((++n)); done
+    echo "$1.bak.$n"
+}
+
 root=$(realpath $(dirname $BASH_SOURCE))/../..
 
  # if using nix, this may not be present

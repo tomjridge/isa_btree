@@ -59,7 +59,8 @@ definition wellformed_its :: " bool \<Rightarrow> its_t \<Rightarrow> bool" wher
     check_keys (Some k) (t2|>tree_to_keys) None)
 )"
 
-
+(* FIXME do we just want to use k from its rather than pass in a k0? this gives much the same; or perhaps we should pass in the k and the v? this gives even
+stronger guarantees and allows to check the functional invariants FIXME FIXME do this *)
 definition wellformed_its_focus :: "key \<Rightarrow> bool \<Rightarrow> its_focus_t => bool" where
 "wellformed_its_focus k0 stack_empty f = (
   let its = f|>f_t in

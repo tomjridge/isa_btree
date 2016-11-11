@@ -32,13 +32,13 @@ let rec from_to x y = List.upt x (Arith.suc y);;
 end;;
 
 
-module Constants : sig
+module type Constants_t = sig
   type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf
   val max_leaf_size : Arith.nat
   val max_node_keys : Arith.nat
   val min_leaf_size : Arith.nat
   val min_node_keys : Arith.nat
-end = struct
+end (*= struct
 
 type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf;;
 
@@ -51,10 +51,10 @@ let min_leaf_size : Arith.nat = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
 let min_node_keys : Arith.nat = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
 
 
-end;;
+end;; *)
 
 
-module Key_value_types : sig
+module type Key_value_types_t = sig
   type key
   val equal_keya : key -> key -> bool
   val equal_key : key HOL.equal
@@ -62,7 +62,7 @@ module Key_value_types : sig
   val equal_value_ta : value_t -> value_t -> bool
   val equal_value_t : value_t HOL.equal
   val key_ord : key -> key -> Arith.int
-end = struct
+end (*= struct
 
 type key = Private_key of Arith.nat;;
 
@@ -80,7 +80,9 @@ let equal_value_t = ({HOL.equal = equal_value_ta} : value_t HOL.equal);;
 let rec key_ord k1 k2 = Util.failwitha ['k'; 'e'; 'y'; '_'; 'o'; 'r'; 'd'];;
 
 
-end;;
+end;; *)
+
+module Make = functor (Constants : Constants_t) -> functor(Key_value_types: Key_value_types_t) -> struct
 
 
 module Key_value : sig
@@ -1216,3 +1218,4 @@ let rec wellformed_its_state
 
 end;;
 
+end

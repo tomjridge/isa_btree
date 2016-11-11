@@ -5,7 +5,7 @@ BASH_ENV=bash_env.sh
 export BASH_ENV
 
 all:
-	$$ocamlc -c gen_isa.ml gen_our.ml
+	$$ocamlc -c gen_isa.ml our.ml btree.ml
 #	$$ocamlopt gen_btree.ml
 
 # all2:
@@ -17,5 +17,26 @@ all:
 # 	ocamlc -c -I /home/tr61/.opam/4.03.0/lib/ocaml nums.cma util.ml
 
 
+# gen_our.ml - copy of isa modules
+# our.ml - edited gen_our.ml.bak to add functorization
+# our.diff - diff from gen_our.ml.bak to our; reapply when gen_our changes
+
+backup: FORCE
+	cp gen_our.ml `new_bak gen_our.ml`
+	cp our.ml `new_bak our.ml`
+	cp our.diff `new_bak our.diff`
+
+gen_our.ml: backup FORCE
+	cp ../generated/$@ .
+
+# make this after editing our.ml
+our.diff: backup FORCE
+	diff gen_our.ml our.ml >$@
+
+our.ml: backup gen_our.ml FORCE
+	patch -i our.diff gen_our.ml -o $@
+
 clean:
-	rm -f *.{cmi,cmo,cmx,o} a.out
+	rm -f *.{cmi,cmo,cmx,o} a.out *.bak.*
+
+FORCE:

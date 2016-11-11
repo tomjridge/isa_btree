@@ -1,0 +1,26 @@
+35c35
+< module Constants : sig
+---
+> module type Constants_t = sig
+41c41
+< end = struct
+---
+> end (*= struct
+54c54
+< end;;
+---
+> end;; *)
+57c57
+< module Key_value_types : sig
+---
+> module type Key_value_types_t = sig
+65c65
+< end = struct
+---
+> end (*= struct
+83c83,85
+< end;;
+---
+> end;; *)
+> 
+> module Make = functor (Constants : Constants_t) -> functor(Key_value_types: Key_value_types_t) -> struct
