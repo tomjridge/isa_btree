@@ -1,26 +1,41 @@
-35c35
+1c1
+< open Gen_isa
+---
+> let string_of_chars chars = chars|>List.map (String.make 1)|>String.concat ""
+2a3,4
+> open Gen_isa
+>   
+10c12
+< let rec failwitha x = failwith "undefined";;
+---
+> let rec failwitha x = x|>string_of_chars|>failwith;;
+35c37
 < module Constants : sig
 ---
 > module type Constants_t = sig
-41c41
+41c43
 < end = struct
 ---
 > end (*= struct
-54c54
+54c56
 < end;;
 ---
 > end;; *)
-57c57
+57c59
 < module Key_value_types : sig
 ---
 > module type Key_value_types_t = sig
-65c65
+65c67
 < end = struct
 ---
 > end (*= struct
-83c83,85
+83c85,87
 < end;;
 ---
 > end;; *)
 > 
 > module Make = functor (Constants : Constants_t) -> functor(Key_value_types: Key_value_types_t) -> struct
+1248a1253,1255
+> 
+> end
+> (* end file *)

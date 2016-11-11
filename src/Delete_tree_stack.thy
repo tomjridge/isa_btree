@@ -372,6 +372,12 @@ definition step_dts :: "dts_state_t \<Rightarrow> dts_state_t option" where
   | Dts_finished(_) \<Rightarrow> None (* exit *)
 )"
 
+definition dest_dts_state :: "dts_state_t \<Rightarrow> Tree option" where
+"dest_dts_state s = (
+  case s of
+  Dts_finished(t) \<Rightarrow> Some(t)
+  | _ \<Rightarrow> None
+)" 
 
 (* testing ------------------------------------------------------------ *)
 

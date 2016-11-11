@@ -1,7 +1,7 @@
 open Gen_isa
 
 module Util : sig
-  val failwitha : 'a -> 'b
+  val failwitha : char list -> 'a
   val split_at : Arith.nat -> 'a list -> 'a list * 'a list
   val rev_apply : 'a -> ('a -> 'b) -> 'b
   val split_at_3 : Arith.nat -> 'a list -> 'a list * ('a * 'a list)
@@ -89,17 +89,17 @@ module Key_value : sig
   val check_keys :
     Key_value_types.key option ->
       Key_value_types.key Set.set -> Key_value_types.key option -> bool
+  val kvs_insert :
+    Key_value_types.key ->
+      Key_value_types.value_t ->
+        (Key_value_types.key * Key_value_types.value_t) list ->
+          (Key_value_types.key * Key_value_types.value_t) list
   val check_keys_2 :
     Key_value_types.key Set.set ->
       Key_value_types.key option ->
         Key_value_types.key Set.set ->
           Key_value_types.key option -> Key_value_types.key Set.set -> bool
   val ordered_key_list : Key_value_types.key list -> bool
-  val lf_ordered_insert :
-    (Key_value_types.key * Key_value_types.value_t) list ->
-      Key_value_types.key ->
-        Key_value_types.value_t ->
-          (Key_value_types.key * Key_value_types.value_t) list
 end = struct
 
 let rec key_eq
@@ -120,6 +120,15 @@ let rec check_keys
       in
     b1 && a;;
 
+let rec kvs_insert
+  k v x2 = match k, v, x2 with k, v, [] -> [(k, v)]
+    | k, v, kv :: kvs ->
+        let (ka, va) = kv in
+        let i = Key_value_types.key_ord ka k in
+        (if Arith.less_int i Arith.zero_int then (ka, va) :: kvs_insert k v kvs
+          else (if Arith.equal_int i Arith.zero_int then (k, v) :: kvs
+                 else (k, v) :: (ka, va) :: kvs));;
+
 let rec check_keys_2
   xs l ks u zs =
     (match Option.is_none l
@@ -139,8 +148,6 @@ let rec ordered_key_list
            (Arith.minus_nat (List.size_list ks)
              (Arith.nat_of_integer (Big_int.big_int_of_int 2))));;
 
-let rec lf_ordered_insert kvs k v = kvs;;
-
 
 end;;
 
@@ -152,6 +159,8 @@ module Tree : sig
   val height : tree -> Arith.nat
   val dest_Leaf : tree -> (Key_value_types.key * Key_value_types.value_t) list
   val dest_Node : tree -> Key_value_types.key list * tree list
+  val tree_to_leaves :
+    tree -> ((Key_value_types.key * Key_value_types.value_t) list) list
   val tss_to_keys : (tree list) list -> Key_value_types.key Set.set
   val tree_to_keys : tree -> Key_value_types.key Set.set
   val tss_to_leaves :
@@ -640,6 +649,7 @@ module Delete_tree_stack : sig
     (dts_t, unit) Tree_stack.core_t_ext ->
       ((Key_value_types.key * Key_value_types.value_t) list) list
   val wf_dts_trans : dts_state_t -> dts_state_t -> bool
+  val dest_dts_state : dts_state_t -> Tree.tree option
   val wellformed_dts_state : Key_value_types.key -> dts_state_t -> bool
 end = struct
 
@@ -987,6 +997,10 @@ let rec wf_dts_trans
           (focus_to_leaves (Product_Type.fst dua))
           (focus_to_leaves (Product_Type.fst du)));;
 
+let rec dest_dts_state
+  s = (match s with Dts_down _ -> None | Dts_up _ -> None
+        | Dts_finished a -> Some a);;
+
 let rec wellformed_dts
   k0 stack_empty dts =
     let t = Util.rev_apply dts dts_to_tree in
@@ -1084,8 +1098,16 @@ let rec step_focus
         Util.rev_apply p (Tree_stack.with_t (fun _ -> t));;
 
 let rec step_up
-  iu = (match iu with (_, []) -> None
-         | (f, x :: xs) -> Some (step_focus x f, xs));;
+  iu = let (f, stk) = iu in
+       (match stk
+         with [] ->
+           (match Util.rev_apply f Tree_stack.f_t with Inserting_one _ -> None
+             | Inserting_two (t1, (k, t2)) ->
+               Some (Util.rev_apply f
+                       (Tree_stack.with_t
+                         (fun _ -> Inserting_one (Tree.Node ([k], [t1; t2])))),
+                      stk))
+         | x :: xs -> Some (step_focus x f, xs));;
 
 let rec its_to_h
   its = (match its with Inserting_one a -> Tree.height a
@@ -1100,9 +1122,15 @@ let rec step_bottom
   down =
     let ((f, stk), v0) = down in
     let k = Util.rev_apply f Tree_stack.f_k in
-    (match Util.rev_apply f Tree_stack.f_t with Tree.Node _ -> None
+    (match Util.rev_apply f Tree_stack.f_t
+      with Tree.Node _ ->
+        Util.failwitha
+          ['s'; 't'; 'e'; 'p'; '_'; 'b'; 'o'; 't'; 't'; 'o'; 'm'; ':'; ' '; 'i';
+            'm'; 'p'; 'o'; 's'; 's'; 'i'; 'b'; 'l'; 'e'; ','; ' '; 'f'; 'i';
+            'n'; 'd'; ' '; 'r'; 'e'; 't'; 'u'; 'r'; 'n'; 's'; ' '; 'l'; 'e';
+            'a'; 'f']
       | Tree.Leaf kvs ->
-        let kvs2 = Key_value.lf_ordered_insert kvs k v0 in
+        let kvs2 = Key_value.kvs_insert k v0 kvs in
         let its =
           (match Arith.less_eq_nat (List.size_list kvs2) Constants.max_leaf_size
             with true -> Inserting_one (Tree.Leaf kvs2)
@@ -1162,7 +1190,9 @@ let rec dest_its_state
             (match a with Inserting_one aa -> Some aa
               | Inserting_two _ ->
                 Util.failwitha
-                  ['i'; 'm'; 'p'; 'o'; 's'; 's'; 'i'; 'b'; 'l'; 'e'])
+                  ['d'; 'e'; 's'; 't'; '_'; 'i'; 't'; 's'; '_'; 's'; 't'; 'a';
+                    't'; 'e'; ':'; ' '; 'i'; 'm'; 'p'; 'o'; 's'; 's'; 'i'; 'b';
+                    'l'; 'e'])
           | Its_up (_, _ :: _) -> None);;
 
 let rec wellformed_its

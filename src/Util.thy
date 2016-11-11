@@ -6,9 +6,11 @@ lemma FIXME: "P" sorry
 
 (* various undefinedness constants ----------------------------- *)
 
-definition failwith :: "'a \<Rightarrow> 'b" where
+definition failwith :: "string \<Rightarrow> 'b" where
 "failwith x = undefined"
 
+
+(*
 definition FIXME :: "'a" where
 "FIXME == undefined"
 
@@ -16,8 +18,8 @@ definition arb :: "'a" where
   "arb == undefined"  
 
 definition impossible :: "'a" where
-  "impossible == undefined"  
-
+  "impossible = failwith ''impossible''"  
+*)
 
 (* misc ------------------------------------------ *)  
   
@@ -62,6 +64,7 @@ definition split_at :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a lis
 definition split_at_3 :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a * 'a list" where
 "split_at_3 n xs = (take n xs,xs!n,drop (n+1) xs)"
 
+(* FIXME remove these in favour of split_at and split_at_3 *)
 definition list_insert_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list" where
 "list_insert_at_n xs n as == (
 let (ys,zs) = split_at n xs in
@@ -85,6 +88,7 @@ definition list_replace_1_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a \<
 "list_replace_1_at_n xs n a == (Some (list_update xs n a))"
 
 (*begin ordered insert definition*)
+(*
 definition list_ordered_insert
  :: "('a => bool) => 'a => 'a list => bool => 'a list"
 where
@@ -96,6 +100,7 @@ let right' = tl right in
 if is_subst
 then left'@e#right'
 else left@e#right)"
+*)
 (*end ordered insert definition*)
 
 
@@ -116,11 +121,5 @@ None => x
 apply (force)+ done
 termination iter_step
  by (force intro:FIXME)
-
- 
-(* code export ------------------------------------------------ *)
-
-export_code "Util._" in Scala module_name Util file "scala/Util.scala"
-export_code "Util._" in OCaml module_name Util file "ocaml/util.ml"
 
 end

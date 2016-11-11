@@ -27,3 +27,7 @@ ocamldep="ocamlfind ocamldep $PKGS"
 
 mk_cma="$DISABLE_BYTE ocamlfind ocamlc"
 mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt"
+
+
+mls="gen_isa.ml our.ml btree.ml"
+cmos="${mls//.ml/.cmo}"

@@ -46,11 +46,23 @@ definition check_keys_2 :: "key set \<Rightarrow> key option \<Rightarrow> key s
   (check_keys u zs None)
 )"
 
-(* insert/ update assuming list ordered *)
-definition lf_ordered_insert :: "kv_t list \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> kv_t list" where
-"lf_ordered_insert kvs k v = (
-kvs (* FIXME *)
+(* first list is in reverse order *)
+primrec take_while :: "('a \<Rightarrow> bool) \<Rightarrow>('a list * 'a list) \<Rightarrow> 'a list \<Rightarrow> 'a list \<times> 'a list" where
+"take_while P acc [] = acc" |
+"take_while P acc (x # xs) = (
+  let (yes,rest) = acc in
+  if P x then take_while P (x#yes,rest) xs else (yes,x#rest))"
+
+primrec kvs_insert :: "key \<Rightarrow> value_t \<Rightarrow> kvs_t \<Rightarrow> kvs_t" where
+"kvs_insert k v [] = [(k,v)]"
+| "kvs_insert k v (kv'#kvs') = (
+  let (k',v') = kv' in
+  let i = key_ord k' k in
+  if i < 0 then (k',v')#(kvs_insert k v kvs')
+  else if i=0 then (k,v)#kvs' else
+  (k,v)#(k',v')#kvs'
 )"
+  
 
 
 end

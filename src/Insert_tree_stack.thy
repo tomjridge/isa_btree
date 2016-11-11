@@ -130,7 +130,10 @@ definition step_up :: "its_up_t => its_up_t option" where
 "step_up iu = (
   let (f,stk) = iu in
   case stk of 
-    Nil => None
+    Nil => (
+      case f|>f_t of
+      Inserting_two (t1,k,t2) \<Rightarrow> Some(f|>with_t (% _. Inserting_one(Node([k],[t1,t2]))),stk)
+      | Inserting_one _ \<Rightarrow> None)  (* exit ensures Inserting_one *)
     | x#xs => Some(step_focus x f,xs))"
 
 
@@ -154,7 +157,7 @@ definition step_bottom :: "its_down_t => its_up_t option" where
   case f|>f_t of
   Leaf kvs => (
     (*tr:need to check whether the leaf is small enough to insert directly*)
-    let kvs2 = lf_ordered_insert kvs k v0 in
+    let kvs2 = kvs_insert k v0 kvs in
     let its = (
       case (length kvs2 \<le> max_leaf_size) of
       True \<Rightarrow> (Inserting_one(Leaf kvs2))
@@ -164,8 +167,8 @@ definition step_bottom :: "its_down_t => its_up_t option" where
         Inserting_two(Leaf left, k,Leaf right)))
     in
     Some(f|>with_t (% _. its),stk))
-  | _ => None (* impossible: find returns leaf *))
-"
+  | _ => (failwith ''step_bottom: impossible, find returns leaf'')
+)"
 
 
 (* step_its ---------------------------------------- *)
@@ -199,7 +202,7 @@ definition dest_its_state :: "its_state_t \<Rightarrow> Tree option" where
       let its = f|>f_t in
       case its of
       Inserting_one t \<Rightarrow> Some(t)
-      | Inserting_two _ \<Rightarrow> (failwith ''impossible''))
+      | Inserting_two _ \<Rightarrow> (failwith ''dest_its_state: impossible''))
     | _ \<Rightarrow> None
   )
 )"
