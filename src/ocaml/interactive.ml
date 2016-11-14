@@ -1,4 +1,8 @@
 #load "nums.cma";;
+
+#require "ppx_deriving_yojson";;
+#require "yojson";;
+
 #load "btree.cma";;
 
 (* to debug: execute with env OCAMLRUNPARAM=b ... *)
@@ -11,8 +15,8 @@ open Btree
 
 module Int_int = struct 
   module Kv : KEY_VALUE_TYPES with type key=int and type value_t=int = struct
-    type key = int
-    type value_t = int
+    type key = int[@@deriving yojson]
+    type value_t = int[@@deriving yojson]
     let key_ord k1 k2 = Pervasives.compare k1 k2
     let equal_value = (=)
   end
@@ -34,9 +38,9 @@ let s0 = ref Btree0.empty
 
 let s1 = Btree0.Insert.insert 1 1 !s0
 
-let s2 = Btree0.Find.find 1 !s0;;
+let s2 = Btree0.Find.find 1 s1;;
 
-let s3 = Btree0.Delete.delete 1 !s0;;
+let s3 = Btree0.Delete.delete 1 s1;;
 
 let _ = 
   for i = 1 to 10 do
@@ -64,7 +68,36 @@ let _ =
     s0 := Btree0.Delete.delete i !s0
   done;;
 
+let Some s = !Btree0.Delete.last_state
+
+(*
+let x = !Our.any_ref;;
+
+let x = ((Obj.magic x) : (Btree0.Isa_c.min_size_t option * Btree0.M.Tree.tree));;
+let _ = Btree0.M.Tree.tree_to_yojson;;
+let _ = Btree0.M.Tree.tree_to_yojson (snd x);;
+
+let _ = (snd x) |> Btree0.M.Tree.tree_to_yojson |> Yojson.Safe.pretty_to_string |> print_endline;;
+
+*)
+
+(*
+
+
+let _ = Btree0.Delete.check_state s
+
+let Some(s,Some s') = !Btree0.Delete.last_trans;;
+
+let _ = Btree0.Delete.check_state s
+
+let _ = Btree0.Delete.check_state s'
+
+
+let _ = Btree0.Delete.check_trans s (Some s')
+
+
 let r4 = Btree0.tree_to_leaves !s0
+
 
 let w = Btree0.M.Tree.wellformed_tree None !s0
 
@@ -75,4 +108,13 @@ let Some(s,Some s') = !Btree0.Delete.last_trans;;
 
 (* let w = s'|>Btree0.tree_to_subtrees *)
 
-let j2 = Btree0.empty |> Btree0.M.Tree.tree_to_yojson
+let dts_s_to_string s = (
+  s|>Btree0.M.Delete_tree_stack.dts_state_t_to_yojson|>Yojson.Safe.pretty_to_string)
+
+let j2 = s |> Btree0.M.Delete_tree_stack.dts_state_t_to_yojson;;
+
+let _ = s |> dts_s_to_string |> print_endline
+
+let _ = s' |> dts_s_to_string |> print_endline
+
+*)

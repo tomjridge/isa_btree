@@ -78,11 +78,4 @@ definition invariant_assuming_b :: "'s trans_t \<Rightarrow>  ('s \<Rightarrow> 
 )"
 
 
-
-(* code export ------------------------------------------------ *)
-
-export_code "Prelude._" in Scala module_name Prelude file "scala/Prelude.scala"
-export_code "Prelude._" in OCaml module_name Prelude file "ocaml/prelude.ml"
-
-
 end

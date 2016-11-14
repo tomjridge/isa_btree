@@ -10,26 +10,18 @@ definition max_node_keys :: nat where "max_node_keys = (failwith ''FIXME'')"
 
 (* FIXME tr: check these are the right restrictions - where are they used in proof?  *)
 
-(*begin wf constants*)
 definition wellformed_constants :: "bool" where
-"wellformed_constants == (
-let wf_node_constants =
-(1 <= min_node_keys 
-&
-(max_node_keys = 2 * min_node_keys
-| max_node_keys = Suc (2 * min_node_keys))
-)
-in
-let (wf_leaf_constants) =
-(1 <= min_leaf_size
-& 
-(max_leaf_size = 2 * min_leaf_size 
-| max_leaf_size = Suc (2 * min_leaf_size))
-)
-in
-wf_node_constants & wf_leaf_constants
+"wellformed_constants = (
+  let wf_node_constants = (
+    1 <= min_node_keys &
+    (max_node_keys = 2 * min_node_keys | max_node_keys = Suc (2 * min_node_keys)))
+  in
+  let (wf_leaf_constants) = (
+    1 <= min_leaf_size & 
+    (max_leaf_size = 2 * min_leaf_size | max_leaf_size = Suc (2 * min_leaf_size)))
+  in
+  wf_node_constants & wf_leaf_constants
 )"
-(*end wf constants*)
 
 (*
 occasionally we need to allow the root to be small, or perhaps

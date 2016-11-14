@@ -100,7 +100,7 @@ definition balanced_1 :: "Tree => bool" where
   (cs = []) | (List.list_all (% c. height c = height (cs!0)) cs)))"
 
 definition balanced :: "Tree => bool" where
-"balanced t == forall_subtrees balanced_1 t"
+"balanced t = assert_true t (forall_subtrees balanced_1 t)"
 (*end wfbalanced*)
 
 
@@ -112,7 +112,7 @@ definition get_min_size :: "(min_size_t * Tree) => nat" where
 get_min_size mt == (
 case mt of
 (Small_root_node_or_leaf,Node _) => 1
-| (Small_root_node_or_leaf,Leaf _) => 0
+| (Small_root_node_or_leaf,Leaf _) => 0  (* NB this is smaller than just Small_leaf *)
 | (Small_node, Node _) => min_node_keys-1
 | (Small_leaf,Leaf _) => min_leaf_size-1
 | (_,_) => undefined  (* FIXME failwith *)
@@ -134,7 +134,7 @@ definition wf_size_1 :: "Tree => bool" where
 "
 
 definition wf_size :: "ms_t => Tree => bool" where
-"wf_size ms t0 == (
+"wf_size ms t0 = assert_true (ms,t0) (
   case ms of
   None => (forall_subtrees wf_size_1 t0)
   | Some m => (
@@ -157,7 +157,7 @@ definition wf_ks_rs_1 :: "Tree => bool" where
   case t0 of Leaf _ => True | Node(l,cs) => ((1+ length l) = (length cs)))"
 
 definition wf_ks_rs :: "Tree => bool" where
-"wf_ks_rs t0 == forall_subtrees wf_ks_rs_1 t0"
+"wf_ks_rs t0 = assert_true t0 (forall_subtrees wf_ks_rs_1 t0)"
 
 export_code wf_ks_rs in Scala module_name Problem file "/tmp/Problem.scala"
 
@@ -165,15 +165,15 @@ export_code wf_ks_rs in Scala module_name Problem file "/tmp/Problem.scala"
 (* keys ---------------------------------------- *)
 
 definition keys_1 :: "Tree => key list" where
-"keys_1 t0 == (case t0 of Leaf xs => (List.map fst xs) | Node (l,cs) => (l))"
+"keys_1 t0 = (case t0 of Leaf xs => (List.map fst xs) | Node (l,cs) => (l))"
 
 definition keys :: "Tree => key list" where
-"keys t0 == (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)" 
+"keys t0 = (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)" 
 
 (* keys consistent ---------------------------------------- *)
 
 definition keys_consistent_1 :: "Tree => bool" where
-"keys_consistent_1 t0 == (
+"keys_consistent_1 t0 = (
 case t0 of Leaf(l) => True
 | Node(ks,rs) => (
   ! i : set(subtree_indexes (ks,rs)). 
@@ -182,22 +182,22 @@ case t0 of Leaf(l) => True
 "
 
 definition keys_consistent :: "Tree => bool" where
-"keys_consistent t == forall_subtrees keys_consistent_1 t"
+"keys_consistent t = assert_true t (forall_subtrees keys_consistent_1 t)"
 
 
 (* keys_ordered ---------------------------------------- *)
 
 definition keys_ordered_1 :: "Tree => bool" where
-"keys_ordered_1 t0 == (t0 |> keys_1 |> ordered_key_list)"
+"keys_ordered_1 t0 = (t0 |> keys_1 |> ordered_key_list)"
 
 definition keys_ordered :: "Tree => bool" where
-"keys_ordered t == forall_subtrees keys_ordered_1 t"
+"keys_ordered t = assert_true t (forall_subtrees keys_ordered_1 t)"
 
 
 (* wf_kv_tree ---------------------------------------- *)
 
 definition wellformed_tree :: "ms_t => Tree => bool" where
-"wellformed_tree ms t0 == (
+"wellformed_tree ms t0 = assert_true (ms,t0) (
   let b1 = wf_size ms t0 in
   let b2 = wf_ks_rs t0 in
   let b3 = balanced t0 in
@@ -210,6 +210,7 @@ definition wellformed_tree :: "ms_t => Tree => bool" where
 
 
 (* tree_to... etc ---------------------------------------- *)
+
 
 function tree_to_leaves :: "Tree => leaf_lbl_t list" where
 "tree_to_leaves t0 = (

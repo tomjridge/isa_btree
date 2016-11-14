@@ -22,7 +22,7 @@ type_synonym dts_focus_t = "dts_t core_t"
 datatype dts_state_t = 
   Dts_down "fts_state_t"
   | Dts_up "dts_focus_t * tree_stack_t"
-  | Dts_finished "Tree"
+  | Dts_finished "Tree"  (* FIXME remove this - complicates cases *)
   
 type_synonym dts_down_t = fts_state_t
 type_synonym dts_up_t = "dts_focus_t * tree_stack_t"
@@ -48,10 +48,13 @@ definition dts_to_tree :: "dts_t \<Rightarrow> Tree" where
 
 definition dts_to_ms :: "bool \<Rightarrow> dts_t \<Rightarrow> ms_t" where
 "dts_to_ms stack_empty dts = (
-  case dts of
-  D_small_leaf kvs \<Rightarrow> Some(if stack_empty then Small_root_node_or_leaf else Small_leaf)
-  | D_small_node(ks,ts) \<Rightarrow> Some(if stack_empty then Small_root_node_or_leaf else Small_node)
-  | D_updated_subtree(t) \<Rightarrow> None
+  case stack_empty of
+    True \<Rightarrow> Some(Small_root_node_or_leaf)
+  | False \<Rightarrow> (
+    case dts of
+    D_small_leaf kvs \<Rightarrow> Some Small_leaf
+    | D_small_node(ks,ts) \<Rightarrow> Some Small_node
+    | D_updated_subtree(t) \<Rightarrow> None)
 )"
 
 definition mk_dts_state :: "key \<Rightarrow> Tree \<Rightarrow> dts_state_t" where
@@ -61,21 +64,21 @@ definition mk_dts_state :: "key \<Rightarrow> Tree \<Rightarrow> dts_state_t" wh
 (* wellformedness ----------------------------------------- *) 
 
 definition wellformed_dts :: "bool \<Rightarrow> dts_t \<Rightarrow> bool" where
-"wellformed_dts stack_empty dts = (
+"wellformed_dts stack_empty dts = assert_true dts (
   let t = dts |> dts_to_tree in
   let ms = dts |> dts_to_ms stack_empty in 
   wellformed_tree ms t
 )"
 
 definition wellformed_dts_focus :: "bool \<Rightarrow> dts_focus_t \<Rightarrow> bool" where
-"wellformed_dts_focus stack_empty f = (
+"wellformed_dts_focus stack_empty f = assert_true (stack_empty,f) (
   let dts = f|>f_t in
   wf_core (dts|>dts_to_tree|>tree_to_keys) f &
   wellformed_dts stack_empty dts
 )"
 
 definition wellformed_dup_1 :: "dts_up_t \<Rightarrow> bool" where
-"wellformed_dup_1 dup = (
+"wellformed_dup_1 dup = assert_true dup (
   let (f,stk) = dup in
   case stk of 
   Nil \<Rightarrow> True
@@ -86,7 +89,7 @@ definition wellformed_dup_1 :: "dts_up_t \<Rightarrow> bool" where
 )"
 
 definition wellformed_dup :: "dts_up_t \<Rightarrow> bool" where
-"wellformed_dup dup = (
+"wellformed_dup dup = assert_true dup (
   let (f,stk) = dup in
   wellformed_dts_focus (stk=[]) f &
   wellformed_ts stk &
@@ -95,10 +98,11 @@ definition wellformed_dup :: "dts_up_t \<Rightarrow> bool" where
 
 
 definition wellformed_dts_state :: "dts_state_t \<Rightarrow> bool" where
-"wellformed_dts_state s = (
+"wellformed_dts_state s = assert_true s (
   case s of
   Dts_down(fts) \<Rightarrow> (wellformed_fts fts)
   | Dts_up(f,stk) \<Rightarrow> (wellformed_dup (f,stk))
+  | Dts_finished(t) \<Rightarrow> (wellformed_tree (Some Small_root_node_or_leaf) t)
 )"
 
 
@@ -340,10 +344,10 @@ definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
         )
       )
     )
-    | D_updated_subtree(t) \<Rightarrow> (
+    | D_updated_subtree(t') \<Rightarrow> (
       let q = p |> nf_to_aux k0 in
       let (i,ts1,ks1,t,ks2,ts2) = q in
-      Dts_up(p|> with_t (% _. D_updated_subtree(Node(ks1@ks2,ts1@[t]@ts2))),stk')
+      Dts_up(p|> with_t (% _. D_updated_subtree(Node(ks1@ks2,ts1@[t']@ts2))),stk')
     )
   )
 )"
@@ -398,11 +402,15 @@ definition focus_to_leaves :: "dts_focus_t \<Rightarrow> leaves_t" where
 )"
 
 definition wf_dts_trans :: "dts_state_t \<Rightarrow> dts_state_t \<Rightarrow> bool" where
-"wf_dts_trans s1 s2 = (
+"wf_dts_trans s1 s2 = assert_true (s1,s2) (
   case (s1,s2) of 
   (Dts_down(fts),Dts_down(fts')) \<Rightarrow> (wf_fts_trans fts fts')
   | (Dts_down(_),Dts_up(_)) \<Rightarrow> True
-  | (Dts_up(du),Dts_up(du')) \<Rightarrow> (focus_to_leaves (fst du') = focus_to_leaves (fst du))
+  | (Dts_down(_),Dts_finished(t)) \<Rightarrow> True
+  | (Dts_up(du),Dts_up(du')) \<Rightarrow> (
+    (* no reason to expect that the leaves are preserved exactly *)
+    focus_to_leaves (fst du')|>List.concat = focus_to_leaves (fst du)|>List.concat)
+  | (Dts_up(du),Dts_finished(t)) \<Rightarrow> (focus_to_leaves (fst du) = tree_to_leaves t)
 )"
 
 

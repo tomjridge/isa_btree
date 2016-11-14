@@ -5,6 +5,7 @@ module Util : sig
   val split_at : Arith.nat -> 'a list -> 'a list * 'a list
   val rev_apply : 'a -> ('a -> 'b) -> 'b
   val split_at_3 : Arith.nat -> 'a list -> 'a list * ('a * 'a list)
+  val assert_true : 'a -> bool -> bool
 end = struct
 
 let rec failwitha x = failwith "undefined";;
@@ -17,6 +18,8 @@ let rec split_at_3
   n xs =
     (List.take n xs,
       (List.nth xs n, List.drop (Arith.plus_nat n Arith.one_nat) xs));;
+
+let rec assert_true arg b = b;;
 
 
 end;;
@@ -239,19 +242,20 @@ let rec wf_size_1
 
 let rec wf_size
   ms t0 =
-    (match ms with None -> forall_subtrees wf_size_1 t0
-      | Some m ->
-        let min = get_min_size (m, t0) in
-        (match t0
-          with Node (l, cs) ->
-            let n = List.size_list l in
-            Arith.less_eq_nat min n &&
-              (Arith.less_eq_nat n Constants.max_node_keys &&
-                List.pred_list (forall_subtrees wf_size_1) cs)
-          | Leaf xs ->
-            let n = List.size_list xs in
-            Arith.less_eq_nat min n &&
-              Arith.less_eq_nat n Constants.max_leaf_size));;
+    Util.assert_true (ms, t0)
+      (match ms with None -> forall_subtrees wf_size_1 t0
+        | Some m ->
+          let min = get_min_size (m, t0) in
+          (match t0
+            with Node (l, cs) ->
+              let n = List.size_list l in
+              Arith.less_eq_nat min n &&
+                (Arith.less_eq_nat n Constants.max_node_keys &&
+                  List.pred_list (forall_subtrees wf_size_1) cs)
+            | Leaf xs ->
+              let n = List.size_list xs in
+              Arith.less_eq_nat min n &&
+                Arith.less_eq_nat n Constants.max_leaf_size));;
 
 let rec balanced_1
   t0 = (match t0
@@ -264,7 +268,7 @@ let rec balanced_1
                cs
          | Leaf _ -> true);;
 
-let rec balanced t = forall_subtrees balanced_1 t;;
+let rec balanced t = Util.assert_true t (forall_subtrees balanced_1 t);;
 
 let rec wf_ks_rs_1
   t0 = (match t0
@@ -273,7 +277,7 @@ let rec wf_ks_rs_1
              (List.size_list cs)
          | Leaf _ -> true);;
 
-let rec wf_ks_rs t0 = forall_subtrees wf_ks_rs_1 t0;;
+let rec wf_ks_rs t0 = Util.assert_true t0 (forall_subtrees wf_ks_rs_1 t0);;
 
 let rec dest_Leaf
   = function Leaf kvs -> kvs
@@ -307,7 +311,7 @@ let rec tss_to_keys
 let rec keys_ordered_1
   t0 = Util.rev_apply (Util.rev_apply t0 keys_1) Key_value.ordered_key_list;;
 
-let rec keys_ordered t = forall_subtrees keys_ordered_1 t;;
+let rec keys_ordered t = Util.assert_true t (forall_subtrees keys_ordered_1 t);;
 
 let rec tree_to_keys
   t = Util.rev_apply
@@ -353,17 +357,19 @@ let rec keys_consistent_1
              (subtree_indexes (ks, rs))
          | Leaf _ -> true);;
 
-let rec keys_consistent t = forall_subtrees keys_consistent_1 t;;
+let rec keys_consistent
+  t = Util.assert_true t (forall_subtrees keys_consistent_1 t);;
 
 let rec wellformed_tree
   ms t0 =
-    let b1 = wf_size ms t0 in
-    let b2 = wf_ks_rs t0 in
-    let b3 = balanced t0 in
-    let b4 = keys_consistent t0 in
-    let b5 = keys_ordered t0 in
-    let wf = b1 && (b2 && (b3 && (b4 && b5))) in
-    wf;;
+    Util.assert_true (ms, t0)
+      (let b1 = wf_size ms t0 in
+       let b2 = wf_ks_rs t0 in
+       let b3 = balanced t0 in
+       let b4 = keys_consistent t0 in
+       let b5 = keys_ordered t0 in
+       let wf = b1 && (b2 && (b3 && (b4 && b5))) in
+       wf);;
 
 
 end;;
@@ -448,15 +454,17 @@ let rec dest_core
 
 let rec wf_core
   t_keys x =
-    let (k, (tss1, (kl, (_, (ku, tss2))))) = Util.rev_apply x dest_core in
-    Key_value.check_keys_2 (Util.rev_apply tss1 Tree.tss_to_keys) kl
-      (Set.insert Key_value_types.equal_key k t_keys) ku
-      (Util.rev_apply tss2 Tree.tss_to_keys);;
+    Util.assert_true (t_keys, x)
+      (let (k, (tss1, (kl, (_, (ku, tss2))))) = Util.rev_apply x dest_core in
+       Key_value.check_keys_2 (Util.rev_apply tss1 Tree.tss_to_keys) kl
+         (Set.insert Key_value_types.equal_key k t_keys) ku
+         (Util.rev_apply tss2 Tree.tss_to_keys));;
 
 let rec wf_nf
   ms f =
-    let (ks, ts) = Util.rev_apply f f_t in
-    wf_core (Util.rev_apply (Tree.Node (ks, ts)) Tree.tree_to_keys) f;;
+    Util.assert_true (ms, f)
+      (let (ks, ts) = Util.rev_apply f f_t in
+       wf_core (Util.rev_apply (Tree.Node (ks, ts)) Tree.tree_to_keys) f);;
 
 let rec with_t
   f x = let (k, (tss1, (kl, (t, (ku, tss2))))) = Util.rev_apply x dest_core in
@@ -525,19 +533,20 @@ let rec mk_next_frame
         | Tree.Leaf _ -> None);;
 
 let rec wellformed_ts
-  xs = (match xs with [] -> true
-         | c :: xsa ->
-           wf_nf (ts_to_ms xsa) c &&
-             (wellformed_ts xsa &&
-               (match xsa with [] -> true
-                 | p :: _ ->
-                   Option.equal_option
-                     (equal_core_t_ext
-                       (Product_Type.equal_prod
-                         (List.equal_list Key_value_types.equal_key)
-                         (List.equal_list Tree.equal_Tree))
-                       Product_Type.equal_unit)
-                     (mk_next_frame p) (Some c))));;
+  xs = Util.assert_true xs
+         (match xs with [] -> true
+           | c :: xsa ->
+             wf_nf (ts_to_ms xsa) c &&
+               (wellformed_ts xsa &&
+                 (match xsa with [] -> true
+                   | p :: _ ->
+                     Option.equal_option
+                       (equal_core_t_ext
+                         (Product_Type.equal_prod
+                           (List.equal_list Key_value_types.equal_key)
+                           (List.equal_list Tree.equal_Tree))
+                         Product_Type.equal_unit)
+                       (mk_next_frame p) (Some c))));;
 
 
 end;;
@@ -600,12 +609,13 @@ let rec focus_to_leaves
 
 let rec wf_fts_trans
   s1 s2 =
-    List.equal_lista
-      (List.equal_list
-        (Product_Type.equal_prod Key_value_types.equal_key
-          Key_value_types.equal_value_t))
-      (focus_to_leaves (Product_Type.fst s2))
-      (focus_to_leaves (Product_Type.fst s1));;
+    Util.assert_true (s1, s2)
+      (List.equal_lista
+        (List.equal_list
+          (Product_Type.equal_prod Key_value_types.equal_key
+            Key_value_types.equal_value_t))
+        (focus_to_leaves (Product_Type.fst s2))
+        (focus_to_leaves (Product_Type.fst s1)));;
 
 let rec dest_fts_state
   fts = let (f, _) = fts in
@@ -614,21 +624,24 @@ let rec dest_fts_state
 
 let rec wellformed_fts_focus
   ms f =
-    let t = Util.rev_apply f Tree_stack.f_t in
-    Tree_stack.wf_core (Util.rev_apply t Tree.tree_to_keys) f &&
-      Tree.wellformed_tree ms t;;
+    Util.assert_true (ms, f)
+      (let t = Util.rev_apply f Tree_stack.f_t in
+       Tree_stack.wf_core (Util.rev_apply t Tree.tree_to_keys) f &&
+         Tree.wellformed_tree ms t);;
 
 let rec wellformed_fts_1
-  fts = (match fts with (_, []) -> true
-          | (c, p :: _) ->
-            Tree_stack.equal_core_t_exta Tree.equal_Tree Product_Type.equal_unit
-              (Tree_stack.mk_child p) c);;
+  fts = Util.assert_true fts
+          (match fts with (_, []) -> true
+            | (c, p :: _) ->
+              Tree_stack.equal_core_t_exta Tree.equal_Tree
+                Product_Type.equal_unit (Tree_stack.mk_child p) c);;
 
 let rec wellformed_fts
-  fts = let (f, ts) = fts in
-        let ms = Tree_stack.ts_to_ms ts in
-        Tree_stack.wellformed_ts ts &&
-          (wellformed_fts_focus ms f && wellformed_fts_1 fts);;
+  fts = Util.assert_true fts
+          (let (f, ts) = fts in
+           let ms = Tree_stack.ts_to_ms ts in
+           Tree_stack.wellformed_ts ts &&
+             (wellformed_fts_focus ms f && wellformed_fts_1 fts));;
 
 
 end;;
@@ -920,8 +933,8 @@ let rec step_up
                            Dts_up (node_merge_right k0 p stka (ks, ts)))
                      | Some _ -> Dts_up (node_steal_left k0 p stka (ks, ts)))
                  | Some _ -> Dts_up (node_steal_right k0 p stka (ks, ts)))
-             | D_updated_subtree _ ->
-               let (_, (ts1, (ks1, (t, (ks2, ts2))))) =
+             | D_updated_subtree t ->
+               let (_, (ts1, (ks1, (_, (ks2, ts2))))) =
                  Util.rev_apply p (Tree_stack.nf_to_aux k0) in
                Dts_up
                  (Util.rev_apply p
@@ -979,14 +992,11 @@ let rec step_dts
 
 let rec dts_to_ms
   stack_empty dts =
-    (match dts
-      with D_small_leaf _ ->
-        Some (if stack_empty then Constants.Small_root_node_or_leaf
-               else Constants.Small_leaf)
-      | D_small_node (_, _) ->
-        Some (if stack_empty then Constants.Small_root_node_or_leaf
-               else Constants.Small_node)
-      | D_updated_subtree _ -> None);;
+    (match stack_empty with true -> Some Constants.Small_root_node_or_leaf
+      | false ->
+        (match dts with D_small_leaf _ -> Some Constants.Small_leaf
+          | D_small_node (_, _) -> Some Constants.Small_node
+          | D_updated_subtree _ -> None));;
 
 let rec mk_dts_state k0 t = Dts_down (Find_tree_stack.mk_fts_state k0 t);;
 
@@ -998,16 +1008,23 @@ let rec focus_to_leaves
 
 let rec wf_dts_trans
   s1 s2 =
-    (match (s1, s2)
-      with (Dts_down fts, Dts_down a) -> Find_tree_stack.wf_fts_trans fts a
-      | (Dts_down _, Dts_up _) -> true
-      | (Dts_up du, Dts_up dua) ->
-        List.equal_lista
-          (List.equal_list
+    Util.assert_true (s1, s2)
+      (match (s1, s2)
+        with (Dts_down fts, Dts_down a) -> Find_tree_stack.wf_fts_trans fts a
+        | (Dts_down _, Dts_up _) -> true | (Dts_down _, Dts_finished _) -> true
+        | (Dts_up du, Dts_up dua) ->
+          List.equal_lista
             (Product_Type.equal_prod Key_value_types.equal_key
-              Key_value_types.equal_value_t))
-          (focus_to_leaves (Product_Type.fst dua))
-          (focus_to_leaves (Product_Type.fst du)));;
+              Key_value_types.equal_value_t)
+            (Util.rev_apply (focus_to_leaves (Product_Type.fst dua))
+              List.concat)
+            (Util.rev_apply (focus_to_leaves (Product_Type.fst du)) List.concat)
+        | (Dts_up du, Dts_finished t) ->
+          List.equal_lista
+            (List.equal_list
+              (Product_Type.equal_prod Key_value_types.equal_key
+                Key_value_types.equal_value_t))
+            (focus_to_leaves (Product_Type.fst du)) (Tree.tree_to_leaves t));;
 
 let rec dest_dts_state
   s = (match s with Dts_down _ -> None | Dts_up _ -> None
@@ -1015,40 +1032,49 @@ let rec dest_dts_state
 
 let rec wellformed_dts
   stack_empty dts =
-    let t = Util.rev_apply dts dts_to_tree in
-    let ms = Util.rev_apply dts (dts_to_ms stack_empty) in
-    Tree.wellformed_tree ms t;;
+    Util.assert_true dts
+      (let t = Util.rev_apply dts dts_to_tree in
+       let ms = Util.rev_apply dts (dts_to_ms stack_empty) in
+       Tree.wellformed_tree ms t);;
 
 let rec wellformed_dts_focus
   stack_empty f =
-    let dts = Util.rev_apply f Tree_stack.f_t in
-    Tree_stack.wf_core
-      (Util.rev_apply (Util.rev_apply dts dts_to_tree) Tree.tree_to_keys) f &&
-      wellformed_dts stack_empty dts;;
+    Util.assert_true (stack_empty, f)
+      (let dts = Util.rev_apply f Tree_stack.f_t in
+       Tree_stack.wf_core
+         (Util.rev_apply (Util.rev_apply dts dts_to_tree) Tree.tree_to_keys)
+         f &&
+         wellformed_dts stack_empty dts);;
 
 let rec wellformed_dup_1
-  dup = (match dup with (_, []) -> true
-          | (f, p :: _) ->
-            Tree_stack.equal_core_t_exta Product_Type.equal_unit
-              Product_Type.equal_unit (Util.rev_apply f Tree_stack.without_t)
-              (Util.rev_apply (Tree_stack.mk_child p) Tree_stack.without_t) &&
-              Arith.equal_nat
-                (Util.rev_apply
-                  (Util.rev_apply (Util.rev_apply f Tree_stack.f_t) dts_to_tree)
-                  Tree.height)
-                (Util.rev_apply
-                  (Util.rev_apply (Util.rev_apply p Tree_stack.mk_child)
-                    Tree_stack.f_t)
-                  Tree.height));;
+  dup = Util.assert_true dup
+          (match dup with (_, []) -> true
+            | (f, p :: _) ->
+              Tree_stack.equal_core_t_exta Product_Type.equal_unit
+                Product_Type.equal_unit (Util.rev_apply f Tree_stack.without_t)
+                (Util.rev_apply (Tree_stack.mk_child p) Tree_stack.without_t) &&
+                Arith.equal_nat
+                  (Util.rev_apply
+                    (Util.rev_apply (Util.rev_apply f Tree_stack.f_t)
+                      dts_to_tree)
+                    Tree.height)
+                  (Util.rev_apply
+                    (Util.rev_apply (Util.rev_apply p Tree_stack.mk_child)
+                      Tree_stack.f_t)
+                    Tree.height));;
 
 let rec wellformed_dup
-  dup = let (f, stk) = dup in
-        wellformed_dts_focus (List.null stk) f &&
-          (Tree_stack.wellformed_ts stk && wellformed_dup_1 dup);;
+  dup = Util.assert_true dup
+          (let (f, stk) = dup in
+           wellformed_dts_focus (List.null stk) f &&
+             (Tree_stack.wellformed_ts stk && wellformed_dup_1 dup));;
 
 let rec wellformed_dts_state
-  s = (match s with Dts_down a -> Find_tree_stack.wellformed_fts a
-        | Dts_up (f, stk) -> wellformed_dup (f, stk));;
+  s = Util.assert_true s
+        (match s with Dts_down a -> Find_tree_stack.wellformed_fts a
+          | Dts_up (f, stk) -> wellformed_dup (f, stk)
+          | Dts_finished a ->
+            Tree.wellformed_tree (Some Constants.Small_root_node_or_leaf) a);;
 
 
 end;;
@@ -1191,17 +1217,18 @@ let rec focus_to_leaves
 
 let rec wf_its_trans
   s1 s2 =
-    (match (s1, s2)
-      with (Its_down (fts, v), Its_down (ftsa, va)) ->
-        Find_tree_stack.wf_fts_trans fts ftsa &&
-          Key_value_types.equal_value_ta va v
-      | (Its_down (_, _), Its_up (_, _)) -> true
-      | (Its_up (f, _), Its_up (fa, _)) ->
-        List.equal_lista
-          (List.equal_list
-            (Product_Type.equal_prod Key_value_types.equal_key
-              Key_value_types.equal_value_t))
-          (focus_to_leaves fa) (focus_to_leaves f));;
+    Util.assert_true (s1, s2)
+      (match (s1, s2)
+        with (Its_down (fts, v), Its_down (ftsa, va)) ->
+          Find_tree_stack.wf_fts_trans fts ftsa &&
+            Key_value_types.equal_value_ta va v
+        | (Its_down (_, _), Its_up (_, _)) -> true
+        | (Its_up (f, _), Its_up (fa, _)) ->
+          List.equal_lista
+            (List.equal_list
+              (Product_Type.equal_prod Key_value_types.equal_key
+                Key_value_types.equal_value_t))
+            (focus_to_leaves fa) (focus_to_leaves f));;
 
 let rec dest_its_state
   its = (match its with Its_down _ -> None
@@ -1217,49 +1244,56 @@ let rec dest_its_state
 
 let rec wellformed_its
   stack_empty its =
-    (match its
-      with Inserting_one t ->
-        let ms =
-          (match stack_empty with true -> Some Constants.Small_root_node_or_leaf
-            | false -> None)
-          in
-        Tree.wellformed_tree ms t
-      | Inserting_two (t1, (k, t2)) ->
-        Arith.equal_nat (Tree.height t2) (Tree.height t1) &&
-          (Tree.wellformed_tree None t1 &&
-            (Tree.wellformed_tree None t2 &&
-              (Key_value.check_keys None (Util.rev_apply t1 Tree.tree_to_keys)
-                 (Some k) &&
-                Key_value.check_keys (Some k)
-                  (Util.rev_apply t2 Tree.tree_to_keys) None))));;
+    Util.assert_true (stack_empty, its)
+      (match its
+        with Inserting_one t ->
+          let ms =
+            (match stack_empty
+              with true -> Some Constants.Small_root_node_or_leaf
+              | false -> None)
+            in
+          Tree.wellformed_tree ms t
+        | Inserting_two (t1, (k, t2)) ->
+          Arith.equal_nat (Tree.height t2) (Tree.height t1) &&
+            (Tree.wellformed_tree None t1 &&
+              (Tree.wellformed_tree None t2 &&
+                (Key_value.check_keys None (Util.rev_apply t1 Tree.tree_to_keys)
+                   (Some k) &&
+                  Key_value.check_keys (Some k)
+                    (Util.rev_apply t2 Tree.tree_to_keys) None))));;
 
 let rec wellformed_its_focus
   stack_empty f =
-    let its = Util.rev_apply f Tree_stack.f_t in
-    Tree_stack.wf_core (Util.rev_apply its its_to_keys) f &&
-      wellformed_its stack_empty its;;
+    Util.assert_true (stack_empty, f)
+      (let its = Util.rev_apply f Tree_stack.f_t in
+       Tree_stack.wf_core (Util.rev_apply its its_to_keys) f &&
+         wellformed_its stack_empty its);;
 
 let rec wellformed_iup_1
-  iu = (match iu with (_, []) -> true
-         | (f, p :: _) ->
-           Tree_stack.equal_core_t_exta Product_Type.equal_unit
-             Product_Type.equal_unit (Util.rev_apply f Tree_stack.without_t)
-             (Util.rev_apply (Tree_stack.mk_child p) Tree_stack.without_t) &&
-             Arith.equal_nat
-               (Util.rev_apply (Util.rev_apply f Tree_stack.f_t) its_to_h)
-               (Util.rev_apply
-                 (Util.rev_apply (Util.rev_apply p Tree_stack.mk_child)
-                   Tree_stack.f_t)
-                 Tree.height));;
+  iu = Util.assert_true iu
+         (match iu with (_, []) -> true
+           | (f, p :: _) ->
+             Tree_stack.equal_core_t_exta Product_Type.equal_unit
+               Product_Type.equal_unit (Util.rev_apply f Tree_stack.without_t)
+               (Util.rev_apply (Tree_stack.mk_child p) Tree_stack.without_t) &&
+               Arith.equal_nat
+                 (Util.rev_apply (Util.rev_apply f Tree_stack.f_t) its_to_h)
+                 (Util.rev_apply
+                   (Util.rev_apply (Util.rev_apply p Tree_stack.mk_child)
+                     Tree_stack.f_t)
+                   Tree.height));;
 
 let rec wellformed_iup
-  iu = let (f, stk) = iu in
-       wellformed_its_focus (List.null stk) f &&
-         (Tree_stack.wellformed_ts stk && wellformed_iup_1 iu);;
+  iu = Util.assert_true iu
+         (let (f, stk) = iu in
+          wellformed_its_focus (List.null stk) f &&
+            (Tree_stack.wellformed_ts stk && wellformed_iup_1 iu));;
 
 let rec wellformed_its_state
-  its = (match its with Its_down (fts, _) -> Find_tree_stack.wellformed_fts fts
-          | Its_up (f, stk) -> wellformed_iup (f, stk));;
+  its = Util.assert_true its
+          (match its
+            with Its_down (fts, _) -> Find_tree_stack.wellformed_fts fts
+            | Its_up (f, stk) -> wellformed_iup (f, stk));;
 
 
 end;;

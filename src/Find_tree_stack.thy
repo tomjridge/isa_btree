@@ -9,7 +9,7 @@ type_synonym fts_state_t = "fts_focus_t * tree_stack_t"
 (* wellformed_fts ---------------------------------------- *)
 
 definition wellformed_fts_focus :: "ms_t \<Rightarrow> fts_focus_t => bool" where
-"wellformed_fts_focus ms f = (
+"wellformed_fts_focus ms f = assert_true (ms,f) (
   let t = f|>f_t in
   wf_core (t|>tree_to_keys) f &
   wellformed_tree ms t
@@ -17,7 +17,7 @@ definition wellformed_fts_focus :: "ms_t \<Rightarrow> fts_focus_t => bool" wher
 
 (* tr: interaction between focus and context *)
 definition wellformed_fts_1 :: "fts_state_t => bool" where
-"wellformed_fts_1 fts = (
+"wellformed_fts_1 fts = assert_true fts (
   let (c,ts) = fts in
   case ts of
   Nil => True
@@ -25,7 +25,7 @@ definition wellformed_fts_1 :: "fts_state_t => bool" where
 )"
 
 definition wellformed_fts :: "fts_state_t => bool" where
-"wellformed_fts fts = (
+"wellformed_fts fts = assert_true fts (
   let (f,ts) = fts in
   let ms = ts_to_ms ts in
   wellformed_ts ts
@@ -105,7 +105,7 @@ we should also export focus_to_leaves because it is the basis of the map abstrac
 *)
 
 definition wf_fts_trans :: "fts_state_t \<Rightarrow> fts_state_t \<Rightarrow> bool" where
-"wf_fts_trans s1 s2 = (focus_to_leaves (fst s2) = focus_to_leaves (fst s1))"
+"wf_fts_trans s1 s2 = assert_true (s1,s2) (focus_to_leaves (fst s2) = focus_to_leaves (fst s1))"
 
 
 

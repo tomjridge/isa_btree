@@ -48,7 +48,7 @@ lemma [simp]: "f|>dest_core = (k,tss1,kl,t,ku,tss2) \<Longrightarrow> f|>f_t = t
  sorry
 
 definition wf_core :: "key set \<Rightarrow> 'a core_t \<Rightarrow> bool" where
-"wf_core t_keys x = (
+"wf_core t_keys x = assert_true (t_keys,x) (
   let (k,tss1,kl,_,ku,tss2) = x|>dest_core in
   check_keys_2 (tss1|>tss_to_keys) kl (insert k t_keys) ku (tss2|>tss_to_keys)
 )"
@@ -78,7 +78,7 @@ definition without_t :: "'a core_t \<Rightarrow> unit core_t" where
 type_synonym nf_t = "node_t core_t" 
 
 definition wf_nf :: "ms_t \<Rightarrow> nf_t \<Rightarrow> bool" where
-"wf_nf ms f = (
+"wf_nf ms f = assert_true (ms,f) (
   let (ks,ts) = f|>f_t in
   wf_core (Node(ks,ts)|>tree_to_keys) f
 )"
@@ -149,7 +149,7 @@ definition mk_next_frame :: "nf_t \<Rightarrow> nf_t option" where
 use it for ascending the tree - ie the focus is irrelevant *)
 
 definition wf_parent_child :: "nf_t \<Rightarrow> 'a core_t \<Rightarrow> bool" where
-"wf_parent_child p c = (
+"wf_parent_child p c = assert_true (p,c) (
   let c' = mk_child p in
   c'|>without_t = c|>without_t 
 )"
@@ -176,7 +176,7 @@ lemma ts_to_ms_def_2: "
 
 
 fun wellformed_ts :: "tree_stack_t => bool" where
-"wellformed_ts xs = (
+"wellformed_ts xs = assert_true xs (
   case xs of 
   Nil \<Rightarrow> True
   | c#xs \<Rightarrow> (
@@ -191,7 +191,7 @@ lemma wellformed_ts_def_2: "
     wf_nf (ts_to_ms xs) c & 
     wellformed_ts xs &
     (case xs of Nil \<Rightarrow> True | p#xs \<Rightarrow> mk_next_frame p = Some c)))"
-by simp
+by(simp add: assert_true_def)
 
 declare wellformed_ts.simps[simp del]
 

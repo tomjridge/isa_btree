@@ -43,7 +43,7 @@ definition its_to_h :: "its_t \<Rightarrow> nat" where
 (* wellformedness ---------------------------------------- *)
 
 definition wellformed_its :: " bool \<Rightarrow> its_t \<Rightarrow> bool" where
-"wellformed_its stack_empty its = (
+"wellformed_its stack_empty its = assert_true (stack_empty,its) (
   case its of
   Inserting_one t => (
     let ms = case stack_empty of  (* FIXME define its_to_ms *) 
@@ -62,7 +62,7 @@ definition wellformed_its :: " bool \<Rightarrow> its_t \<Rightarrow> bool" wher
 (* FIXME do we just want to use k from its rather than pass in a k0? this gives much the same; or perhaps we should pass in the k and the v? this gives even
 stronger guarantees and allows to check the functional invariants FIXME FIXME do this *)
 definition wellformed_its_focus :: "bool \<Rightarrow> its_focus_t => bool" where
-"wellformed_its_focus stack_empty f = (
+"wellformed_its_focus stack_empty f = assert_true (stack_empty,f) (
   let its = f|>f_t in
   wf_core (its|>its_to_keys) f &
   wellformed_its stack_empty its 
@@ -70,7 +70,7 @@ definition wellformed_its_focus :: "bool \<Rightarrow> its_focus_t => bool" wher
 
 
 definition wellformed_iup_1 :: "its_up_t => bool" where
-"wellformed_iup_1 iu = (
+"wellformed_iup_1 iu = assert_true iu (
   let (f,stk) = iu in
   case stk of
   Nil \<Rightarrow> True
@@ -81,14 +81,14 @@ definition wellformed_iup_1 :: "its_up_t => bool" where
 )"
 
 definition wellformed_iup :: "its_up_t => bool" where
-"wellformed_iup iu = (
+"wellformed_iup iu = assert_true iu (
   let (f,stk) = iu in
   wellformed_its_focus (stk=[]) f &
   wellformed_ts stk &   (* FIXME wf_stk *)
   wellformed_iup_1 iu )"
 
 definition wellformed_its_state :: "its_state_t \<Rightarrow> bool" where
-"wellformed_its_state its = (
+"wellformed_its_state its = assert_true its (
   case its of
   Its_down(fts,v) \<Rightarrow> (wellformed_fts fts)
   | Its_up(f,stk) \<Rightarrow> (wellformed_iup (f,stk)) 
@@ -216,7 +216,7 @@ definition focus_to_leaves :: "its_focus_t \<Rightarrow> leaves_t" where
 )"
 
 definition wf_its_trans :: "its_state_t \<Rightarrow> its_state_t \<Rightarrow> bool" where
-"wf_its_trans s1 s2 = (
+"wf_its_trans s1 s2 = assert_true (s1,s2) (
   case (s1,s2) of
   (Its_down (fts,v), Its_down (fts',v')) \<Rightarrow> (wf_fts_trans fts fts' & (v'=v))
   | (Its_down (fts,v), Its_up (f,stk)) \<Rightarrow> True (* leaves may change according to the insert *)

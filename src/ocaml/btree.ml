@@ -164,18 +164,21 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
     type t = Delete_tree_stack.dts_state_t
 
     let last_state : t option ref = ref None   
+
     let last_trans : (t*t option) option ref = ref None
+
     let check_state s = (
       last_state:=Some(s);
       assert (Delete_tree_stack.wellformed_dts_state s)
     )
+
     let check_trans x y = (
+      last_trans:=Some(x,y);
       check_state x;
       match y with
       None -> ()
       | Some y' -> (
           check_state y';
-          last_trans:=Some(x,y);
           assert (Delete_tree_stack.wf_dts_trans x y'))
     )
 
