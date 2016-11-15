@@ -12,7 +12,7 @@ root=$(realpath $(dirname $BASH_SOURCE))/../..
  # if using nix, this may not be present
 test -f $root/config.sh && source $root/config.sh
 
-PKGS="-package num,yojson,ppx_deriving_yojson,batteries"
+PKGS="-package num,yojson,ppx_deriving_yojson,batteries,bos.setup"
 SYNTAX="" # "-syntax camlp4o" # simplify: use for every file
 FLGS="-g"
 

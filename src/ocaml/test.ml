@@ -41,6 +41,8 @@ type action = Insert of int | Delete of int
 let input_tree = ref T.empty
 let action = ref (Insert 0)
 
+type range_t = int list[@@deriving yojson]
+
 let test range = (
   let s = ref (S.singleton T.empty) in
   let todo = ref (S.singleton T.empty) in
@@ -64,3 +66,19 @@ let test range = (
     done
   in
   Printf.printf "Tests passed; num states explored: %d\n" (S.cardinal !s))
+
+
+let main () = (  
+  if 1 < Array.length Sys.argv && Sys.argv.(1) = "test" then 
+    (* read stdin and convert to an int list range *)
+    let _ = Printf.printf "test: reading input from stdin\n" in
+    let get_ok = Rresult.R.get_ok in
+    let js = Yojson.Safe.from_channel Pervasives.stdin in
+    let _ = Printf.printf "test: read %s\n" (Yojson.Safe.to_string js) in
+    let range = range_t_of_yojson js |> function Ok x -> x in
+    test range
+  else 
+    ()
+)
+
+let _ = main()

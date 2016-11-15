@@ -1,1 +1,1 @@
-PKG yojson ppx_deriving_yojson batteries
+PKG yojson ppx_deriving_yojson batteries bos.setup

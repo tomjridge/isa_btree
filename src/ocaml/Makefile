@@ -7,12 +7,13 @@ export BASH_ENV
 all:
 	$$ocamlc -c $$mls
 	$$mk_cma -g -a -o btree.cma $$cmos
-#	$$ocamlc -g -linkpkg -o a.out btree.cma test.ml - just use test.sh
+	$$ocamlopt -g -linkpkg -o a.out $$mls
 
 clean:
 	rm -f *.{cmi,cmo,cmx,o} a.out 
 
-# test:
+test:
+	OCAMLRUNPARAM=b ./test.sh
 
 
 real_clean: clean
