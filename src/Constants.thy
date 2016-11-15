@@ -28,6 +28,13 @@ also, we need that min < max, otherwise we can't steal
 
 max constraints: floor((max+1)/2) >= min
 
+---
+
+from debugging 2016-11-15, when splitting node:
+
+max_node_keys - min_node_keys >= min_node_keys
+max_leaf_keys - min_leaf_keys >= min_leaf_keys
+
 
 *)
 

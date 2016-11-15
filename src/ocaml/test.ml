@@ -13,17 +13,17 @@ module Int_int = struct
   end
 end
 
-module C_3322 : CONSTANTS = struct
+module C_min : CONSTANTS = struct
 
   type min_size_t = Min_size.min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf
-  let max_leaf_size = 3
-  let max_node_keys = 3
+  let max_leaf_size = 4
+  let max_node_keys = 4
   let min_leaf_size = 2
   let min_node_keys = 2
 
 end
 
-module T = Btree.Make(C_3322)(Int_int.Kv)
+module T = Btree.Make(C_min)(Int_int.Kv)
 
 module S = Set.Make(struct type t = T.t let compare = Pervasives.compare end)
 
@@ -72,7 +72,6 @@ let main () = (
   if 1 < Array.length Sys.argv && Sys.argv.(1) = "test" then 
     (* read stdin and convert to an int list range *)
     let _ = Printf.printf "test: reading input from stdin\n" in
-    let get_ok = Rresult.R.get_ok in
     let js = Yojson.Safe.from_channel Pervasives.stdin in
     let _ = Printf.printf "test: read %s\n" (Yojson.Safe.to_string js) in
     let range = range_t_of_yojson js |> function Ok x -> x in
