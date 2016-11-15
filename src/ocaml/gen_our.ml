@@ -1133,7 +1133,7 @@ let rec its_to_h
 let rec split_leaf_kvs
   kvs = let min = Constants.min_leaf_size in
         let (kvs1, (kv, kvs2)) = Util.split_at_3 min kvs in
-        (kvs1, (Product_Type.fst kv, kvs2));;
+        (kvs1, (Product_Type.fst kv, kv :: kvs2));;
 
 let rec step_bottom
   down =

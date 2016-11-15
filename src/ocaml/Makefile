@@ -7,10 +7,13 @@ export BASH_ENV
 all:
 	$$ocamlc -c $$mls
 	$$mk_cma -g -a -o btree.cma $$cmos
-	$$ocamlc -g -linkpkg -o a.out btree.cma test.ml
+#	$$ocamlc -g -linkpkg -o a.out btree.cma test.ml - just use test.sh
 
 clean:
 	rm -f *.{cmi,cmo,cmx,o} a.out 
+
+# test:
+
 
 real_clean: clean
 	mv *.bak.* /tmp

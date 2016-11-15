@@ -77,12 +77,12 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
       assert (Find_tree_stack.wellformed_fts s);
     )
     let check_trans s s' = (
+      last_trans:=Some(s,s');
       check_state s;
       match s' with
       None -> ()
       | Some t -> (
           check_state t;
-          last_trans:=Some(s,s');
           assert (Find_tree_stack.wf_fts_trans s t))
     )
 
@@ -130,12 +130,12 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
       assert (Insert_tree_stack.wellformed_its_state s)
     )
     let check_trans x y = (
+      last_trans:=Some(x,y);
       check_state x;
       match y with
       None -> ()
       | Some y' -> (
           check_state y';
-          last_trans:=Some(x,y);
           assert (Insert_tree_stack.wf_its_trans x y'))
     )
 

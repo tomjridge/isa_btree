@@ -146,7 +146,7 @@ definition split_leaf_kvs :: "kv_t list => kv_t list * key * kv_t list" where
 "split_leaf_kvs kvs = (
   let min = min_leaf_size in
   let (kvs1,kv,kvs2) = split_at_3 min kvs in
-  (kvs1,fst kv,kvs2)
+  (kvs1,fst kv,kv#kvs2)
 )"
 
 definition step_bottom :: "its_down_t => its_up_t option" where

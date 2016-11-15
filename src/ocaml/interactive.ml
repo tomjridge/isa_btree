@@ -2,20 +2,32 @@
 
 #require "ppx_deriving_yojson";;
 #require "yojson";;
+#require "batteries";;
 
-#load "btree.cma";;
+#mod_use "gen_isa.ml";;
+#mod_use "our.ml";;
+#mod_use "btree.ml";;
+#mod_use "test.ml";;
 
 (* to debug: execute with env OCAMLRUNPARAM=b ... *)
 
-#show Btree;;
+open Test
 
-(* initialize a simple int int map *)
+let _ = Test.T.M.Json.dts_state_to_string 
 
-open Btree
+let _ = Test.T.M.Tree.wellformed_tree
 
 
-let j2 = s |> Btree0.M.Delete_tree_stack.dts_state_t_to_yojson;;
+(*
 
-let _ = s |> dts_s_to_string |> print_endline
+let _ = Test.test()
 
-let _ = s' |> dts_s_to_string |> print_endline
+let x = !Our.any_ref
+
+
+let (ms,t) = ((Obj.magic x):Test.T.Isa_c.min_size_t option * Test.T.M.Tree.tree)
+
+let Some(s,s') = !Test.T.Insert.last_trans
+
+*)
+    

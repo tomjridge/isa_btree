@@ -22,6 +22,8 @@ merging nodes: ks1 ks2 -> |ks1+ks2-1|
 
 so min_node_keys = 2 (except at root of course)
 
+also, we need that min < max, otherwise we can't steal
+
 ---
 
 max constraints: floor((max+1)/2) >= min
