@@ -1,5 +1,5 @@
---- gen_our.ml	2016-11-14 14:06:53.226984772 +0000
-+++ our.ml	2016-11-14 14:10:54.441155809 +0000
+--- gen_our.ml	2016-11-15 13:20:26.968519913 +0000
++++ our.ml	2016-11-15 13:21:14.633756664 +0000
 @@ -1,5 +1,12 @@
 -open Gen_isa
 +let string_of_chars chars = chars|>List.map (String.make 1)|>String.concat ""
@@ -122,61 +122,79 @@
  
  let rec equal_core_t_exta _A _B
    (Core_t_ext (f_ka, f_tss1a, f_kla, f_ta, f_kua, f_tss2a, morea))
-@@ -651,7 +663,7 @@
-   type dts_t =
-     D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
-     D_small_node of (Key_value_types.key list * Tree.tree list) |
--    D_updated_subtree of Tree.tree
-+    D_updated_subtree of Tree.tree[@@deriving yojson]
-   type dts_state_t =
-     Dts_down of
-       ((Tree.tree, unit) Tree_stack.core_t_ext *
-@@ -661,7 +673,7 @@
-         ((dts_t, unit) Tree_stack.core_t_ext *
-           ((Key_value_types.key list * Tree.tree list), unit)
-             Tree_stack.core_t_ext list)
+@@ -553,7 +565,7 @@
+ 
+ 
+ module Find_tree_stack : sig
+-  type fts_state_t
++  type fts_state_t[@@deriving yojson]
+   val dest_fts_state :
+     fts_state_t ->
+       (Tree.tree, unit) Tree_stack.core_t_ext *
+@@ -572,7 +584,7 @@
+   Fts_state of
+     ((Tree.tree, unit) Tree_stack.core_t_ext *
+       ((Key_value_types.key list * Tree.tree list), unit)
+-        Tree_stack.core_t_ext list);;
++        Tree_stack.core_t_ext list)[@@deriving yojson];;
+ 
+ let rec dest_fts_state s = let Fts_state x = s in
+                            x;;
+@@ -640,10 +652,10 @@
+     D_updated_subtree of Tree.tree
+   type dts_state_t = Dts_down of Find_tree_stack.fts_state_t |
+     Dts_up of
+-      ((dts_t, unit) Tree_stack.core_t_ext *
+-        ((Key_value_types.key list * Tree.tree list), unit)
+-          Tree_stack.core_t_ext list)
 -    | Dts_finished of Tree.tree
++        ((dts_t, unit) Tree_stack.core_t_ext *
++          ((Key_value_types.key list * Tree.tree list), unit)
++            Tree_stack.core_t_ext list)
 +    | Dts_finished of Tree.tree[@@deriving yojson]
    val step_dts : dts_state_t -> dts_state_t option
    val mk_dts_state : Key_value_types.key -> Tree.tree -> dts_state_t
    val focus_to_leaves :
-@@ -677,7 +689,7 @@
- type dts_t =
-   D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
-   D_small_node of (Key_value_types.key list * Tree.tree list) |
--  D_updated_subtree of Tree.tree;;
-+  D_updated_subtree of Tree.tree[@@deriving yojson];;
+@@ -656,17 +668,16 @@
  
- type dts_state_t =
-   Dts_down of
-@@ -688,7 +700,7 @@
-       ((dts_t, unit) Tree_stack.core_t_ext *
-         ((Key_value_types.key list * Tree.tree list), unit)
-           Tree_stack.core_t_ext list)
+ type dir_t = Right | Left;;
+ 
+-type dts_t =
+-  D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
+-  D_small_node of (Key_value_types.key list * Tree.tree list) |
+-  D_updated_subtree of Tree.tree;;
+-
++  type dts_t =
++    D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
++    D_small_node of (Key_value_types.key list * Tree.tree list) |
++    D_updated_subtree of Tree.tree[@@deriving yojson];;
+ type dts_state_t = Dts_down of Find_tree_stack.fts_state_t |
+   Dts_up of
+     ((dts_t, unit) Tree_stack.core_t_ext *
+       ((Key_value_types.key list * Tree.tree list), unit)
+         Tree_stack.core_t_ext list)
 -  | Dts_finished of Tree.tree;;
 +  | Dts_finished of Tree.tree[@@deriving yojson];;
  
  let rec dest_lista
    xs = (match xs
-@@ -1085,7 +1097,7 @@
+@@ -1061,13 +1072,13 @@
  
  module Insert_tree_stack : sig
    type its_t = Inserting_one of Tree.tree |
 -    Inserting_two of (Tree.tree * (Key_value_types.key * Tree.tree))
 +    Inserting_two of (Tree.tree * (Key_value_types.key * Tree.tree))[@@deriving yojson]
    type its_state_t =
-     Its_down of
-       (((Tree.tree, unit) Tree_stack.core_t_ext *
-@@ -1095,7 +1107,7 @@
-     | Its_up of
-         ((its_t, unit) Tree_stack.core_t_ext *
-           ((Key_value_types.key list * Tree.tree list), unit)
--            Tree_stack.core_t_ext list)
-+            Tree_stack.core_t_ext list)[@@deriving yojson]
+     Its_down of (Find_tree_stack.fts_state_t * Key_value_types.value_t) |
+     Its_up of
+       ((its_t, unit) Tree_stack.core_t_ext *
+         ((Key_value_types.key list * Tree.tree list), unit)
+-          Tree_stack.core_t_ext list)
++          Tree_stack.core_t_ext list)[@@deriving yojson]
    val step_its : its_state_t -> its_state_t option
    val mk_its_state :
      Key_value_types.key -> Key_value_types.value_t -> Tree.tree -> its_state_t
-@@ -1108,7 +1120,7 @@
+@@ -1080,14 +1091,14 @@
  end = struct
  
  type its_t = Inserting_one of Tree.tree |
@@ -184,17 +202,16 @@
 +  Inserting_two of (Tree.tree * (Key_value_types.key * Tree.tree))[@@deriving yojson];;
  
  type its_state_t =
-   Its_down of
-@@ -1119,7 +1131,7 @@
-   | Its_up of
-       ((its_t, unit) Tree_stack.core_t_ext *
-         ((Key_value_types.key list * Tree.tree list), unit)
--          Tree_stack.core_t_ext list);;
-+          Tree_stack.core_t_ext list)[@@deriving yojson];;
+   Its_down of (Find_tree_stack.fts_state_t * Key_value_types.value_t) |
+   Its_up of
+     ((its_t, unit) Tree_stack.core_t_ext *
+       ((Key_value_types.key list * Tree.tree list), unit)
+-        Tree_stack.core_t_ext list);;
++        Tree_stack.core_t_ext list)[@@deriving yojson];;
  
  let rec split_node
    n = let (ks, ts) = n in
-@@ -1301,3 +1313,64 @@
+@@ -1270,3 +1281,73 @@
  
  end;;
  
@@ -249,6 +266,15 @@
 +
 +
 +module Json = struct
++
++  let dts_state_to_string s = (
++    s|>Delete_tree_stack.dts_state_t_to_yojson|>Yojson.Safe.pretty_to_string)
++
++  let its_state_to_string s = (
++    s|>Insert_tree_stack.its_state_t_to_yojson|>Yojson.Safe.pretty_to_string)
++
++  let fts_state_to_string s = (
++    s|>Find_tree_stack.fts_state_t_to_yojson|>Yojson.Safe.pretty_to_string)
 +
 +
 +end

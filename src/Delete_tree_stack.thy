@@ -360,7 +360,7 @@ definition step_dts :: "dts_state_t \<Rightarrow> dts_state_t option" where
   Dts_down(fts) \<Rightarrow> (
     case Find_tree_stack.step_fts fts of
     None \<Rightarrow> (
-      let (f,stk) = fts in
+      let (f,stk) = fts|>dest_fts_state in
       let (k,tss1,kl,t,ku,tss2) = f|>dest_core in
       let kvs = t|>dest_Leaf in
       case k : set (kvs|>List.map fst) of

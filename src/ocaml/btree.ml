@@ -68,9 +68,7 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
 
   module Find = struct
     (* FIXME wrap in constructor to get nice type? *)
-    type t = (Tree.tree, unit) Tree_stack.core_t_ext *
-          ((Key_value_types.key list * Tree.tree list), unit)
-            Tree_stack.core_t_ext list
+    type t = Find_tree_stack.fts_state_t
 
     let last_state : t option ref = ref None   
     let last_trans : (t*t option) option ref = ref None
@@ -92,7 +90,12 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
 
     let step : t -> t option = Find_tree_stack.step_fts
 
-    let dest = Find_tree_stack.dest_fts_state
+    let dest s = 
+      s|>Find_tree_stack.dest_fts_state|>fst|>Tree_stack.f_t |>
+      (fun foc -> 
+         match foc with
+           M.Tree.Leaf kvs -> Some(kvs)
+         | _ -> None)
 
     let rec find : key -> t0 -> value_t option = (
       fun k t ->

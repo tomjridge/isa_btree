@@ -152,7 +152,7 @@ definition split_leaf_kvs :: "kv_t list => kv_t list * key * kv_t list" where
 definition step_bottom :: "its_down_t => its_up_t option" where
 "step_bottom down = (
   let (fts,v0) = down in
-  let (f,stk) = fts in
+  let (f,stk) = fts|>dest_fts_state in
   let k = f|>f_k in
   case f|>f_t of
   Leaf kvs => (

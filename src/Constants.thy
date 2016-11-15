@@ -8,7 +8,26 @@ definition min_node_keys :: nat where "min_node_keys = (failwith ''FIXME'')"
 definition max_node_keys :: nat where "max_node_keys = (failwith ''FIXME'')"
 
 
-(* FIXME tr: check these are the right restrictions - where are they used in proof?  *)
+(* FIXME tr: check these are the right restrictions - where are they used in proof?  
+
+Some minimal constraints: 
+
+min_node_keys = 1; min_leaf_keys = 1
+
+when we merge min and (min-1), we must not be larger than max or smaller than min
+
+so min_leaf_keys = 2
+
+merging nodes: ks1 ks2 -> |ks1+ks2-1|
+
+so min_node_keys = 2 (except at root of course)
+
+---
+
+max constraints: floor((max+1)/2) >= min
+
+
+*)
 
 definition wellformed_constants :: "bool" where
 "wellformed_constants = (
