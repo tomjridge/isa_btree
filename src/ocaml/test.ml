@@ -16,8 +16,8 @@ end
 module C_min : CONSTANTS = struct
 
   type min_size_t = Min_size.min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf
-  let max_leaf_size = 4
-  let max_node_keys = 4
+  let max_leaf_size = 5
+  let max_node_keys = 5
   let min_leaf_size = 2
   let min_node_keys = 2
 
@@ -54,7 +54,10 @@ let test range = (
   ) |> S.of_list
   in
   let _ = 
-    Printf.printf "test: starting while";
+    (* FIXME this may be faster if we store todo as a list and check
+       for membership when computing next state of the head of todo;
+       use rev_append *)
+    Printf.printf "test: starting while\n";
     while (not(S.is_empty !todo)) do
       let nexts : S.t list = !todo|>S.elements|>List.map step in
       let next = List.fold_left (fun a b -> S.union a b) S.empty nexts in
