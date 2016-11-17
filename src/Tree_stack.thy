@@ -6,27 +6,12 @@ theory Tree_stack imports Tree begin
 
 (* return the index to the first key k1 st k < k1, or length of list if not found *)
 (*tr: assumes xs are sorted *)
-(*begin search key to index definition *)
 definition search_key_to_index :: "key list => key => nat" where
 "search_key_to_index ks k = (
   let num_keys = length ks in
   let i = List.find (% x. key_lt k (ks!x)) (upt 0 num_keys) in
   let i' = (case i of None => num_keys | Some x => x) in
   i')"
-(*end search key to index definition *)
-
-
-(* splitting lists ------------------------------------ *)
- 
-definition split_list :: "'a list \<Rightarrow> nat \<Rightarrow> ('a list * 'a * 'a list)" where
-"split_list rs i = (
-  let valid = from_to 0 (length rs -1) in (* valid indexes; assumes rs <> [] *)
-  let xs = valid |> filter (% n. n < i) in
-  let zs = valid |> filter (% n. n > i) in
-  (xs|>map (% j. rs!j),
-   rs!i,
-   zs|>map (% j. rs!j))
-)"
 
 
 (* core type ------------------------------- *)
@@ -97,8 +82,8 @@ definition nf_to_aux :: "key \<Rightarrow> nf_t \<Rightarrow> nf2_t" where
 "nf_to_aux k0 f = (
   let (k,tss1,kl,(ks,ts),ku,tss2) = f|>dest_core in
   let i = search_key_to_index ks k0 in
-  let (ts1,t,ts2) = (take i ts, ts!i, drop (i+1) ts) in
-  let (ks1,ks2) = (take i ks, drop i ks) in 
+  let (ts1,t,ts2) = split_at_3 i ts in
+  let (ks1,ks2) = split_at i ks in 
   (i,ts1,ks1,t,ks2,ts2)
 )"
 

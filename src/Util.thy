@@ -44,19 +44,22 @@ definition assert_true :: "'a \<Rightarrow> bool \<Rightarrow> bool" where
 
 (* rresult -------------------------------------- *)  
   
-datatype 'a rresult = Ok 'a | Error 
+datatype ('a,'b) rresult = Ok 'a | Error 'b 
 
-definition rresult_to_option :: "'a rresult => 'a option" where
-  "rresult_to_option x = (case x of Ok x => Some x | Error => None)"
+definition rbind :: " ('a => ('c,'b) rresult) => ('a,'b) rresult => ('c,'b) rresult" (* infixl "rr_bind" 100 *) where
+  "rbind f v = (case v of Error x \<Rightarrow> Error x | Ok y \<Rightarrow> f y)"
 
-lemma [simp]: "(Error |> rresult_to_option = None) & ((Ok x) |> rresult_to_option = Some x)"
+definition rresult_to_option :: "('a,'b) rresult => 'a option" where
+  "rresult_to_option x = (case x of Ok x => Some x | _ => None)"
+
+lemma [simp]: "(Error x |> rresult_to_option = None) & ((Ok x) |> rresult_to_option = Some x)"
   apply(force simp: rresult_to_option_def rev_apply_def)
   done
 
-definition is_Ok :: "'a rresult \<Rightarrow> bool" where
+definition is_Ok :: "('a,'b) rresult \<Rightarrow> bool" where
 "is_Ok x == x |> rresult_to_option |> is_Some"
 
-definition dest_Ok :: "'a rresult \<Rightarrow> 'a" where
+definition dest_Ok :: "('a,'b) rresult \<Rightarrow> 'a" where
 "dest_Ok x == x |> rresult_to_option |> dest_Some"
 
 
@@ -69,17 +72,21 @@ definition split_at_3 :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a *
 "split_at_3 n xs = (take n xs,xs!n,drop (n+1) xs)"
 
 (* FIXME remove these in favour of split_at and split_at_3 *)
+(*
 definition list_insert_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list" where
 "list_insert_at_n xs n as == (
 let (ys,zs) = split_at n xs in
 ys@as@zs
 )"
+*)
 
+(*
 definition list_replace_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list option" where
 "list_replace_at_n xs n as ==
   (if (length xs \<le> n) then None else
   (let (ys,zs) = split_at n xs in
   Some (ys@as@tl zs)))"
+*)
 
 (* tests for list_replace_at_n:
 value "(dest_Some(list_replace_at_n [0,0,0] 0 [1,2])) = [1,2,0,0]"
@@ -88,8 +95,10 @@ value "(dest_Some(list_replace_at_n [0,0,0] 2 [1,2])) = [0,0,1,2]"
 value "((list_replace_at_n [0,0,0] 3 [1,2])) = None"
 *)
 
+(*
 definition list_replace_1_at_n :: "'a list \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a list option" where
 "list_replace_1_at_n xs n a == (Some (list_update xs n a))"
+*)
 
 (*begin ordered insert definition*)
 (*

@@ -48,13 +48,7 @@ definition check_keys_2 :: "key set \<Rightarrow> key option \<Rightarrow> key s
   (check_keys u zs None)
 )"
 
-(* first list is in reverse order *)
-primrec take_while :: "('a \<Rightarrow> bool) \<Rightarrow>('a list * 'a list) \<Rightarrow> 'a list \<Rightarrow> 'a list \<times> 'a list" where
-"take_while P acc [] = acc" |
-"take_while P acc (x # xs) = (
-  let (yes,rest) = acc in
-  if P x then take_while P (x#yes,rest) xs else (yes,x#rest))"
-
+(* for leaf *)
 primrec kvs_insert :: "key \<Rightarrow> value_t \<Rightarrow> kvs_t \<Rightarrow> kvs_t" where
 "kvs_insert k v [] = [(k,v)]"
 | "kvs_insert k v (kv'#kvs') = (
