@@ -12,7 +12,9 @@ type_synonym stk = "(rs * ks * r * ks * rs) list"
 
 datatype find_state_t = 
   Find_down "k*r*stk" 
-  | Find_finished "r*kvs*stk"
+  | Find_finished "k*r*kvs*stk"
+  
+type_synonym find_finished = "k*r*kvs*stk"
 
 type_synonym fs = find_state_t
   
@@ -37,7 +39,7 @@ definition find_step :: "fs \<Rightarrow> fs fe_M" where
         let (rs1,r',rs2) = split_at_3 i rs in
         Find_down(k,r',(rs1,ks1,r',ks2,rs2)#stk)
       )
-      | Leaf_frame kvs \<Rightarrow> (Find_finished(r,kvs,stk))))
+      | Leaf_frame kvs \<Rightarrow> (Find_finished(k,r,kvs,stk))))
 )"
 
 
