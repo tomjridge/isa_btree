@@ -9,7 +9,9 @@ lemma FIXME: "P" sorry
 definition failwith :: "string \<Rightarrow> 'b" where
 "failwith x = undefined"
 
-
+definition impossible :: "'a" where
+  "impossible = failwith ''impossible''"  
+  
 (*
 definition FIXME :: "'a" where
 "FIXME == undefined"
@@ -17,8 +19,7 @@ definition FIXME :: "'a" where
 definition arb :: "'a" where
   "arb == undefined"  
 
-definition impossible :: "'a" where
-  "impossible = failwith ''impossible''"  
+
 *)
 
 (* misc ------------------------------------------ *)  

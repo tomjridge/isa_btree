@@ -1,68 +1,65 @@
 theory Find 
-imports Frame Tree_stack (* FIXME for sktoi; move to kv *)
+imports Tree_stack Frame (* FIXME for sktoi; move to kv *)
 begin
 
-type_synonym find_error = store_error
+datatype find_error = Find_store_error store_error | Find_step_error
+type_synonym fe = find_error
 
-type_synonym stk = "(page_ref * nat) list"
+definition se_to_fe :: "se \<Rightarrow> fe" where 
+"se_to_fe se = Find_store_error se"
+
+type_synonym stk = "(rs * ks * r * ks * rs) list"
 
 datatype find_state_t = 
-  F_down "key * page_ref * stk" (* fs *)
-  | F_finished "page_ref * kvs_t * stk"
+  Find_down "k*r*stk" 
+  | Find_finished "r*kvs*stk"
 
-type_synonym 'a M = "store \<Rightarrow> (store * ('a,find_error) rresult)"
-(* s \<Rightarrow> (s * ['a + e] ) *) 
+type_synonym fs = find_state_t
+  
+type_synonym 'a fe_M = "('a,fe) M"
+ 
+definition fe_bind :: "('a \<Rightarrow> 'b fe_M) \<Rightarrow> 'a fe_M \<Rightarrow> 'b fe_M" where 
+"fe_bind f v = bind f v"
 
-definition bind :: "('a \<Rightarrow> 'b M) \<Rightarrow> 'a M \<Rightarrow> 'b M" where
-"bind f v = (% s. (case v s of (s1,Error x) \<Rightarrow> (s1,Error x) | (s1,Ok y) \<Rightarrow> (f y s1)))"
+definition page_ref_to_frame :: "r \<Rightarrow> fr fe_M" where
+"page_ref_to_frame r = (Frame.page_ref_to_frame r) |> fmap_error se_to_fe"
 
-definition return :: "'a \<Rightarrow> 'a M" where
-"return x = (% s. (s,Ok x))"
-
-definition get_store :: "unit \<Rightarrow> store M" where
-"get_store _ = (% s. (s,Ok(s)))"
-
-(* FIXME the following should really only require one read from store, not two *)
-definition page_ref_to_frame :: "page_ref \<Rightarrow> frame M" where
-"page_ref_to_frame r = (
-  get_store () |>bind 
-  (% s. let f = Frame.page_ref_to_frame s r in 
-  case f of Error x \<Rightarrow> (% s1. (s1,Error x)) | Ok y \<Rightarrow> (% s1. (s1,Ok y)))
-)"
-
-definition step :: "find_state_t \<Rightarrow> find_state_t option M" where
-"step fs = (
+definition find_step :: "fs \<Rightarrow> fs fe_M" where
+"find_step fs = (
   case fs of 
-  F_finished _ \<Rightarrow> (return None)
-  | F_down(k,r,stk) \<Rightarrow> (
-    page_ref_to_frame r |>bind
+  Find_finished _ \<Rightarrow> (% s. (s,Error Find_step_error))
+  | Find_down(k,r,stk) \<Rightarrow> (
+    page_ref_to_frame r |>fmap
     (% f. case f of 
       Node_frame (ks,rs) \<Rightarrow> (
         let i = search_key_to_index ks k in
-        let r' = rs!i in
-        return(Some(F_down(k,r',(r,i)#stk)))
+        let (ks1,ks2) = split_at i ks in
+        let (rs1,r',rs2) = split_at_3 i rs in
+        Find_down(k,r',(rs1,ks1,r',ks2,rs2)#stk)
       )
-      | Leaf_frame kvs \<Rightarrow> (return(Some(F_finished(r,kvs,stk))))
-)))"
+      | Leaf_frame kvs \<Rightarrow> (Find_finished(r,kvs,stk))))
+)"
 
-(* general recursive find *)
+
+(* general recursive find ------------------------------------- *)
+
 type_synonym 'a trace = "nat \<Rightarrow> 'a"
-function find :: "find_state_t \<Rightarrow> (find_state_t option M) trace" where
+
+function find :: "fs \<Rightarrow> (fs fe_M) trace" where
 "find fs n = (
-  case n of 0 \<Rightarrow> (step fs)
-  | Suc n \<Rightarrow> (
-    (find fs n) |>bind
-    (% fs. case fs of
-    None \<Rightarrow> return None
-    | Some fs \<Rightarrow> (step fs)    
-)))
+  case n of 0 \<Rightarrow> (find_step fs)
+  | Suc n \<Rightarrow> ( (find fs n) |>bind find_step)
+)
 "    
 by auto
 
 (* and prove for code extraction... but we really want the first place (if any) that we get F_finished FIXME express in terms of leaf, and rewrite using "current" state to next state *)
 
+(*
 definition find_def_2 :: bool where
 "find_def_2 = (! fs n. find fs n = (if n=0 then return (Some fs) else 
   step fs|>bind (% fs'. case fs' of None \<Rightarrow> return None | Some fs' \<Rightarrow> find fs' (n-1))))"
+*)
+
 
 end
