@@ -26,6 +26,13 @@ definition fe_bind :: "('a \<Rightarrow> 'b fe_M) \<Rightarrow> 'a fe_M \<Righta
 definition page_ref_to_frame :: "r \<Rightarrow> fr fe_M" where
 "page_ref_to_frame r = (Frame.page_ref_to_frame r) |> fmap_error se_to_fe"
 
+definition dest_finished :: "find_state_t \<Rightarrow> (k*r*kvs*stk) option" where
+"dest_finished fs = (
+  case fs of
+  Find_down _ \<Rightarrow> None
+  | Find_finished (k,r,kvs,stk) \<Rightarrow> Some(k,r,kvs,stk)  
+)"
+
 definition find_step :: "fs \<Rightarrow> fs fe_M" where
 "find_step fs = (
   case fs of 

@@ -18,6 +18,7 @@ type_synonym u = up_state
 datatype i_state_t = 
   I_down d
   | I_up u
+  | I_finished r
 
 type_synonym is_t = i_state_t  
 
@@ -59,9 +60,9 @@ definition step_down :: "d \<Rightarrow> d ie_M" where
 definition step_bottom :: "d \<Rightarrow> u ie_M" where
 "step_bottom d = (
   let (fs,v) = d in
-  case fs of
-  Find_down _ \<Rightarrow> impossible
-  | Find_finished (k,r,kvs,stk) \<Rightarrow> (
+  case dest_finished fs of
+  None \<Rightarrow> impossible
+  | Some(k,r,kvs,stk) \<Rightarrow> (
     let kvs' = kvs |> kvs_insert k v in
     let fo = (
       case (length kvs' \<le> max_leaf_size) of
@@ -103,5 +104,40 @@ definition step_up :: "u \<Rightarrow> u ie_M" where
     )
   )
 )"
+
+definition post_step_up :: "fo \<Rightarrow> r ie_M" where
+"post_step_up fo = (
+  case fo of 
+  I1 r \<Rightarrow> (% s. (s,Ok r))
+  | I2(r1,k,r2) \<Rightarrow> (Node_frame([k],[r1,r2]) |> frame_to_page |> i_alloc)
+)"
+
+(*
+definition dest_finished_up :: "u \<Rightarrow> fo option" where
+"dest_finished_up u = (let (fo,stk) = u in case stk of [] \<Rightarrow> Some fo | _ \<Rightarrow> None)"
+*)
+
+definition step :: "is_t \<Rightarrow> is_t ie_M" where
+"step s = (
+  case s of 
+  I_down d \<Rightarrow> (
+    let (fs,v) = d in
+    case (Find.dest_finished fs) of 
+    None \<Rightarrow> (step_down d |> fmap (% d. I_down d))
+    | Some _ \<Rightarrow> step_bottom d |> fmap (% u. I_up u))
+  | I_up u \<Rightarrow> (
+    let (fo,stk) = u in
+    case stk of
+    [] \<Rightarrow> post_step_up fo |> fmap (% r. I_finished r)
+    | _ \<Rightarrow> (step_up u |> fmap (% u. I_up u))
+  )
+)"
+
+definition dest_finished :: "is_t \<Rightarrow> r option" where
+"dest_finished s = (
+  case s of I_finished r \<Rightarrow> Some r | _ \<Rightarrow> None
+)"
+
+
 
 end
