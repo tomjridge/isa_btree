@@ -1,4 +1,6 @@
-theory Prelude imports Main Util begin
+theory Prelude 
+imports Main Util Constants  
+begin
 
 definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 "from_to x y = upt x (Suc y)"
@@ -76,6 +78,8 @@ definition invariant_assuming_b :: "'s trans_t \<Rightarrow>  ('s \<Rightarrow> 
   invariant_assuming trns P Q 
   \<longrightarrow> invariant trns (% x. P x & Q x)
 )"
+
+
 
 
 end

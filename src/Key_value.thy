@@ -1,5 +1,5 @@
 theory Key_value
-imports Prelude Key_value_types
+imports Key_value_types
 begin
 
 
@@ -59,6 +59,23 @@ primrec kvs_insert :: "key \<Rightarrow> value_t \<Rightarrow> kvs_t \<Rightarro
   (k,v)#(k',v')#kvs'
 )"
   
+(* insert aux funs --------------------------------------------------------------- *)
 
+(* FIXME aren't this aux funs shared with its? *)
+definition split_leaf :: "kvs \<Rightarrow> (kvs * k * kvs)" where
+"split_leaf kvs = (
+  let min = min_leaf_size in
+  let (l,r) = split_at min kvs in
+  let k = (case r of (k,_)#_ \<Rightarrow> k | _ \<Rightarrow> impossible) in
+  (l,k,r)
+)"
 
+definition split_node :: "(ks * 'a list) \<Rightarrow> (ks * 'a list) * k * (ks * 'a list)" where
+"split_node n = (
+  let (ks,rs) = n in
+  let min = min_node_keys in
+  let (ks1,k,ks2) = split_at_3 min ks in
+  let (rs1,rs2) = split_at (min+1) rs in
+  ((ks1,rs1),k,(ks2,rs2))
+)"
 end

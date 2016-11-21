@@ -97,16 +97,6 @@ definition wellformed_its_state :: "its_state_t \<Rightarrow> bool" where
   
 (* step_up ---------------------------------------- *)
 
-(* FIXME isn't this elsewhere? *)
-definition split_node :: "node_t => inserting_two_t" where
-"split_node n = (
-  let (ks,ts) = n in
-  let min = min_node_keys in
-  let (ks1,k,ks2) = split_at_3 min ks in
-  let (ts1,ts2) = split_at (min+1) ts in
-  (Node(ks1,ts1),k,Node(ks2,ts2))
-)"
-
 (* step focus, given parent frame *)
 definition step_focus :: "nf_t => its_focus_t => its_focus_t" where
 "step_focus p f = (
@@ -122,7 +112,9 @@ definition step_focus :: "nf_t => its_focus_t => its_focus_t" where
       let ts' = ts1@[tl_,tr]@ts2 in
       case (length ks' <= max_node_keys) of
         True => Inserting_one(Node(ks',ts'))
-        | False => (Inserting_two(split_node(ks',ts')) ) ) )
+        | False => (
+          let (ks_ts1,k,ks_ts2) = split_node(ks',ts') in 
+          Inserting_two(Node(ks_ts1),k,Node(ks_ts2))) ))
   in
   p|>with_t (% _. t'))"
 
@@ -140,14 +132,6 @@ definition step_up :: "its_up_t => its_up_t option" where
 
 (* step_bottom ---------------------------------------- *)
 
-(* tr: want to split a too-large leaf *)
-
-definition split_leaf_kvs :: "kv_t list => kv_t list * key * kv_t list" where
-"split_leaf_kvs kvs = (
-  let min = min_leaf_size in
-  let (kvs1,kv,kvs2) = split_at_3 min kvs in
-  (kvs1,fst kv,kv#kvs2)
-)"
 
 definition step_bottom :: "its_down_t => its_up_t option" where
 "step_bottom down = (
@@ -163,7 +147,7 @@ definition step_bottom :: "its_down_t => its_up_t option" where
       True \<Rightarrow> (Inserting_one(Leaf kvs2))
       | False \<Rightarrow> (
         (*tr:we need to split*)
-        let (left,k,right) = split_leaf_kvs kvs2 in
+        let (left,k,right) = split_leaf kvs2 in
         Inserting_two(Leaf left, k,Leaf right)))
     in
     Some(f|>with_t (% _. its),stk))

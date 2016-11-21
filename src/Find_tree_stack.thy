@@ -1,4 +1,6 @@
-theory Find_tree_stack imports Prelude Tree_stack "~~/src/HOL/Library/Code_Target_Nat" begin
+theory Find_tree_stack 
+imports Tree_stack 
+begin
 
 (* the search key is not really needed - it is a parameter of all these defns; the xs and zs are the other leaves not in t *)
 type_synonym fts_focus_t = "Tree core_t"
