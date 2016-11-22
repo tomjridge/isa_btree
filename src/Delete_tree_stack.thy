@@ -107,77 +107,9 @@ definition wellformed_dts_state :: "dts_state_t \<Rightarrow> bool" where
 
 
 
-(* steal ----------------------------------------------- *)
+(* take care ----------------------------------------------------------- *)
 
-definition node_steal_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> node_t \<Rightarrow> dts_up_t" where
-"node_steal_right k0 p stk c1 = (
-  let (c1_ks,c1_ts) = c1 in
-  let q = p |> nf_to_aux k0 in
-  let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
-  let (q_k,q_ks2') = dest_list q_ks2 in
-  let (q_c,q_ts2') = dest_list q_ts2 in
-  let c2 = dest_Node q_c in
-  let (c2_ks,c2_ts) = c2 in
-  let (c2_k',c2_ks') = dest_list c2_ks in
-  let (c2_t',c2_ts') = dest_list c2_ts in
-  let c1' = Node(c1_ks @ [q_k],c1_ts @ [c2_t']) in
-  let k' = c2_k' in
-  let c2' = Node(c2_ks',c2_ts') in
-  let f' = D_updated_subtree(Node(q_ks1 @ [k'] @ q_ks2',q_ts1 @ [c1',c2'] @ q_ts2')) in
-  (p|>with_t (% _. f'),stk)
-)"
- 
-definition node_steal_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> node_t \<Rightarrow> dts_up_t" where
-"node_steal_left k0 p stk c2 = (
-  let (c2_ks,c2_ts) = c2 in
-  let q = p |> nf_to_aux k0 in
-  let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
-  let (q_ks1',q_k) = dest_list' q_ks1 in
-  let (q_ts1',q_c) = dest_list' q_ts1 in
-  let c1 = dest_Node q_c in
-  let (c1_ks,c1_ts) = c1 in
-  let c2' = Node([q_k] @ c2_ks,[q_c] @ c2_ts) in
-  let (c1_ks',c1_k') = dest_list' c1_ks in
-  let (c1_ts',c1_t') = dest_list' c1_ts in
-  let k' = c1_k' in
-  let c1' = Node(c1_ks',c1_ts') in
-  let f' = D_updated_subtree(Node(q_ks1' @ [k'] @ q_ks2,q_ts1' @ [c1',c2'] @ q_ts2)) in
-  (p|>with_t (% _. f'),stk)
-)"
-
-definition leaf_steal_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> kvs_t \<Rightarrow> dts_up_t" where
-"leaf_steal_right k0 p stk c1_kvs = (
-  let q = p |> nf_to_aux k0 in
-  let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
-  let (q_k,q_ks2') = dest_list q_ks2 in
-  let (q_c,q_ts2') = dest_list q_ts2 in
-  let c2_kvs = dest_Leaf q_c in
-  let (c2_kv',c2_kvs') = dest_list c2_kvs in
-  let c1' = Leaf(c1_kvs @ [c2_kv']) in
-  let c2' = Leaf(c2_kvs') in
-  let k' = List.hd c2_kvs'|>fst in
-  let f' = D_updated_subtree(Node(q_ks1 @ [k'] @ q_ks2',q_ts1 @ [c1',c2'] @ q_ts2')) in
-  (p|>with_t (% _. f'),stk)
-)"
-
-definition leaf_steal_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> kvs_t \<Rightarrow> dts_up_t" where
-"leaf_steal_left k0 p stk c2_kvs = (
-  let q = p |> nf_to_aux k0 in
-  let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
-  let (q_ks1',q_k) = dest_list' q_ks1 in
-  let (q_ts1',q_c) = dest_list' q_ts1 in
-  let c1_kvs = dest_Leaf q_c in
-  let (c1_kvs',c1_kv') = dest_list' c1_kvs in
-  let c2' = Leaf([c1_kv']@c2_kvs) in
-  let c1' = Leaf(c1_kvs') in
-  let k' = fst c1_kv' in
-  let f' = D_updated_subtree(Node(q_ks1' @ [k'] @ q_ks2,q_ts1' @ [c1',c2'] @ q_ts2)) in
-  (p|>with_t (% _. f'),stk)
-)"
-
-
-(* merging ----------------------------------------------------------- *)
-
+(* FIXME where should this appear now? *)
 definition take_care :: "key list \<Rightarrow> Tree list \<Rightarrow> Tree \<Rightarrow> dts_t" where
 "take_care ks' ts' c1' = (
     (* we have to be careful here about a root node with 1 key *)
@@ -186,116 +118,6 @@ definition take_care :: "key list \<Rightarrow> Tree list \<Rightarrow> Tree \<R
     D_updated_subtree(Node(ks',ts'))
 )"
 
-definition node_merge_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> node_t \<Rightarrow> dts_up_t" where
-"node_merge_right k0 p stk c1 = (
-  let (c1_ks,c1_ts) = c1 in
-  let q = p |> nf_to_aux k0 in
-  let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
-  let (q_k,q_ks2') = dest_list q_ks2 in
-  let (q_c,q_ts2') = dest_list q_ts2 in
-  let c2 = dest_Node q_c in
-  let (c2_ks,c2_ts) = c2 in
-  let c1' = Node(c1_ks @ [q_k] @ c2_ks,c1_ts @ c2_ts) in
-  let ks' = q_ks1 @ q_ks2' in
-  let ts' = q_ts1 @ [c1'] @ q_ts2' in
-  let f' = take_care ks' ts' c1' in
-  (p|>with_t (% _. f'),stk)
-)"
-
-definition node_merge_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> node_t \<Rightarrow> dts_up_t" where
-"node_merge_left k0 p stk c2 = (
-  let (c2_ks,c2_ts) = c2 in
-  let q = p |> nf_to_aux k0 in
-  let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
-  let (q_ks1',q_k) = dest_list' q_ks1 in
-  let (q_ts1',q_c) = dest_list' q_ts1 in
-  let c1 = dest_Node q_c in
-  let (c1_ks,c1_ts) = c1 in
-  let c1' = Node(c1_ks @ [q_k] @c2_ks, c1_ts @ c2_ts) in
-  let ks' = q_ks1' @ q_ks2 in
-  let ts' = q_ts1' @ [c1'] @ q_ts2 in
-  let f' = take_care ks' ts' c1' in
-  (p|>with_t (% _. f'),stk)
-)"
-
-definition leaf_merge_right :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> kvs_t \<Rightarrow> dts_up_t" where
-"leaf_merge_right k0 p stk c1_kvs = (
-  let q = p |> nf_to_aux k0 in
-  let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
-  let (q_k,q_ks2') = dest_list q_ks2 in
-  let (q_c,q_ts2') = dest_list q_ts2 in
-  let c2_kvs = dest_Leaf q_c in
-  let c1' = Leaf(c1_kvs @ c2_kvs) in
-  let ks' = q_ks1 @ q_ks2' in
-  let ts' = q_ts1 @ [c1'] @ q_ts2' in
-  let f' = take_care ks' ts' c1' in
-  (p|>with_t (% _. f'),stk)
-)"
-
-definition leaf_merge_left :: "key \<Rightarrow> nf_t \<Rightarrow> tree_stack_t \<Rightarrow> kvs_t \<Rightarrow> dts_up_t" where
-"leaf_merge_left k0 p stk c2_kvs = (
-  let q = p |> nf_to_aux k0 in
-  let (q_i,q_ts1,q_ks1,q_t,q_ks2,q_ts2) = q in
-  let (q_ks1',q_k) = dest_list' q_ks1 in
-  let (q_ts1',q_c) = dest_list' q_ts1 in
-  let c1_kvs = dest_Leaf q_c in
-  let c1' = Leaf(c1_kvs @ c2_kvs) in
-  let ks' = q_ks1' @ q_ks2 in
-  let ts' = q_ts1' @ [c1'] @ q_ts2 in
-  let f' = take_care ks' ts' c1' in
-  (p|>with_t (% _. f'),stk)
-)"
-
-
-(* can_steal_or_merge ---------------------------------- *)
-
-(* FIXME change these to return bool rathe rthan tree option *)
-
-definition steal_b :: "Tree \<Rightarrow> bool" where
-"steal_b t = (
-  case t of
-  Leaf(kvs) \<Rightarrow> (List.length kvs > Constants.min_leaf_size)
-  | Node(ks,ts) \<Rightarrow> (List.length ks > Constants.min_node_keys)
-)"
-
-(* takes a parent node *)
-definition can :: "key \<Rightarrow> (Tree \<Rightarrow> bool) \<Rightarrow> dir_t \<Rightarrow> nf_t \<Rightarrow> Tree option" where
-"can k0 steal_or_merge dir p = (
-  let q = p |> nf_to_aux k0 in
-  let (i,ts1,ks1,t,ks2,ts2) = q in
-  case dir of
-  Right \<Rightarrow> (
-    case ts2 of 
-    Nil \<Rightarrow> None
-    | t#ts \<Rightarrow> (if steal_or_merge t then Some(t) else None)
-  )
-  | Left \<Rightarrow> (
-    case ts1 of 
-    Nil \<Rightarrow> None
-    | _ \<Rightarrow> (
-      let (ts,t) = dest_list' ts1 in
-      if steal_or_merge t then Some(t) else None)
-  )
-)"
-
-definition can_steal_right :: "key \<Rightarrow> nf_t \<Rightarrow> Tree option" where
-"can_steal_right k0 p = (can k0 steal_b Right p)"
-  
-definition can_steal_left :: "key \<Rightarrow> nf_t \<Rightarrow> Tree option" where
-"can_steal_left k0 p = (can k0 steal_b Left p)"
-
-definition merge_b :: "Tree \<Rightarrow> bool" where
-"merge_b t = (
-  case t of
-  Leaf(kvs) \<Rightarrow> (List.length kvs + Constants.min_leaf_size \<le> Constants.max_leaf_size +1) (* assume merging into something of size min_leaf_size  - 1 *)
-  | Node(ks,ts) \<Rightarrow> (List.length ks + Constants.min_node_keys \<le> Constants.max_node_keys +1)
-)"
-
-definition can_merge_right :: "key \<Rightarrow> nf_t \<Rightarrow> Tree option" where
-"can_merge_right k0 p = (can k0 merge_b Right p)"
-
-definition can_merge_left :: "key \<Rightarrow> nf_t \<Rightarrow> Tree option" where
-"can_merge_left k0 p = (can k0 merge_b Left p)"
 
 (* alternative defs -------------------------------------- *)
 
@@ -312,28 +134,22 @@ let (a',b') = ys in
 'c - child type = ks * 'v list
 'p - parent type = ks * 't list
 *)
+
+type_synonym right_t = bool
+type_synonym is_leaf_t = bool
+
+datatype 'a sm_t = D1 "'a" | D2 "'a * key * 'a"
+
+(* FIXME what about take_care? *)
+
 (* this defn rather horrible; apologies; it is needed to avoid duplication at the block level *)
 definition steal_or_merge :: 
-  "bool \<Rightarrow> 
+  "right_t \<Rightarrow>
+  is_leaf_t \<Rightarrow> 
   ((ks * 'v list) \<Rightarrow> 'c) \<Rightarrow> 
-  ((ks * 't list) \<Rightarrow> 'p) \<Rightarrow>
-  ('c \<Rightarrow> 't) \<Rightarrow>
-  (ks * 'v list) \<Rightarrow> (ks * 't list * ks * 't list) \<Rightarrow> (ks * 'v list) \<Rightarrow> ('c list * 'p)" where
-"steal_or_merge right mk_c mk_p c_to_t c p s = ( (* child parent sibling *)
-  let m1 = frac_mult in
-  let m2 = frac_mult in (* for parent and child, let binding not polymorphic *)
-  (* parent *)
-  let (p_ks1,p_ts1,p_ks2,p_ts2) = p in
-  let (p_1,p_k,p_s,p_2) = (
-    (* if right, we take from p_ks2 else from p_ks1 *)
-    case right of
-    True \<Rightarrow> (
-      let ((k,ks),(t,ts)) = (dest_list p_ks2,dest_list p_ts2) in
-      ((p_ks1,p_ts1),k,t,(ks,ts)))
-    | False \<Rightarrow> (
-      let ((ks,k),(ts,t)) = (dest_list' p_ks1,dest_list' p_ts1) in
-      ((ks,ts),k,t,(p_ks2,p_ts2))))
-  in
+  (ks * 'v list) \<Rightarrow> key \<Rightarrow> (ks * 'v list) \<Rightarrow> 'c sm_t" where
+"steal_or_merge right is_leaf mk_c c p_k s = ( (* child sibling *)
+  let m = frac_mult in
   (* sibling *)
   let (s_ks,s_ts) = s in
   let ((s_k,s_t),s_1) = (
@@ -344,21 +160,57 @@ definition steal_or_merge ::
   case (1+List.length(fst s_1) > min_node_keys) of
   True \<Rightarrow> (
     (* steal *)
-    let c' = mk_c (if right then m1 c ([p_k],[s_t]) else m1 ([p_k],[s_t]) c) in 
+    let c' =
+      (* slightly different for leaf *)
+      let k = (if is_leaf then s_k else p_k) in
+      mk_c (if right then m c ([k],[s_t]) else m ([k],[s_t]) c) 
+    in 
     let s' = mk_c s_1 in
-    let p' = mk_p (m2 (m2 p_1 ([s_k],[c_to_t s'])) p_2) in 
-    (if right then [c',s'] else [s', c'],p')
+    (if right then D2(c',p_k,s') else D2(s', p_k, c'))
   )
   | False \<Rightarrow> (
     (* merge *)
-    let c' = mk_c (if right then m1 (m1 c ([p_k],[])) s  else m1 s (m1 ([p_k],[]) c)) in
-    let p' = mk_p (m2 p_1 p_2) in
-    ([c'],p')
+    let c' = mk_c (if right then m (m c ([p_k],[])) s  else m s (m ([p_k],[]) c)) in
+    D1 c'
   )
 )"  
 
 
 (* main routine ------------------------------------ *)
+
+(* FIXME may want to use this type eg in core *)
+type_synonym ks_ts_t = "key list * Tree list"
+
+type_synonym split_p_t = "ks_ts_t * ks_ts_t"
+
+definition get_sibling :: "split_p_t \<Rightarrow> right_t * split_p_t * Tree * key" where
+"get_sibling p = (
+  let (p_1,p_2) = p in
+        case p_2 of
+        (p_k#p_ks2,s#p_ts2) \<Rightarrow> (
+        let right = True in
+        let (p1,p_2) = (p_1,(p_ks2,p_ts2)) in
+        (right,(p_1,p_2),s,p_k))
+        | _ \<Rightarrow> (
+          case p_1 of
+          (_#_,_#_) \<Rightarrow> (
+            let right = False in
+            let (p_ks1,p_ts1) = p_1 in
+            let (p_1_ks,p_k) = dest_list' p_ks1 in
+            let (p_1_ts,s) = dest_list' p_ts1 in
+            let (p_1,p2) = ((p_1_ks,p_1_ts),p_2) in
+            (right,(p_1,p_2),s,p_k))
+          | _ \<Rightarrow> impossible 
+        ))
+"
+(*
+        let s = (s|>dest_Leaf|>(% kvs. (kvs|>List.map fst, kvs|>List.map snd))) in
+            let c = (kvs|>List.map fst, kvs|>List.map snd) in
+            let s = (s|>dest_Leaf|>(% kvs. (kvs|>List.map fst, kvs|>List.map snd))) in
+*)
+
+definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
+"unzip xs = (xs|>List.map fst, xs|>List.map snd)"
 
 definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
 "step_up du = (
@@ -375,61 +227,34 @@ definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
       let (i,ts1,ks1,t,ks2,ts2) = q in
       Dts_up(p|> with_t (% _. D_updated_subtree(Node(ks1@ks2,ts1@[t']@ts2))),stk')
     )
-    | _ \<Rightarrow> (
+    | D_small_leaf (kvs) \<Rightarrow> (
+      let m = frac_mult in
+      let leaf = True in
       (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
       (* parent info is already read, but we must read the siblings from disk *)
-      undefined
-      
+      let q = p |> nf_to_aux k0 in
+      let (i,p_ts1,p_ks1,_,p_ks2,p_ts2) = q in
+      let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Leaf(List.zip ks vs)) in 
+      let (right,(p_1,p_2),s,p_k) = get_sibling ((p_ks1,p_ts1),(p_ks2,p_ts2)) in
+      let x = steal_or_merge right leaf mk_c (kvs|>unzip) p_k (s|>dest_Leaf|>unzip) in
+      case x of 
+      D1 c' \<Rightarrow> (
+        let p' = Node(m (m p_1 ([],[c'])) p_2) in
+        let f' = (
+          case (p'|>dest_Node|>fst|>List.length < min_node_keys) of
+          False \<Rightarrow> (p|>with_t (% _. D_updated_subtree(p')))
+          | True \<Rightarrow> (p|>with_t (% _. D_small_node(p'|>dest_Node))))
+        in 
+        Dts_up(f',stk'))
+      | D2(c1,k,c2) \<Rightarrow> (
+        let f' = p|>with_t (% _. D_updated_subtree(Node(m (m p_1 ([k],[c1,c2])) p_2))) in
+        Dts_up(f',stk'))       
     )
+    | D_small_node _ \<Rightarrow> undefined (* FIXME *)
   )
 )"
-(*
-      let t = (case p of D_small_leaf(kvs) \<Rightarrow> Leaf(kvs) | D_small_node(ks,rs) \<Rightarrow> Node(ks,rs)) in
-      let (right,rest) = right_sibling p in
-      case try_steal_or_merge_right .... k0 ... t... right of
-      None \<Rightarrow> (case try_.._left of
-        None \<Rightarrow> fail
-        Some(x) \<Rightarrow> x)
-    )
-    
-    | D_small_leaf(kvs) \<Rightarrow> (
-      case can_steal_right k0 p of
-      Some(_) \<Rightarrow> Dts_up(leaf_steal_right k0 p stk' kvs)
-      | _ \<Rightarrow> (
-        case can_steal_left k0 p of
-        Some(_) \<Rightarrow> Dts_up(leaf_steal_left k0 p stk' kvs)
-        | _ \<Rightarrow> (
-          case can_merge_right k0 p of
-          Some(_) \<Rightarrow> Dts_up(leaf_merge_right k0 p stk' kvs)
-          | _ \<Rightarrow> (
-            case can_merge_left k0 p of
-            Some(_) \<Rightarrow> Dts_up(leaf_merge_left k0 p stk' kvs)
-            | _ \<Rightarrow> (failwith ''step_up: impossible, leaf has no siblings but stack not nil'')
-          )
-        )
-      )
-    )
-    | D_small_node(ks,ts) \<Rightarrow> (  
-      case can_steal_right k0 p of
-      Some(_) \<Rightarrow> Dts_up(node_steal_right k0 p stk' (ks,ts))
-      | _ \<Rightarrow> (
-        case can_steal_left k0 p of
-        Some(_) \<Rightarrow> Dts_up(node_steal_left k0 p stk' (ks,ts))
-        | _ \<Rightarrow> (
-          case can_merge_right k0 p of
-          Some(_) \<Rightarrow> Dts_up(node_merge_right k0 p stk' (ks,ts))
-          | _ \<Rightarrow> (
-            case can_merge_left k0 p of
-            Some(_) \<Rightarrow> Dts_up(node_merge_left k0 p stk' (ks,ts))
-            | _ \<Rightarrow> (failwith ''step_up: impossible, node has no siblings but stack not nil'')
-          )
-        )
-      )
-    )
-  )
-)"
-*)
-
+        
+ 
 (* NB we try to keep the executable parts self-contained (no passing-in k v) *)
 definition step_dts :: "dts_state_t \<Rightarrow> dts_state_t option" where
 "step_dts dts = (
