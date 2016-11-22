@@ -308,16 +308,20 @@ let (a',b') = ys in
 (a@a',b@b')
 )"
 
-definition frac_div :: "ks \<Rightarrow> 'a list \<Rightarrow> 'a frac_t"  where
-"frac_div = (% xs ys.  (xs,ys))"
-
-(*
-datatype 'a s_or_m = Steal "'a * 'a * 'a" | Merge "'a * 'a" 
+(* 'a - the tree type; 'v - the values in the children; 't - the values in the parent
+'c - child type = ks * 'v list
+'p - parent type = ks * 't list
 *)
-
-definition try_node :: "bool \<Rightarrow> ((ks * 'a list) \<Rightarrow> 'a) \<Rightarrow> (ks * 'a list) \<Rightarrow> (ks * 'a list * ks * 'a list) \<Rightarrow> (ks * 'a list) \<Rightarrow> ('a list * 'a)" where
-"try_node right mk c p s = ( (* child parent rightsibling *)
-  let m = frac_mult in
+(* this defn rather horrible; apologies; it is needed to avoid duplication at the block level *)
+definition steal_or_merge :: 
+  "bool \<Rightarrow> 
+  ((ks * 'v list) \<Rightarrow> 'c) \<Rightarrow> 
+  ((ks * 't list) \<Rightarrow> 'p) \<Rightarrow>
+  ('c \<Rightarrow> 't) \<Rightarrow>
+  (ks * 'v list) \<Rightarrow> (ks * 't list * ks * 't list) \<Rightarrow> (ks * 'v list) \<Rightarrow> ('c list * 'p)" where
+"steal_or_merge right mk_c mk_p c_to_t c p s = ( (* child parent sibling *)
+  let m1 = frac_mult in
+  let m2 = frac_mult in (* for parent and child, let binding not polymorphic *)
   (* parent *)
   let (p_ks1,p_ts1,p_ks2,p_ts2) = p in
   let (p_1,p_k,p_s,p_2) = (
@@ -330,6 +334,7 @@ definition try_node :: "bool \<Rightarrow> ((ks * 'a list) \<Rightarrow> 'a) \<R
       let ((ks,k),(ts,t)) = (dest_list' p_ks1,dest_list' p_ts1) in
       ((ks,ts),k,t,(p_ks2,p_ts2))))
   in
+  (* sibling *)
   let (s_ks,s_ts) = s in
   let ((s_k,s_t),s_1) = (
     case right of
@@ -339,22 +344,18 @@ definition try_node :: "bool \<Rightarrow> ((ks * 'a list) \<Rightarrow> 'a) \<R
   case (1+List.length(fst s_1) > min_node_keys) of
   True \<Rightarrow> (
     (* steal *)
-    let c' = if right then m c ([p_k],[s_t]) else m ([p_k],[s_t]) c in 
-    let s' = s_1 in
-    let p' = m (m p_1 ([s_k],[mk s'])) p_2 in 
-    (if right then [mk c', mk s'] else [mk s', mk c'],mk p')
+    let c' = mk_c (if right then m1 c ([p_k],[s_t]) else m1 ([p_k],[s_t]) c) in 
+    let s' = mk_c s_1 in
+    let p' = mk_p (m2 (m2 p_1 ([s_k],[c_to_t s'])) p_2) in 
+    (if right then [c',s'] else [s', c'],p')
   )
   | False \<Rightarrow> (
     (* merge *)
-    let c' = 
-      if right then m (m c ([p_k],[])) s 
-      else m s (m ([p_k],[]) c)
-    in
-    let p' = m p_1 p_2 in
-    ([mk c'],mk p')
+    let c' = mk_c (if right then m1 (m1 c ([p_k],[])) s  else m1 s (m1 ([p_k],[]) c)) in
+    let p' = mk_p (m2 p_1 p_2) in
+    ([c'],p')
   )
-)"
-
+)"  
 
 
 (* main routine ------------------------------------ *)
@@ -364,10 +365,9 @@ definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
   let (f,stk) = du in
   let k0 = f|>f_k in
   case stk of 
-  Nil \<Rightarrow> (
-    let dts = f|>f_t in
+  [] \<Rightarrow> (
     (* FIXME root may have lost all its keys? should we take care here or before? if here, we break invariant, so take care before *)    
-    Dts_finished(dts|>dts_to_tree))
+    Dts_finished(f|>f_t|>dts_to_tree))
   | p#stk' \<Rightarrow> (
     case f|>f_t of
     D_updated_subtree(t') \<Rightarrow> (
@@ -375,11 +375,15 @@ definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
       let (i,ts1,ks1,t,ks2,ts2) = q in
       Dts_up(p|> with_t (% _. D_updated_subtree(Node(ks1@ks2,ts1@[t']@ts2))),stk')
     )
-    (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)
     | _ \<Rightarrow> (
-    
+      (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
       (* parent info is already read, but we must read the siblings from disk *)
-    
+      undefined
+      
+    )
+  )
+)"
+(*
       let t = (case p of D_small_leaf(kvs) \<Rightarrow> Leaf(kvs) | D_small_node(ks,rs) \<Rightarrow> Node(ks,rs)) in
       let (right,rest) = right_sibling p in
       case try_steal_or_merge_right .... k0 ... t... right of
@@ -424,6 +428,7 @@ definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
     )
   )
 )"
+*)
 
 (* NB we try to keep the executable parts self-contained (no passing-in k v) *)
 definition step_dts :: "dts_state_t \<Rightarrow> dts_state_t option" where
