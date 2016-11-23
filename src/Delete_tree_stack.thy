@@ -107,18 +107,6 @@ definition wellformed_dts_state :: "dts_state_t \<Rightarrow> bool" where
 
 
 
-(* take care ----------------------------------------------------------- *)
-
-(* FIXME where should this appear now? *)
-definition take_care :: "key list \<Rightarrow> Tree list \<Rightarrow> Tree \<Rightarrow> dts_t" where
-"take_care ks' ts' c1' = (
-    (* we have to be careful here about a root node with 1 key *)
-    if (ks' = []) then D_updated_subtree(c1') else
-    if (List.length ks' < Constants.min_node_keys) then D_small_node(ks',ts') else 
-    D_updated_subtree(Node(ks',ts'))
-)"
-
-
 (* alternative defs -------------------------------------- *)
 
 type_synonym 'a frac_t = "ks * 'a list"
@@ -208,22 +196,45 @@ definition get_sibling :: "split_p_t \<Rightarrow> right_t * split_p_t * Tree * 
 definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
 "unzip xs = (xs|>List.map fst, xs|>List.map snd)"
 
+
+(* when called on a node (D_...) which is a root resulting from a delete op,
+we may have the situation that the root contains no keys, or is small *)
+
+
 (* FIXME rename nf_t to stk_nf *)
 definition post_steal_or_merge :: "tree_stack_t \<Rightarrow> nf_t \<Rightarrow> ks_ts_t \<Rightarrow> ks_ts_t \<Rightarrow> Tree d12_t => dts_state_t" where
 "post_steal_or_merge stk' p p_1 p_2 x = (
       let m = frac_mult in
-      (* FIXME following code is duplicated below *)
       case x of 
       D1 c' \<Rightarrow> (
         let p' = Node(m (m p_1 ([],[c'])) p_2) in
+        let p_sz = p'|>dest_Node|>fst|>List.length in
         let f' = (
-          case (p'|>dest_Node|>fst|>List.length < min_node_keys) of
-          False \<Rightarrow> (p|>with_t (% _. D_updated_subtree(p')))
-          | True \<Rightarrow> (p|>with_t (% _. D_small_node(p'|>dest_Node))))
-        in 
+          (* we may be at root, having deleted the single key *)
+          case (p_sz = 0) of
+          True \<Rightarrow> (
+            let _ = assert_true (stk'=[]) in
+            D_updated_subtree(c'))
+          | False \<Rightarrow> (
+            case (p_sz < min_node_keys) of 
+            True \<Rightarrow> (D_small_node(p'|>dest_Node))
+            | False \<Rightarrow> (D_updated_subtree(p'))))
+        in
+        let f' = p|>with_t (% _. f') in
         Dts_up(f',stk'))
       | D2(c1,k,c2) \<Rightarrow> (
-        let f' = p|>with_t (% _. D_updated_subtree(Node(m (m p_1 ([k],[c1,c2])) p_2))) in
+        let p' = Node(m (m p_1 ([k],[c1,c2])) p_2) in
+        let p_sz = p'|>dest_Node|>fst|>List.length in
+        let f' = (
+          (* we may be at the root, in which case f' may be small *)
+          case (p_sz < min_node_keys) of
+          True \<Rightarrow> (
+            let _ = assert_true (stk'=[]) in
+            D_small_node(p'|>dest_Node)
+          )
+          | False \<Rightarrow> D_updated_subtree(p'))
+        in
+        let f' = p|>with_t (% _. f') in
         Dts_up(f',stk'))       
 )"
 
