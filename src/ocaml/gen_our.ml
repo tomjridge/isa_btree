@@ -708,31 +708,39 @@ let rec post_steal_or_merge
     (match x
       with D1 c ->
         let pa = Tree.Node (m (m p_1 ([], [c])) p_2) in
+        let p_sz =
+          Util.rev_apply
+            (Util.rev_apply (Util.rev_apply pa Tree.dest_Node) Product_Type.fst)
+            List.size_list
+          in
         let f =
-          (match
-            Arith.less_nat
-              (Util.rev_apply
-                (Util.rev_apply (Util.rev_apply pa Tree.dest_Node)
-                  Product_Type.fst)
-                List.size_list)
-              Constants.min_node_keys
+          (match Arith.equal_nat p_sz Arith.zero_nat
             with true ->
-              Util.rev_apply p
-                (Tree_stack.with_t
-                  (fun _ -> D_small_node (Util.rev_apply pa Tree.dest_Node)))
+              let _ = Util.assert_true (List.null stk) in
+              D_updated_subtree c
             | false ->
-              Util.rev_apply p
-                (Tree_stack.with_t (fun _ -> D_updated_subtree pa)))
+              (match Arith.less_nat p_sz Constants.min_node_keys
+                with true -> D_small_node (Util.rev_apply pa Tree.dest_Node)
+                | false -> D_updated_subtree pa))
           in
-        Dts_up (f, stk)
+        let fa = Util.rev_apply p (Tree_stack.with_t (fun _ -> f)) in
+        Dts_up (fa, stk)
       | D2 (c1, (k, c2)) ->
-        let f =
-          Util.rev_apply p
-            (Tree_stack.with_t
-              (fun _ ->
-                D_updated_subtree (Tree.Node (m (m p_1 ([k], [c1; c2])) p_2))))
+        let pa = Tree.Node (m (m p_1 ([k], [c1; c2])) p_2) in
+        let p_sz =
+          Util.rev_apply
+            (Util.rev_apply (Util.rev_apply pa Tree.dest_Node) Product_Type.fst)
+            List.size_list
           in
-        Dts_up (f, stk));;
+        let f =
+          (match Arith.less_nat p_sz Constants.min_node_keys
+            with true ->
+              let _ = Util.assert_true (List.null stk) in
+              D_small_node (Util.rev_apply pa Tree.dest_Node)
+            | false -> D_updated_subtree pa)
+          in
+        let fa = Util.rev_apply p (Tree_stack.with_t (fun _ -> f)) in
+        Dts_up (fa, stk));;
 
 let rec dest_lista
   xs = (match xs
@@ -775,15 +783,21 @@ let rec steal_or_merge
         with true ->
           let ca =
             let k = (if is_leaf then s_k else p_k) in
-            mk_c (if right then m c ([k], [s_t]) else m ([k], [s_t]) c)
+            (if right then m c ([k], [s_t]) else m ([k], [s_t]) c)
             in
           let sa = mk_c s_1 in
-          (if right then D2 (ca, (p_k, sa)) else D2 (sa, (p_k, ca)))
-        | false ->
-          let ab =
-            mk_c (if right then m (m c ([p_k], [])) s
-                   else m s (m ([p_k], []) c))
+          let p_ka =
+            (if is_leaf
+              then let right_sib = (if right then s_1 else ca) in
+                   Util.rev_apply (Util.rev_apply right_sib Product_Type.fst)
+                     List.hd
+              else s_k)
             in
+          let cb = mk_c ca in
+          (if right then D2 (cb, (p_ka, sa)) else D2 (sa, (p_ka, cb)))
+        | false ->
+          let k = (if is_leaf then ([], []) else ([p_k], [])) in
+          let ab = mk_c (if right then m (m c k) s else m s (m k c)) in
           D1 ab))
       b;;
 

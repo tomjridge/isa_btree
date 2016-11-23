@@ -27,6 +27,8 @@ for testing: btree.ml saves the state and the transition; so check the command w
 
 open Test.T
 
+let _ = Test.test [0;1;2;3;4;5;6;7;8;9]
+
 (* FIXME add to_string funs to Delete; FIXME don't need outer Some *)
 let Some(s,Some s') = !Delete.last_trans 
 

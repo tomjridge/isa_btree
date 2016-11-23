@@ -151,14 +151,21 @@ definition steal_or_merge ::
     let c' =
       (* slightly different for leaf *)
       let k = (if is_leaf then s_k else p_k) in
-      mk_c (if right then m c ([k],[s_t]) else m ([k],[s_t]) c) 
+      (if right then m c ([k],[s_t]) else m ([k],[s_t]) c) 
     in 
     let s' = mk_c s_1 in
-    (if right then D2(c',p_k,s') else D2(s', p_k, c'))
+    let p_k' = (if is_leaf then (
+      let right_sib = if right then s_1 else c' in
+      right_sib |> fst |> List.hd) 
+      else s_k)
+    in
+    let c' = mk_c c' in
+    (if right then D2(c',p_k',s') else D2(s', p_k', c'))
   )
   | False \<Rightarrow> (
     (* merge *)
-    let c' = mk_c (if right then m (m c ([p_k],[])) s  else m s (m ([p_k],[]) c)) in
+    let k' = (if is_leaf then ([],[]) else ([p_k],[])) in
+    let c' = mk_c (if right then m (m c k') s  else m s (m k' c)) in
     D1 c'
   )
 )"  
