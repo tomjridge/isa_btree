@@ -20,6 +20,20 @@ let _ = Test.T.M.Tree.wellformed_tree
 
 
 (*
+for testing: btree.ml saves the state and the transition; so check the command which failed, and retrieve the before and after states
+
+
+*)
+
+open Test.T
+
+(* FIXME add to_string funs to Delete; FIXME don't need outer Some *)
+let Some(s,Some s') = !Delete.last_trans 
+
+let _ = s |> M.Json.dts_state_to_string |> print_endline
+let _ = s' |> M.Json.dts_state_to_string |> print_endline
+
+(*
 
 let _ = Test.test [0;1;2;3;4;5;6;7;8;9]
 

@@ -138,7 +138,7 @@ let (a',b') = ys in
 type_synonym right_t = bool
 type_synonym is_leaf_t = bool
 
-datatype 'a sm_t = D1 "'a" | D2 "'a * key * 'a"
+datatype 'a d12_t = D1 "'a" | D2 "'a * key * 'a"
 
 (* FIXME what about take_care? *)
 
@@ -147,7 +147,7 @@ definition steal_or_merge ::
   "right_t \<Rightarrow>
   is_leaf_t \<Rightarrow> 
   ((ks * 'v list) \<Rightarrow> 'c) \<Rightarrow> 
-  (ks * 'v list) \<Rightarrow> key \<Rightarrow> (ks * 'v list) \<Rightarrow> 'c sm_t" where
+  (ks * 'v list) \<Rightarrow> key \<Rightarrow> (ks * 'v list) \<Rightarrow> 'c d12_t" where
 "steal_or_merge right is_leaf mk_c c p_k s = ( (* child sibling *)
   let m = frac_mult in
   (* sibling *)
@@ -157,7 +157,7 @@ definition steal_or_merge ::
     True \<Rightarrow> (let ((k,ks),(t,ts)) = (dest_list s_ks,dest_list s_ts) in ((k,t),(ks,ts)))
     | False \<Rightarrow> (let ((ks,k),(ts,t)) = (dest_list' s_ks,dest_list' s_ts) in ((k,t),(ks,ts))))
   in
-  case (1+List.length(fst s_1) > min_node_keys) of
+  case (1+List.length(fst s_1) > (if is_leaf then min_leaf_size else min_node_keys)) of
   True \<Rightarrow> (
     (* steal *)
     let c' =
@@ -200,17 +200,32 @@ definition get_sibling :: "split_p_t \<Rightarrow> right_t * split_p_t * Tree * 
             let (p_1_ts,s) = dest_list' p_ts1 in
             let (p_1,p2) = ((p_1_ks,p_1_ts),p_2) in
             (right,(p_1,p_2),s,p_k))
-          | _ \<Rightarrow> impossible 
+          | _ \<Rightarrow> impossible ()
         ))
 "
-(*
-        let s = (s|>dest_Leaf|>(% kvs. (kvs|>List.map fst, kvs|>List.map snd))) in
-            let c = (kvs|>List.map fst, kvs|>List.map snd) in
-            let s = (s|>dest_Leaf|>(% kvs. (kvs|>List.map fst, kvs|>List.map snd))) in
-*)
+
 
 definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
 "unzip xs = (xs|>List.map fst, xs|>List.map snd)"
+
+(* FIXME rename nf_t to stk_nf *)
+definition post_steal_or_merge :: "tree_stack_t \<Rightarrow> nf_t \<Rightarrow> ks_ts_t \<Rightarrow> ks_ts_t \<Rightarrow> Tree d12_t => dts_state_t" where
+"post_steal_or_merge stk' p p_1 p_2 x = (
+      let m = frac_mult in
+      (* FIXME following code is duplicated below *)
+      case x of 
+      D1 c' \<Rightarrow> (
+        let p' = Node(m (m p_1 ([],[c'])) p_2) in
+        let f' = (
+          case (p'|>dest_Node|>fst|>List.length < min_node_keys) of
+          False \<Rightarrow> (p|>with_t (% _. D_updated_subtree(p')))
+          | True \<Rightarrow> (p|>with_t (% _. D_small_node(p'|>dest_Node))))
+        in 
+        Dts_up(f',stk'))
+      | D2(c1,k,c2) \<Rightarrow> (
+        let f' = p|>with_t (% _. D_updated_subtree(Node(m (m p_1 ([k],[c1,c2])) p_2))) in
+        Dts_up(f',stk'))       
+)"
 
 definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
 "step_up du = (
@@ -228,7 +243,6 @@ definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
       Dts_up(p|> with_t (% _. D_updated_subtree(Node(ks1@ks2,ts1@[t']@ts2))),stk')
     )
     | D_small_leaf (kvs) \<Rightarrow> (
-      let m = frac_mult in
       let leaf = True in
       (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
       (* parent info is already read, but we must read the siblings from disk *)
@@ -237,20 +251,19 @@ definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
       let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Leaf(List.zip ks vs)) in 
       let (right,(p_1,p_2),s,p_k) = get_sibling ((p_ks1,p_ts1),(p_ks2,p_ts2)) in
       let x = steal_or_merge right leaf mk_c (kvs|>unzip) p_k (s|>dest_Leaf|>unzip) in
-      case x of 
-      D1 c' \<Rightarrow> (
-        let p' = Node(m (m p_1 ([],[c'])) p_2) in
-        let f' = (
-          case (p'|>dest_Node|>fst|>List.length < min_node_keys) of
-          False \<Rightarrow> (p|>with_t (% _. D_updated_subtree(p')))
-          | True \<Rightarrow> (p|>with_t (% _. D_small_node(p'|>dest_Node))))
-        in 
-        Dts_up(f',stk'))
-      | D2(c1,k,c2) \<Rightarrow> (
-        let f' = p|>with_t (% _. D_updated_subtree(Node(m (m p_1 ([k],[c1,c2])) p_2))) in
-        Dts_up(f',stk'))       
+      post_steal_or_merge stk' p p_1 p_2 x
     )
-    | D_small_node _ \<Rightarrow> undefined (* FIXME *)
+    | D_small_node (ks,ts) \<Rightarrow> (
+      let leaf = True in
+      (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
+      (* parent info is already read, but we must read the siblings from disk *)
+      let q = p |> nf_to_aux k0 in
+      let (i,p_ts1,p_ks1,_,p_ks2,p_ts2) = q in
+      let mk_c = (% ks_ts. Node(ks,ts)) in 
+      let (right,(p_1,p_2),s,p_k) = get_sibling ((p_ks1,p_ts1),(p_ks2,p_ts2)) in
+      let x = steal_or_merge right (~ leaf) mk_c (ks,ts) p_k (s|>dest_Node) in
+      post_steal_or_merge stk' p p_1 p_2 x
+    )
   )
 )"
         

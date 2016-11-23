@@ -11,6 +11,7 @@ module Util : sig
   val failwitha : char list -> 'a
   val split_at : Arith.nat -> 'a list -> 'a list * 'a list
   val rev_apply : 'a -> ('a -> 'b) -> 'b
+  val impossible : unit -> 'a
   val split_at_3 : Arith.nat -> 'a list -> 'a list * ('a * 'a list)
   val assert_true : 'a -> bool -> bool
 end = struct
@@ -20,6 +21,9 @@ let rec failwitha x = x|>string_of_chars|>failwith;;
 let rec split_at n xs = (List.take n xs, List.drop n xs);;
 
 let rec rev_apply x f = f x;;
+
+let rec impossible
+  uu = failwitha ['i'; 'm'; 'p'; 'o'; 's'; 's'; 'i'; 'b'; 'l'; 'e'];;
 
 let rec split_at_3
   n xs =
@@ -109,6 +113,15 @@ module Key_value : sig
       Key_value_types.value_t ->
         (Key_value_types.key * Key_value_types.value_t) list ->
           (Key_value_types.key * Key_value_types.value_t) list
+  val split_leaf :
+    (Key_value_types.key * Key_value_types.value_t) list ->
+      (Key_value_types.key * Key_value_types.value_t) list *
+        (Key_value_types.key *
+          (Key_value_types.key * Key_value_types.value_t) list)
+  val split_node :
+    Key_value_types.key list * 'a list ->
+      (Key_value_types.key list * 'a list) *
+        (Key_value_types.key * (Key_value_types.key list * 'a list))
   val check_keys_2 :
     Key_value_types.key Set.set ->
       Key_value_types.key option ->
@@ -143,6 +156,19 @@ let rec kvs_insert
         (if Arith.less_int i Arith.zero_int then (ka, va) :: kvs_insert k v kvs
           else (if Arith.equal_int i Arith.zero_int then (k, v) :: kvs
                  else (k, v) :: (ka, va) :: kvs));;
+
+let rec split_leaf
+  kvs = let min = Constants.min_leaf_size in
+        let (l, r) = Util.split_at min kvs in
+        let k = (match r with [] -> Util.impossible () | (k, _) :: _ -> k) in
+        (l, (k, r));;
+
+let rec split_node
+  n = let (ks, rs) = n in
+      let min = Constants.min_node_keys in
+      let (ks1, (k, ks2)) = Util.split_at_3 min ks in
+      let (rs1, rs2) = Util.split_at (Arith.plus_nat min Arith.one_nat) rs in
+      ((ks1, rs1), (k, (ks2, rs2)));;
 
 let rec check_keys_2
   xs l ks u zs =
@@ -502,11 +528,8 @@ let rec nf_to_aux
     let (ks, ts) = ad in
     (fun (_, _) ->
       let i = search_key_to_index ks k0 in
-      let (ts1, (t, ts2)) =
-        (List.take i ts,
-          (List.nth ts i, List.drop (Arith.plus_nat i Arith.one_nat) ts))
-        in
-      let (ks1, ks2) = (List.take i ks, List.drop i ks) in
+      let (ts1, (t, ts2)) = Util.split_at_3 i ts in
+      let (ks1, ks2) = Util.split_at i ks in
       (i, (ts1, (ks1, (t, (ks2, ts2))))))
       b;;
 
@@ -666,7 +689,7 @@ module Delete_tree_stack : sig
   val wellformed_dts_state : dts_state_t -> bool
 end = struct
 
-type dir_t = Right | Left;;
+type 'a d12_t = D1 of 'a | D2 of ('a * (Key_value_types.key * 'a));;
 
   type dts_t =
     D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
@@ -679,6 +702,49 @@ type dts_state_t = Dts_down of Find_tree_stack.fts_state_t |
         Tree_stack.core_t_ext list)
   | Dts_finished of Tree.tree[@@deriving yojson];;
 
+let rec unzip
+  xs = (Util.rev_apply xs (List.map Product_Type.fst),
+         Util.rev_apply xs (List.map Product_Type.snd));;
+
+let rec frac_mult
+  xs ys =
+    let a = xs in
+    let (aa, b) = a in
+    let (aaa, ba) = ys in
+    (aa @ aaa, b @ ba);;
+
+let rec post_steal_or_merge
+  stk p p_1 p_2 x =
+    let m = frac_mult in
+    (match x
+      with D1 c ->
+        let pa = Tree.Node (m (m p_1 ([], [c])) p_2) in
+        let f =
+          (match
+            Arith.less_nat
+              (Util.rev_apply
+                (Util.rev_apply (Util.rev_apply pa Tree.dest_Node)
+                  Product_Type.fst)
+                List.size_list)
+              Constants.min_node_keys
+            with true ->
+              Util.rev_apply p
+                (Tree_stack.with_t
+                  (fun _ -> D_small_node (Util.rev_apply pa Tree.dest_Node)))
+            | false ->
+              Util.rev_apply p
+                (Tree_stack.with_t (fun _ -> D_updated_subtree pa)))
+          in
+        Dts_up (f, stk)
+      | D2 (c1, (k, c2)) ->
+        let f =
+          Util.rev_apply p
+            (Tree_stack.with_t
+              (fun _ ->
+                D_updated_subtree (Tree.Node (m (m p_1 ([k], [c1; c2])) p_2))))
+          in
+        Dts_up (f, stk));;
+
 let rec dest_lista
   xs = (match xs
          with [] ->
@@ -686,183 +752,79 @@ let rec dest_lista
              ['d'; 'e'; 's'; 't'; '_'; 'l'; 'i'; 's'; 't'; '\039'; ' ']
          | _ :: _ -> (List.butlast xs, List.last xs));;
 
-let rec can
-  k0 steal_or_merge dir p =
-    let (_, (ts1, (_, (_, (_, ts2))))) =
-      Util.rev_apply p (Tree_stack.nf_to_aux k0) in
-    (match dir
-      with Right ->
-        (match ts2 with [] -> None
-          | t :: _ -> (if steal_or_merge t then Some t else None))
-      | Left ->
-        (match ts1 with [] -> None
-          | _ :: _ ->
-            let (_, t) = dest_lista ts1 in
-            (if steal_or_merge t then Some t else None)));;
-
-let rec merge_b
-  t = (match t
-        with Tree.Node (ks, _) ->
-          Arith.less_eq_nat
-            (Arith.plus_nat (List.size_list ks) Constants.min_node_keys)
-            (Arith.plus_nat Constants.max_node_keys Arith.one_nat)
-        | Tree.Leaf kvs ->
-          Arith.less_eq_nat
-            (Arith.plus_nat (List.size_list kvs) Constants.min_leaf_size)
-            (Arith.plus_nat Constants.max_leaf_size Arith.one_nat));;
-
-let rec steal_b
-  t = (match t
-        with Tree.Node (ks, _) ->
-          Arith.less_nat Constants.min_node_keys (List.size_list ks)
-        | Tree.Leaf kvs ->
-          Arith.less_nat Constants.min_leaf_size (List.size_list kvs));;
-
 let rec dest_list
   xs = (match xs
          with [] -> Util.failwitha ['d'; 'e'; 's'; 't'; '_'; 'l'; 'i'; 's'; 't']
          | a :: b -> (a, b));;
 
-let rec node_steal_right
-  k0 p stk c1 =
-    let (c1_ks, c1_ts) = c1 in
-    let (_, (q_ts1, (q_ks1, (_, (q_ks2, q_ts2))))) =
-      Util.rev_apply p (Tree_stack.nf_to_aux k0) in
-    let (q_k, q_ks2a) = dest_list q_ks2 in
-    let (q_c, q_ts2a) = dest_list q_ts2 in
-    let (c2_ks, c2_ts) = Tree.dest_Node q_c in
-    let (c2_k, c2_ksa) = dest_list c2_ks in
-    let (c2_t, c2_tsa) = dest_list c2_ts in
-    let c1a = Tree.Node (c1_ks @ [q_k], c1_ts @ [c2_t]) in
-    let k = c2_k in
-    let c2 = Tree.Node (c2_ksa, c2_tsa) in
-    let f =
-      D_updated_subtree
-        (Tree.Node (q_ks1 @ [k] @ q_ks2a, q_ts1 @ [c1a; c2] @ q_ts2a))
+let rec steal_or_merge
+  right is_leaf mk_c c p_k s =
+    let m = frac_mult in
+    let (s_ks, s_ts) = s in
+    let a =
+      (match right
+        with true ->
+          let a = (dest_list s_ks, dest_list s_ts) in
+          let (aa, b) = a in
+          let (k, ks) = aa in
+          (fun (t, ts) -> ((k, t), (ks, ts)))
+            b
+        | false ->
+          let a = (dest_lista s_ks, dest_lista s_ts) in
+          let (aa, b) = a in
+          let (ks, k) = aa in
+          (fun (ts, t) -> ((k, t), (ks, ts)))
+            b)
       in
-    (Util.rev_apply p (Tree_stack.with_t (fun _ -> f)), stk);;
+    let (aa, b) = a in
+    let (s_k, s_t) = aa in
+    (fun s_1 ->
+      (match
+        Arith.less_nat
+          (if is_leaf then Constants.min_leaf_size else Constants.min_node_keys)
+          (Arith.plus_nat Arith.one_nat (List.size_list (Product_Type.fst s_1)))
+        with true ->
+          let ca =
+            let k = (if is_leaf then s_k else p_k) in
+            mk_c (if right then m c ([k], [s_t]) else m ([k], [s_t]) c)
+            in
+          let sa = mk_c s_1 in
+          (if right then D2 (ca, (p_k, sa)) else D2 (sa, (p_k, ca)))
+        | false ->
+          let ab =
+            mk_c (if right then m (m c ([p_k], [])) s
+                   else m s (m ([p_k], []) c))
+            in
+          D1 ab))
+      b;;
 
-let rec take_care
-  ks ts c1 =
-    (if List.null ks then D_updated_subtree c1
-      else (if Arith.less_nat (List.size_list ks) Constants.min_node_keys
-             then D_small_node (ks, ts)
-             else D_updated_subtree (Tree.Node (ks, ts))));;
-
-let rec node_merge_right
-  k0 p stk c1 =
-    let (c1_ks, c1_ts) = c1 in
-    let (_, (q_ts1, (q_ks1, (_, (q_ks2, q_ts2))))) =
-      Util.rev_apply p (Tree_stack.nf_to_aux k0) in
-    let (q_k, q_ks2a) = dest_list q_ks2 in
-    let (q_c, q_ts2a) = dest_list q_ts2 in
-    let (c2_ks, c2_ts) = Tree.dest_Node q_c in
-    let c1a = Tree.Node (c1_ks @ [q_k] @ c2_ks, c1_ts @ c2_ts) in
-    let ks = q_ks1 @ q_ks2a in
-    let ts = q_ts1 @ [c1a] @ q_ts2a in
-    let f = take_care ks ts c1a in
-    (Util.rev_apply p (Tree_stack.with_t (fun _ -> f)), stk);;
-
-let rec leaf_steal_right
-  k0 p stk c1_kvs =
-    let (_, (q_ts1, (q_ks1, (_, (q_ks2, q_ts2))))) =
-      Util.rev_apply p (Tree_stack.nf_to_aux k0) in
-    let (_, q_ks2a) = dest_list q_ks2 in
-    let (q_c, q_ts2a) = dest_list q_ts2 in
-    let c2_kvs = Tree.dest_Leaf q_c in
-    let (c2_kv, c2_kvsa) = dest_list c2_kvs in
-    let c1 = Tree.Leaf (c1_kvs @ [c2_kv]) in
-    let c2 = Tree.Leaf c2_kvsa in
-    let k = Util.rev_apply (List.hd c2_kvsa) Product_Type.fst in
-    let f =
-      D_updated_subtree
-        (Tree.Node (q_ks1 @ [k] @ q_ks2a, q_ts1 @ [c1; c2] @ q_ts2a))
-      in
-    (Util.rev_apply p (Tree_stack.with_t (fun _ -> f)), stk);;
-
-let rec leaf_merge_right
-  k0 p stk c1_kvs =
-    let (_, (q_ts1, (q_ks1, (_, (q_ks2, q_ts2))))) =
-      Util.rev_apply p (Tree_stack.nf_to_aux k0) in
-    let (_, q_ks2a) = dest_list q_ks2 in
-    let (q_c, q_ts2a) = dest_list q_ts2 in
-    let c2_kvs = Tree.dest_Leaf q_c in
-    let c1 = Tree.Leaf (c1_kvs @ c2_kvs) in
-    let ks = q_ks1 @ q_ks2a in
-    let ts = q_ts1 @ [c1] @ q_ts2a in
-    let f = take_care ks ts c1 in
-    (Util.rev_apply p (Tree_stack.with_t (fun _ -> f)), stk);;
-
-let rec node_steal_left
-  k0 p stk c2 =
-    let (c2_ks, c2_ts) = c2 in
-    let (_, (q_ts1, (q_ks1, (_, (q_ks2, q_ts2))))) =
-      Util.rev_apply p (Tree_stack.nf_to_aux k0) in
-    let (q_ks1a, q_k) = dest_lista q_ks1 in
-    let (q_ts1a, q_c) = dest_lista q_ts1 in
-    let (c1_ks, c1_ts) = Tree.dest_Node q_c in
-    let c2a = Tree.Node ([q_k] @ c2_ks, [q_c] @ c2_ts) in
-    let (c1_ksa, c1_k) = dest_lista c1_ks in
-    let (c1_tsa, _) = dest_lista c1_ts in
-    let k = c1_k in
-    let c1 = Tree.Node (c1_ksa, c1_tsa) in
-    let f =
-      D_updated_subtree
-        (Tree.Node (q_ks1a @ [k] @ q_ks2, q_ts1a @ [c1; c2a] @ q_ts2))
-      in
-    (Util.rev_apply p (Tree_stack.with_t (fun _ -> f)), stk);;
-
-let rec node_merge_left
-  k0 p stk c2 =
-    let (c2_ks, c2_ts) = c2 in
-    let (_, (q_ts1, (q_ks1, (_, (q_ks2, q_ts2))))) =
-      Util.rev_apply p (Tree_stack.nf_to_aux k0) in
-    let (q_ks1a, q_k) = dest_lista q_ks1 in
-    let (q_ts1a, q_c) = dest_lista q_ts1 in
-    let (c1_ks, c1_ts) = Tree.dest_Node q_c in
-    let c1 = Tree.Node (c1_ks @ [q_k] @ c2_ks, c1_ts @ c2_ts) in
-    let ks = q_ks1a @ q_ks2 in
-    let ts = q_ts1a @ [c1] @ q_ts2 in
-    let f = take_care ks ts c1 in
-    (Util.rev_apply p (Tree_stack.with_t (fun _ -> f)), stk);;
-
-let rec leaf_steal_left
-  k0 p stk c2_kvs =
-    let (_, (q_ts1, (q_ks1, (_, (q_ks2, q_ts2))))) =
-      Util.rev_apply p (Tree_stack.nf_to_aux k0) in
-    let (q_ks1a, _) = dest_lista q_ks1 in
-    let (q_ts1a, q_c) = dest_lista q_ts1 in
-    let c1_kvs = Tree.dest_Leaf q_c in
-    let (c1_kvsa, c1_kv) = dest_lista c1_kvs in
-    let c2 = Tree.Leaf ([c1_kv] @ c2_kvs) in
-    let c1 = Tree.Leaf c1_kvsa in
-    let k = Product_Type.fst c1_kv in
-    let f =
-      D_updated_subtree
-        (Tree.Node (q_ks1a @ [k] @ q_ks2, q_ts1a @ [c1; c2] @ q_ts2))
-      in
-    (Util.rev_apply p (Tree_stack.with_t (fun _ -> f)), stk);;
-
-let rec leaf_merge_left
-  k0 p stk c2_kvs =
-    let (_, (q_ts1, (q_ks1, (_, (q_ks2, q_ts2))))) =
-      Util.rev_apply p (Tree_stack.nf_to_aux k0) in
-    let (q_ks1a, _) = dest_lista q_ks1 in
-    let (q_ts1a, q_c) = dest_lista q_ts1 in
-    let c1_kvs = Tree.dest_Leaf q_c in
-    let c1 = Tree.Leaf (c1_kvs @ c2_kvs) in
-    let ks = q_ks1a @ q_ks2 in
-    let ts = q_ts1a @ [c1] @ q_ts2 in
-    let f = take_care ks ts c1 in
-    (Util.rev_apply p (Tree_stack.with_t (fun _ -> f)), stk);;
-
-let rec can_steal_right k0 p = can k0 steal_b Right p;;
-
-let rec can_merge_right k0 p = can k0 merge_b Right p;;
-
-let rec can_steal_left k0 p = can k0 steal_b Left p;;
-
-let rec can_merge_left k0 p = can k0 merge_b Left p;;
+let rec get_sibling
+  p = let (p_1, p_2) = p in
+      (match p_2
+        with ([], _) ->
+          (match p_1 with ([], _) -> Util.impossible ()
+            | (_ :: _, []) -> Util.impossible ()
+            | (_ :: _, _ :: _) ->
+              let right = false in
+              let (p_ks1, p_ts1) = p_1 in
+              let (p_1_ks, p_k) = dest_lista p_ks1 in
+              let (p_1_ts, s) = dest_lista p_ts1 in
+              let (p_1a, _) = ((p_1_ks, p_1_ts), p_2) in
+              (right, ((p_1a, p_2), (s, p_k))))
+        | (_ :: _, []) ->
+          (match p_1 with ([], _) -> Util.impossible ()
+            | (_ :: _, []) -> Util.impossible ()
+            | (_ :: _, _ :: _) ->
+              let right = false in
+              let (p_ks1, p_ts1) = p_1 in
+              let (p_1_ks, p_k) = dest_lista p_ks1 in
+              let (p_1_ts, s) = dest_lista p_ts1 in
+              let (p_1a, _) = ((p_1_ks, p_1_ts), p_2) in
+              (right, ((p_1a, p_2), (s, p_k))))
+        | (p_k :: p_ks2, s :: p_ts2) ->
+          let right = true in
+          let (_, p_2a) = (p_1, (p_ks2, p_ts2)) in
+          (right, ((p_1, p_2a), (s, p_k))));;
 
 let rec dts_to_tree
   dts = (match dts with D_small_leaf a -> Tree.Leaf a
@@ -874,54 +836,42 @@ let rec step_up
        let k0 = Util.rev_apply f Tree_stack.f_k in
        (match stk
          with [] ->
-           let dts = Util.rev_apply f Tree_stack.f_t in
-           Dts_finished (Util.rev_apply dts dts_to_tree)
+           Dts_finished
+             (Util.rev_apply (Util.rev_apply f Tree_stack.f_t) dts_to_tree)
          | p :: stka ->
            (match Util.rev_apply f Tree_stack.f_t
              with D_small_leaf kvs ->
-               (match can_steal_right k0 p
-                 with None ->
-                   (match can_steal_left k0 p
-                     with None ->
-                       (match can_merge_right k0 p
-                         with None ->
-                           (match can_merge_left k0 p
-                             with None ->
-                               Util.failwitha
-                                 ['s'; 't'; 'e'; 'p'; '_'; 'u'; 'p'; ':'; ' ';
-                                   'i'; 'm'; 'p'; 'o'; 's'; 's'; 'i'; 'b'; 'l';
-                                   'e'; ','; ' '; 'l'; 'e'; 'a'; 'f'; ' '; 'h';
-                                   'a'; 's'; ' '; 'n'; 'o'; ' '; 's'; 'i'; 'b';
-                                   'l'; 'i'; 'n'; 'g'; 's'; ' '; 'b'; 'u'; 't';
-                                   ' '; 's'; 't'; 'a'; 'c'; 'k'; ' '; 'n'; 'o';
-                                   't'; ' '; 'n'; 'i'; 'l']
-                             | Some _ -> Dts_up (leaf_merge_left k0 p stka kvs))
-                         | Some _ -> Dts_up (leaf_merge_right k0 p stka kvs))
-                     | Some _ -> Dts_up (leaf_steal_left k0 p stka kvs))
-                 | Some _ -> Dts_up (leaf_steal_right k0 p stka kvs))
+               let leaf = true in
+               let (_, (p_ts1, (p_ks1, (_, (p_ks2, p_ts2))))) =
+                 Util.rev_apply p (Tree_stack.nf_to_aux k0) in
+               let mk_c = (fun (ks, vs) -> Tree.Leaf (List.zip ks vs)) in
+               let a = get_sibling ((p_ks1, p_ts1), (p_ks2, p_ts2)) in
+               let (right, aa) = a in
+               let (ab, b) = aa in
+               let (p_1, p_2) = ab in
+               (fun (s, p_k) ->
+                 let ac =
+                   steal_or_merge right leaf mk_c (Util.rev_apply kvs unzip) p_k
+                     (Util.rev_apply (Util.rev_apply s Tree.dest_Leaf) unzip)
+                   in
+                 post_steal_or_merge stka p p_1 p_2 ac)
+                 b
              | D_small_node (ks, ts) ->
-               (match can_steal_right k0 p
-                 with None ->
-                   (match can_steal_left k0 p
-                     with None ->
-                       (match can_merge_right k0 p
-                         with None ->
-                           (match can_merge_left k0 p
-                             with None ->
-                               Util.failwitha
-                                 ['s'; 't'; 'e'; 'p'; '_'; 'u'; 'p'; ':'; ' ';
-                                   'i'; 'm'; 'p'; 'o'; 's'; 's'; 'i'; 'b'; 'l';
-                                   'e'; ','; ' '; 'n'; 'o'; 'd'; 'e'; ' '; 'h';
-                                   'a'; 's'; ' '; 'n'; 'o'; ' '; 's'; 'i'; 'b';
-                                   'l'; 'i'; 'n'; 'g'; 's'; ' '; 'b'; 'u'; 't';
-                                   ' '; 's'; 't'; 'a'; 'c'; 'k'; ' '; 'n'; 'o';
-                                   't'; ' '; 'n'; 'i'; 'l']
-                             | Some _ ->
-                               Dts_up (node_merge_left k0 p stka (ks, ts)))
-                         | Some _ ->
-                           Dts_up (node_merge_right k0 p stka (ks, ts)))
-                     | Some _ -> Dts_up (node_steal_left k0 p stka (ks, ts)))
-                 | Some _ -> Dts_up (node_steal_right k0 p stka (ks, ts)))
+               let leaf = true in
+               let (_, (p_ts1, (p_ks1, (_, (p_ks2, p_ts2))))) =
+                 Util.rev_apply p (Tree_stack.nf_to_aux k0) in
+               let mk_c = (fun _ -> Tree.Node (ks, ts)) in
+               let a = get_sibling ((p_ks1, p_ts1), (p_ks2, p_ts2)) in
+               let (right, aa) = a in
+               let (ab, b) = aa in
+               let (p_1, p_2) = ab in
+               (fun (s, p_k) ->
+                 let ac =
+                   steal_or_merge right (not leaf) mk_c (ks, ts) p_k
+                     (Util.rev_apply s Tree.dest_Node)
+                   in
+                 post_steal_or_merge stka p p_1 p_2 ac)
+                 b
              | D_updated_subtree t ->
                let (_, (ts1, (ks1, (_, (ks2, ts2))))) =
                  Util.rev_apply p (Tree_stack.nf_to_aux k0) in
@@ -1100,13 +1050,6 @@ type its_state_t =
       ((Key_value_types.key list * Tree.tree list), unit)
         Tree_stack.core_t_ext list)[@@deriving yojson];;
 
-let rec split_node
-  n = let (ks, ts) = n in
-      let min = Constants.min_node_keys in
-      let (ks1, (k, ks2)) = Util.split_at_3 min ks in
-      let (ts1, ts2) = Util.split_at (Arith.plus_nat min Arith.one_nat) ts in
-      (Tree.Node (ks1, ts1), (k, Tree.Node (ks2, ts2)));;
-
 let rec step_focus
   p f = let k = Util.rev_apply p Tree_stack.f_k in
         let (ks, _) = Util.rev_apply p Tree_stack.f_t in
@@ -1121,7 +1064,9 @@ let rec step_focus
               (match
                 Arith.less_eq_nat (List.size_list ksa) Constants.max_node_keys
                 with true -> Inserting_one (Tree.Node (ksa, ts))
-                | false -> Inserting_two (split_node (ksa, ts))))
+                | false ->
+                  let (ks_ts1, (kb, ks_ts2)) = Key_value.split_node (ksa, ts) in
+                  Inserting_two (Tree.Node ks_ts1, (kb, Tree.Node ks_ts2))))
           in
         Util.rev_apply p (Tree_stack.with_t (fun _ -> t));;
 
@@ -1141,11 +1086,6 @@ let rec its_to_h
   its = (match its with Inserting_one a -> Tree.height a
           | Inserting_two (t1, (_, _)) -> Tree.height t1);;
 
-let rec split_leaf_kvs
-  kvs = let min = Constants.min_leaf_size in
-        let (kvs1, (kv, kvs2)) = Util.split_at_3 min kvs in
-        (kvs1, (Product_Type.fst kv, kv :: kvs2));;
-
 let rec step_bottom
   down =
     let (fts, v0) = down in
@@ -1164,7 +1104,7 @@ let rec step_bottom
           (match Arith.less_eq_nat (List.size_list kvs2) Constants.max_leaf_size
             with true -> Inserting_one (Tree.Leaf kvs2)
             | false ->
-              let (left, (ka, right)) = split_leaf_kvs kvs2 in
+              let (left, (ka, right)) = Key_value.split_leaf kvs2 in
               Inserting_two (Tree.Leaf left, (ka, Tree.Leaf right)))
           in
         Some (Util.rev_apply f (Tree_stack.with_t (fun _ -> its)), stk));;

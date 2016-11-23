@@ -72,15 +72,13 @@ let test range = (
 
 
 let main () = (  
-  if 1 < Array.length Sys.argv && Sys.argv.(1) = "test" then 
     (* read stdin and convert to an int list range *)
     let _ = Printf.printf "test: reading input from stdin\n" in
     let js = Yojson.Safe.from_channel Pervasives.stdin in
     let _ = Printf.printf "test: read %s\n" (Yojson.Safe.to_string js) in
     let range = range_t_of_yojson js |> function Ok x -> x in
     test range
-  else 
-    ()
 )
 
-let _ = main()
+let _ = 
+  if 1 < Array.length Sys.argv && Sys.argv.(1) = "test" then main() else ()
