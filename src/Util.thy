@@ -63,6 +63,16 @@ definition is_Ok :: "('a,'b) rresult \<Rightarrow> bool" where
 definition dest_Ok :: "('a,'b) rresult \<Rightarrow> 'a" where
 "dest_Ok x == x |> rresult_to_option |> dest_Some"
 
+definition dest_list :: "'a list \<Rightarrow> ('a * 'a list)" where
+"dest_list xs = (case xs of x#xs \<Rightarrow> (x,xs) | _ \<Rightarrow> failwith ''dest_list'')"
+
+definition dest_list' :: "'a list \<Rightarrow> ('a list * 'a)" where
+"dest_list' xs = (case xs of [] \<Rightarrow> failwith ''dest_list' '' | _ \<Rightarrow> (butlast xs,last xs))"
+
+
+definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
+"unzip xs = (xs|>List.map fst, xs|>List.map snd)"
+
 
 (* various list lemmas ---------------------------------- *)
 

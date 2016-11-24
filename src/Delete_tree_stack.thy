@@ -34,11 +34,6 @@ type_synonym node_steal_t = "key list * key * key list *
   node_t * node_t * dir_t"
 *)
 
-definition dest_list :: "'a list \<Rightarrow> ('a * 'a list)" where
-"dest_list xs = (case xs of x#xs \<Rightarrow> (x,xs) | _ \<Rightarrow> failwith ''dest_list'')"
-
-definition dest_list' :: "'a list \<Rightarrow> ('a list * 'a)" where
-"dest_list' xs = (case xs of [] \<Rightarrow> failwith ''dest_list' '' | _ \<Rightarrow> (butlast xs,last xs))"
 
 definition dts_to_tree :: "dts_t \<Rightarrow> Tree" where
 "dts_to_tree dts = (
@@ -275,7 +270,7 @@ definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
       post_steal_or_merge stk' p p_1 p_2 x
     )
     | D_small_node (ks,ts) \<Rightarrow> (
-      let leaf = True in
+      let leaf = False in
       (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
       (* parent info is already read, but we must read the siblings from disk *)
       let q = p |> nf_to_aux k0 in

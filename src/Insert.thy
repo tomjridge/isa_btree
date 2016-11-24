@@ -29,7 +29,7 @@ definition step_down :: "d \<Rightarrow> d MM" where
 definition step_bottom :: "d \<Rightarrow> u MM" where
 "step_bottom d = (
   let (fs,v) = d in
-  case find_dest_finished fs of 
+  case dest_f_finished fs of 
   None \<Rightarrow> impossible ()
   | Some(k,l,r,u,kvs,stk) \<Rightarrow> (
     let kvs' = kvs |> kvs_insert k v in
@@ -61,18 +61,12 @@ definition step_up :: "u \<Rightarrow> u MM" where
       True \<Rightarrow> (
         Node_frame(ks',rs') |> frame_to_page |> alloc |> fmap (% r. (I1 r,stk')))
       | False \<Rightarrow> (
-        let (ks_rs1,k,ks_rs2) = split_node (ks',rs') in
+        let (ks_rs1,k,ks_rs2) = split_node (ks',rs') in  (* FIXME move split_node et al to this file *)
         Node_frame(ks_rs1) |> frame_to_page |> alloc |> bind
-        (% r1. Node_frame (ks_rs2) |> frame_to_page |> alloc |> fmap (% r2. (I2(r1,k,r2),stk'))))
+        (% r1. Node_frame (ks_rs2) |> frame_to_page |> alloc |> fmap 
+        (% r2. (I2(r1,k,r2),stk'))))
     )
   )
-)"
-
-definition post_step_up :: "fo \<Rightarrow> r MM" where
-"post_step_up fo = (
-  case fo of 
-  I1 r \<Rightarrow> (return r)
-  | I2(r1,k,r2) \<Rightarrow> (Node_frame([k],[r1,r2]) |> frame_to_page |> alloc)
 )"
 
 definition step :: "is_t \<Rightarrow> is_t MM" where
@@ -80,18 +74,24 @@ definition step :: "is_t \<Rightarrow> is_t MM" where
   case s of 
   I_down d \<Rightarrow> (
     let (fs,v) = d in
-    case (find_dest_finished fs) of 
+    case (dest_f_finished fs) of 
     None \<Rightarrow> (step_down d |> fmap (% d. I_down d))
     | Some _ \<Rightarrow> step_bottom d |> fmap (% u. I_up u))
   | I_up u \<Rightarrow> (
     let (fo,stk) = u in
     case stk of
-    [] \<Rightarrow> post_step_up fo |> fmap (% r. I_finished r)
+    [] \<Rightarrow> (
+      case fo of 
+      I1 r \<Rightarrow> return (I_finished r)
+      | I2(r1,k,r2) \<Rightarrow> (
+        (* create a new frame *)
+        (Node_frame([k],[r1,r2]) |> frame_to_page |> alloc |> fmap (% r. I_finished r))))
     | _ \<Rightarrow> (step_up u |> fmap (% u. I_up u)))
+  | I_finished f \<Rightarrow> (return s)  (* stutter *)
 )"
 
-definition insert_dest_finished :: "is_t \<Rightarrow> r option" where
-"insert_dest_finished s = (case s of I_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
+definition dest_i_finished :: "is_t \<Rightarrow> r option" where
+"dest_i_finished s = (case s of I_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
 
 
 
