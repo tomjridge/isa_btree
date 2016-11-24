@@ -5,6 +5,7 @@ begin
 datatype i_error = I_find_error find_error | I_store_error store_error | I_error string
 type_synonym ie = i_error
 
+
 datatype i_t = I1 r | I2 "r*k*r"
 
 type_synonym focus_t = "i_t"
@@ -42,8 +43,8 @@ definition step_down :: "d \<Rightarrow> d ie_M" where
 definition step_bottom :: "d \<Rightarrow> u ie_M" where
 "step_bottom d = (
   let (fs,v) = d in
-  case dest_finished fs of
-  None \<Rightarrow> impossible
+  case Find.dest_finished fs of  (* FIXME find_dest_finished? *)
+  None \<Rightarrow> impossible ()
   | Some(k,r,kvs,stk) \<Rightarrow> (
     let kvs' = kvs |> kvs_insert k v in
     let fo = (
@@ -61,7 +62,7 @@ definition step_up :: "u \<Rightarrow> u ie_M" where
 "step_up u = (
   let (fo,stk) = u in
   case stk of 
-  [] \<Rightarrow> impossible
+  [] \<Rightarrow> impossible ()  (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
   | x#stk' \<Rightarrow> (
     let (rs1,ks1,_,ks2,rs2) = x in
     case fo of

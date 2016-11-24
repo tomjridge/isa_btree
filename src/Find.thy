@@ -1,52 +1,42 @@
 theory Find 
-imports Tree_stack Frame (* FIXME for sktoi; move to kv *)
+imports Tree_stack Frame Monad (* FIXME for sktoi; move to kv *)
 begin
 
-datatype find_error = Find_store_error store_error | Find_step_error
-type_synonym fe = find_error
-
-definition se_to_fe :: "se \<Rightarrow> fe" where 
-"se_to_fe se = Find_store_error se"
-
-type_synonym stk = "(rs * ks * r * ks * rs) list"
-
 datatype find_state_t = 
-  Find_down "k*r*stk" 
-  | Find_finished "k*r*kvs*stk"
+  Find_down "k*k option*r*k option*stk"  (* search key, lower and upper bound for r *) 
+  | Find_finished "k*k option * r * k option * kvs*stk"
   
-type_synonym find_finished = "k*r*kvs*stk"
+type_synonym find_finished = "k*k option*r*k option*kvs*stk"
 
 type_synonym fs = find_state_t
   
-type_synonym 'a fe_M = "('a,fe) M"
- 
-definition fe_bind :: "('a \<Rightarrow> 'b fe_M) \<Rightarrow> 'a fe_M \<Rightarrow> 'b fe_M" where 
-"fe_bind f v = bind f v"
-
-definition page_ref_to_frame :: "r \<Rightarrow> fr fe_M" where
-"page_ref_to_frame r = (Frame.page_ref_to_frame r) |> fmap_error se_to_fe"
-
-definition dest_finished :: "find_state_t \<Rightarrow> (k*r*kvs*stk) option" where
-"dest_finished fs = (
+definition find_dest_finished :: "find_state_t \<Rightarrow> find_finished option" where
+"find_dest_finished fs = (
   case fs of
   Find_down _ \<Rightarrow> None
-  | Find_finished (k,r,kvs,stk) \<Rightarrow> Some(k,r,kvs,stk)  
+  | Find_finished (k,l,r,u,kvs,stk) \<Rightarrow> Some(k,l,r,u,kvs,stk)  
 )"
 
-definition find_step :: "fs \<Rightarrow> fs fe_M" where
+(* FIXME maybe want to store ks,rs as a list of (k,r), with the invariant that the last k is +inf *)
+
+definition find_step :: "fs \<Rightarrow> fs MM" where
 "find_step fs = (
   case fs of 
-  Find_finished _ \<Rightarrow> (% s. (s,Error Find_step_error))
-  | Find_down(k,r,stk) \<Rightarrow> (
+  Find_finished _ \<Rightarrow> (return fs)  (* FIXME impossible, or return none? or have a finished error? or stutter? *)
+  | Find_down(k,l,r,u,stk) \<Rightarrow> (
     page_ref_to_frame r |>fmap
     (% f. case f of 
       Node_frame (ks,rs) \<Rightarrow> (
         let i = search_key_to_index ks k in
         let (ks1,ks2) = split_at i ks in
         let (rs1,r',rs2) = split_at_3 i rs in
-        Find_down(k,r',(rs1,ks1,r',ks2,rs2)#stk)
+        let (l',u') = (
+          if ks1 = [] then l else Some(List.last ks1),
+          if ks2 = [] then u else Some(List.hd ks2))
+        in
+        Find_down(k,l',r',u',(l,((ks1,rs1),(ks2,rs2)),u)#stk)
       )
-      | Leaf_frame kvs \<Rightarrow> (Find_finished(k,r,kvs,stk))))
+      | Leaf_frame kvs \<Rightarrow> (Find_finished(k,l,r,u,kvs,stk))))
 )"
 
 
@@ -54,7 +44,7 @@ definition find_step :: "fs \<Rightarrow> fs fe_M" where
 
 type_synonym 'a trace = "nat \<Rightarrow> 'a"
 
-function find :: "fs \<Rightarrow> (fs fe_M) trace" where
+function find :: "fs \<Rightarrow> (fs MM) trace" where
 "find fs n = (
   case n of 0 \<Rightarrow> (find_step fs)
   | Suc n \<Rightarrow> ( (find fs n) |>bind find_step)

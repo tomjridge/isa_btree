@@ -28,10 +28,12 @@ type_synonym dts_down_t = fts_state_t
 type_synonym dts_up_t = "dts_focus_t * tree_stack_t"
 
 (* parent ks1 k ks2, ts1 ts2; and two children separated by k, and the direction to steal *)
+(*
 type_synonym node_steal_t = "key list * key * key list * 
   Tree list * Tree list  * 
   node_t * node_t * dir_t"
-  
+*)
+
 definition dest_list :: "'a list \<Rightarrow> ('a * 'a list)" where
 "dest_list xs = (case xs of x#xs \<Rightarrow> (x,xs) | _ \<Rightarrow> failwith ''dest_list'')"
 
@@ -245,10 +247,11 @@ definition post_steal_or_merge :: "tree_stack_t \<Rightarrow> nf_t \<Rightarrow>
         Dts_up(f',stk'))       
 )"
 
+(* change to u \<Rightarrow> u ? *)
 definition step_up :: "dts_up_t \<Rightarrow> dts_state_t" where
 "step_up du = (
   let (f,stk) = du in
-  let k0 = f|>f_k in
+  let k0 = f|>f_k in  (* FIXME nf_to_aux doesn't need this *)
   case stk of 
   [] \<Rightarrow> (
     (* FIXME root may have lost all its keys? should we take care here or before? if here, we break invariant, so take care before *)    
@@ -339,7 +342,7 @@ definition wf_dts_trans :: "dts_state_t \<Rightarrow> dts_state_t \<Rightarrow> 
 "wf_dts_trans s1 s2 = assert_true (s1,s2) (
   case (s1,s2) of 
   (Dts_down(fts),Dts_down(fts')) \<Rightarrow> (wf_fts_trans fts fts')
-  | (Dts_down(_),Dts_up(_)) \<Rightarrow> True
+  | (Dts_down(_),Dts_up(_)) \<Rightarrow> True (* FIXME could do more here *)
   | (Dts_down(_),Dts_finished(t)) \<Rightarrow> True
   | (Dts_up(du),Dts_up(du')) \<Rightarrow> (
     (* no reason to expect that the leaves are preserved exactly *)

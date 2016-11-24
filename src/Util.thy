@@ -38,7 +38,7 @@ primrec dest_Some (* :: "'a option => 'a" *) where
 definition is_None :: "'a option \<Rightarrow> bool" where 
 "is_None x == x = None"
   
-(* for debugging ocaml code; otherwise remove *)
+(* for debugging ocaml code; otherwise remove; FIXME don't need extra arg *)
 definition assert_true :: "'a \<Rightarrow> bool \<Rightarrow> bool" where
 "assert_true arg b = b"
 
