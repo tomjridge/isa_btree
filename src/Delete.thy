@@ -2,22 +2,19 @@ theory Delete
 imports Find
 begin
 
-datatype d_t =
+datatype del_t =
   D_small_leaf "kvs"
   | D_small_node "ks * rs"
   | D_updated_subtree "r"
 
-type_synonym fo = d_t  (* focus *)
+type_synonym fo = del_t  (* focus *)
 
-datatype d_state_t = 
-  D_down "find_state_t"
-  | D_up "fo * stk"
+datatype d_state = 
+  D_down "find_state_t * r"  (* r is the original pointer to root, in case we don't delete anything *)
+  | D_up "fo * stk * r"
   | D_finished r
   
-type_synonym u = "fo * stk"
-
-type_synonym right_t = bool
-type_synonym is_leaf_t = bool
+type_synonym u = "fo * stk"  (* r is unused parameter *)
 
 
 (* steal or merge -------------------------------------------- *)
@@ -40,11 +37,11 @@ datatype 'a d12_t = D1 "'a" | D2 "'a * key * 'a"
 
 (* this defn rather horrible; apologies; it is needed to avoid duplication at the block level *)
 definition steal_or_merge :: 
-  "right_t \<Rightarrow>
-  is_leaf_t \<Rightarrow> 
+  "bool (* right *) \<Rightarrow>
+  bool (* leaf *) \<Rightarrow> 
   ((ks * 'v list) \<Rightarrow> 'c) \<Rightarrow> 
   (ks * 'v list) \<Rightarrow> key \<Rightarrow> (ks * 'v list) \<Rightarrow> 'c d12_t" where
-"steal_or_merge right is_leaf mk_c c p_k s = ( (* child sibling *)
+"steal_or_merge right leaf mk_c c p_k s = ( (* child sibling *)
   let m = frac_mult in
   (* sibling *)
   let (s_ks,s_ts) = s in
@@ -53,16 +50,16 @@ definition steal_or_merge ::
     True \<Rightarrow> (let ((k,ks),(t,ts)) = (dest_list s_ks,dest_list s_ts) in ((k,t),(ks,ts)))
     | False \<Rightarrow> (let ((ks,k),(ts,t)) = (dest_list' s_ks,dest_list' s_ts) in ((k,t),(ks,ts))))
   in
-  case (1+List.length(fst s_1) > (if is_leaf then min_leaf_size else min_node_keys)) of
+  case (1+List.length(fst s_1) > (if leaf then min_leaf_size else min_node_keys)) of
   True \<Rightarrow> (
     (* steal *)
     let c' =
       (* slightly different for leaf *)
-      let k = (if is_leaf then s_k else p_k) in
+      let k = (if leaf then s_k else p_k) in
       (if right then m c ([k],[s_t]) else m ([k],[s_t]) c) 
     in 
     let s' = mk_c s_1 in
-    let p_k' = (if is_leaf then (
+    let p_k' = (if leaf then (
       let right_sib = if right then s_1 else c' in
       right_sib |> fst |> List.hd) 
       else s_k)
@@ -72,7 +69,7 @@ definition steal_or_merge ::
   )
   | False \<Rightarrow> (
     (* merge *)
-    let k' = (if is_leaf then ([],[]) else ([p_k],[])) in
+    let k' = (if leaf then ([],[]) else ([p_k],[])) in
     let c' = mk_c (if right then m (m c k') s  else m s (m k' c)) in
     D1 c'
   )
@@ -120,7 +117,7 @@ definition post_steal_or_merge :: "stk \<Rightarrow> stk_frame \<Rightarrow> ks_
 
 (* delete --------------------------------------------------------  *)
 
-definition get_sibling :: "(ks_rs * ks_rs) \<Rightarrow> right_t * (ks_rs * ks_rs) * (k*r)" where
+definition get_sibling :: "(ks_rs * ks_rs) \<Rightarrow> bool (* right *) * (ks_rs * ks_rs) * (k*r)" where
 "get_sibling p = (
   let (p_1,p_2) = p in
         case p_2 of
@@ -189,6 +186,34 @@ definition step_up :: "u \<Rightarrow> u MM" where
       d12' |> bind (% x. post_steal_or_merge stk' p p_1 p_2 x)
     )
   )
+)"
+
+definition delete_step :: "d_state \<Rightarrow> d_state MM" where
+"delete_step s = (
+  case s of 
+  D_down(f,r0) \<Rightarrow> (
+    case (dest_f_finished f) of
+    None \<Rightarrow> (find_step f |> fmap (% f'. D_down(f',r0)))
+    | Some x \<Rightarrow> (
+      let (k,l,r,u,kvs,stk) = x in
+      case k : set (kvs|>List.map fst) of
+      True \<Rightarrow> (
+        (* something to delete *)
+        let kvs' = kvs|>List.filter (% x. ~ (key_eq (fst x) k)) in
+        case (List.length kvs' < Constants.min_leaf_size) of
+        True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
+        | False \<Rightarrow> (
+          Leaf_frame(kvs')|>frame_to_page |> alloc |> fmap
+          (% r. D_up(D_updated_subtree(r),stk,r0)))
+      )
+      | False \<Rightarrow> (
+        (* nothing to delete *)
+        return (D_finished r0)
+      )
+    )
+  )
+  | D_up(f,stk,r0) \<Rightarrow> (step_up (f,stk) |> fmap (% (f,stk). (D_up(f,stk,r0))))
+  | D_finished(r) \<Rightarrow> (return s)  (* stutter *)
 )"
 
 end

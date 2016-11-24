@@ -69,8 +69,8 @@ definition step_up :: "u \<Rightarrow> u MM" where
   )
 )"
 
-definition step :: "is_t \<Rightarrow> is_t MM" where
-"step s = (
+definition insert_step :: "is_t \<Rightarrow> is_t MM" where
+"insert_step s = (
   case s of 
   I_down d \<Rightarrow> (
     let (fs,v) = d in
