@@ -29,4 +29,7 @@ definition return :: "'a \<Rightarrow> 'a MM" where
 definition page_ref_to_frame :: "r \<Rightarrow> fr MM" where
 "page_ref_to_frame r = (Frame.page_ref_to_frame r) |> fmap_error se_to_e"
 
+definition alloc :: "p \<Rightarrow> r MM" where 
+"alloc p = (Store.alloc p |> fmap_error (% se. Store_error se))"
+
 end
