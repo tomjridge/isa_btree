@@ -31,7 +31,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
   let (fs,v) = d in
   case dest_f_finished fs of 
   None \<Rightarrow> impossible ()
-  | Some(k,l,r,u,kvs,stk) \<Rightarrow> (
+  | Some(k,r,kvs,stk) \<Rightarrow> (
     let kvs' = kvs |> kvs_insert k v in
     let fo = (
       case (length kvs' \<le> max_leaf_size) of
@@ -50,7 +50,7 @@ definition step_up :: "u \<Rightarrow> u MM" where
   case stk of 
   [] \<Rightarrow> impossible ()  (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
   | x#stk' \<Rightarrow> (
-    let (l,((ks1,rs1),(ks2,rs2)),u) = x in
+    let ((ks1,rs1),(ks2,rs2)) = x|>dest_stk_frame in
     case fo of
     I1 r \<Rightarrow> (
       Node_frame(ks1@ks2,rs1@[r]@rs2) |> frame_to_page |> alloc |> fmap (% r. (I1 r,stk')))

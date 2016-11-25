@@ -145,13 +145,13 @@ definition step_up :: "u \<Rightarrow> u MM" where
   | p#stk' \<Rightarrow> (
     case f of
     D_updated_subtree r \<Rightarrow> (
-      let (l,((ks1,rs1),(ks2,rs2)),u) = p in
+      let ((ks1,rs1),(ks2,rs2)) = p|>dest_stk_frame in
       Node_frame(ks1@ks2,rs1@[r]@rs2) |> frame_to_page |> alloc |> fmap (% r'. (D_updated_subtree r',stk'))
     )
     | D_small_leaf(kvs) \<Rightarrow> (
       let leaf = True in
       let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Leaf_frame(List.zip ks vs)) in
-      let (l,((p_ks1,p_rs1),(p_ks2,p_rs2)),u) = p in
+      let ((p_ks1,p_rs1),(p_ks2,p_rs2)) = p|>dest_stk_frame in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm :: frame MM = r |> page_ref_to_frame in
       let d12 :: frame d12_t MM = frm |> fmap (% frm. steal_or_merge right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Leaf_frame|>unzip)) in
@@ -171,7 +171,7 @@ definition step_up :: "u \<Rightarrow> u MM" where
       let mk_c = (% ks_rs. Node_frame(ks_rs)) in 
       (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
       (* parent info is already read, but we must read the siblings from disk *)
-      let (l,((p_ks1,p_rs1),(p_ks2,p_rs2)),u) = p in
+      let ((p_ks1,p_rs1),(p_ks2,p_rs2)) = p|>dest_stk_frame in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = r|>page_ref_to_frame in
       let d12 :: frame d12_t MM = frm |> fmap (% frm. steal_or_merge right leaf mk_c (ks,rs) p_k (frm|>dest_Node_frame)) in
@@ -195,7 +195,7 @@ definition delete_step :: "d_state \<Rightarrow> d_state MM" where
     case (dest_f_finished f) of
     None \<Rightarrow> (find_step f |> fmap (% f'. D_down(f',r0)))
     | Some x \<Rightarrow> (
-      let (k,l,r,u,kvs,stk) = x in
+      let (k,r,kvs,stk) = x in
       case k : set (kvs|>List.map fst) of
       True \<Rightarrow> (
         (* something to delete *)

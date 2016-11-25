@@ -8,7 +8,15 @@ type_synonym r = r
 
 type_synonym ks_rs = "ks * r list"
 
-type_synonym stk_frame =  "key option * (ks_rs * ks_rs) * key option" (* the bounds are bounds for the whole frame *) 
+datatype stk_frame = Private_stk_frame  "(ks_rs * ks_rs)" 
+definition dest_stk_frame :: "stk_frame \<Rightarrow> (ks_rs * ks_rs)" where
+"dest_stk_frame x = (case x of Private_stk_frame y \<Rightarrow> y)"
+
+(* FIXME do we want to make another monad for the stk_frame as well? but then we need to match this with the focus
+as well - since the focus also carries l,u etc
+
+or maybe we should make the entire stack abstract; then the focus can be reasonably simple
+*)
 
 type_synonym stk = "stk_frame list"
 
@@ -25,6 +33,16 @@ definition bind :: "('a \<Rightarrow> 'b MM) \<Rightarrow> 'a MM \<Rightarrow> '
 
 definition return :: "'a \<Rightarrow> 'a MM" where
 "return x = (% s. (s, Ok x))"
+
+definition add_new_stk_frame :: "key \<Rightarrow> ks_rs \<Rightarrow> stk \<Rightarrow> stk * r" where
+"add_new_stk_frame k ks_rs stk = (
+        let (ks,rs) = ks_rs in
+        let i = search_key_to_index ks k in
+        let (ks1,ks2) = split_at i ks in
+        let (rs1,r',rs2) = split_at_3 i rs in
+        let frm' = Private_stk_frame((ks1,rs1),(ks2,rs2)) in
+        (frm'#stk,r')
+)"
 
 definition page_ref_to_frame :: "r \<Rightarrow> fr MM" where
 "page_ref_to_frame r = (Frame.page_ref_to_frame r) |> fmap_error se_to_e"

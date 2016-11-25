@@ -78,4 +78,19 @@ definition split_node :: "(ks * 'a list) \<Rightarrow> (ks * 'a list) * k * (ks 
   let (rs1,rs2) = split_at (min+1) rs in
   ((ks1,rs1),k,(ks2,rs2))
 )"
+
+
+(* search_key_to_index ------------- *)
+
+(* FIXME move *)
+
+(* return the index to the first key k1 st k < k1, or length of list if not found *)
+(*tr: assumes xs are sorted *)
+definition search_key_to_index :: "key list => key => nat" where
+"search_key_to_index ks k = (
+  let num_keys = length ks in
+  let i = List.find (% x. key_lt k (ks!x)) (upt 0 num_keys) in
+  let i' = (case i of None => num_keys | Some x => x) in
+  i')"
+
 end

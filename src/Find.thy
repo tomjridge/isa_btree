@@ -3,10 +3,10 @@ imports Tree_stack Frame Monad (* FIXME for sktoi; move to kv *)
 begin
 
 datatype find_state_t = 
-  F_down "k*k option*r*k option*stk"  (* search key, lower and upper bound for r *) 
-  | F_finished "k*k option * r * k option * kvs*stk"
+  F_down "k*r*stk"  (* search key, lower and upper bound for r *) 
+  | F_finished "k*r*kvs*stk"
   
-type_synonym f_finished = "k*k option*r*k option*kvs*stk"
+type_synonym f_finished = "k*r*kvs*stk"
 
 type_synonym fs = find_state_t
   
@@ -14,7 +14,7 @@ definition dest_f_finished :: "find_state_t \<Rightarrow> f_finished option" whe
 "dest_f_finished fs = (
   case fs of
   F_down _ \<Rightarrow> None
-  | F_finished (k,l,r,u,kvs,stk) \<Rightarrow> Some(k,l,r,u,kvs,stk)  
+  | F_finished (k,r,kvs,stk) \<Rightarrow> Some(k,r,kvs,stk)  
 )"
 
 (* FIXME maybe want to store ks,rs as a list of (k,r), with the invariant that the last k is +inf *)
@@ -23,20 +23,14 @@ definition find_step :: "fs \<Rightarrow> fs MM" where
 "find_step fs = (
   case fs of 
   F_finished _ \<Rightarrow> (return fs)  (* FIXME impossible, or return none? or have a finished error? or stutter? *)
-  | F_down(k,l,r,u,stk) \<Rightarrow> (
+  | F_down(k,r,stk) \<Rightarrow> (
     page_ref_to_frame r |>fmap
     (% f. case f of 
       Node_frame (ks,rs) \<Rightarrow> (
-        let i = search_key_to_index ks k in
-        let (ks1,ks2) = split_at i ks in
-        let (rs1,r',rs2) = split_at_3 i rs in
-        let (l',u') = (
-          if ks1 = [] then l else Some(List.last ks1),
-          if ks2 = [] then u else Some(List.hd ks2))
-        in
-        F_down(k,l',r',u',(l,((ks1,rs1),(ks2,rs2)),u)#stk)
+        let (stk',r') = add_new_stk_frame k (ks,rs) stk in
+        F_down(k,r',stk')
       )
-      | Leaf_frame kvs \<Rightarrow> (F_finished(k,l,r,u,kvs,stk))))
+      | Leaf_frame kvs \<Rightarrow> (F_finished(k,r,kvs,stk))))
 )"
 
 
