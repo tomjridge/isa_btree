@@ -50,7 +50,7 @@ definition step_up :: "u \<Rightarrow> u MM" where
   case stk of 
   [] \<Rightarrow> impossible ()  (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
   | x#stk' \<Rightarrow> (
-    let ((ks1,rs1),(ks2,rs2)) = x|>dest_stk_frame in
+    let ((ks1,rs1),_,(ks2,rs2)) = dest_frame x in
     case fo of
     I1 r \<Rightarrow> (
       Node_frame(ks1@ks2,rs1@[r]@rs2) |> frame_to_page |> alloc |> fmap (% r. (I1 r,stk')))

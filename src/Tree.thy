@@ -6,9 +6,11 @@ type_synonym leaf_lbl_t = "kvs_t"
 
 type_synonym node_lbl_t = "key list"
 
-type_synonym leaves_t = "leaf_lbl_t list" (* what you get from the fringe of the tree *)
+type_synonym leaves = "kvs list" (* what you get from the fringe of the tree *)
 
-datatype Tree = Node "node_lbl_t * Tree list" | Leaf "leaf_lbl_t"
+datatype tree = Node "node_lbl_t * tree list" | Leaf "leaf_lbl_t"
+
+type_synonym t = tree
 
 (*
 (* nonsense to get code export to work *)
@@ -19,21 +21,21 @@ end
 *)
 
 (* label at node and children ie a Node *)
-type_synonym node_t = "node_lbl_t * Tree list"
+type_synonym node_t = "node_lbl_t * tree list"
 
-fun dest_Node :: "Tree \<Rightarrow> node_t" where
+fun dest_Node :: "tree \<Rightarrow> node_t" where
 "dest_Node (Node(ks,rs)) = (ks,rs)" | 
 "dest_Node (Leaf _) = (failwith ''dest_Node'')"
 
-fun dest_Leaf :: "Tree \<Rightarrow> kvs_t" where
+fun dest_Leaf :: "tree \<Rightarrow> kvs_t" where
 "dest_Leaf (Leaf(kvs)) = kvs" | 
 "dest_Leaf _ = (failwith ''dest_Leaf'')"
 
-fun is_Leaf :: "Tree \<Rightarrow> bool" where
+fun is_Leaf :: "tree \<Rightarrow> bool" where
 "is_Leaf (Leaf l) = True" |
 "is_Leaf (Node _) = False"
 
-type_synonym tss_t = "Tree list list"
+type_synonym trees = "tree list"
 
 
 
@@ -59,7 +61,7 @@ definition index_to_bound :: "key list \<Rightarrow> nat \<Rightarrow> (key opti
 (* height ---------------------------------------- *)
 
 (*begin height definition*)
-function height :: "Tree => nat" where
+function height :: "tree => nat" where
 "height t0 = (
   case t0 of
   Leaf _ => (1::nat)
@@ -76,7 +78,7 @@ termination
 
 (* to subtrees ---------------------------------------- *)
 
-function tree_to_subtrees :: "Tree => Tree list" where
+function tree_to_subtrees :: "tree => tree list" where
 "tree_to_subtrees t0 = (
   case t0 of Leaf _ => [t0]
   | Node(l,cs) => (
@@ -87,19 +89,19 @@ termination
   apply(force intro:FIXME)
   done
 
-definition forall_subtrees :: "(Tree => bool) => Tree => bool" where
+definition forall_subtrees :: "(tree => bool) => tree => bool" where
 "forall_subtrees P t == (List.list_all P (t |> tree_to_subtrees))"
 
 (* balanced ---------------------------------------- *)
 
 (*begin wfbalanced*)
-definition balanced_1 :: "Tree => bool" where
+definition balanced_1 :: "tree => bool" where
 "balanced_1 t0 == (
   case t0 of Leaf(l) => True
   | Node(l,cs) => (
   (cs = []) | (List.list_all (% c. height c = height (cs!0)) cs)))"
 
-definition balanced :: "Tree => bool" where
+definition balanced :: "tree => bool" where
 "balanced t = assert_true t (forall_subtrees balanced_1 t)"
 (*end wfbalanced*)
 
@@ -107,7 +109,7 @@ definition balanced :: "Tree => bool" where
 (* get min size ---------------------------------------- *)
 
 (* begin wfsize*)
-definition get_min_size :: "(min_size_t * Tree) => nat" where
+definition get_min_size :: "(min_size_t * tree) => nat" where
 "
 get_min_size mt == (
 case mt of
@@ -121,7 +123,7 @@ case mt of
 
 (* wf size ---------------------------------------- *)
 
-definition wf_size_1 :: "Tree => bool" where
+definition wf_size_1 :: "tree => bool" where
 "wf_size_1 t1 == (
   case t1 of
   Leaf xs => (
@@ -133,7 +135,7 @@ definition wf_size_1 :: "Tree => bool" where
 ))
 "
 
-definition wf_size :: "ms_t => Tree => bool" where
+definition wf_size :: "ms_t => tree => bool" where
 "wf_size ms t0 = assert_true (ms,t0) (
   case ms of
   None => (forall_subtrees wf_size_1 t0)
@@ -152,27 +154,28 @@ definition wf_size :: "ms_t => Tree => bool" where
 
 (* wf_ks_rs ---------------------------------------- *)
 
-definition wf_ks_rs_1 :: "Tree => bool" where
+definition wf_ks_rs_1 :: "tree => bool" where
 "wf_ks_rs_1 t0 == (
   case t0 of Leaf _ => True | Node(l,cs) => ((1+ length l) = (length cs)))"
 
-definition wf_ks_rs :: "Tree => bool" where
+definition wf_ks_rs :: "tree => bool" where
 "wf_ks_rs t0 = assert_true t0 (forall_subtrees wf_ks_rs_1 t0)"
 
+(*
 export_code wf_ks_rs in Scala module_name Problem file "/tmp/Problem.scala"
-
+*)
 
 (* keys ---------------------------------------- *)
 
-definition keys_1 :: "Tree => key list" where
+definition keys_1 :: "tree => key list" where
 "keys_1 t0 = (case t0 of Leaf xs => (List.map fst xs) | Node (l,cs) => (l))"
 
-definition keys :: "Tree => key list" where
+definition keys :: "tree => key list" where
 "keys t0 = (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)" 
 
 (* keys consistent ---------------------------------------- *)
 
-definition keys_consistent_1 :: "Tree => bool" where
+definition keys_consistent_1 :: "tree => bool" where
 "keys_consistent_1 t0 = (
 case t0 of Leaf(l) => True
 | Node(ks,rs) => (
@@ -181,22 +184,22 @@ case t0 of Leaf(l) => True
   check_keys l (set (keys(rs!i))) u))
 "
 
-definition keys_consistent :: "Tree => bool" where
+definition keys_consistent :: "tree => bool" where
 "keys_consistent t = assert_true t (forall_subtrees keys_consistent_1 t)"
 
 
 (* keys_ordered ---------------------------------------- *)
 
-definition keys_ordered_1 :: "Tree => bool" where
+definition keys_ordered_1 :: "tree => bool" where
 "keys_ordered_1 t0 = (t0 |> keys_1 |> ordered_key_list)"
 
-definition keys_ordered :: "Tree => bool" where
+definition keys_ordered :: "tree => bool" where
 "keys_ordered t = assert_true t (forall_subtrees keys_ordered_1 t)"
 
 
 (* wf_kv_tree ---------------------------------------- *)
 
-definition wellformed_tree :: "ms_t => Tree => bool" where
+definition wellformed_tree :: "ms_t => tree => bool" where
 "wellformed_tree ms t0 = assert_true (ms,t0) (
   let b1 = wf_size ms t0 in
   let b2 = wf_ks_rs t0 in
@@ -212,7 +215,7 @@ definition wellformed_tree :: "ms_t => Tree => bool" where
 (* tree_to... etc ---------------------------------------- *)
 
 
-function tree_to_leaves :: "Tree => leaf_lbl_t list" where
+function tree_to_leaves :: "tree => leaves" where
 "tree_to_leaves t0 = (
   case t0 of
   Node(l,cs) => ((cs |> (List.map tree_to_leaves)) |> List.concat)
@@ -233,21 +236,22 @@ definition nice_leaves :: "leaf_lbl_t list \<Rightarrow> bool" where
 "nice_leaves ls = (distinct (ls |> List.concat |> List.map fst))"
 *)
 
-definition tree_to_kvs :: "Tree \<Rightarrow> (key*value_t) list" where
+definition tree_to_kvs :: "tree \<Rightarrow> kvs" where
 "tree_to_kvs t = (t |> tree_to_leaves |> concat)"
 
-definition tree_to_keys :: "Tree \<Rightarrow> key set" where
+definition tree_to_keys :: "tree \<Rightarrow> key set" where
 "tree_to_keys t =  (t|>tree_to_kvs|>map fst|>set)"
 
-definition trees_to_keys :: "Tree list \<Rightarrow> key set" where
+definition trees_to_keys :: "trees \<Rightarrow> key set" where
 "trees_to_keys ts = ts|>(map tree_to_kvs)|>concat|>map fst|>set"
 
+(*
 definition tss_to_leaves :: "tss_t \<Rightarrow> leaves_t" where
 "tss_to_leaves tss = (tss|>concat|>map tree_to_leaves|>concat)"
 
 definition tss_to_keys :: "tss_t \<Rightarrow> key set" where
 "tss_to_keys tss = tss|>concat|>trees_to_keys"
-
+*)
 
 end
 

@@ -2,15 +2,21 @@ theory Find
 imports Tree_stack Frame Monad (* FIXME for sktoi; move to kv *)
 begin
 
-datatype find_state_t = 
+type_synonym stk = "r stk"
+
+datatype find_state = 
   F_down "k*r*stk"  (* search key, lower and upper bound for r *) 
   | F_finished "k*r*kvs*stk"
+
+type_synonym d = "k*r*stk"
+  
+type_synonym fo = "k*r"  (* focus *)
   
 type_synonym f_finished = "k*r*kvs*stk"
 
-type_synonym fs = find_state_t
+type_synonym fs = find_state
   
-definition dest_f_finished :: "find_state_t \<Rightarrow> f_finished option" where
+definition dest_f_finished :: "find_state \<Rightarrow> f_finished option" where
 "dest_f_finished fs = (
   case fs of
   F_down _ \<Rightarrow> None
@@ -54,5 +60,31 @@ definition find_def_2 :: bool where
   step fs|>bind (% fs'. case fs' of None \<Rightarrow> return None | Some fs' \<Rightarrow> find fs' (n-1))))"
 *)
 
+
+
+(* wellformedness --------------------------------------------------------- *)
+
+(* FIXME seems to be a tension between "this state results from a step from some other wf state; and 
+giving the properties explicitly; presumably we should actually give the properties since the
+other is a given *)
+
+(* FIXME we don't need assert_true to take an arg now - we store the entire state anyway *)
+
+
+(* FIXME isn't wellformedness just that when we reconstitute we have a wellformed tree? but when we ascend, we need to know that we can substitute the new focus in because
+we haven't got the tree to compare with; rather, we have a tree with a funny hole *)
+
+
+(* FIXME we should definitely convert stack to 'a stack *)
+
+definition wellformed_find_state :: "store \<Rightarrow> tree \<Rightarrow> find_state => bool" where
+"wellformed_find_state s t fs = assert_true (t,fs) (
+  case fs of 
+  F_finished (k,r,kvs,stk) \<Rightarrow> (wellformed_stk k t (r_to_t s) stk & (page_ref_to_frame r s|>snd = Ok(Leaf_frame kvs)))
+  | F_down (k,r,stk) \<Rightarrow> (
+    wellformed_stk k t (r_to_t s) stk & 
+    (case stk of [] \<Rightarrow> True | f#_ \<Rightarrow> f|>f_t = r)
+  )
+)"
 
 end

@@ -10,11 +10,12 @@ datatype del_t =
 type_synonym fo = del_t  (* focus *)
 
 datatype d_state = 
-  D_down "find_state_t * r"  (* r is the original pointer to root, in case we don't delete anything *)
+  D_down "find_state * r"  (* r is the original pointer to root, in case we don't delete anything *)
   | D_up "fo * stk * r"
   | D_finished r
   
 type_synonym u = "fo * stk"  (* r is unused parameter *)
+
 
 
 (* steal or merge -------------------------------------------- *)
@@ -79,7 +80,7 @@ definition steal_or_merge ::
 (* when called on a node (D_...) which is a root resulting from a delete op,
 we may have the situation that the root contains no keys, or is small *)
 
-definition post_steal_or_merge :: "stk \<Rightarrow> stk_frame \<Rightarrow> ks_rs \<Rightarrow> ks_rs \<Rightarrow> r d12_t => u MM" where
+definition post_steal_or_merge :: "stk \<Rightarrow> r frame \<Rightarrow> ks_rs \<Rightarrow> ks_rs \<Rightarrow> r d12_t => u MM" where
 "post_steal_or_merge stk' p p_1 p_2 x = (
       let m = frac_mult in
       case x of 
@@ -143,18 +144,18 @@ definition step_up :: "u \<Rightarrow> u MM" where
   case stk of
   [] \<Rightarrow> (impossible ())
   | p#stk' \<Rightarrow> (
-    case f of
-    D_updated_subtree r \<Rightarrow> (
-      let ((ks1,rs1),(ks2,rs2)) = p|>dest_stk_frame in
+    case f of   
+    D_updated_subtree r \<Rightarrow> undefined (
+      let ((ks1,rs1),_,(ks2,rs2)) = p|>dest_frame in
       Node_frame(ks1@ks2,rs1@[r]@rs2) |> frame_to_page |> alloc |> fmap (% r'. (D_updated_subtree r',stk'))
     )
-    | D_small_leaf(kvs) \<Rightarrow> (
+    | D_small_leaf(kvs) \<Rightarrow> undefined (
       let leaf = True in
       let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Leaf_frame(List.zip ks vs)) in
-      let ((p_ks1,p_rs1),(p_ks2,p_rs2)) = p|>dest_stk_frame in
+      let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_frame in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
-      let frm :: frame MM = r |> page_ref_to_frame in
-      let d12 :: frame d12_t MM = frm |> fmap (% frm. steal_or_merge right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Leaf_frame|>unzip)) in
+      let frm :: pframe MM = r |> page_ref_to_frame in
+      let d12 :: pframe d12_t MM = frm |> fmap (% frm. steal_or_merge right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Leaf_frame|>unzip)) in
       let d12' :: r d12_t MM = d12 |> bind
       (% x. case x of
         D1 frm \<Rightarrow> frm |> frame_to_page |> alloc |> fmap (% r. D1 r)
@@ -165,16 +166,18 @@ definition step_up :: "u \<Rightarrow> u MM" where
       in
       d12' |> bind (% x. post_steal_or_merge stk' p p_1 p_2 x) 
     )
+    
+
   | D_small_node(ks,rs) \<Rightarrow> (
       (* FIXME almost identical to small leaf case *)
       let leaf = False in
       let mk_c = (% ks_rs. Node_frame(ks_rs)) in 
       (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
       (* parent info is already read, but we must read the siblings from disk *)
-      let ((p_ks1,p_rs1),(p_ks2,p_rs2)) = p|>dest_stk_frame in
+      let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_frame in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = r|>page_ref_to_frame in
-      let d12 :: frame d12_t MM = frm |> fmap (% frm. steal_or_merge right leaf mk_c (ks,rs) p_k (frm|>dest_Node_frame)) in
+      let d12 :: pframe d12_t MM = frm |> fmap (% frm. steal_or_merge right leaf mk_c (ks,rs) p_k (frm|>dest_Node_frame)) in
       let d12' :: r d12_t MM = d12 |> bind
       (% x. case x of
         D1 frm \<Rightarrow> frm |> frame_to_page |> alloc |> fmap(% r. D1 r)

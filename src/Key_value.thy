@@ -93,4 +93,13 @@ definition search_key_to_index :: "key list => key => nat" where
   let i' = (case i of None => num_keys | Some x => x) in
   i')"
 
+definition split_ks_rs :: "key \<Rightarrow> (ks * 'a list) \<Rightarrow> (ks * 'a list) * 'a * (ks * 'a list)" where
+"split_ks_rs k ks_rs = (
+  let (ks,rs) = ks_rs in
+  let i = search_key_to_index ks k in
+  let (ks1,ks2) = split_at i ks in
+  let (rs1,r',rs2) = split_at_3 i rs in
+  ((ks1,rs1),r',(ks2,rs2))
+)"
+  
 end
