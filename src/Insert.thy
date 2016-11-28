@@ -94,5 +94,41 @@ definition dest_i_finished :: "is_t \<Rightarrow> r option" where
 "dest_i_finished s = (case s of I_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
 
 
+(* wellformedness ------------------------------------------------------------ *)
+
+definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> u \<Rightarrow> bool" where
+"wf_u t0 k v s u = (
+  let r_to_t = r_to_t s in
+  let (fo,stk) = u in
+  case fo of
+  I1 r \<Rightarrow> (
+    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
+    ( (t_fo|>tree_to_map)(k:=(Some v)) = (r|>r_to_t|>tree_to_map))  )
+)"
+
+definition wf_d :: "tree \<Rightarrow> store \<Rightarrow> d \<Rightarrow> bool" where
+"wf_d t0 s d = (
+  let (fs,v) = d in
+  wellformed_find_state s t0 fs  
+)"
+
+definition wf_f :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> r \<Rightarrow> bool" where
+"wf_f t0 k v s r = (
+  let t' = r_to_t s r in
+  wellformed_tree (Some(Small_root_node_or_leaf)) t' &
+  ( (t0|>tree_to_map)(k:=(Some v)) = (t'|>tree_to_map))
+)"
+
+definition wellformed_insert_state :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> is_t \<Rightarrow> bool" where
+"wellformed_insert_state t0 k v s is = (
+  case is of 
+  I_down d \<Rightarrow> (wf_d t0 s d)
+  | I_up u \<Rightarrow> (wf_u t0 k v s u)
+  | I_finished r \<Rightarrow> (wf_f t0 k v s r) 
+)
+"
+
+(* don't bother with wf_trans *)
 
 end

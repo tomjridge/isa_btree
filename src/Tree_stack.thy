@@ -28,6 +28,9 @@ definition frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a frame \<Rightarr
   \<rparr>
 )"
 
+definition with_t :: "'a \<Rightarrow> 'a frame \<Rightarrow> 'a frame" where
+"with_t x f = f \<lparr> f_t:=x  \<rparr>"
+
 
 (* stack types ------------------------------------------------------------------- *)
 
@@ -92,7 +95,12 @@ function stack_to_tree :: "tree \<Rightarrow> tree stack \<Rightarrow> tree" whe
 )"
 by auto
 
-
+(* remove "focus" *)
+function no_focus :: "tree stack \<Rightarrow> tree stack" where
+"no_focus stk = (
+  case stk of [] \<Rightarrow> [] | frm#stk' \<Rightarrow> (frm\<lparr>f_t:=(Leaf[]) \<rparr>)#stk'
+)"
+by auto
 
 (* add new stk frame -------------------------------------------- *)
 

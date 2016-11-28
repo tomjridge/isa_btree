@@ -64,18 +64,57 @@ definition find_def_2 :: bool where
 
 (* wellformedness --------------------------------------------------------- *)
 
+(* FIXME is it better to map into a tree stack, and have the code above for tree stack transitions? 
+
+ie a refinement proof? probably it is
+*)
+
+
 (* t0 is the tree we expect *)
 definition wellformed_find_state :: "store \<Rightarrow> tree \<Rightarrow> find_state => bool" where
 "wellformed_find_state s t0 fs = assert_true' (
   let r_to_t = r_to_t s in
   case fs of 
   F_finished (k,r,kvs,stk) \<Rightarrow> (
-    let (fo0,stk0) = tree_to_stack k t0 (List.length stk) in
-    (fo0,stk0) = (Leaf(kvs),stk|>stack_map r_to_t))
+    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    (t_fo,t_stk) = (Leaf(kvs),stk|>stack_map r_to_t))
   | F_down (k,r,stk) \<Rightarrow> (
-    let (fo0,stk0) = tree_to_stack k t0 (List.length stk) in
-    (fo0,stk0) = (r_to_t r,stk|>stack_map r_to_t)
+    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    (t_fo,t_stk) = (r_to_t r,stk|>stack_map r_to_t)
   )
 )"
+
+
+(* find_trans ----------------------------------------- *)
+
+definition find_trans :: "(store * fs) trans_t" where
+"find_trans = { ((s,fs),(s',fs')). (find_step fs s = (s',Ok fs')) }"
+
+
+(* lemmas ------------------------------------------- *)
+
+(* wf_fts is invariant *)
+definition invariant_lem :: "bool" where
+"invariant_lem = (
+  ! P s t0. 
+  ((% s_fs. let (_,fs) =  s_fs in wellformed_find_state s t0 fs) = P) \<longrightarrow> invariant find_trans P)"
+
+
+(* testing ---------------------------------------- *)
+
+(* really wf_trans is trivial, but for testing we check some obvious properties *)
+
+(* FIXME probably not worth doing *)
+definition wf_trans :: "(store * fs) \<Rightarrow> (store * fs) \<Rightarrow> bool" where
+"wf_trans s1 s2 = assert_true' (
+  let (s1,fs1) = s1 in
+  let (s2,fs2) = s2 in
+  (* FIXME dont want to force equality check of the store (s2=s1) & *)
+  (case (fs1,fs2) of
+  (F_down(k,r,stk),F_down(k',r',stk')) \<Rightarrow> (List.length stk' = 1+List.length stk)
+  | (F_down(_),F_finished(_)) \<Rightarrow> True
+  | _ \<Rightarrow> False)
+)"
+
 
 end

@@ -245,6 +245,9 @@ definition tree_to_keys :: "tree \<Rightarrow> key set" where
 definition trees_to_keys :: "trees \<Rightarrow> key set" where
 "trees_to_keys ts = ts|>(map tree_to_kvs)|>concat|>map fst|>set"
 
+definition tree_to_map :: "tree \<Rightarrow> (key,value_t) map" where
+"tree_to_map t = (t|>tree_to_kvs|>map_of)"
+
 (*
 definition tss_to_leaves :: "tss_t \<Rightarrow> leaves_t" where
 "tss_to_leaves tss = (tss|>concat|>map tree_to_leaves|>concat)"
