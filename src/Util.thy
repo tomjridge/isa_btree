@@ -42,6 +42,9 @@ definition is_None :: "'a option \<Rightarrow> bool" where
 definition assert_true :: "'a \<Rightarrow> bool \<Rightarrow> bool" where
 "assert_true arg b = b"
 
+definition assert_true' :: "bool \<Rightarrow> bool" where
+"assert_true' b = assert_true () b"
+
 
 (* rresult -------------------------------------- *)  
   

@@ -17,9 +17,6 @@ definition dest_frame :: "'a frame \<Rightarrow> (ks * 'a list) * 'a * (ks * 'a 
   (f|>f_ks2, f|>f_ts2)
 )"
 
-type_synonym 'a stack = "'a frame list"  
-type_synonym 'a stk = "'a stack" 
-
 definition frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a frame \<Rightarrow> 'b frame" where
 "frame_map g f = (
   \<lparr>
@@ -31,6 +28,21 @@ definition frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a frame \<Rightarr
   \<rparr>
 )"
 
+
+(* stack types ------------------------------------------------------------------- *)
+
+type_synonym 'a stack = "'a frame list"  
+
+type_synonym 'a stk = "'a stack" 
+
+
+definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a stk \<Rightarrow> 'b stk" where
+"stack_map f stk = (
+  stk |> List.map (frame_map f)
+)
+"
+
+(* get bounds --------------------------------------------------- *)
 
 function stack_to_lu_of_child :: "'a stack \<Rightarrow> key option * key option" where
 "stack_to_lu_of_child stk = (
@@ -46,49 +58,56 @@ function stack_to_lu_of_child :: "'a stack \<Rightarrow> key option * key option
 )"
 by(auto)
 
-(* convert from tree to tstk ----------------------------------- *)
 
-function tree_to_tstk :: "key \<Rightarrow> tree \<Rightarrow> tree stack" where
-"tree_to_tstk k t = (
-  case t of 
-  Leaf _ \<Rightarrow> []
-  | Node(ks,ts) \<Rightarrow> (
-    let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs k (ks,ts) in
-    let frm = \<lparr>f_ks1=ks1,f_ts1=ts1,f_t=t',f_ks2=ks2,f_ts2=ts2\<rparr> in
-    (tree_to_tstk k t')@[frm]
+(* convert to/from tree from/to tree stack ----------------------------------- *)
+
+(* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
+function tree_to_stack :: "key \<Rightarrow> tree \<Rightarrow> nat \<Rightarrow> (tree * tree stack)" where
+"tree_to_stack k t n = (
+  case n of 
+  0 \<Rightarrow> (t,[])
+  | Suc n \<Rightarrow> (
+    let (fo,stk) = tree_to_stack k t n in
+    case fo of 
+    Leaf kvs \<Rightarrow> (failwith ''tree_to_stack'')
+    | Node(ks,ts) \<Rightarrow> (
+      let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs k (ks,ts) in
+      let frm = \<lparr>f_ks1=ks1,f_ts1=ts1,f_t=t',f_ks2=ks2,f_ts2=ts2\<rparr> in
+      (t',frm#stk)
+    )
   )
 )"
 by auto
 
-(* convert to tree ------------------------------- *)
-
-
 (* we may provide a new focus *)
-function tstk_to_tree :: "tree \<Rightarrow> tree stack \<Rightarrow> tree" where
-"tstk_to_tree fo ts = (
+function stack_to_tree :: "tree \<Rightarrow> tree stack \<Rightarrow> tree" where
+"stack_to_tree fo ts = (
   case ts of 
   [] \<Rightarrow> fo
   | x#ts' \<Rightarrow> (
     let (ks1,ts1,_,ks2,ts2) = (x|>f_ks1,x|>f_ts1,(),x|>f_ks2,x|>f_ts2) in
     let fo' = Node(ks1@ks2,ts1@[fo]@ts2) in
-    tstk_to_tree fo' ts' 
+    stack_to_tree fo' ts' 
   )
 )"
 by auto
 
 
-(* wellformed_tree_stack ---------------------------------------- *)
 
+(* add new stk frame -------------------------------------------- *)
 
-function wellformed_tree_stack :: "tree stack => bool" where
-"wellformed_tree_stack tstk = assert_true tstk (
-  case tstk of 
-  Nil \<Rightarrow> True
-  | c#xs \<Rightarrow> (
-    let t = c|>f_t in
-    wellformed_tree (Some Small_root_node_or_leaf) (tstk_to_tree t tstk))
+definition add_new_stk_frame :: "key \<Rightarrow> (ks * 'a list) \<Rightarrow> 'a stk \<Rightarrow> ('a stk * 'a)" where
+"add_new_stk_frame k ks_rs stk = (
+  let (ks,rs) = ks_rs in
+  let ((ks1,rs1),r',(ks2,rs2)) = split_ks_rs k (ks,rs) in
+  let (l,u) = stack_to_lu_of_child stk in
+  let frm' = \<lparr>f_ks1=ks1,f_ts1=rs1,f_t=r', f_ks2=ks2,f_ts2=rs2 \<rparr> in
+  (frm'#stk,r')
 )"
-by auto
+
+
+
+
 
 
 end

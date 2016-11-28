@@ -64,26 +64,17 @@ definition find_def_2 :: bool where
 
 (* wellformedness --------------------------------------------------------- *)
 
-(* FIXME seems to be a tension between "this state results from a step from some other wf state; and 
-giving the properties explicitly; presumably we should actually give the properties since the
-other is a given *)
-
-(* FIXME we don't need assert_true to take an arg now - we store the entire state anyway *)
-
-
-(* FIXME isn't wellformedness just that when we reconstitute we have a wellformed tree? but when we ascend, we need to know that we can substitute the new focus in because
-we haven't got the tree to compare with; rather, we have a tree with a funny hole *)
-
-
-(* FIXME we should definitely convert stack to 'a stack *)
-
+(* t0 is the tree we expect *)
 definition wellformed_find_state :: "store \<Rightarrow> tree \<Rightarrow> find_state => bool" where
-"wellformed_find_state s t fs = assert_true (t,fs) (
+"wellformed_find_state s t0 fs = assert_true' (
+  let r_to_t = r_to_t s in
   case fs of 
-  F_finished (k,r,kvs,stk) \<Rightarrow> (wellformed_stk k t (r_to_t s) stk & (page_ref_to_frame r s|>snd = Ok(Leaf_frame kvs)))
+  F_finished (k,r,kvs,stk) \<Rightarrow> (
+    let (fo0,stk0) = tree_to_stack k t0 (List.length stk) in
+    (fo0,stk0) = (Leaf(kvs),stk|>stack_map r_to_t))
   | F_down (k,r,stk) \<Rightarrow> (
-    wellformed_stk k t (r_to_t s) stk & 
-    (case stk of [] \<Rightarrow> True | f#_ \<Rightarrow> f|>f_t = r)
+    let (fo0,stk0) = tree_to_stack k t0 (List.length stk) in
+    (fo0,stk0) = (r_to_t r,stk|>stack_map r_to_t)
   )
 )"
 
