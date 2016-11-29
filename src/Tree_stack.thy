@@ -47,29 +47,24 @@ definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a stk \<Rightarrow
 
 (* get bounds --------------------------------------------------- *)
 
-function stack_to_lu_of_child :: "'a stack \<Rightarrow> key option * key option" where
-"stack_to_lu_of_child stk = (
-  case stk of 
-  [] \<Rightarrow> (None,None)
-  | x#stk' \<Rightarrow> (
+primrec stack_to_lu_of_child :: "'a stack \<Rightarrow> key option * key option" where
+"stack_to_lu_of_child [] = (None,None)"
+| "stack_to_lu_of_child (x#stk') = (
     let (l',u') = stack_to_lu_of_child stk' in
     let (ks1,ks2) = (x|>f_ks1,x|>f_ks2) in    
     let l = (if ks1 \<noteq> [] then Some(ks1|>List.last) else l') in
     let u = (if ks2 \<noteq> [] then Some(ks2|>List.hd) else u') in
     (l,u)
-  )
-)"
-by(auto)
+  )"
+
 
 
 (* convert to/from tree from/to tree stack ----------------------------------- *)
 
 (* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
-function tree_to_stack :: "key \<Rightarrow> tree \<Rightarrow> nat \<Rightarrow> (tree * tree stack)" where
-"tree_to_stack k t n = (
-  case n of 
-  0 \<Rightarrow> (t,[])
-  | Suc n \<Rightarrow> (
+primrec tree_to_stack :: "key \<Rightarrow> tree \<Rightarrow> nat \<Rightarrow> (tree * tree stack)" where
+"tree_to_stack k t 0 = (t,[])"
+| "tree_to_stack k t (Suc n) = (
     let (fo,stk) = tree_to_stack k t n in
     case fo of 
     Leaf kvs \<Rightarrow> (failwith ''tree_to_stack'')
@@ -78,12 +73,10 @@ function tree_to_stack :: "key \<Rightarrow> tree \<Rightarrow> nat \<Rightarrow
       let frm = \<lparr>f_ks1=ks1,f_ts1=ts1,f_t=t',f_ks2=ks2,f_ts2=ts2\<rparr> in
       (t',frm#stk)
     )
-  )
-)"
-by auto
+  )"
 
 (* we may provide a new focus *)
-function stack_to_tree :: "tree \<Rightarrow> tree stack \<Rightarrow> tree" where
+fun stack_to_tree :: "tree \<Rightarrow> tree stack \<Rightarrow> tree" where
 "stack_to_tree fo ts = (
   case ts of 
   [] \<Rightarrow> fo
@@ -93,14 +86,12 @@ function stack_to_tree :: "tree \<Rightarrow> tree stack \<Rightarrow> tree" whe
     stack_to_tree fo' ts' 
   )
 )"
-by auto
 
 (* remove "focus" *)
-function no_focus :: "tree stack \<Rightarrow> tree stack" where
+definition no_focus :: "tree stack \<Rightarrow> tree stack" where
 "no_focus stk = (
   case stk of [] \<Rightarrow> [] | frm#stk' \<Rightarrow> (frm\<lparr>f_t:=(Leaf[]) \<rparr>)#stk'
 )"
-by auto
 
 (* add new stk frame -------------------------------------------- *)
 

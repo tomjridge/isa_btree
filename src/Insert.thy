@@ -32,7 +32,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
   case dest_f_finished fs of 
   None \<Rightarrow> impossible ()
   | Some(k,r,kvs,stk) \<Rightarrow> (
-    let kvs' = kvs |> kvs_insert k v in
+    let kvs' = kvs |> kvs_insert (k,v) in
     let fo = (
       case (length kvs' \<le> max_leaf_size) of
       True \<Rightarrow> (Leaf_frame kvs' |> frame_to_page |> alloc |> fmap (% r'. I1(r')))
@@ -111,7 +111,7 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> s
     let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
     (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
     (* FIXME need wf_tree r , and below *)
-    ( (t_fo|>tree_to_map)(k:=(Some v)) = (r|>r_to_t|>tree_to_map))  )
+    ( (t_fo|>tree_to_kvs|>kvs_insert (k,v)) = (r|>r_to_t|>tree_to_kvs))  )
   | I2 (r1,k',r2) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
     (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
@@ -120,7 +120,7 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> s
       let (ks1,ks2) = (t1|>tree_to_keys,t2|>tree_to_keys) in
       check_keys l ks1 (Some k') &
       check_keys (Some k') ks2 u &
-      ((t_fo|>tree_to_map)(k:=(Some v)) = (t1|>tree_to_map ++ (t2|>tree_to_map))) 
+      ((t_fo|>tree_to_kvs|>kvs_insert (k,v)) = (t1|>tree_to_kvs @ (t2|>tree_to_kvs))) 
     )
   )
 )"
@@ -129,7 +129,7 @@ definition wf_f :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> s
 "wf_f t0 k v s r = (
   let t' = r_to_t s r in
   wellformed_tree (Some(Small_root_node_or_leaf)) t' &
-  ( (t0|>tree_to_map)(k:=(Some v)) = (t'|>tree_to_map))
+  ( (t0|>tree_to_kvs|>kvs_insert (k,v)) = (t'|>tree_to_kvs))
 )"
 
 definition wellformed_insert_state :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> is_t \<Rightarrow> bool" where

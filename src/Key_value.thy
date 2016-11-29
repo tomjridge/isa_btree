@@ -49,15 +49,19 @@ definition check_keys_2 :: "key set \<Rightarrow> key option \<Rightarrow> key s
 )"
 
 (* for leaf *)
-primrec kvs_insert :: "key \<Rightarrow> value_t \<Rightarrow> kvs_t \<Rightarrow> kvs_t" where
-"kvs_insert k v [] = [(k,v)]"
-| "kvs_insert k v (kv'#kvs') = (
+primrec kvs_insert :: "(key*value_t) \<Rightarrow> kvs_t \<Rightarrow> kvs_t" where
+"kvs_insert kv [] = [kv]"
+| "kvs_insert kv (kv'#kvs') = (
+  let (k,v) = kv in
   let (k',v') = kv' in
   let i = key_ord k' k in
-  if i < 0 then (k',v')#(kvs_insert k v kvs')
+  if i < 0 then (k',v')#(kvs_insert kv kvs')
   else if i=0 then (k,v)#kvs' else
   (k,v)#(k',v')#kvs'
 )"
+
+definition kvs_delete :: "key \<Rightarrow> kvs \<Rightarrow> kvs" where
+"kvs_delete k kvs = List.filter (% kv. fst kv \<noteq> k) kvs"
   
 (* insert aux funs --------------------------------------------------------------- *)
 

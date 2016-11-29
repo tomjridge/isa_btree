@@ -1,5 +1,5 @@
 theory Export_code
-imports Find_tree_stack Insert_tree_stack Delete_tree_stack "~~/src/HOL/Library/Code_Target_Numeral"
+imports Find Insert Delete "~~/src/HOL/Library/Code_Target_Numeral"
 "~~/src/HOL/Library/Code_Char"
 begin
 
@@ -12,6 +12,39 @@ Prelude.from_to
 Key_value_types.key_ord
 Key_value.key_lt
 Tree.dest_Node
+Tree_stack.dest_frame
+Tree_stack.stack_to_lu_of_child
+
+(* find *)
+find_step
+wellformed_find_state 
+
+(* insert *)
+I1 I2 I_down I_up I_finished
+insert_step
+wellformed_insert_state
+
+(* delete *)
+D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
+wellformed_delete_state
+
+
+in OCaml file "generated/gen_btree.ml"
+
+
+(*
+
+*)
+
+
+(* tree stack versions
+
+
+
+
+
+
+
 Tree_stack.dest_core
 
 key_ord
@@ -34,7 +67,9 @@ Dts_down Dts_up Dts_finished
 mk_dts_state step_dts dest_dts_state
   wellformed_dts_state wf_dts_trans Delete_tree_stack.focus_to_leaves
 
-in OCaml file "generated/gen_btree.ml"
+  *)
+
+
 
 (*
 print_codesetup

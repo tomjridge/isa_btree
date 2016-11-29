@@ -78,16 +78,12 @@ termination
 
 (* to subtrees ---------------------------------------- *)
 
-function tree_to_subtrees :: "tree => tree list" where
+fun tree_to_subtrees :: "tree => tree list" where
 "tree_to_subtrees t0 = (
   case t0 of Leaf _ => [t0]
   | Node(l,cs) => (
     t0#((List.map tree_to_subtrees cs) |> List.concat)))
 "
-by auto
-termination
-  apply(force intro:FIXME)
-  done
 
 definition forall_subtrees :: "(tree => bool) => tree => bool" where
 "forall_subtrees P t == (List.list_all P (t |> tree_to_subtrees))"
@@ -215,17 +211,14 @@ definition wellformed_tree :: "ms_t => tree => bool" where
 (* tree_to... etc ---------------------------------------- *)
 
 
-function tree_to_leaves :: "tree => leaves" where
+fun tree_to_leaves :: "tree => leaves" where
 "tree_to_leaves t0 = (
   case t0 of
-  Node(l,cs) => ((cs |> (List.map tree_to_leaves)) |> List.concat)
+  Node(l,cs) => ((List.map tree_to_leaves cs) |> List.concat)
   | Leaf(l) => [l])
 "
-by auto
-termination
-  apply(force intro:FIXME)
-  done
-
+  
+  
 declare tree_to_leaves.simps[simp del]
 
 lemma [simp] : "tree_to_leaves (Node(l,cs)) =  ((cs |> (List.map tree_to_leaves)) |> List.concat)" sorry

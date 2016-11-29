@@ -28,7 +28,7 @@ definition dest_Node_frame :: "pframe \<Rightarrow> ks_rs" where
 definition dest_Leaf_frame :: "pframe \<Rightarrow> kvs" where
 "dest_Leaf_frame f = (case f of Leaf_frame x \<Rightarrow> x  | _ \<Rightarrow> failwith ''dest_Leaf_frame'')"
 
-function r_to_t' :: "store \<Rightarrow> nat \<Rightarrow> r \<Rightarrow> t" where
+fun r_to_t' :: "store \<Rightarrow> nat \<Rightarrow> r \<Rightarrow> t" where
 "r_to_t' s n r = (
   case n of 
   0 \<Rightarrow> failwith ''r_to_t''
@@ -40,29 +40,8 @@ function r_to_t' :: "store \<Rightarrow> nat \<Rightarrow> r \<Rightarrow> t" wh
       | Leaf_frame(kvs) \<Rightarrow> Leaf(kvs))
   )
 )"
-by auto
 
 definition r_to_t :: "store \<Rightarrow> r \<Rightarrow> t" where "r_to_t s r = r_to_t' s 1000 r" (* FIXME only for proof *)
 
-
-(*
-function r_to_kvs' :: "store \<Rightarrow> nat \<Rightarrow> r \<Rightarrow> kvs list" where
-"r_to_kvs' s n r = (
-  case n of
-  0 \<Rightarrow> []
-  | Suc n \<Rightarrow> (
-    s|>dest_Store|>(% f. f r) |> page_to_frame |> 
-    (% frm. 
-      case frm of
-      Node_frame(ks,rs) \<Rightarrow> (rs|>List.map (r_to_kvs' s n)|>List.concat)
-      | Leaf_frame(kvs) \<Rightarrow> [kvs]
-    )
-  )
-)"
-by auto
-
-definition r_to_kvs :: "store \<Rightarrow> r \<Rightarrow> kvs list" where
-"r_to_kvs s r = r_to_kvs' s 1000 r"  (* this is only for proof, where we know what the height is anyway *)
-*)
 
 end

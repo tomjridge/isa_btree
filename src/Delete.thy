@@ -238,7 +238,7 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> s
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_leaf) in
     (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
     (wellformed_tree ms (Leaf kvs)) &
-    ( (t_fo|>tree_to_map)(k:=None) = (Leaf(kvs)|>tree_to_map))   
+    ( (t_fo|>tree_to_kvs|>kvs_delete k) = kvs)   
   )
   | D_small_node (ks,rs) \<Rightarrow> (
     (* FIXME don't we need some wf on Node(ks,rs)? *)
@@ -247,14 +247,14 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> s
     let t = Node(ks,rs|>List.map r_to_t) in
     (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
     (wellformed_tree ms t) &
-    ( (t_fo|>tree_to_map)(k:=None) = (t|>tree_to_map))   
+    ( (t_fo|>tree_to_kvs|>kvs_delete k) = (t|>tree_to_kvs))   
   )
   | D_updated_subtree(r) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
     let t = r|>r_to_t in
     (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
     (wellformed_tree None t) &
-    ( (t_fo|>tree_to_map)(k:=None) = (t|>tree_to_map))   
+    ( (t_fo|>tree_to_kvs|>kvs_delete k) = (t|>tree_to_kvs))   
   )
 )"
 
@@ -262,7 +262,7 @@ definition wf_f :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> s
 "wf_f t0 k v s r = (
   let t' = r_to_t s r in
   wellformed_tree (Some(Small_root_node_or_leaf)) t' &
-  ( (t0|>tree_to_map)(k:=(Some v)) = (t'|>tree_to_map))
+  ( (t0|>tree_to_kvs|>kvs_insert (k,v)) = (t'|>tree_to_kvs))
 )"
 
 definition wellformed_delete_state :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> ds_t \<Rightarrow> bool" where

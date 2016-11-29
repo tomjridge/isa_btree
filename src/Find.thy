@@ -44,13 +44,12 @@ definition find_step :: "fs \<Rightarrow> fs MM" where
 
 type_synonym 'a trace = "nat \<Rightarrow> 'a"
 
-function find :: "fs \<Rightarrow> (fs MM) trace" where
+fun find :: "fs \<Rightarrow> (fs MM) trace" where
 "find fs n = (
   case n of 0 \<Rightarrow> (find_step fs)
   | Suc n \<Rightarrow> ( (find fs n) |>bind find_step)
 )
 "    
-by auto
 
 (* and prove for code extraction... but we really want the first place (if any) that we get F_finished FIXME express in terms of leaf, and rewrite using "current" state to next state *)
 
