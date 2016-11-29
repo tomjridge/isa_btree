@@ -15,8 +15,9 @@ datatype d_state =
   | D_finished r
   
 type_synonym u = "fo * stk"  (* r is unused parameter *)
+type_synonym d = "find_state * r"
 
-
+type_synonym ds_t = d_state
 
 (* steal or merge -------------------------------------------- *)
 
@@ -218,5 +219,60 @@ definition delete_step :: "d_state \<Rightarrow> d_state MM" where
   | D_up(f,stk,r0) \<Rightarrow> (step_up (f,stk) |> fmap (% (f,stk). (D_up(f,stk,r0))))
   | D_finished(r) \<Rightarrow> (return s)  (* stutter *)
 )"
+
+(* wellformedness ------------------------------------------------- *)
+
+definition wf_d :: "tree \<Rightarrow> store \<Rightarrow> d \<Rightarrow> bool" where
+"wf_d t0 s d = (
+  let (fs,r) = d in
+  wellformed_find_state s t0 fs  
+)"
+
+definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> u \<Rightarrow> bool" where
+"wf_u t0 k v s u = (
+  let r_to_t = r_to_t s in
+  let (fo,stk) = u in
+  case fo of
+  D_small_leaf kvs \<Rightarrow> (
+    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_leaf) in
+    (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
+    (wellformed_tree ms (Leaf kvs)) &
+    ( (t_fo|>tree_to_map)(k:=None) = (Leaf(kvs)|>tree_to_map))   
+  )
+  | D_small_node (ks,rs) \<Rightarrow> (
+    (* FIXME don't we need some wf on Node(ks,rs)? *)
+    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_leaf) in
+    let t = Node(ks,rs|>List.map r_to_t) in
+    (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
+    (wellformed_tree ms t) &
+    ( (t_fo|>tree_to_map)(k:=None) = (t|>tree_to_map))   
+  )
+  | D_updated_subtree(r) \<Rightarrow> (
+    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let t = r|>r_to_t in
+    (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
+    (wellformed_tree None t) &
+    ( (t_fo|>tree_to_map)(k:=None) = (t|>tree_to_map))   
+  )
+)"
+
+definition wf_f :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> r \<Rightarrow> bool" where
+"wf_f t0 k v s r = (
+  let t' = r_to_t s r in
+  wellformed_tree (Some(Small_root_node_or_leaf)) t' &
+  ( (t0|>tree_to_map)(k:=(Some v)) = (t'|>tree_to_map))
+)"
+
+definition wellformed_delete_state :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> ds_t \<Rightarrow> bool" where
+"wellformed_delete_state t0 k v s ds = (
+  case ds of 
+  D_down d \<Rightarrow> (wf_d t0 s d)
+  | D_up (fo,stk,r) \<Rightarrow> (wf_u t0 k v s (fo,stk) & (r_to_t s r = t0))
+  | D_finished r \<Rightarrow> (wf_f t0 k v s r) 
+)
+"
+
 
 end

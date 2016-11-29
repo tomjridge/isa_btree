@@ -96,6 +96,12 @@ definition dest_i_finished :: "is_t \<Rightarrow> r option" where
 
 (* wellformedness ------------------------------------------------------------ *)
 
+definition wf_d :: "tree \<Rightarrow> store \<Rightarrow> d \<Rightarrow> bool" where
+"wf_d t0 s d = (
+  let (fs,v) = d in
+  wellformed_find_state s t0 fs  
+)"
+
 definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> u \<Rightarrow> bool" where
 "wf_u t0 k v s u = (
   let r_to_t = r_to_t s in
@@ -104,13 +110,19 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> s
   I1 r \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
     (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
+    (* FIXME need wf_tree r , and below *)
     ( (t_fo|>tree_to_map)(k:=(Some v)) = (r|>r_to_t|>tree_to_map))  )
-)"
-
-definition wf_d :: "tree \<Rightarrow> store \<Rightarrow> d \<Rightarrow> bool" where
-"wf_d t0 s d = (
-  let (fs,v) = d in
-  wellformed_find_state s t0 fs  
+  | I2 (r1,k',r2) \<Rightarrow> (
+    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
+    ( let (l,u) = stack_to_lu_of_child t_stk in
+      let (t1,t2) = (r1|>r_to_t,r2|>r_to_t) in
+      let (ks1,ks2) = (t1|>tree_to_keys,t2|>tree_to_keys) in
+      check_keys l ks1 (Some k') &
+      check_keys (Some k') ks2 u &
+      ((t_fo|>tree_to_map)(k:=(Some v)) = (t1|>tree_to_map ++ (t2|>tree_to_map))) 
+    )
+  )
 )"
 
 definition wf_f :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> r \<Rightarrow> bool" where
