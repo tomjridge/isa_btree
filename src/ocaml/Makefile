@@ -34,12 +34,15 @@ backup: FORCE
 	cp our.diff `new_bak our.diff`
 
 gen_our.ml: backup FORCE
-	/tmp/l/git/scripts/ocaml/btree_munge.ml
+	btree_munge2
 	cp ../generated/$@ .
 
 # make this after editing our.ml
+# https://forums.anandtech.com/threads/best-practices-for-creating-patch-with-diff.2264468/
 our.diff: backup FORCE
-	-diff -u gen_our.ml our.ml >$@
+	-diff -u9 -p gen_our.ml our.ml >$@
+
+
 
 our.ml: backup gen_our.ml FORCE
 	patch -i our.diff gen_our.ml -o $@

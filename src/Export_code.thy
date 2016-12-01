@@ -15,17 +15,28 @@ Tree.dest_Node
 Tree_stack.dest_frame
 Tree_stack.stack_to_lu_of_child
 
+key_ord
+
+tree_to_leaves wellformed_tree
+
 (* find *)
+mk_find_state
+dest_f_finished
 find_step
 wellformed_find_state 
 
 (* insert *)
+mk_insert_state
+dest_i_finished
 I1 I2 I_down I_up I_finished
 insert_step
 wellformed_insert_state
 
 (* delete *)
+mk_delete_state
+dest_d_finished
 D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
+Delete.delete_step
 wellformed_delete_state
 
 

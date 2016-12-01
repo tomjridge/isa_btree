@@ -23,6 +23,9 @@ definition dest_f_finished :: "find_state \<Rightarrow> f_finished option" where
   | F_finished (k,r,kvs,stk) \<Rightarrow> Some(k,r,kvs,stk)  
 )"
 
+definition mk_find_state :: "key \<Rightarrow> r \<Rightarrow> find_state" where
+"mk_find_state k r = F_down(k,r,[])"
+
 (* FIXME maybe want to store ks,rs as a list of (k,r), with the invariant that the last k is +inf *)
 
 definition find_step :: "fs \<Rightarrow> fs MM" where

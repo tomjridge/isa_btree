@@ -19,6 +19,12 @@ type_synonym d = "find_state * r"
 
 type_synonym ds_t = d_state
 
+definition mk_delete_state :: "key \<Rightarrow> r \<Rightarrow> d_state" where
+"mk_delete_state k r = (D_down(mk_find_state k r,r))"
+
+definition dest_d_finished :: "d_state \<Rightarrow> r option" where
+"dest_d_finished x = (case x of D_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
+
 (* steal or merge -------------------------------------------- *)
 
 type_synonym 'a frac_t = "ks * 'a list"
@@ -228,8 +234,8 @@ definition wf_d :: "tree \<Rightarrow> store \<Rightarrow> d \<Rightarrow> bool"
   wellformed_find_state s t0 fs  
 )"
 
-definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> u \<Rightarrow> bool" where
-"wf_u t0 k v s u = (
+definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> store \<Rightarrow> u \<Rightarrow> bool" where
+"wf_u t0 k s u = (
   let r_to_t = r_to_t s in
   let (fo,stk) = u in
   case fo of
@@ -258,19 +264,19 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> s
   )
 )"
 
-definition wf_f :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> r \<Rightarrow> bool" where
-"wf_f t0 k v s r = (
+definition wf_f :: "tree \<Rightarrow> key \<Rightarrow> store \<Rightarrow> r \<Rightarrow> bool" where
+"wf_f t0 k s r = (
   let t' = r_to_t s r in
   wellformed_tree (Some(Small_root_node_or_leaf)) t' &
-  ( (t0|>tree_to_kvs|>kvs_insert (k,v)) = (t'|>tree_to_kvs))
+  ( (t0|>tree_to_kvs|>kvs_delete k) = (t'|>tree_to_kvs))
 )"
 
-definition wellformed_delete_state :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> ds_t \<Rightarrow> bool" where
-"wellformed_delete_state t0 k v s ds = (
+definition wellformed_delete_state :: "tree \<Rightarrow> key \<Rightarrow> store \<Rightarrow> ds_t \<Rightarrow> bool" where
+"wellformed_delete_state t0 k s ds = (
   case ds of 
   D_down d \<Rightarrow> (wf_d t0 s d)
-  | D_up (fo,stk,r) \<Rightarrow> (wf_u t0 k v s (fo,stk) & (r_to_t s r = t0))
-  | D_finished r \<Rightarrow> (wf_f t0 k v s r) 
+  | D_up (fo,stk,r) \<Rightarrow> (wf_u t0 k s (fo,stk) & (r_to_t s r = t0))
+  | D_finished r \<Rightarrow> (wf_f t0 k s r) 
 )
 "
 

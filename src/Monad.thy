@@ -26,10 +26,6 @@ definition return :: "'a \<Rightarrow> 'a MM" where
 definition get_store :: "store MM" where
 "get_store = (% s. (s,Ok s))"
 
-(*
-definition r_to_t :: "r \<Rightarrow> t" where
-"r_to_t r = (failwith ''r_to_t'')"
-*)
 
 definition r_frame_to_t_frame :: "store \<Rightarrow> r frame \<Rightarrow> t frame" where
 "r_frame_to_t_frame s = frame_map (r_to_t s)"

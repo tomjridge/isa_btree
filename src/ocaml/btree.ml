@@ -68,49 +68,54 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
 
   module Find = struct
     (* FIXME wrap in constructor to get nice type? *)
-    type t = Find_tree_stack.fts_state_t
+    type t = {
+      tree: Tree.tree;
+      store: Store.store;
+      fs: Find.find_state
+    }
 
     let last_state : t option ref = ref None   
-    let last_trans : (t*t option) option ref = ref None
+    let last_trans : (t*t) option ref = ref None
     let check_state s = (
       last_state:=Some(s);
-      assert (Find_tree_stack.wellformed_fts s);
+      assert (Find.wellformed_find_state s.store s.tree s.fs);
     )
     let check_trans s s' = (
       last_trans:=Some(s,s');
       check_state s;
-      match s' with
-      None -> ()
-      | Some t -> (
-          check_state t;
-          assert (Find_tree_stack.wf_fts_trans s t))
+      check_state s'
     )
 
-    let mk : key -> M.Tree.tree -> t = fun k0 t -> Find_tree_stack.mk_fts_state k0 t
+    let mk : key -> Store.page_ref -> Store.store -> t = 
+      fun k0 r s -> {tree=Frame.r_to_t s r; store=s; fs=Find.mk_find_state k0 r}
 
-    let step : t -> t option = Find_tree_stack.step_fts
+    let step : t -> t = (fun x ->
+      let (s',Our.Util.Ok fs') = Find.find_step x.fs x.store in
+      {x with fs=fs'})
 
+(*
     let dest s = 
       s|>Find_tree_stack.dest_fts_state|>fst|>Tree_stack.f_t |>
       (fun foc -> 
          match foc with
            M.Tree.Leaf kvs -> Some(kvs)
          | _ -> None)
+*)
 
-    let rec find : key -> t0 -> value_t option = (
-      fun k t ->
-        let s = ref (mk k t) in
+    let rec find : Store.store -> key -> Store.page_ref -> value_t option = (
+      fun st k r ->
+        let s = ref (mk k r st) in
         let _ = check_state !s in
-        let s' = ref(Some(!s)) in
+        let s' = s in
         let _ = 
-          while(!s'<>None) do
-            s := !s'|>dest_Some;
+          while((!s').fs|>Find.dest_f_finished = None) do
+            s := !s';
             s' := step !s;
             check_trans !s !s'
           done
         in
         (* !s' is None, so s holds the result *)
-        let kvs : (key * value_t) list = !s|>dest|>dest_Some in
+        let (k,(r,(kvs,stk))) = (!s).fs|>Find.dest_f_finished|>dest_Some in
         let kv = 
           try
             Some(kvs|>List.find (function (x,y) -> key_eq x k))
@@ -121,91 +126,104 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
   end
 
   module Insert = struct
-    type t = Insert_tree_stack.its_state_t
+    type t = {
+      t: Tree.tree;
+      k:key;
+      v:value_t;
+      store: Store.store;
+      is: Insert.i_state_t
+    }
 
     let last_state : t option ref = ref None   
-    let last_trans : (t*t option) option ref = ref None
+    let last_trans : (t*t) option ref = ref None
     let check_state s = (
       last_state:=Some(s);
-      assert (Insert_tree_stack.wellformed_its_state s)
+      assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is)
     )
     let check_trans x y = (
       last_trans:=Some(x,y);
       check_state x;
-      match y with
-      None -> ()
-      | Some y' -> (
-          check_state y';
-          assert (Insert_tree_stack.wf_its_trans x y'))
+      check_state y
     )
 
-    let mk : key -> value_t -> M.Tree.tree -> t = 
-      fun k v t -> Insert_tree_stack.mk_its_state k v t
+    let mk : Store.store -> key -> value_t -> Store.page_ref -> t = 
+      fun s k v r ->{t=(Frame.r_to_t s r);k;v;store=s;is=(Insert.mk_insert_state k v r)}
 
-    let step : t -> t option = Insert_tree_stack.step_its
+    let step : t -> t = (fun x ->
+        let (s',Our.Util.Ok is') = Insert.insert_step x.is x.store in
+        {x with store=s';is=is'})
 
-    let dest = Insert_tree_stack.dest_its_state
+    let dest = Insert.dest_i_finished
 
-    let rec insert : key -> value_t -> t0 -> t0 = (
-      fun k v t ->
-        let s = ref (mk k v t) in
+    let rec insert : key -> value_t -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
+      fun k v r store ->
+        let s = ref (mk store k v r) in
         let _ = check_state !s in
-        let s' = ref(Some(!s)) in
+        let s' = ref(!s) in
         let _ = 
-          while(!s'<>None) do
-            s := !s'|>dest_Some;
+          while((!s').is|>dest = None) do
+            s := !s';
             s' := step !s;
             check_trans !s !s';
           done
-        in
-        (* !s' is None, so s holds the result *)
-        !s|>dest|>dest_Some)
+        in        
+        let r = (!s').is|>dest|>dest_Some in
+        ((!s').store,r))
   end
 
   module Delete = struct
 
-    type t = Delete_tree_stack.dts_state_t
+    type t = {
+      t:Tree.tree;
+      k:key;
+      store:Store.store;
+      ds:Delete.d_state
+    }
 
     let last_state : t option ref = ref None   
 
-    let last_trans : (t*t option) option ref = ref None
+    let last_trans : (t*t) option ref = ref None
 
     let check_state s = (
       last_state:=Some(s);
-      assert (Delete_tree_stack.wellformed_dts_state s)
+      assert (Delete.wellformed_delete_state s.t s.k s.store s.ds)
     )
 
     let check_trans x y = (
       last_trans:=Some(x,y);
       check_state x;
-      match y with
-      None -> ()
-      | Some y' -> (
-          check_state y';
-          assert (Delete_tree_stack.wf_dts_trans x y'))
+      check_state y
     )
 
-    let mk : key -> M.Tree.tree -> t = 
-      fun k t -> Delete_tree_stack.mk_dts_state k t
+    let mk : Store.store -> key -> Store.page_ref -> t = 
+      fun s k r -> {
+          t=(Frame.r_to_t s r);
+          k;
+          store=s;
+          ds=(Delete.mk_delete_state k r)
+        }
 
-    let step : t -> t option = Delete_tree_stack.step_dts
+    let step : t -> t = (fun x ->
+        let (s',Our.Util.Ok ds') = Delete.delete_step x.ds x.store in
+        {x with store=s';ds=ds'})
 
-    let dest = Delete_tree_stack.dest_dts_state
+    let dest = Delete.dest_d_finished
 
-    let rec delete : key -> t0 -> t0 = (
-      fun k t ->
-        let s = ref (mk k t) in
+    let rec delete : key -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
+      fun k r store ->
+        let s = ref (mk store k r) in
         let _ = check_state !s in
-        let s' = ref(Some(!s)) in
+        let s' = ref(!s) in
         let _ = 
-          while(!s'<>None) do
-            s := !s'|>dest_Some;
+          while((!s').ds|>dest = None) do
+            s := !s';
             s' := step !s;
             check_trans !s !s';
           done
         in
+        let r = (!s').ds|>dest|>dest_Some in
         (* !s' is None, so s holds the result *)
-        !s|>dest|>dest_Some)
+        ((!s').store,r))
   end
 
 end

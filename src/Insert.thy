@@ -20,6 +20,15 @@ datatype i_state_t =
 
 type_synonym is_t = i_state_t  
 
+definition mk_insert_state :: "key \<Rightarrow> value_t \<Rightarrow> r \<Rightarrow> i_state_t" where
+"mk_insert_state k v r = (I_down (mk_find_state k r,v))"
+
+
+definition dest_i_finished :: "is_t \<Rightarrow> r option" where
+"dest_i_finished s = (case s of I_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
+
+(* defns ------------------------------------ *)
+
 definition step_down :: "d \<Rightarrow> d MM" where
 "step_down d = (
   let (fs,v) = d in
@@ -89,9 +98,6 @@ definition insert_step :: "is_t \<Rightarrow> is_t MM" where
     | _ \<Rightarrow> (step_up u |> fmap (% u. I_up u)))
   | I_finished f \<Rightarrow> (return s)  (* stutter *)
 )"
-
-definition dest_i_finished :: "is_t \<Rightarrow> r option" where
-"dest_i_finished s = (case s of I_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
 
 
 (* wellformedness ------------------------------------------------------------ *)
