@@ -288,6 +288,23 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
         let r = (!s').ds|>dest|>dest_Some in
         (* !s' is None, so s holds the result *)
         ((!s').store,r))
+
+
+    (* need some pretty *)
+    let from_store s t = Delete.(
+      let from_store s f = (
+        match f with
+        D_small_leaf kvs -> `D_small_leaf kvs
+        | D_small_node(ks,rs) -> `D_small_node(ks,rs|>List.map (Frame.r_to_t s))
+        | D_updated_subtree(r) -> `D_updated_subtree(r|>Frame.r_to_t s)
+      )
+      in
+      match t.ds with
+      | D_down (fs,r) -> `D_down (* FIXME fs *)
+      | D_up (f,(stk,r)) -> `D_up(from_store s f,stk|>List.map (Monad2.r_frame_to_t_frame s))
+      | D_finished(r) -> `D_finished(r|>Frame.r_to_t s)
+    )
+
   end
 
 end

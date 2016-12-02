@@ -463,6 +463,7 @@ module Tree_stack : sig
     'a HOL.equal -> 'b HOL.equal -> ('a, 'b) frame_ext HOL.equal
   val no_focus :
     (Tree.tree, unit) frame_ext list -> (Tree.tree, unit) frame_ext list
+  val frame_map : ('a -> 'b) -> ('a, unit) frame_ext -> ('b, unit) frame_ext
   val stack_map :
     ('a -> 'b) -> ('a, unit) frame_ext list -> ('b, unit) frame_ext list
   val dest_frame :
@@ -675,6 +676,10 @@ module Monad2 : sig
   val page_ref_to_frame :
     Store.page_ref ->
       Store.store -> Store.store * (Frame_types.pframe, error) Util.rresult
+  val r_frame_to_t_frame :
+    Store.store ->
+      (Store.page_ref, unit) Tree_stack.frame_ext ->
+        (Tree.tree, unit) Tree_stack.frame_ext
 end = struct
 
 type error = Store_error of Store.store_error;;
@@ -691,6 +696,8 @@ let rec se_to_e se = Store_error se;;
 
 let rec page_ref_to_frame
   r = Util.rev_apply (Frame.page_ref_to_frame r) (Monad.fmap_error se_to_e);;
+
+let rec r_frame_to_t_frame s = Tree_stack.frame_map (Frame.r_to_t s);;
 
 end;;
 
@@ -858,13 +865,17 @@ let rec wf_u
       | (D_updated_subtree r, stk) ->
         let (t_fo, t_stk) = Tree_stack.tree_to_stack k t0 (List.size_list stk)
           in
+        let ms =
+          (match stk with [] -> Some Constants.Small_root_node_or_leaf
+            | _ :: _ -> Some Constants.Small_leaf)
+          in
         let t = Util.rev_apply r r_to_t in
         List.equal_lista
           (Tree_stack.equal_frame_ext Tree.equal_tree Product_Type.equal_unit)
           (Util.rev_apply t_stk Tree_stack.no_focus)
           (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
             Tree_stack.no_focus) &&
-          (Tree.wellformed_tree None t &&
+          (Tree.wellformed_tree ms t &&
             List.equal_lista
               (Product_Type.equal_prod Key_value_types.equal_key
                 Key_value_types.equal_value_t)

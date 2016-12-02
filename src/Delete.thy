@@ -269,9 +269,10 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> store \<Rightarrow> u \
   )
   | D_updated_subtree(r) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_leaf) in
     let t = r|>r_to_t in
     (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
-    (wellformed_tree None t) &
+    (wellformed_tree ms t) &
     ( (t_fo|>tree_to_kvs|>kvs_delete k) = (t|>tree_to_kvs))   
   )
 )"

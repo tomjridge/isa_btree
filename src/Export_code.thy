@@ -31,6 +31,8 @@ Store.Page_ref Store.Page Store.Store
 Frame_types.Node_frame Frame_types.page_to_frame Frame_types.frame_to_page
 Frame_types.empty_store
 
+Monad2.r_frame_to_t_frame
+
 (* find *)
 mk_find_state
 dest_f_finished
