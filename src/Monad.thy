@@ -1,39 +1,44 @@
 theory Monad
-imports Key_value Frame Tree_stack
+imports Tree_stack Frame_types (* doesn't depend on a lot of stuff from ts *)
 begin
 
-(* parameterize the pure/block implementation *)
+(* the generic monad; the more specific version is in monad2 *)
 
-type_synonym r = r
+type_synonym ('a,'e) M = "s \<Rightarrow> s * ('a,'e) rresult" 
 
-type_synonym ks_rs = "ks * r list"
+type_synonym 'a se_M = "('a,se) M"
 
-datatype error = Store_error store_error
+definition "page_ref_to_page" :: "r \<Rightarrow> p se_M" where
+"page_ref_to_page p = failwith ''FIXME''"
 
-type_synonym e = error
-
-definition se_to_e :: "se \<Rightarrow> e" where 
-"se_to_e se = Store_error se"
-  
-type_synonym 'a MM = "('a,e) M"
- 
-definition bind :: "('a \<Rightarrow> 'b MM) \<Rightarrow> 'a MM \<Rightarrow> 'b MM" where 
-"bind f v = Store.bind f v"
-
-definition return :: "'a \<Rightarrow> 'a MM" where
-"return x = (% s. (s, Ok x))"
-
-definition get_store :: "store MM" where
-"get_store = (% s. (s,Ok s))"
+definition "alloc" :: "p \<Rightarrow> r se_M" where
+"alloc p = failwith ''FIXME''"
 
 
-definition r_frame_to_t_frame :: "store \<Rightarrow> r frame \<Rightarrow> t frame" where
-"r_frame_to_t_frame s = frame_map (r_to_t s)"
+(* monad -------------------------------------------------- *)
 
-definition page_ref_to_frame :: "r \<Rightarrow> pfr MM" where
-"page_ref_to_frame r = (Frame.page_ref_to_frame r) |> fmap_error se_to_e"
+definition fmap :: "('a \<Rightarrow> 'b) \<Rightarrow> ('a,'e) M \<Rightarrow> ('b,'e) M" where
+"fmap f m s = (
+  let (s',r) = m s in
+  (s',case r of Ok y \<Rightarrow> Ok (f y) | Error x \<Rightarrow> Error x)
+)"
 
-definition alloc :: "p \<Rightarrow> r MM" where 
-"alloc p = (Store.alloc p |> fmap_error (% se. Store_error se))"
+definition fmap_error :: "('e \<Rightarrow> 'f) \<Rightarrow> ('a,'e) M \<Rightarrow> ('a,'f) M" where
+"fmap_error f m s = (
+  let (s',r) = m s in
+  (s',case r of Ok y \<Rightarrow> Ok y | Error x \<Rightarrow> Error (f x)))"
+
+definition bind :: "('a \<Rightarrow> ('b,'e) M) \<Rightarrow> ('a,'e) M \<Rightarrow> ('b,'e) M" where
+"bind f v = (% s. (case v s of (s1,Error x) \<Rightarrow> (s1,Error x) | (s1,Ok y) \<Rightarrow> (f y s1)))"
+
+definition se_bind :: "('a \<Rightarrow> 'b se_M) \<Rightarrow> 'a se_M \<Rightarrow> 'b se_M" where
+"se_bind f v = bind f v"
+
+definition se_return :: "'a \<Rightarrow> 'a se_M" where
+"se_return x = (% s. (s,Ok x))"
+
+definition get_store :: "unit \<Rightarrow> s se_M" where
+"get_store _ = (% s. (s,Ok(s)))"
+
 
 end

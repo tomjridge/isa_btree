@@ -1,5 +1,5 @@
 theory Key_value_types
-imports Prelude
+imports Constants
 begin
 
 (* we separate the types to make it easier to functorize the generated ocaml *)

@@ -40,7 +40,7 @@ gen_our.ml: backup FORCE
 # make this after editing our.ml
 # https://forums.anandtech.com/threads/best-practices-for-creating-patch-with-diff.2264468/
 our.diff: backup FORCE
-	-diff -u9 -p gen_our.ml our.ml >$@
+	-diff -u3 -p gen_our.ml our.ml >$@
 
 
 

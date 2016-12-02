@@ -1,5 +1,5 @@
 theory Frame
-imports Key_value_types Store Tree  (* FIXME may want to move this to Frame_tree *)
+imports Monad (* FIXME may want to move this to Frame_tree *)
 begin
 
 (* FIXME rename page_frame *)

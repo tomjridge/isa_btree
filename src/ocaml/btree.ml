@@ -21,6 +21,16 @@ module type KEY_VALUE_TYPES = sig
   val equal_value : value_t -> value_t -> bool (* only for wf checking *)
 end
 
+
+module type STORE = Our.Store_t (*
+
+  type page[@@deriving yojson]
+  type page_ref[@@deriving yojson]
+  type store
+  type store_error
+  val dest_Store : store -> page_ref -> page
+*)
+
 module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
 
   module Constants = C

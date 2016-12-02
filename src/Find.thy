@@ -1,5 +1,5 @@
 theory Find 
-imports Tree_stack Frame Monad (* FIXME for sktoi; move to kv *)
+imports Monad2 (* FIXME for sktoi; move to kv *)
 begin
 
 type_synonym stk = "r stk"

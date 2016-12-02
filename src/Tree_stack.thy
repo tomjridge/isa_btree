@@ -1,4 +1,6 @@
-theory Tree_stack imports Tree begin
+theory Tree_stack 
+imports Tree 
+begin
 (* FIXME rename to stack? *)
 
 (* treestack frame ------------------------------- *)

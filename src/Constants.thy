@@ -1,5 +1,5 @@
 theory Constants 
-imports Main String Util
+imports Main String Prelude
 begin
 
 definition min_leaf_size :: nat where "min_leaf_size = (failwith ''FIXME'')"

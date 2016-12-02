@@ -14,10 +14,21 @@ Key_value.key_lt
 Tree.dest_Node
 Tree_stack.dest_frame
 Tree_stack.stack_to_lu_of_child
+Store.Page_ref
+Frame_types.Node_frame
 
+
+(* key_value_types*)
 key_ord
 
 tree_to_leaves wellformed_tree
+
+(* store *)
+Store.Page_ref Store.Page Store.Store 
+
+(* frame_types *)
+Frame_types.Node_frame Frame_types.page_to_frame Frame_types.frame_to_page
+
 
 (* find *)
 mk_find_state
