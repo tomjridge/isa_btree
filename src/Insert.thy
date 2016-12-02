@@ -39,7 +39,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
 "step_bottom d = (
   let (fs,v) = d in
   case dest_f_finished fs of 
-  None \<Rightarrow> impossible ()
+  None \<Rightarrow> impossible1 ''insert, step_bottom''
   | Some(k,r,kvs,stk) \<Rightarrow> (
     let kvs' = kvs |> kvs_insert (k,v) in
     let fo = (
@@ -57,7 +57,7 @@ definition step_up :: "u \<Rightarrow> u MM" where
 "step_up u = (
   let (fo,stk) = u in
   case stk of 
-  [] \<Rightarrow> impossible ()  (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
+  [] \<Rightarrow> impossible1 ''insert, step_up'' (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
   | x#stk' \<Rightarrow> (
     let ((ks1,rs1),_,(ks2,rs2)) = dest_frame x in
     case fo of

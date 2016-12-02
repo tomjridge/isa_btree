@@ -141,7 +141,7 @@ definition get_sibling :: "(ks_rs * ks_rs) \<Rightarrow> bool (* right *) * (ks_
             let (p_1_ts,s) = dest_list' p_ts1 in
             let (p_1,p2) = ((p_1_ks,p_1_ts),p_2) in
             (right,(p_1,p_2),(p_k,s)))
-          | _ \<Rightarrow> impossible ()
+          | _ \<Rightarrow> impossible1 ''delete, get_sibling''
         ))
 "
 
@@ -149,14 +149,14 @@ definition step_up :: "u \<Rightarrow> u MM" where
 "step_up du = (
   let (f,stk) = du in
   case stk of
-  [] \<Rightarrow> (impossible ())
+  [] \<Rightarrow> (impossible1 ''delete, step_up'')
   | p#stk' \<Rightarrow> (
     case f of   
-    D_updated_subtree r \<Rightarrow> undefined (
+    D_updated_subtree r \<Rightarrow> (
       let ((ks1,rs1),_,(ks2,rs2)) = p|>dest_frame in
       Node_frame(ks1@ks2,rs1@[r]@rs2) |> frame_to_page |> alloc |> fmap (% r'. (D_updated_subtree r',stk'))
     )
-    | D_small_leaf(kvs) \<Rightarrow> undefined (
+    | D_small_leaf(kvs) \<Rightarrow> (
       let leaf = True in
       let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Leaf_frame(List.zip ks vs)) in
       let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_frame in
@@ -222,8 +222,20 @@ definition delete_step :: "d_state \<Rightarrow> d_state MM" where
       )
     )
   )
-  | D_up(f,stk,r0) \<Rightarrow> (step_up (f,stk) |> fmap (% (f,stk). (D_up(f,stk,r0))))
+  | D_up(f,stk,r0) \<Rightarrow> (
+    case stk of
+    [] \<Rightarrow> (
+      case f of
+      D_small_leaf kvs \<Rightarrow> (Leaf_frame(kvs)|>frame_to_page|>alloc|>fmap (% r. D_finished r)) 
+      | D_small_node (ks,rs) \<Rightarrow> (
+        Node_frame(ks,rs)|>frame_to_page|>alloc|>fmap (% r. D_finished r)
+      )
+      | D_updated_subtree(r) \<Rightarrow> (return (D_finished r))
+    )
+    | _ \<Rightarrow> (step_up (f,stk) |> fmap (% (f,stk). (D_up(f,stk,r0))))
+  )
   | D_finished(r) \<Rightarrow> (return s)  (* stutter *)
+  
 )"
 
 (* wellformedness ------------------------------------------------- *)

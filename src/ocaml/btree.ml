@@ -83,9 +83,9 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
     module Store_1 = struct
       include Pre_store
       type page = Pre_frame.pframe
-      type store = page Map_int.t 
+      type store = {free:int; m:page Map_int.t}
       type store_error = unit
-      let dest_Store : store -> page_ref -> page = (fun s r -> Map_int.find r s)
+      let dest_Store : store -> page_ref -> page = (fun s r -> Map_int.find r s.m)
 
 
     end
@@ -96,7 +96,14 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
       include Pre_frame
 
       (* for empty store, we want an empty leaf at page 0 *)
-      let empty_store = (Map_int.empty |> Map_int.add 0 (Pre_frame.Leaf_frame[]),0)
+      let empty_store = (
+        Store_1.{free=1;m=Map_int.empty |> Map_int.add 0 (Pre_frame.Leaf_frame[])},
+        0)
+                        
+      let page_ref_to_page r s = (s,Our.Util.Ok(Map_int.find r s.Store_1.m))
+      let alloc p s = (
+        let f = s.Store_1.free in
+        (Store_1.{free=(f+1);m=Map_int.add f p s.m}),Our.Util.Ok(f))
 
     end
   end

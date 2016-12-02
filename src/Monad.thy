@@ -8,12 +8,6 @@ type_synonym ('a,'e) M = "s \<Rightarrow> s * ('a,'e) rresult"
 
 type_synonym 'a se_M = "('a,se) M"
 
-definition "page_ref_to_page" :: "r \<Rightarrow> p se_M" where
-"page_ref_to_page p = failwith ''FIXME''"
-
-definition "alloc" :: "p \<Rightarrow> r se_M" where
-"alloc p = failwith ''FIXME''"
-
 
 (* monad -------------------------------------------------- *)
 

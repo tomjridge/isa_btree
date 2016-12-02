@@ -9,8 +9,8 @@ lemma FIXME: "P" sorry
 definition failwith :: "string \<Rightarrow> 'b" where
 "failwith x = undefined"
 
-definition impossible :: "unit \<Rightarrow> 'a" where
-  "impossible _ = failwith ''impossible''"  
+definition impossible1 :: "string \<Rightarrow> 'a" where
+  "impossible1 x = failwith ''''"  
   
 (*
 definition FIXME :: "'a" where

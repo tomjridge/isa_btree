@@ -35,6 +35,6 @@ definition page_ref_to_frame :: "r \<Rightarrow> pfr MM" where
 "page_ref_to_frame r = (Frame.page_ref_to_frame r) |> fmap_error se_to_e"
 
 definition alloc :: "p \<Rightarrow> r MM" where 
-"alloc p = (Monad.alloc p |> fmap_error (% se. Store_error se))"
+"alloc p = (Frame_types.alloc p |> fmap_error (% se. Store_error se))"
 
 end

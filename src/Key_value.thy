@@ -70,7 +70,7 @@ definition split_leaf :: "kvs \<Rightarrow> (kvs * k * kvs)" where
 "split_leaf kvs = (
   let min = min_leaf_size in
   let (l,r) = split_at min kvs in
-  let k = (case r of (k,_)#_ \<Rightarrow> k | _ \<Rightarrow> impossible ()) in
+  let k = (case r of (k,_)#_ \<Rightarrow> k | _ \<Rightarrow> impossible1 ''key_value, split_leaf'') in
   (l,k,r)
 )"
 
