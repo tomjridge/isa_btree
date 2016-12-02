@@ -2,6 +2,9 @@
 
 (* We concentrate on relatively small parameters *)
 
+
+(* setup ---------------------------------------- *)
+
 open Btree
 
 module Int_int = struct 
@@ -23,9 +26,25 @@ module C_min : CONSTANTS = struct
 
 end
 
-module T = Btree.Make(C_min)(Int_int.Kv)
+module BT = Btree.Make(C_min)(Int_int.Kv)
 
-module S = Set.Make(struct type t = T.t let compare = Pervasives.compare end)
+open BT.M
+
+module S_1 = struct 
+
+    type t = {t:Tree.tree;s:Store.store;r:Store.page_ref }
+
+    (* we want to ignore the store and page_ref *)
+    let compare (x:t) (y:t) = (
+      Pervasives.compare (x.t) (y.t)
+    )
+
+  end
+
+(* for maintaing a set of states *)
+module S = Set.Make(S_1)
+
+
 
 type action = Insert of int | Delete of int
 
@@ -38,20 +57,27 @@ type action = Insert of int | Delete of int
 (* if we hit an exception, we want to know what the input tree was,
    and what the command was *)
 
-let input_tree = ref T.empty
-let action = ref (Insert 0)
+let (init_store, init_r) = BT.M.Frame_types.empty_store
+
+(* save so we know what the last action was *)
+let action = ref (Insert 0) 
 
 type range_t = int list[@@deriving yojson]
 
+
+
+(* explore all possible states for the given range *)
+
 let test range = (
-  let s = ref (S.singleton T.empty) in
-  let todo = ref (S.singleton T.empty) in
+  let s = ref S_1.(S.(singleton {t=Tree.Leaf[];s=init_store;r=init_r })) in
+  let todo = ref (!s) in
   (* next states from a given tree *)
   let step t = (
-    input_tree := t;
-    (range|>List.map (fun x -> action:=Insert x; T.Insert.insert x x t)) @
-    (range|>List.map (fun x -> action:=Delete x; T.Delete.delete x t))
-  ) |> S.of_list
+    (range|>List.map (fun x -> action:=Insert x; 
+                       BT.Insert.insert x x (t.S_1.r) (t.S_1.s))) @
+    (range|>List.map (fun x -> action:=Delete x; 
+                       BT.Delete.delete x (t.S_1.r) (t.S_1.s)))
+  ) |> List.map (fun (s,r) -> S_1.{t=(Frame.r_to_t s r) ;s;r}) |> S.of_list
   in
   let _ = 
     (* FIXME this may be faster if we store todo as a list and check

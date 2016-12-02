@@ -15,4 +15,6 @@ definition page_to_frame :: "p \<Rightarrow> pfr" where "page_to_frame = failwit
 
 definition frame_to_page :: "pfr \<Rightarrow> p" where "frame_to_page = failwith ''FIXME''"
 
+definition empty_store :: "store * r" where "empty_store = failwith ''FIXME''" 
+
 end

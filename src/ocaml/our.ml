@@ -119,9 +119,9 @@ end;; *)
     
 
 module type Store_t = sig
-  type page [@@deriving yojson]
+  type page 
   type page_ref [@@deriving yojson]
-  type store [@@deriving yojson]
+  type store 
   type store_error
   val dest_Store : store -> page_ref -> page
 end(* = struct
@@ -137,19 +137,23 @@ type store_error = String;;
 let rec dest_Store x = let Store y = x in
                        y;;
 
-end;;*)
+end;; *)
 
 module type Frame_types_t = sig
   module Store : Store_t
   module Key_value_types : Key_value_types_t
   type pframe = Node_frame of (Key_value_types.key list * Store.page_ref list) |
     Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list[@@deriving yojson]
-  val frame_to_page : pframe -> Store.page 
+  val empty_store : Store.store * Store.page_ref
+  val frame_to_page : pframe -> Store.page
   val page_to_frame : Store.page -> pframe
-end (*= struct
+end (* = struct
 
 type pframe = Node_frame of (Key_value_types.key list * Store.page_ref list) |
   Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list;;
+
+let empty_store : Store.store * Store.page_ref
+  = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
 
 let rec frame_to_page x = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'] x;;
 
@@ -157,8 +161,9 @@ let rec page_to_frame x = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'] x;;
 
 end;;*)
 
-module Make = functor (Constants : Constants_t) -> functor (Frame_types:Frame_types_t) -> struct
+module Make = functor (Constants : Constants_t) -> functor (FT:Frame_types_t) -> struct
 
+module Frame_types = FT
 module Key_value_types = Frame_types.Key_value_types
 module Store = Frame_types.Store
 

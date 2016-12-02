@@ -127,12 +127,16 @@ end;;
 module Frame_types : sig
   type pframe = Node_frame of (Key_value_types.key list * Store.page_ref list) |
     Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list
+  val empty_store : Store.store * Store.page_ref
   val frame_to_page : pframe -> Store.page
   val page_to_frame : Store.page -> pframe
 end = struct
 
 type pframe = Node_frame of (Key_value_types.key list * Store.page_ref list) |
   Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list;;
+
+let empty_store : Store.store * Store.page_ref
+  = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
 
 let rec frame_to_page x = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'] x;;
 

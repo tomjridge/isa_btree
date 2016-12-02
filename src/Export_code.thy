@@ -18,6 +18,7 @@ Store.Page_ref
 Frame_types.Node_frame
 
 
+
 (* key_value_types*)
 key_ord
 
@@ -28,7 +29,7 @@ Store.Page_ref Store.Page Store.Store
 
 (* frame_types *)
 Frame_types.Node_frame Frame_types.page_to_frame Frame_types.frame_to_page
-
+Frame_types.empty_store
 
 (* find *)
 mk_find_state

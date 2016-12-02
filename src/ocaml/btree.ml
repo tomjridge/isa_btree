@@ -22,15 +22,6 @@ module type KEY_VALUE_TYPES = sig
 end
 
 
-module type STORE = Our.Store_t (*
-
-  type page[@@deriving yojson]
-  type page_ref[@@deriving yojson]
-  type store
-  type store_error
-  val dest_Store : store -> page_ref -> page
-*)
-
 module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
 
   module Constants = C
@@ -65,7 +56,53 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
     let equal_value_t = Gen_isa.{HOL.equal = equal_value_ta}
   end
 
-  module M = Our.Make(Isa_c)(Isa_kv)
+  (* stores, pages and frames *)
+
+  module Frames_etc = struct
+
+    module Pre_store = struct
+      type page_ref = int[@@deriving yojson]
+    end
+
+    module Key_value_types = Isa_kv
+
+    module Pre_frame = struct 
+
+      type pframe =  
+          Node_frame of (Key_value_types.key list * Pre_store.page_ref list) |
+          Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list[@@deriving yojson]
+
+      type page = pframe
+
+      let frame_to_page : pframe -> page = fun x -> x
+      let page_to_frame : page -> pframe = fun x -> x
+    end
+
+    module Map_int = Map.Make(struct type t = int let compare: t -> t -> int = Pervasives.compare end)
+
+    module Store_1 = struct
+      include Pre_store
+      type page = Pre_frame.pframe
+      type store = page Map_int.t 
+      type store_error = unit
+      let dest_Store : store -> page_ref -> page = (fun s r -> Map_int.find r s)
+
+
+    end
+
+    module Frame_types : Our.Frame_types_t with module Store=Store_1 and module Key_value_types = Isa_kv = struct
+      module Store = Store_1
+      module Key_value_types = Isa_kv
+      include Pre_frame
+
+      (* for empty store, we want an empty leaf at page 0 *)
+      let empty_store = (Map_int.empty |> Map_int.add 0 (Pre_frame.Leaf_frame[]),0)
+
+    end
+  end
+
+
+  module M = Our.Make(Isa_c)(Frames_etc.Frame_types)
   
   type t = M.Tree.tree
   type t0 = t (* so we can refer to it without shadowing *)
@@ -74,7 +111,7 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
 
   let empty : t = Tree.(Leaf[])
 
-  let tree_to_leaves : t -> (key * value_t) list list = Tree.tree_to_leaves
+  (* let tree_to_leaves : t -> (key * value_t) list list = Tree.tree_to_leaves *)
 
   module Find = struct
     (* FIXME wrap in constructor to get nice type? *)
@@ -83,6 +120,8 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
       store: Store.store;
       fs: Find.find_state
     }
+    
+    let dest_finished s' = (s').fs|>Find.dest_f_finished|>dest_Some
 
     let last_state : t option ref = ref None   
     let last_trans : (t*t) option ref = ref None
@@ -112,7 +151,8 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
          | _ -> None)
 *)
 
-    let rec find : Store.store -> key -> Store.page_ref -> value_t option = (
+    (* for testing *)
+    let find_1 : Store.store -> key -> Store.page_ref -> t = (
       fun st k r ->
         let s = ref (mk k r st) in
         let _ = check_state !s in
@@ -125,7 +165,14 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
           done
         in
         (* !s' is None, so s holds the result *)
-        let (k,(r,(kvs,stk))) = (!s).fs|>Find.dest_f_finished|>dest_Some in
+        !s'
+    )
+
+    let find : Store.store -> key -> Store.page_ref -> value_t option = (
+      fun st k r ->
+        let s' = find_1 st k r in
+        (* s' is finished *)
+        let (k,(r,(kvs,stk))) = (s').fs|>Find.dest_f_finished|>dest_Some in
         let kv = 
           try
             Some(kvs|>List.find (function (x,y) -> key_eq x k))
@@ -165,7 +212,7 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
 
     let dest = Insert.dest_i_finished
 
-    let rec insert : key -> value_t -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
+    let insert : key -> value_t -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
       fun k v r store ->
         let s = ref (mk store k v r) in
         let _ = check_state !s in
@@ -219,7 +266,7 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
 
     let dest = Delete.dest_d_finished
 
-    let rec delete : key -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
+    let delete : key -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
       fun k r store ->
         let s = ref (mk store k r) in
         let _ = check_state !s in
