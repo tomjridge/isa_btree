@@ -115,15 +115,18 @@ let equal_value_t = ({HOL.equal = equal_value_ta} : value_t HOL.equal);;
 let rec key_ord k1 k2 = Util.failwitha ['k'; 'e'; 'y'; '_'; 'o'; 'r'; 'd'];;
 
 end;; *)
-    
 
 module type Store_t = sig
   type page 
   type page_ref [@@deriving yojson]
   type store 
   type store_error
+  val alloc : page -> store -> store * (page_ref, store_error) Util.rresult
   val dest_Store : store -> page_ref -> page
-end(* = struct
+  val empty_store : unit -> store * page_ref
+  val page_ref_to_page :
+    page_ref -> store -> store * (page, store_error) Util.rresult
+end (* = struct
 
 type page = Page of Arith.nat;;
 
@@ -133,41 +136,32 @@ type store = Store of (page_ref -> page);;
 
 type store_error = String;;
 
+let rec alloc p = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+
 let rec dest_Store x = let Store y = x in
                        y;;
 
-end;;*)
+let rec empty_store uu = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+
+let rec page_ref_to_page p = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+
+end;; *)
 
 module type Frame_types_t = sig
   module Store : Store_t
   module Key_value_types : Key_value_types_t
   type pframe = Node_frame of (Key_value_types.key list * Store.page_ref list) |
-    Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list[@@deriving yojson]
-  val alloc :
-    Store.page ->
-      Store.store ->
-        Store.store * (Store.page_ref, Store.store_error) Util.rresult
-  val empty_store : Store.store * Store.page_ref
+    Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list [@@deriving yojson]
   val frame_to_page : pframe -> Store.page
   val page_to_frame : Store.page -> pframe
-  val page_ref_to_page :
-    Store.page_ref ->
-      Store.store -> Store.store * (Store.page, Store.store_error) Util.rresult
 end (* = struct
 
 type pframe = Node_frame of (Key_value_types.key list * Store.page_ref list) |
   Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list;;
 
-let rec alloc p = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
-
-let empty_store : Store.store * Store.page_ref
-  = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
-
 let rec frame_to_page x = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'] x;;
 
 let rec page_to_frame x = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'] x;;
-
-let rec page_ref_to_page p = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
 
 end;; *)
 
@@ -688,7 +682,7 @@ let rec dest_Node_frame
               'm'; 'e']);;
 
 let rec page_ref_to_frame
-  r = Util.rev_apply (Frame_types.page_ref_to_page r)
+  r = Util.rev_apply (Store.page_ref_to_page r)
         (Monad.fmap Frame_types.page_to_frame);;
 
 end;;
@@ -717,7 +711,7 @@ type error = Store_error of Store.store_error;;
 let rec bind f v = Monad.bind f v;;
 
 let rec alloc
-  p = Util.rev_apply (Frame_types.alloc p)
+  p = Util.rev_apply (Store.alloc p)
         (Monad.fmap_error (fun a -> Store_error a));;
 
 let rec return x = (fun s -> (s, Util.Ok x));;

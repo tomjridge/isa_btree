@@ -30,5 +30,5 @@ mk_cma="$DISABLE_BYTE ocamlfind ocamlc $FLGS "
 mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt $FLGS"
 
 
-mls="gen_isa.ml our.ml btree.ml test.ml"
+mls="gen_isa.ml our.ml btree.ml test.ml obt_file_store.ml"
 cmos="${mls//.ml/.cmo}"

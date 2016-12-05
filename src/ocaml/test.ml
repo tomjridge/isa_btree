@@ -57,7 +57,7 @@ type action = Insert of int | Delete of int
 (* if we hit an exception, we want to know what the input tree was,
    and what the command was *)
 
-let (init_store, init_r) = BT.M.Frame_types.empty_store
+let (init_store, init_r) = BT.M.Store.empty_store ()
 
 (* save so we know what the last action was *)
 let action = ref (Insert 0) 

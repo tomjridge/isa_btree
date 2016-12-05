@@ -26,10 +26,12 @@ tree_to_leaves wellformed_tree
 
 (* store *)
 Store.Page_ref Store.Page Store.Store 
+Store.page_ref_to_page Store.alloc
+Store.empty_store
 
 (* frame_types *)
 Frame_types.Node_frame Frame_types.page_to_frame Frame_types.frame_to_page
-Frame_types.empty_store
+
 
 Monad2.r_frame_to_t_frame
 
