@@ -9,30 +9,55 @@ module X = struct
   let int_to_nat x = Gen_isa.(x |>Big_int.big_int_of_int|>Arith.nat_of_integer)
   let int_to_int x = Gen_isa.(x |>Big_int.big_int_of_int|>(fun x -> Arith.Int_of_integer x))
 
-
 end
 
 
 (* simplified structs ---------------------------------------- *)
 
-module Min_size = struct 
-  type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf
-end
-
-
-module type CONSTANTS = sig
-  type min_size_t = Min_size.min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf 
-  val max_leaf_size : int
-  val max_node_keys : int
-  val min_leaf_size : int
-  val min_node_keys : int
-end
 
 module type KEY_VALUE_TYPES = sig
   type key [@@deriving yojson]
   type value_t [@@deriving yojson]
   val key_ord : key -> key -> int
   val equal_value : value_t -> value_t -> bool (* only for wf checking *)
+end
+
+module type CONSTANTS = sig
+  val max_leaf_size : int
+  val max_node_keys : int
+  val min_leaf_size : int
+  val min_node_keys : int
+end
+
+module type S = sig
+
+  open Our
+
+  (* constants *)
+  include CONSTANTS
+
+  (* key value *)
+  include KEY_VALUE_TYPES
+  
+  (* store *)
+  type page 
+  type page_ref [@@deriving yojson]
+  type store 
+  type store_error
+  val alloc : page -> store -> store * (page_ref, store_error) Util.rresult
+  val dest_Store : store -> page_ref -> page (* FIXME remove *)
+  val empty_store : unit -> store * page_ref (* FIXME remove *)
+  val page_ref_to_page :
+    page_ref -> store -> store * (page, store_error) Util.rresult
+
+  (* frame *)
+  type pframe =  
+      Node_frame of (key list * page_ref list) |
+      Leaf_frame of (key * value_t) list[@@deriving yojson]
+
+  val frame_to_page : pframe -> page
+  val page_to_frame : page -> pframe
+
 end
 
 
@@ -43,98 +68,46 @@ module Mk_kv = functor (KV:KEY_VALUE_TYPES) -> struct
   include KV
 
   let key_eq k1 k2 = KV.key_ord k1 k2 = 0
-
-(*    type key = KV.key *)
-    let key_ord k1 k2 = KV.key_ord k1 k2|>int_to_int
-    let equal_keya k1 k2 = KV.key_ord k1 k2 = 0
-    let equal_key = Gen_isa.{HOL.equal = equal_keya}
-(*    type value_t = KV.value_t *)
-    let equal_value_ta = KV.equal_value
-    let equal_value_t = Gen_isa.{HOL.equal = equal_value_ta}
+  let key_ord k1 k2 = KV.key_ord k1 k2|>int_to_int
+  let equal_keya k1 k2 = KV.key_ord k1 k2 = 0
+  let equal_key = Gen_isa.{HOL.equal = equal_keya}
+  let equal_value_ta = KV.equal_value
+  let equal_value_t = Gen_isa.{HOL.equal = equal_value_ta}
 
 end
 
+module Mk_c = functor (C:CONSTANTS) -> struct
+  type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf 
+  let max_leaf_size = C.max_leaf_size |> X.int_to_nat
+  let max_node_keys  = C.max_node_keys|>X.int_to_nat
+  let min_leaf_size = C.min_leaf_size|>X.int_to_nat
+  let min_node_keys = C.min_node_keys|>X.int_to_nat
+end
 
 
 (* main functor ---------------------------------------- *)
 
-module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
+module Make = functor (S:S) -> struct
 
 
   (* set up to call our.make ---------------------------------------- *)
 
-  module Constants = C
+  module S = S
 
-  module Key_value_types = KV
-    
-  module Isa_kv = Mk_kv(KV)
+  module C = Mk_c(S)
 
-  module Isa_c : Our.Constants_t = struct
-    open X
-    type min_size_t = Min_size.min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf 
-    let max_leaf_size = C.max_leaf_size|>int_to_nat
-    let max_node_keys = C.max_node_keys|>int_to_nat
-    let min_leaf_size = C.min_leaf_size|>int_to_nat
-    let min_node_keys = C.min_node_keys|>int_to_nat
-  end
+  module KV = Mk_kv(S)
 
-  (* stores, pages and frames *)
-
-  module Frames_etc = struct
-
-    module Pre_store = struct
-      type page_ref = int[@@deriving yojson]
-    end
-
-    module Key_value_types = Isa_kv
-
-    module Pre_frame = struct 
-
-      type pframe =  
-          Node_frame of (Key_value_types.key list * Pre_store.page_ref list) |
-          Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list[@@deriving yojson]
-
-      type page = pframe
-
-      let frame_to_page : pframe -> page = fun x -> x
-      let page_to_frame : page -> pframe = fun x -> x
-    end
-
-    module Map_int = Map.Make(struct type t = int let compare: t -> t -> int = Pervasives.compare end)
-
-    module Store_1 = struct
-      include Pre_store
-      type page = Pre_frame.pframe
-      type store = {free:int; m:page Map_int.t}
-      type store_error = unit
-      let dest_Store : store -> page_ref -> page = (fun s r -> Map_int.find r s.m)
-
-      let page_ref_to_page r s = (s,Our.Util.Ok(Map_int.find r s.m))
-      let alloc p s = (
-        let f = s.free in
-        ({free=(f+1);m=Map_int.add f p s.m}),Our.Util.Ok(f))
-
-      (* for empty store, we want an empty leaf at page 0 *)
-      let empty_store () = (
-        {free=1;m=Map_int.empty |> Map_int.add 0 (Pre_frame.Leaf_frame[])},
-        0)
-
-    end
-
-    module Frame_types : Our.Frame_types_t with module Store=Store_1 and module Key_value_types = Isa_kv = struct
-      module Store = Store_1
-      module Key_value_types = Isa_kv
-      include Pre_frame
-
-
-
-    end
+  module Frame_types = struct
+    module Store = S
+    module Key_value_types = KV
+    include S
   end
 
 
   (* use our.make functor ---------------------------------------- *)
 
-  module M = Our.Make(Isa_c)(Frames_etc.Frame_types)
+  module M = Our.Make(C)(Frame_types)
   
   module Tree = M.Tree
   module Store = M.Frame_types.Store
@@ -150,7 +123,9 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
   (* let tree_to_leaves : t -> (key * value_t) list list = Tree.tree_to_leaves *)
 
   module Find = struct
+
     module Find = M.Find
+
     (* FIXME wrap in constructor to get nice type? *)
     type t = {
       tree: Tree.tree;
@@ -161,11 +136,14 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
     let dest_finished s' = (s').fs|>Find.dest_f_finished|>dest_Some
 
     let last_state : t option ref = ref None   
+
     let last_trans : (t*t) option ref = ref None
+
     let check_state s = (
       last_state:=Some(s);
       assert (Find.wellformed_find_state s.store s.tree s.fs);
     )
+
     let check_trans s s' = (
       last_trans:=Some(s,s');
       check_state s;
@@ -179,14 +157,6 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
       let (s',Our.Util.Ok fs') = Find.find_step x.fs x.store in
       {x with fs=fs'})
 
-(*
-    let dest s = 
-      s|>Find_tree_stack.dest_fts_state|>fst|>Tree_stack.f_t |>
-      (fun foc -> 
-         match foc with
-           M.Tree.Leaf kvs -> Some(kvs)
-         | _ -> None)
-*)
 
     (* for testing *)
     let find_1 : Store.store -> KV.key -> Store.page_ref -> t = (
@@ -212,15 +182,18 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
         let (k,(r,(kvs,stk))) = (s').fs|>Find.dest_f_finished|>dest_Some in
         let kv = 
           try
-            Some(kvs|>List.find (function (x,y) -> KV.key_ord x k = 0))
+            Some(kvs|>List.find (function (x,y) -> KV.key_eq x k))
           with Not_found -> None
         in
         kv|>option_map snd)
 
   end
 
+
   module Insert = struct
+
     module Insert = M.Insert
+
     type t = {
       t: Tree.tree;
       k:KV.key;
@@ -230,11 +203,14 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
     }
 
     let last_state : t option ref = ref None   
+
     let last_trans : (t*t) option ref = ref None
+
     let check_state s = (
       last_state:=Some(s);
       assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is)
     )
+
     let check_trans x y = (
       last_trans:=Some(x,y);
       check_state x;
@@ -264,7 +240,9 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
         in        
         let r = (!s').is|>dest|>dest_Some in
         ((!s').store,r))
+
   end
+
 
   module Delete = struct
 
@@ -341,3 +319,75 @@ module Make = functor (C:CONSTANTS) -> functor (KV:KEY_VALUE_TYPES) -> struct
   end
 
 end
+
+
+
+(*
+
+
+module Min_size = struct 
+  type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf
+end
+
+
+module type CONSTANTS = sig
+  type min_size_t = Min_size.min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf 
+  val max_leaf_size : int
+  val max_node_keys : int
+  val min_leaf_size : int
+  val min_node_keys : int
+end
+
+
+
+  (* stores, pages and frames *)
+
+  module Frames_etc = struct
+
+    module Pre_store = struct
+      type page_ref = int[@@deriving yojson]
+    end
+
+    module Key_value_types = Isa_kv
+
+    module Pre_frame = struct 
+
+      type pframe =  
+          Node_frame of (Key_value_types.key list * Pre_store.page_ref list) |
+          Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list[@@deriving yojson]
+
+      type page = pframe
+
+      let frame_to_page : pframe -> page = fun x -> x
+      let page_to_frame : page -> pframe = fun x -> x
+    end
+
+    module Map_int = Map.Make(struct type t = int let compare: t -> t -> int = Pervasives.compare end)
+
+    module Store_1 = struct
+      include Pre_store
+      type page = Pre_frame.pframe
+      type store = {free:int; m:page Map_int.t}
+      type store_error = unit
+      let dest_Store : store -> page_ref -> page = (fun s r -> Map_int.find r s.m)
+
+      let page_ref_to_page r s = (s,Our.Util.Ok(Map_int.find r s.m))
+      let alloc p s = (
+        let f = s.free in
+        ({free=(f+1);m=Map_int.add f p s.m}),Our.Util.Ok(f))
+
+      (* for empty store, we want an empty leaf at page 0 *)
+      let empty_store () = (
+        {free=1;m=Map_int.empty |> Map_int.add 0 (Pre_frame.Leaf_frame[])},
+        0)
+
+    end
+
+    module Frame_types : Our.Frame_types_t with module Store=Store_1 and module Key_value_types = Isa_kv = struct
+      module Store = Store_1
+      module Key_value_types = Isa_kv
+      include Pre_frame
+
+
+
+*)

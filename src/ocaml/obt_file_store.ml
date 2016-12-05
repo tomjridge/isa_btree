@@ -38,7 +38,7 @@ module Simple = struct
     fun s r -> 
       try Unix.(
           let _ = lseek s (r_to_off r) SEEK_CUR in
-          let buf = Bytes.create block_size in (* bytes are mutable *)
+          let buf = Bytes.make block_size (Char.chr 0) in (* bytes are mutable *)
           let n = read s buf 0 block_size in
           let _ = assert (n=block_size) in
           buf)
@@ -96,11 +96,11 @@ module File_store (* : Our.Store_t *) = struct
   )
 
   let dest_Store : store -> page_ref -> page = (
-    fun s r -> 
-      failwith "dest_Store"
+    fun s r -> read s r
   )
 
-  
+
+  (* FIXME remove; not proper part of interface *)
   let empty_store : unit -> store * page_ref = (fun _ -> failwith "empty_store")
 
 end
@@ -122,6 +122,9 @@ module Int_int = struct
 
   let int_size = 4
 
+  let max_node_keys = block_size / int_size -2
+  let max_leaf_size = block_size / int_size -2
+
 
   (* format: int node_or_leaf; int number of entries; entries *)
 
@@ -130,73 +133,58 @@ module Int_int = struct
       Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list[@@deriving yojson]
 
 
-  (* convert an int to 4 bytes/chars; msb is first *)
-  let int_to_cs n = (
-    let r = ref [] in
-    let n = ref n in
-    let _ = 
-      for i = 0 to 3 do
-        let c = Char.chr (!n land 255) in
-        let _ = n := !n lsr 8 in
-        let _ = r:=c::!r in
-        ()
-      done
-    in
-    !r
-  )
 
-  let cs_to_int cs = (
-    let _ = assert (List.length cs = 4) in
-    let n = ref 0 in
-    let cs = ref cs in
-    let _ =
-      for i = 3 to 0 do 
-        let c = List.hd !cs in
-        let j = (Char.code c) lsl (i*8) in
-        n:=!n+j;
-        cs:=List.tl !cs
-      done
-    in
-    !n
-  )
+  (* buf is Bytes *)
+  let ints_to_bytes (is:int32 list) buf = Int32.(
+      let is = Array.of_list is in
+      let l = Array.length is in
+      let _ = assert (Bytes.length buf >= 4*l) in
+      for i = 0 to l-1 do
+        let the_int = is.(i) in
+        for j = 0 to 3 do 
+          let off = 4*i+j in
+          let c = (shift_right the_int (8*j)) |> logand (of_int 255) in
+          Bytes.set buf off (Char.chr (to_int c))
+        done
+      done;
+      ()
+    )
+
+  let bytes_to_ints buf = Int32.(
+      let _ = assert (Bytes.length buf mod 4 = 0) in
+      let l = Bytes.length buf / 4 in
+      let is = Array.make l (Int32.of_int 0) in
+      for i = 0 to l-1 do
+        for j = 0 to 3 do
+          Int32.(
+            let off = 4*i+j in
+            let c = (Bytes.get buf off) in
+            let d = c|>Char.code|>of_int|>(fun x -> shift_left x(8*j)) in
+            is.(i) <- add is.(i) d)
+        done
+      done;
+      Array.to_list is
+    )
 
 
-  let frame_to_page : pframe -> Store.page = (
+  let frame_to_page' : pframe -> Store.page = (
     fun p ->
       let is = (
         match p with
           Node_frame(ks,rs) -> ([0;List.length ks]@ks@rs)
         | Leaf_frame(kvs) -> (
             [1;List.length kvs]@(List.map fst kvs)@(List.map snd kvs))
-      ) |> List.map int_to_cs |> List.concat 
+      ) |> List.map Int32.of_int
       in
       let buf = Bytes.create block_size in
-      let is = ref is in
-      let _ = 
-        for i = 0 to List.length !is - 1 do
-          Bytes.set buf i (List.hd !is);
-          is:=List.tl !is
-        done
-      in
+      ints_to_bytes is buf;
       buf
     )
 
-  let page_to_frame : Store.page -> pframe = (
-    fun p -> 
-      let is = ref [] in
-      let _ = 
-        for i = 0 to Block.size / 4 do
-          let off = i * 4 in
-          let cs = 
-            [0;1;2;3]
-            |>List.map (fun x -> x+off)|>List.map (fun y -> Bytes.get p y)
-          in
-          let j = cs_to_int cs in
-          is := j::!is 
-        done;
-        is:=List.rev !is
-      in
-      match !is with
+  let page_to_frame' : Store.page -> pframe = (
+    fun buf -> 
+      let is = bytes_to_ints buf|>List.map Int32.to_int in
+      match is with
       | 0::l::rest -> (
           let (ks,rs) = rest|>BatList.take (l+l+1)|>BatList.split_at l in
           Node_frame(ks,rs))
@@ -206,6 +194,20 @@ module Int_int = struct
           Leaf_frame(kvs)
         )
   )
+
+  (* FIXME can remove these once code is trusted *)
+  let frame_to_page = fun f -> 
+    let p = frame_to_page' f in
+    let f' = page_to_frame' p in
+    let _ = assert (f' = f) in
+    p
+
+  let page_to_frame = fun p -> 
+    let f = page_to_frame' p in
+    let p' = frame_to_page' f in
+    let _ = assert Bytes.(to_string p = to_string p') in
+    f
+
 
 
 end
