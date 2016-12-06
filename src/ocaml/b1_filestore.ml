@@ -2,6 +2,10 @@
 
 (* FIXME error handlign *)
 
+open Sexplib.Std
+
+let failwith x = failwith ("b1_filestore: "^x)
+
 module Block = struct
 
   type t = bytes (* 4096 *)
@@ -10,6 +14,8 @@ module Block = struct
 
   (* block ref *)
   type r = int
+
+  let empty () = Bytes.make size (Char.chr 0)
 
 end
 
@@ -21,8 +27,6 @@ module Simple = struct
   type block = Block.t
 
   type state = Unix.file_descr
-
-  let failwith x = failwith ("obt_file_store: "^x)
 
   let block_size = Block.size
 
@@ -37,18 +41,29 @@ module Simple = struct
   let read : state -> r -> block = (
     fun s r -> 
       try Unix.(
-          let _ = lseek s (r_to_off r) SEEK_CUR in
-          let buf = Bytes.make block_size (Char.chr 0) in (* bytes are mutable *)
+          let _ = lseek s (r_to_off r) SEEK_SET in
+          let buf = Block.empty() in (* bytes are mutable *)
           let n = read s buf 0 block_size in
+(*
+          let _ = print_endline (
+              X_string.replace_list {| $n $r $bs |} 
+                [("$n",n|>string_of_int);
+                 ("$r",r|>string_of_int);
+                 ("$bs",block_size|>string_of_int);
+                ]
+            )
+          in
+*)
+          let _ = [%test_eq: int] n block_size in
           let _ = assert (n=block_size) in
           buf)
-      with _ -> failwith "read"  (* FIXME *)
+      with Unix.Unix_error _ -> failwith "read"  (* FIXME *)
   )
 
   let write: state -> r -> block -> unit = (
     fun s r buf -> 
       try Unix.(
-          let _ = lseek s (r_to_off r) SEEK_CUR in        
+          let _ = lseek s (r_to_off r) SEEK_SET in        
           let n = single_write s buf 0 block_size in
           let _ = assert (n=block_size) in
           ())
@@ -124,7 +139,8 @@ module Int_int = struct
 
   let max_node_keys = block_size / int_size -2
   let max_leaf_size = block_size / int_size -2
-
+  let min_node_keys = 2
+  let min_leaf_size = 2
 
   (* format: int node_or_leaf; int number of entries; entries *)
 
@@ -176,7 +192,7 @@ module Int_int = struct
             [1;List.length kvs]@(List.map fst kvs)@(List.map snd kvs))
       ) |> List.map Int32.of_int
       in
-      let buf = Bytes.create block_size in
+      let buf = Block.empty () in
       ints_to_bytes is buf;
       buf
     )
@@ -205,9 +221,30 @@ module Int_int = struct
   let page_to_frame = fun p -> 
     let f = page_to_frame' p in
     let p' = frame_to_page' f in
+    let _ = Bytes.([%test_eq: string] (to_string p) (to_string p')) in
     let _ = assert Bytes.(to_string p = to_string p') in
     f
 
 
+  let create : string -> Store.store * Store.page_ref = (
+    fun s ->
+      let f = Simple.create s in
+      (* now need to write the initial frame *)
+      let frm = Leaf_frame [] in
+      let p = frm|>frame_to_page in
+      let r = 0 in
+      let () = Simple.write f r p in
+      (f,r))
+
+
+
 
 end
+
+module S (* : Btree.S *) = struct
+  include Int_int
+  include Int_int.Store
+  include Int_int.Key_value_types
+end
+
+module T = Btree.Make(S)

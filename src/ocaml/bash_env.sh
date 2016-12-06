@@ -12,9 +12,9 @@ root=$(realpath $(dirname $BASH_SOURCE))/../..
  # if using nix, this may not be present
 test -f $root/config.sh && source $root/config.sh
 
-PKGS="-package num,yojson,ppx_deriving_yojson,batteries,bos.setup"
+PKGS="-package num,yojson,ppx_deriving_yojson,batteries,bos.setup,ppx_assert,ppx_assert.runtime-lib,sexplib,core"
 SYNTAX="" # "-syntax camlp4o" # simplify: use for every file
-FLGS="-g"
+FLGS="-g -thread"
 
 # 8~"pattern-matching is not exhaustive"; 
 # 11~"this match case is unused";
@@ -30,5 +30,8 @@ mk_cma="$DISABLE_BYTE ocamlfind ocamlc $FLGS "
 mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt $FLGS"
 
 
-mls="gen_isa.ml our.ml btree.ml test.ml obt_file_store.ml"
+mls="x_string.ml gen_isa.ml our.ml btree.ml test.ml b1_filestore.ml test_ii.ml"
 cmos="${mls//.ml/.cmo}"
+cmxs="${mls//.ml/.cmx}"
+
+natives="test_ii.native"

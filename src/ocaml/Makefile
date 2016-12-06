@@ -6,8 +6,15 @@ export BASH_ENV
 
 all:
 	$$ocamlc -c $$mls
+	$$ocamlopt -c $$mls
 	$$mk_cma -g -a -o btree.cma $$cmos
-	$$ocamlopt -g -linkpkg -o a.out $$mls
+	$$mk_cmxa -g -a -o btree.cmxa $$cmxs
+	$(MAKE) $$natives
+
+#	$$ocamlopt -g -linkpkg -o a.out $$mls # FIXME
+
+%.native: %.ml btree.cmxa
+	$$ocamlopt -g -linkpkg -o $*.native btree.cmxa $*.ml
 
 clean:
 	rm -f *.{cmi,cmo,cmx,o} a.out 
