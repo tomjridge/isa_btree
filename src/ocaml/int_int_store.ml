@@ -20,13 +20,13 @@ module Block = struct
 end
 
 (* a thin layer over Unix. *)
-module Simple = struct
+module Blockstore = struct
 
   type r = Block.r
 
   type block = Block.t
 
-  type state = Unix.file_descr
+  type fd = Unix.file_descr
 
   let block_size = Block.size
 
@@ -38,7 +38,7 @@ module Simple = struct
 
   let r_to_off r = block_size * r
 
-  let read : state -> r -> block = (
+  let read : fd -> r -> block = (
     fun s r -> 
       try Unix.(
           let _ = lseek s (r_to_off r) SEEK_SET in
@@ -60,7 +60,7 @@ module Simple = struct
       with Unix.Unix_error _ -> failwith "read"  (* FIXME *)
   )
 
-  let write: state -> r -> block -> unit = (
+  let write: fd -> r -> block -> unit = (
     fun s r buf -> 
       try Unix.(
           let _ = lseek s (r_to_off r) SEEK_SET in        
@@ -70,7 +70,8 @@ module Simple = struct
       with _ -> failwith "write"  (* FIXME *)
   )
 
-  let create: string -> state = Unix.(
+  
+  let existing_file_to_fd: string -> fd = Unix.(
       fun s ->
         openfile s [O_RDWR] 0o640 
     )
@@ -78,40 +79,79 @@ module Simple = struct
 
 end
 
+module Cached_blockstore = struct 
 
-module File_store (* : Our.Store_t *) = struct
+  type r = Blockstore.r (* ref to a block *)
+
+  type block = Block.t
+
+  module Lru = struct
+    module Key = struct
+      type t = int
+      let compare : t -> t -> int = Pervasives.compare
+      let witness : t = 0
+    end
+
+    include Lru_cache.Make(Key)
+    end
+
+  (* ref to the store itself *)
+  type t = { fd:Blockstore.fd; cache: block Lru.t }
+
+  let mk : Blockstore.fd -> t = (fun fd -> {fd;cache=Lru.init 100})
+
+  let read : t -> r -> block = (
+    fun s r -> 
+      (* try to read from cache *)
+      Lru.get s.cache r 
+        (fun r -> Blockstore.read s.fd r)
+        
+  )
+
+  let write : t -> r -> block -> unit = (
+    fun s r buf -> 
+      (* we just write out for the time being *)
+      Blockstore.write s.fd r buf      
+  )
+
+end
+
+
+module Filestore (* : Our.Store_t *) = struct
 
   open Our
-  open Simple
+
+  module Blockstore = Cached_blockstore
 
   type page_ref = int [@@deriving yojson]
-  type page = block
-  type store = state
+  type page = Block.t
+  type store = Blockstore.t
   type store_error = string
 
-  let alloc p s = Unix.(
+  let alloc : page -> store -> store * (page_ref, store_error) Util.rresult = Unix.(
+    fun p s -> 
       try (
         (* go to end, identify corresponding ref, and write *)
-        let n = lseek s 0 SEEK_END in
-        let _ = assert (n mod block_size = 0) in
-        let r = n / block_size in
-        let _ = Simple.write s r p in
+        let n = lseek s.Blockstore.fd 0 SEEK_END in
+        let _ = assert (n mod Block.size = 0) in
+        let r = n / Block.size in
+        let _ = Blockstore.write s r p in
         (s,Our.Util.Ok(r))    
       )
-      with _ -> (s,Our.Util.Error "File_store.alloc")
+      with _ -> (s,Our.Util.Error "Filestore.alloc")
   )
 
 
   let page_ref_to_page : page_ref -> store -> store * (page, store_error) Util.rresult = (
     fun r s ->
       try (
-        (s,Util.Ok(read s r))
+        (s,Util.Ok(Blockstore.read s r))
       )
-      with _ -> (s,Util.Error "File_store.page_ref_to_page")
+      with _ -> (s,Util.Error "Filestore.page_ref_to_page")
   )
 
   let dest_Store : store -> page_ref -> page = (
-    fun s r -> read s r
+    fun s r -> Blockstore.read s r
   )
 
 
@@ -124,7 +164,7 @@ end
 (* frame mapping for int int kv *)
 module Int_int = struct
 
-  module Store = File_store
+  module Store = Filestore
 
   module Key_value_types = struct
     type key = int[@@deriving yojson]
@@ -137,8 +177,9 @@ module Int_int = struct
 
   let int_size = 4
 
-  let max_node_keys = block_size / int_size -2
-  let max_leaf_size = block_size / int_size -2
+  (* if n keys, we need 2+n+(n+1) ints to store; n = block_size/4 -2 - 1 / 2 *)
+  let max_node_keys = (block_size / int_size - 2 - 1)/2
+  let max_leaf_size = (block_size / int_size - 2)/2
   let min_node_keys = 2
   let min_leaf_size = 2
 
@@ -226,15 +267,15 @@ module Int_int = struct
     f
 
 
-  let create : string -> Store.store * Store.page_ref = (
+  let existing_file_to_new_store : string -> Store.store * Store.page_ref = (
     fun s ->
-      let f = Simple.create s in
+      let fd = Blockstore.existing_file_to_fd s in
       (* now need to write the initial frame *)
       let frm = Leaf_frame [] in
       let p = frm|>frame_to_page in
       let r = 0 in
-      let () = Simple.write f r p in
-      (f,r))
+      let () = Blockstore.write fd r p in
+      (Cached_blockstore.mk fd,r))
 
 
 
@@ -242,9 +283,11 @@ module Int_int = struct
 end
 
 module S (* : Btree.S *) = struct
-  include Int_int
-  include Int_int.Store
   include Int_int.Key_value_types
+  include Int_int.Store
+  include Int_int
 end
+
+(* module S' : Btree.S = S *)
 
 module T = Btree.Make(S)
