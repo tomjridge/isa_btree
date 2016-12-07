@@ -28,6 +28,9 @@ definition "page_ref_to_page" :: "r \<Rightarrow> (s \<Rightarrow> (s * (p,se) r
 definition "alloc" :: "p \<Rightarrow> (s \<Rightarrow> (s * (r,se) rresult))" (* p \<Rightarrow> r se_M *) where
 "alloc p = failwith ''FIXME''"
 
+definition "free" :: "r list \<Rightarrow> (s \<Rightarrow> (s * (unit,se) rresult))" where
+"free ps = failwith ''FIXME''" 
+
 (* FIXME remove - store creation is ad hoc depending on store type *)
 definition empty_store :: "unit \<Rightarrow> store * r" where "empty_store _ = failwith ''FIXME''"
 

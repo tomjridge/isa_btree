@@ -41,6 +41,8 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 ''insert, step_bottom''
   | Some(k,r,kvs,stk) \<Rightarrow> (
+    free (r_stk_to_rs stk) |> bind 
+    (% _.
     let kvs' = kvs |> kvs_insert (k,v) in
     let fo = (
       case (length kvs' \<le> max_leaf_size) of
@@ -50,7 +52,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
         Leaf_frame kvs1 |> frame_to_page |> alloc |> bind
         (% r1. Leaf_frame kvs2 |> frame_to_page |> alloc |> fmap (% r2. I2(r1,k',r2)))) )
     in
-    fo |> fmap (% fo. (fo,stk)))
+    fo |> fmap (% fo. (fo,stk))))
 )"
 
 definition step_up :: "u \<Rightarrow> u MM" where

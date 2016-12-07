@@ -37,4 +37,7 @@ definition page_ref_to_frame :: "r \<Rightarrow> pfr MM" where
 definition alloc :: "p \<Rightarrow> r MM" where 
 "alloc p = (Store.alloc p |> fmap_error (% se. Store_error se))"
 
+definition free :: "r list \<Rightarrow> unit MM" where
+"free ps = (Store.free ps |> fmap_error (% se. Store_error se))"
+
 end

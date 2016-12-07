@@ -34,5 +34,7 @@ fun r_to_t' :: "store \<Rightarrow> nat \<Rightarrow> r \<Rightarrow> t" where
 
 definition r_to_t :: "store \<Rightarrow> r \<Rightarrow> t" where "r_to_t s r = r_to_t' s 1000 r" (* FIXME only for proof *)
 
+definition r_stk_to_rs :: "r stk \<Rightarrow> r list" where 
+"r_stk_to_rs xs = (xs|>List.map f_t)"
 
 end
