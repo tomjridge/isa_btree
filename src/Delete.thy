@@ -206,7 +206,7 @@ definition delete_step :: "d_state \<Rightarrow> d_state MM" where
     None \<Rightarrow> (find_step f |> fmap (% f'. D_down(f',r0)))
     | Some x \<Rightarrow> (
       let (k,r,kvs,stk) = x in
-      free (r_stk_to_rs stk) |> bind 
+      free (r#(r_stk_to_rs stk)) |> bind 
       (% _.
       case k : set (kvs|>List.map fst) of
       True \<Rightarrow> (
@@ -243,13 +243,13 @@ definition delete_step :: "d_state \<Rightarrow> d_state MM" where
 (* wellformedness ------------------------------------------------- *)
 
 definition wf_d :: "tree \<Rightarrow> store \<Rightarrow> d \<Rightarrow> bool" where
-"wf_d t0 s d = (
+"wf_d t0 s d =  assert_true' (
   let (fs,r) = d in
   wellformed_find_state s t0 fs  
 )"
 
 definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> store \<Rightarrow> u \<Rightarrow> bool" where
-"wf_u t0 k s u = (
+"wf_u t0 k s u =  assert_true' (
   let r_to_t = r_to_t s in
   let (fo,stk) = u in
   case fo of
@@ -280,14 +280,14 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> store \<Rightarrow> u \
 )"
 
 definition wf_f :: "tree \<Rightarrow> key \<Rightarrow> store \<Rightarrow> r \<Rightarrow> bool" where
-"wf_f t0 k s r = (
+"wf_f t0 k s r =  assert_true' (
   let t' = r_to_t s r in
   wellformed_tree (Some(Small_root_node_or_leaf)) t' &
   ( (t0|>tree_to_kvs|>kvs_delete k) = (t'|>tree_to_kvs))
 )"
 
 definition wellformed_delete_state :: "tree \<Rightarrow> key \<Rightarrow> store \<Rightarrow> ds_t \<Rightarrow> bool" where
-"wellformed_delete_state t0 k s ds = (
+"wellformed_delete_state t0 k s ds =  assert_true' (
   case ds of 
   D_down d \<Rightarrow> (wf_d t0 s d)
   | D_up (fo,stk,r) \<Rightarrow> (wf_u t0 k s (fo,stk) & (r_to_t s r = t0))

@@ -41,7 +41,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 ''insert, step_bottom''
   | Some(k,r,kvs,stk) \<Rightarrow> (
-    free (r_stk_to_rs stk) |> bind 
+    free (r#(r_stk_to_rs stk)) |> bind (* FIXME only cons on r when stk=[]? *)
     (% _.
     let kvs' = kvs |> kvs_insert (k,v) in
     let fo = (
@@ -105,13 +105,13 @@ definition insert_step :: "is_t \<Rightarrow> is_t MM" where
 (* wellformedness ------------------------------------------------------------ *)
 
 definition wf_d :: "tree \<Rightarrow> store \<Rightarrow> d \<Rightarrow> bool" where
-"wf_d t0 s d = (
+"wf_d t0 s d =  assert_true' (
   let (fs,v) = d in
   wellformed_find_state s t0 fs  
 )"
 
 definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> u \<Rightarrow> bool" where
-"wf_u t0 k v s u = (
+"wf_u t0 k v s u =  assert_true' (
   let r_to_t = r_to_t s in
   let (fo,stk) = u in
   case fo of
@@ -134,14 +134,14 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> s
 )"
 
 definition wf_f :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> r \<Rightarrow> bool" where
-"wf_f t0 k v s r = (
+"wf_f t0 k v s r =  assert_true' (
   let t' = r_to_t s r in
   wellformed_tree (Some(Small_root_node_or_leaf)) t' &
   ( (t0|>tree_to_kvs|>kvs_insert (k,v)) = (t'|>tree_to_kvs))
 )"
 
 definition wellformed_insert_state :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> is_t \<Rightarrow> bool" where
-"wellformed_insert_state t0 k v s is = (
+"wellformed_insert_state t0 k v s is =  assert_true' (
   case is of 
   I_down d \<Rightarrow> (wf_d t0 s d)
   | I_up u \<Rightarrow> (wf_u t0 k v s u)

@@ -13,7 +13,9 @@ let main () =
     let x = List.hd !xs in
     let (s',r') = T.Insert.insert x (2*x) !r !s in
     s:=s';r:=r';xs:=List.tl !xs
-  done
+  done;
+  S_int_int.ST.sync !s;
+  ()
 
 let _ = print_endline "test_ii"; main ()
 

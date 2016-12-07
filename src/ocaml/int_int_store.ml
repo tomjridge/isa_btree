@@ -2,6 +2,8 @@
 
 (* FIXME error handlign *)
 
+module Set_int = Set.Make(struct type t = int let compare: t -> t -> int = Pervasives.compare end)
+
 open Sexplib.Std
 
 let failwith x = failwith ("b1_filestore: "^x)
@@ -27,6 +29,7 @@ module Blockstore = struct
   type block = Block.t
 
   type fd = Unix.file_descr
+  type t = fd
 
   let block_size = Block.size
 
@@ -35,6 +38,8 @@ module Blockstore = struct
       assert(Bytes.length x = block_size);
       x
   )
+
+  let get_fd : t -> fd = fun x -> x
 
   let r_to_off r = block_size * r
 
@@ -79,6 +84,7 @@ module Blockstore = struct
 
 end
 
+(*
 module Cached_blockstore = struct 
 
   type r = Blockstore.r (* ref to a block *)
@@ -115,28 +121,38 @@ module Cached_blockstore = struct
   )
 
 end
+*)
 
 
 module Filestore (* : Our.Store_t *) = struct
 
   open Our
 
-  module BS = Cached_blockstore
-
   type page_ref = int [@@deriving yojson]
   type page = Block.t
-  type store = BS.t
+
+
+  type store = { 
+    fd: Blockstore.fd; 
+    free_ref: int;
+  }
+
   type store_error = string
 
-  let alloc : page -> store -> store * (page_ref, store_error) Util.rresult = Unix.(
+  open Blockstore
+
+  let alloc : page -> store -> store * (page_ref, store_error) Util.rresult = (
     fun p s -> 
       try (
         (* go to end, identify corresponding ref, and write *)
-        let n = lseek s.BS.fd 0 SEEK_END in
+        (*
+        let n = Unix.(lseek (s|>get_fd) 0 SEEK_END) in
         let _ = assert (n mod Block.size = 0) in
         let r = n / Block.size in
-        let _ = BS.write s r p in
-        (s,Our.Util.Ok(r))    
+           *)
+        let r = s.free_ref in
+        let _ = write s.fd r p in
+        ({s with free_ref=r+1},Our.Util.Ok(r))  
       )
       with _ -> (s,Our.Util.Error "Filestore.alloc")
   )
@@ -148,20 +164,94 @@ module Filestore (* : Our.Store_t *) = struct
   let page_ref_to_page : page_ref -> store -> store * (page, store_error) Util.rresult = (
     fun r s ->
       try (
-        (s,Util.Ok(BS.read s r))
+        (s,Util.Ok(read s.fd r))
       )
       with _ -> (s,Util.Error "Filestore.page_ref_to_page")
   )
 
   let dest_Store : store -> page_ref -> page = (
-    fun s r -> BS.read s r
+    fun s r -> read s.fd r
   )
 
 
-  (* FIXME remove; not proper part of interface *)
-  let empty_store : unit -> store * page_ref = (fun _ -> failwith "empty_store")
+end
 
 
+module Recycling_filestore = struct
+
+  open Our
+
+  type page_ref = Filestore.page_ref [@@deriving yojson]
+  type page = Filestore.page
+  type store_error = Filestore.store_error
+
+  module Cache = Map.Make(
+    struct 
+      type t = page_ref
+      let compare: t -> t -> int = Pervasives.compare
+    end)
+
+  module Set_r = Set_int
+
+  (* we maintain a set of blocks that have been allocated and not
+     freed, and a maximum ref *)
+  type store = { 
+    fs: Filestore.store; 
+    cache: page Cache.t;  (* a cache of pages which need to be written *)
+    freed_not_synced: Set_r.t 
+  }
+
+  let alloc : page -> store -> store * (page_ref, store_error) Util.rresult = Unix.(
+    fun p s -> 
+      match (Set_r.is_empty s.freed_not_synced) with
+      | true -> Filestore.(
+          (* want to delay filestore write, but allocate a ref upfront *)
+          let free_r = s.fs.free_ref in
+          let fs' = { s.fs with free_ref = free_r+1 } in
+          let cache' = Cache.add free_r p s.cache in
+          ({s with fs=fs';cache=cache'},Util.Ok free_r))
+      | false -> (
+          (* just return a ref we allocated previously *)
+          s.freed_not_synced 
+          |> Set_r.max_elt 
+          |> (fun r -> 
+              let s' = 
+                {s with 
+                 freed_not_synced=(Set_r.remove r s.freed_not_synced);
+                 cache=(Cache.add r p s.cache)
+                } 
+              in
+              (s',Util.Ok(r))
+            )
+        )
+    )
+
+  let free : page_ref list -> store -> store * (unit, store_error) Util.rresult = (
+    fun ps -> fun s -> (
+        {s with freed_not_synced=(Set_r.union s.freed_not_synced (Set_r.of_list ps)) }, Util.Ok()))
+
+  let page_ref_to_page : page_ref -> store -> store * (page, store_error) Util.rresult = (
+    fun r s -> 
+      (* consult cache first *)
+      let p = try Some(Cache.find r s.cache) with Not_found -> None in
+      match p with
+      | Some p -> (s,Util.Ok p)
+      | None -> (Filestore.page_ref_to_page r s.fs |> (fun (fs',p) -> ({s with fs=fs'},p))))
+
+
+  let dest_Store : store -> page_ref -> page = (
+    fun s r -> 
+      try (Cache.find r s.cache) with Not_found -> Filestore.dest_Store s.fs r
+  )
+
+  (* FIXME at the moment this doesn't write anything to store - that
+     happens on a sync, when the cache is written out *)
+
+  let sync : store -> unit = (
+    fun s ->
+      let () = Cache.iter Filestore.(fun r p -> Blockstore.write s.fs.fd r p) s.cache in
+      ()
+  )
 
 end
 
@@ -190,7 +280,7 @@ module S_int_int (* : Btree.S *) = struct
     let equal_value x y = (x=y)
   end
 
-  module ST = Filestore
+  module ST = Recycling_filestore (* Filestore (* Recycling_filestore *) *)
 
   module FT = struct
 
@@ -293,7 +383,17 @@ module S_int_int (* : Btree.S *) = struct
         let p = frm|>frame_to_page in
         let r = 0 in
         let () = Blockstore.write fd r p in
-        (Cached_blockstore.mk fd,r))
+
+        Recycling_filestore.(
+          {fs = Filestore.{fd=fd;free_ref=r+1} ;
+           cache=Cache.empty;
+           freed_not_synced=Set_int.empty;
+          },r)
+
+(*        
+        Filestore.({ fd=fd; free_ref = r+1},r)
+*)
+)
     in
     f)
 

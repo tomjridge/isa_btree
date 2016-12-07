@@ -812,83 +812,90 @@ type d_state = D_down of (Find.find_state * Store.page_ref) |
       ((Store.page_ref, unit) Tree_stack.frame_ext list * Store.page_ref))
   | D_finished of Store.page_ref;;
 
-let rec wf_d t0 s d = let (fs, _) = d in
-                      Find.wellformed_find_state s t0 fs;;
+let rec wf_d
+  t0 s d =
+    Util.assert_truea (let (fs, _) = d in
+                       Find.wellformed_find_state s t0 fs);;
 
 let rec wf_f
   t0 k s r =
-    let t = Frame.r_to_t s r in
-    Tree.wellformed_tree (Some Constants.Small_root_node_or_leaf) t &&
-      List.equal_lista
-        (Product_Type.equal_prod Key_value_types.equal_key
-          Key_value_types.equal_value_t)
-        (Util.rev_apply (Util.rev_apply t0 Tree.tree_to_kvs)
-          (Key_value.kvs_delete k))
-        (Util.rev_apply t Tree.tree_to_kvs);;
+    Util.assert_truea
+      (let t = Frame.r_to_t s r in
+       Tree.wellformed_tree (Some Constants.Small_root_node_or_leaf) t &&
+         List.equal_lista
+           (Product_Type.equal_prod Key_value_types.equal_key
+             Key_value_types.equal_value_t)
+           (Util.rev_apply (Util.rev_apply t0 Tree.tree_to_kvs)
+             (Key_value.kvs_delete k))
+           (Util.rev_apply t Tree.tree_to_kvs));;
 
 let rec wf_u
   t0 k s u =
-    let r_to_t = Frame.r_to_t s in
-    (match u
-      with (D_small_leaf kvs, stk) ->
-        let (t_fo, t_stk) = Tree_stack.tree_to_stack k t0 (List.size_list stk)
-          in
-        let ms =
-          (match stk with [] -> Some Constants.Small_root_node_or_leaf
-            | _ :: _ -> Some Constants.Small_leaf)
-          in
-        List.equal_lista
-          (Tree_stack.equal_frame_ext Tree.equal_tree Product_Type.equal_unit)
-          (Util.rev_apply t_stk Tree_stack.no_focus)
-          (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
-            Tree_stack.no_focus) &&
-          (Tree.wellformed_tree ms (Tree.Leaf kvs) &&
-            List.equal_lista
-              (Product_Type.equal_prod Key_value_types.equal_key
-                Key_value_types.equal_value_t)
-              (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
-                (Key_value.kvs_delete k))
-              kvs)
-      | (D_small_node (ks, rs), stk) ->
-        let (t_fo, t_stk) = Tree_stack.tree_to_stack k t0 (List.size_list stk)
-          in
-        let ms =
-          (match stk with [] -> Some Constants.Small_root_node_or_leaf
-            | _ :: _ -> Some Constants.Small_leaf)
-          in
-        let t = Tree.Node (ks, Util.rev_apply rs (List.map r_to_t)) in
-        List.equal_lista
-          (Tree_stack.equal_frame_ext Tree.equal_tree Product_Type.equal_unit)
-          (Util.rev_apply t_stk Tree_stack.no_focus)
-          (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
-            Tree_stack.no_focus) &&
-          (Tree.wellformed_tree ms t &&
-            List.equal_lista
-              (Product_Type.equal_prod Key_value_types.equal_key
-                Key_value_types.equal_value_t)
-              (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
-                (Key_value.kvs_delete k))
-              (Util.rev_apply t Tree.tree_to_kvs))
-      | (D_updated_subtree r, stk) ->
-        let (t_fo, t_stk) = Tree_stack.tree_to_stack k t0 (List.size_list stk)
-          in
-        let ms =
-          (match stk with [] -> Some Constants.Small_root_node_or_leaf
-            | _ :: _ -> Some Constants.Small_leaf)
-          in
-        let t = Util.rev_apply r r_to_t in
-        List.equal_lista
-          (Tree_stack.equal_frame_ext Tree.equal_tree Product_Type.equal_unit)
-          (Util.rev_apply t_stk Tree_stack.no_focus)
-          (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
-            Tree_stack.no_focus) &&
-          (Tree.wellformed_tree ms t &&
-            List.equal_lista
-              (Product_Type.equal_prod Key_value_types.equal_key
-                Key_value_types.equal_value_t)
-              (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
-                (Key_value.kvs_delete k))
-              (Util.rev_apply t Tree.tree_to_kvs)));;
+    Util.assert_truea
+      (let r_to_t = Frame.r_to_t s in
+       (match u
+         with (D_small_leaf kvs, stk) ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_stack k t0 (List.size_list stk) in
+           let ms =
+             (match stk with [] -> Some Constants.Small_root_node_or_leaf
+               | _ :: _ -> Some Constants.Small_leaf)
+             in
+           List.equal_lista
+             (Tree_stack.equal_frame_ext Tree.equal_tree
+               Product_Type.equal_unit)
+             (Util.rev_apply t_stk Tree_stack.no_focus)
+             (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
+               Tree_stack.no_focus) &&
+             (Tree.wellformed_tree ms (Tree.Leaf kvs) &&
+               List.equal_lista
+                 (Product_Type.equal_prod Key_value_types.equal_key
+                   Key_value_types.equal_value_t)
+                 (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
+                   (Key_value.kvs_delete k))
+                 kvs)
+         | (D_small_node (ks, rs), stk) ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_stack k t0 (List.size_list stk) in
+           let ms =
+             (match stk with [] -> Some Constants.Small_root_node_or_leaf
+               | _ :: _ -> Some Constants.Small_leaf)
+             in
+           let t = Tree.Node (ks, Util.rev_apply rs (List.map r_to_t)) in
+           List.equal_lista
+             (Tree_stack.equal_frame_ext Tree.equal_tree
+               Product_Type.equal_unit)
+             (Util.rev_apply t_stk Tree_stack.no_focus)
+             (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
+               Tree_stack.no_focus) &&
+             (Tree.wellformed_tree ms t &&
+               List.equal_lista
+                 (Product_Type.equal_prod Key_value_types.equal_key
+                   Key_value_types.equal_value_t)
+                 (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
+                   (Key_value.kvs_delete k))
+                 (Util.rev_apply t Tree.tree_to_kvs))
+         | (D_updated_subtree r, stk) ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_stack k t0 (List.size_list stk) in
+           let ms =
+             (match stk with [] -> Some Constants.Small_root_node_or_leaf
+               | _ :: _ -> Some Constants.Small_leaf)
+             in
+           let t = Util.rev_apply r r_to_t in
+           List.equal_lista
+             (Tree_stack.equal_frame_ext Tree.equal_tree
+               Product_Type.equal_unit)
+             (Util.rev_apply t_stk Tree_stack.no_focus)
+             (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
+               Tree_stack.no_focus) &&
+             (Tree.wellformed_tree ms t &&
+               List.equal_lista
+                 (Product_Type.equal_prod Key_value_types.equal_key
+                   Key_value_types.equal_value_t)
+                 (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
+                   (Key_value.kvs_delete k))
+                 (Util.rev_apply t Tree.tree_to_kvs))));;
 
 let rec frac_mult
   xs ys =
@@ -1168,8 +1175,8 @@ let rec delete_step
             with None ->
               Util.rev_apply (Find.find_step f)
                 (Monad.fmap (fun fa -> D_down (fa, r0)))
-            | Some (k, (_, (kvs, stk))) ->
-              Util.rev_apply (Monad2.free (Frame.r_stk_to_rs stk))
+            | Some (k, (r, (kvs, stk))) ->
+              Util.rev_apply (Monad2.free (r :: Frame.r_stk_to_rs stk))
                 (Monad2.bind
                   (fun _ ->
                     (match
@@ -1194,8 +1201,8 @@ let rec delete_step
                                   Frame_types.frame_to_page)
                                 Monad2.alloc)
                               (Monad.fmap
-                                (fun r ->
-                                  D_up (D_updated_subtree r, (stk, r0)))))
+                                (fun ra ->
+                                  D_up (D_updated_subtree ra, (stk, r0)))))
                       | false -> Monad2.return (D_finished r0)))))
         | D_up (f, (stk, r0)) ->
           (match stk
@@ -1229,10 +1236,11 @@ let rec mk_delete_state k r = D_down (Find.mk_find_state k r, r);;
 
 let rec wellformed_delete_state
   t0 k s ds =
-    (match ds with D_down a -> wf_d t0 s a
-      | D_up (fo, (stk, r)) ->
-        wf_u t0 k s (fo, stk) && Tree.equal_treea (Frame.r_to_t s r) t0
-      | D_finished a -> wf_f t0 k s a);;
+    Util.assert_truea
+      (match ds with D_down a -> wf_d t0 s a
+        | D_up (fo, (stk, r)) ->
+          wf_u t0 k s (fo, stk) && Tree.equal_treea (Frame.r_to_t s r) t0
+        | D_finished a -> wf_f t0 k s a);;
 
 end;;
 
@@ -1262,61 +1270,68 @@ type i_state_t = I_down of (Find.find_state * Key_value_types.value_t) |
   I_up of (i_t * (Store.page_ref, unit) Tree_stack.frame_ext list) |
   I_finished of Store.page_ref;;
 
-let rec wf_d t0 s d = let (fs, _) = d in
-                      Find.wellformed_find_state s t0 fs;;
+let rec wf_d
+  t0 s d =
+    Util.assert_truea (let (fs, _) = d in
+                       Find.wellformed_find_state s t0 fs);;
 
 let rec wf_f
   t0 k v s r =
-    let t = Frame.r_to_t s r in
-    Tree.wellformed_tree (Some Constants.Small_root_node_or_leaf) t &&
-      List.equal_lista
-        (Product_Type.equal_prod Key_value_types.equal_key
-          Key_value_types.equal_value_t)
-        (Util.rev_apply (Util.rev_apply t0 Tree.tree_to_kvs)
-          (Key_value.kvs_insert (k, v)))
-        (Util.rev_apply t Tree.tree_to_kvs);;
+    Util.assert_truea
+      (let t = Frame.r_to_t s r in
+       Tree.wellformed_tree (Some Constants.Small_root_node_or_leaf) t &&
+         List.equal_lista
+           (Product_Type.equal_prod Key_value_types.equal_key
+             Key_value_types.equal_value_t)
+           (Util.rev_apply (Util.rev_apply t0 Tree.tree_to_kvs)
+             (Key_value.kvs_insert (k, v)))
+           (Util.rev_apply t Tree.tree_to_kvs));;
 
 let rec wf_u
   t0 k v s u =
-    let r_to_t = Frame.r_to_t s in
-    (match u
-      with (I1 r, stk) ->
-        let (t_fo, t_stk) = Tree_stack.tree_to_stack k t0 (List.size_list stk)
-          in
-        List.equal_lista
-          (Tree_stack.equal_frame_ext Tree.equal_tree Product_Type.equal_unit)
-          (Util.rev_apply t_stk Tree_stack.no_focus)
-          (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
-            Tree_stack.no_focus) &&
-          List.equal_lista
-            (Product_Type.equal_prod Key_value_types.equal_key
-              Key_value_types.equal_value_t)
-            (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
-              (Key_value.kvs_insert (k, v)))
-            (Util.rev_apply (Util.rev_apply r r_to_t) Tree.tree_to_kvs)
-      | (I2 (r1, (ka, r2)), stk) ->
-        let (t_fo, t_stk) = Tree_stack.tree_to_stack k t0 (List.size_list stk)
-          in
-        List.equal_lista
-          (Tree_stack.equal_frame_ext Tree.equal_tree Product_Type.equal_unit)
-          (Util.rev_apply t_stk Tree_stack.no_focus)
-          (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
-            Tree_stack.no_focus) &&
-          let (l, ua) = Tree_stack.stack_to_lu_of_child t_stk in
-          let (t1, t2) = (Util.rev_apply r1 r_to_t, Util.rev_apply r2 r_to_t) in
-          let (ks1, ks2) =
-            (Util.rev_apply t1 Tree.tree_to_keys,
-              Util.rev_apply t2 Tree.tree_to_keys)
-            in
-          Key_value.check_keys l ks1 (Some ka) &&
-            (Key_value.check_keys (Some ka) ks2 ua &&
-              List.equal_lista
-                (Product_Type.equal_prod Key_value_types.equal_key
-                  Key_value_types.equal_value_t)
-                (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
-                  (Key_value.kvs_insert (k, v)))
-                (Util.rev_apply t1 Tree.tree_to_kvs @
-                  Util.rev_apply t2 Tree.tree_to_kvs)));;
+    Util.assert_truea
+      (let r_to_t = Frame.r_to_t s in
+       (match u
+         with (I1 r, stk) ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_stack k t0 (List.size_list stk) in
+           List.equal_lista
+             (Tree_stack.equal_frame_ext Tree.equal_tree
+               Product_Type.equal_unit)
+             (Util.rev_apply t_stk Tree_stack.no_focus)
+             (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
+               Tree_stack.no_focus) &&
+             List.equal_lista
+               (Product_Type.equal_prod Key_value_types.equal_key
+                 Key_value_types.equal_value_t)
+               (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
+                 (Key_value.kvs_insert (k, v)))
+               (Util.rev_apply (Util.rev_apply r r_to_t) Tree.tree_to_kvs)
+         | (I2 (r1, (ka, r2)), stk) ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_stack k t0 (List.size_list stk) in
+           List.equal_lista
+             (Tree_stack.equal_frame_ext Tree.equal_tree
+               Product_Type.equal_unit)
+             (Util.rev_apply t_stk Tree_stack.no_focus)
+             (Util.rev_apply (Util.rev_apply stk (Tree_stack.stack_map r_to_t))
+               Tree_stack.no_focus) &&
+             let (l, ua) = Tree_stack.stack_to_lu_of_child t_stk in
+             let (t1, t2) = (Util.rev_apply r1 r_to_t, Util.rev_apply r2 r_to_t)
+               in
+             let (ks1, ks2) =
+               (Util.rev_apply t1 Tree.tree_to_keys,
+                 Util.rev_apply t2 Tree.tree_to_keys)
+               in
+             Key_value.check_keys l ks1 (Some ka) &&
+               (Key_value.check_keys (Some ka) ks2 ua &&
+                 List.equal_lista
+                   (Product_Type.equal_prod Key_value_types.equal_key
+                     Key_value_types.equal_value_t)
+                   (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
+                     (Key_value.kvs_insert (k, v)))
+                   (Util.rev_apply t1 Tree.tree_to_kvs @
+                     Util.rev_apply t2 Tree.tree_to_kvs))));;
 
 let rec step_up
   u = (match u
@@ -1380,8 +1395,8 @@ let rec step_bottom
           Util.impossible1
             ['i'; 'n'; 's'; 'e'; 'r'; 't'; ','; ' '; 's'; 't'; 'e'; 'p'; '_';
               'b'; 'o'; 't'; 't'; 'o'; 'm']
-        | Some (k, (_, (kvs, stk))) ->
-          Util.rev_apply (Monad2.free (Frame.r_stk_to_rs stk))
+        | Some (k, (r, (kvs, stk))) ->
+          Util.rev_apply (Monad2.free (r :: Frame.r_stk_to_rs stk))
             (Monad2.bind
               (fun _ ->
                 let kvsa = Util.rev_apply kvs (Key_value.kvs_insert (k, v)) in
@@ -1444,7 +1459,8 @@ let rec mk_insert_state k v r = I_down (Find.mk_find_state k r, v);;
 
 let rec wellformed_insert_state
   t0 k v s is =
-    (match is with I_down a -> wf_d t0 s a | I_up a -> wf_u t0 k v s a
-      | I_finished a -> wf_f t0 k v s a);;
+    Util.assert_truea
+      (match is with I_down a -> wf_d t0 s a | I_up a -> wf_u t0 k v s a
+        | I_finished a -> wf_f t0 k v s a);;
 
 end;;

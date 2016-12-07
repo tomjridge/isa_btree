@@ -214,7 +214,8 @@ module Make = functor (S:S) -> struct
 
     let check_state s = (
       last_state:=Some(s);
-      assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is)
+      assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is);
+      ()
     )
 
     let check_trans x y = (
