@@ -1,3 +1,5 @@
+open Our
+
 (* misc ---------------------------------------- *)
 
 let dest_Some = function (Some x) -> x | _ -> failwith "dest_Some"
@@ -29,34 +31,38 @@ module type CONSTANTS = sig
   val min_node_keys : int
 end
 
-module type S = sig
-
-  open Our
-
-  (* constants *)
-  include CONSTANTS
-
-  (* key value *)
-  include KEY_VALUE_TYPES
-  
-  (* store *)
+module type STORE = sig
   type page 
   type page_ref [@@deriving yojson]
   type store 
   type store_error
   val alloc : page -> store -> store * (page_ref, store_error) Util.rresult
   val dest_Store : store -> page_ref -> page (* FIXME remove *)
-  val empty_store : unit -> store * page_ref (* FIXME remove *)
   val page_ref_to_page :
     page_ref -> store -> store * (page, store_error) Util.rresult
+  val free : page_ref list -> store -> store * (unit, store_error) Util.rresult
+end
 
-  (* frame *)
-  type pframe =  
-      Node_frame of (key list * page_ref list) |
-      Leaf_frame of (key * value_t) list[@@deriving yojson]
 
-  val frame_to_page : pframe -> page
-  val page_to_frame : page -> pframe
+module type S = sig
+
+  module C : CONSTANTS
+
+  module KV: KEY_VALUE_TYPES
+  
+  module ST: STORE
+
+  (* this module's types depend on the previous modules *)
+  module FT : sig
+    open KV
+    open ST
+    type pframe =  
+        Node_frame of (key list * page_ref list) |
+        Leaf_frame of (key * value_t) list[@@deriving yojson]
+
+    val frame_to_page : pframe -> page
+    val page_to_frame : page -> pframe
+  end
 
 end
 
@@ -94,14 +100,14 @@ module Make = functor (S:S) -> struct
 
   module S = S
 
-  module C = Mk_c(S)
+  module C = Mk_c(S.C)
 
-  module KV = Mk_kv(S)
+  module KV = Mk_kv(S.KV)
 
   module Frame_types = struct
-    module Store = S
+    module Store = S.ST
     module Key_value_types = KV
-    include S
+    include S.FT
   end
 
 

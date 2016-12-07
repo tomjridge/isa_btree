@@ -107,9 +107,9 @@ module Store : sig
   type page_ref = Page_ref of Arith.nat
   type store = Store of (page_ref -> page)
   type store_error
+  val free : page_ref list -> store -> store * (unit, store_error) Util.rresult
   val alloc : page -> store -> store * (page_ref, store_error) Util.rresult
   val dest_Store : store -> page_ref -> page
-  val empty_store : unit -> store * page_ref
   val page_ref_to_page :
     page_ref -> store -> store * (page, store_error) Util.rresult
 end = struct
@@ -122,12 +122,12 @@ type store = Store of (page_ref -> page);;
 
 type store_error = String;;
 
+let rec free ps = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+
 let rec alloc p = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
 
 let rec dest_Store x = let Store y = x in
                        y;;
-
-let rec empty_store uu = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
 
 let rec page_ref_to_page p = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
 
@@ -458,6 +458,7 @@ module Tree_stack : sig
     'a HOL.equal -> 'b HOL.equal -> ('a, 'b) frame_ext HOL.equal
   val no_focus :
     (Tree.tree, unit) frame_ext list -> (Tree.tree, unit) frame_ext list
+  val f_t : ('a, 'b) frame_ext -> 'a
   val frame_map : ('a -> 'b) -> ('a, unit) frame_ext -> ('b, unit) frame_ext
   val stack_map :
     ('a -> 'b) -> ('a, unit) frame_ext list -> ('b, unit) frame_ext list
@@ -607,6 +608,8 @@ end;;
 
 module Frame : sig
   val r_to_t : Store.store -> Store.page_ref -> Tree.tree
+  val r_stk_to_rs :
+    (Store.page_ref, unit) Tree_stack.frame_ext list -> Store.page_ref list
   val dest_Leaf_frame :
     Frame_types.pframe -> (Key_value_types.key * Key_value_types.value_t) list
   val dest_Node_frame :
@@ -637,6 +640,8 @@ let rec r_to_ta
 let rec r_to_t
   s r = r_to_ta s (Arith.nat_of_integer (Big_int.big_int_of_int 1000)) r;;
 
+let rec r_stk_to_rs xs = Util.rev_apply xs (List.map Tree_stack.f_t);;
+
 let rec dest_Leaf_frame
   f = (match f
         with Frame_types.Node_frame _ ->
@@ -664,6 +669,9 @@ module Monad2 : sig
     ('a -> Store.store -> Store.store * ('b, error) Util.rresult) ->
       (Store.store -> Store.store * ('a, error) Util.rresult) ->
         Store.store -> Store.store * ('b, error) Util.rresult
+  val free :
+    Store.page_ref list ->
+      Store.store -> Store.store * (unit, error) Util.rresult
   val alloc :
     Store.page ->
       Store.store -> Store.store * (Store.page_ref, error) Util.rresult
@@ -680,6 +688,10 @@ end = struct
 type error = Store_error of Store.store_error;;
 
 let rec bind f v = Monad.bind f v;;
+
+let rec free
+  ps = Util.rev_apply (Store.free ps)
+         (Monad.fmap_error (fun a -> Store_error a));;
 
 let rec alloc
   p = Util.rev_apply (Store.alloc p)
@@ -1157,29 +1169,34 @@ let rec delete_step
               Util.rev_apply (Find.find_step f)
                 (Monad.fmap (fun fa -> D_down (fa, r0)))
             | Some (k, (_, (kvs, stk))) ->
-              (match
-                List.member Key_value_types.equal_key
-                  (Util.rev_apply kvs (List.map Product_Type.fst)) k
-                with true ->
-                  let kvsa =
-                    Util.rev_apply kvs
-                      (List.filter
-                        (fun x ->
-                          not (Key_value.key_eq (Product_Type.fst x) k)))
-                    in
-                  (match
-                    Arith.less_nat (List.size_list kvsa) Constants.min_leaf_size
-                    with true ->
-                      Monad2.return (D_up (D_small_leaf kvsa, (stk, r0)))
-                    | false ->
-                      Util.rev_apply
-                        (Util.rev_apply
-                          (Util.rev_apply (Frame_types.Leaf_frame kvsa)
-                            Frame_types.frame_to_page)
-                          Monad2.alloc)
-                        (Monad.fmap
-                          (fun r -> D_up (D_updated_subtree r, (stk, r0)))))
-                | false -> Monad2.return (D_finished r0)))
+              Util.rev_apply (Monad2.free (Frame.r_stk_to_rs stk))
+                (Monad2.bind
+                  (fun _ ->
+                    (match
+                      List.member Key_value_types.equal_key
+                        (Util.rev_apply kvs (List.map Product_Type.fst)) k
+                      with true ->
+                        let kvsa =
+                          Util.rev_apply kvs
+                            (List.filter
+                              (fun x ->
+                                not (Key_value.key_eq (Product_Type.fst x) k)))
+                          in
+                        (match
+                          Arith.less_nat (List.size_list kvsa)
+                            Constants.min_leaf_size
+                          with true ->
+                            Monad2.return (D_up (D_small_leaf kvsa, (stk, r0)))
+                          | false ->
+                            Util.rev_apply
+                              (Util.rev_apply
+                                (Util.rev_apply (Frame_types.Leaf_frame kvsa)
+                                  Frame_types.frame_to_page)
+                                Monad2.alloc)
+                              (Monad.fmap
+                                (fun r ->
+                                  D_up (D_updated_subtree r, (stk, r0)))))
+                      | false -> Monad2.return (D_finished r0)))))
         | D_up (f, (stk, r0)) ->
           (match stk
             with [] ->
@@ -1364,34 +1381,38 @@ let rec step_bottom
             ['i'; 'n'; 's'; 'e'; 'r'; 't'; ','; ' '; 's'; 't'; 'e'; 'p'; '_';
               'b'; 'o'; 't'; 't'; 'o'; 'm']
         | Some (k, (_, (kvs, stk))) ->
-          let kvsa = Util.rev_apply kvs (Key_value.kvs_insert (k, v)) in
-          let fo =
-            (match
-              Arith.less_eq_nat (List.size_list kvsa) Constants.max_leaf_size
-              with true ->
-                Util.rev_apply
-                  (Util.rev_apply
-                    (Util.rev_apply (Frame_types.Leaf_frame kvsa)
-                      Frame_types.frame_to_page)
-                    Monad2.alloc)
-                  (Monad.fmap (fun a -> I1 a))
-              | false ->
-                let (kvs1, (ka, kvs2)) = Key_value.split_leaf kvsa in
-                Util.rev_apply
-                  (Util.rev_apply
-                    (Util.rev_apply (Frame_types.Leaf_frame kvs1)
-                      Frame_types.frame_to_page)
-                    Monad2.alloc)
-                  (Monad2.bind
-                    (fun r1 ->
+          Util.rev_apply (Monad2.free (Frame.r_stk_to_rs stk))
+            (Monad2.bind
+              (fun _ ->
+                let kvsa = Util.rev_apply kvs (Key_value.kvs_insert (k, v)) in
+                let fo =
+                  (match
+                    Arith.less_eq_nat (List.size_list kvsa)
+                      Constants.max_leaf_size
+                    with true ->
                       Util.rev_apply
                         (Util.rev_apply
-                          (Util.rev_apply (Frame_types.Leaf_frame kvs2)
+                          (Util.rev_apply (Frame_types.Leaf_frame kvsa)
                             Frame_types.frame_to_page)
                           Monad2.alloc)
-                        (Monad.fmap (fun r2 -> I2 (r1, (ka, r2)))))))
-            in
-          Util.rev_apply fo (Monad.fmap (fun foa -> (foa, stk))));;
+                        (Monad.fmap (fun a -> I1 a))
+                    | false ->
+                      let (kvs1, (ka, kvs2)) = Key_value.split_leaf kvsa in
+                      Util.rev_apply
+                        (Util.rev_apply
+                          (Util.rev_apply (Frame_types.Leaf_frame kvs1)
+                            Frame_types.frame_to_page)
+                          Monad2.alloc)
+                        (Monad2.bind
+                          (fun r1 ->
+                            Util.rev_apply
+                              (Util.rev_apply
+                                (Util.rev_apply (Frame_types.Leaf_frame kvs2)
+                                  Frame_types.frame_to_page)
+                                Monad2.alloc)
+                              (Monad.fmap (fun r2 -> I2 (r1, (ka, r2)))))))
+                  in
+                Util.rev_apply fo (Monad.fmap (fun foa -> (foa, stk))))));;
 
 let rec insert_step
   s = (match s

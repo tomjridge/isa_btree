@@ -2,7 +2,7 @@
 
 open Int_int_store
 
-let (s,r) = S.existing_file_to_new_store "/tmp/filestore.b1"
+let (s,r) = S_int_int.existing_file_to_new_store "/tmp/filestore.b1"
 
 let (s',r') = T.Insert.insert 1 2 r s
 
