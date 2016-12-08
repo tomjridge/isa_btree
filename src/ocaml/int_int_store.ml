@@ -213,7 +213,7 @@ module Recycling_filestore = struct
       | false -> (
           (* just return a ref we allocated previously *)
           s.freed_not_synced 
-          |> Set_r.max_elt 
+          |> Set_r.min_elt 
           |> (fun r -> 
               let s' = 
                 {s with 
@@ -249,7 +249,7 @@ module Recycling_filestore = struct
 
   let sync : store -> unit = (
     fun s ->
-      let () = Cache.iter Filestore.(fun r p -> Blockstore.write s.fs.fd r p) s.cache in
+      let () = Cache.iter Filestore.(fun r p -> match (Set_r.mem r s.freed_not_synced) with true -> () | false -> Blockstore.write s.fs.fd r p) s.cache in
       ()
   )
 

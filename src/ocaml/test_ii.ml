@@ -8,7 +8,7 @@ let (s',r') = T.Insert.insert 1 2 r s
 
 let main () = 
   let (s,r) = (ref s,ref r) in
-  let xs = ref (Batteries.(0 -- 1000 |> List.of_enum)) in
+  let xs = ref (Batteries.(1 -- 1000 |> List.of_enum)) in
   while (!xs <> []) do
     let x = List.hd !xs in
     let (s',r') = T.Insert.insert x (2*x) !r !s in
@@ -35,5 +35,18 @@ sys	0m0.900s
 
 LRU read cache is much the same
 
+--
+
+2016-12-08 with reasonable splitting:
+
+timings with reasonable splitting:
+$ ocaml $ time ./test_ii.native
+test_ii
+
+real	0m22.850s
+user	0m22.796s
+sys	0m0.072s
+
+size of store: 12288 bytes = 3 blocks as expected
 
 *)

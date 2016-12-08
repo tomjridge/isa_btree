@@ -40,8 +40,8 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
   let (fs,v) = d in
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 ''insert, step_bottom''
-  | Some(k,r,kvs,stk) \<Rightarrow> (
-    free (r#(r_stk_to_rs stk)) |> bind (* FIXME only cons on r when stk=[]? *)
+  | Some(r0,k,r,kvs,stk) \<Rightarrow> (
+    free (r0#(r_stk_to_rs stk)) |> bind 
     (% _.
     let kvs' = kvs |> kvs_insert (k,v) in
     let fo = (

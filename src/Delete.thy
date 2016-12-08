@@ -205,8 +205,8 @@ definition delete_step :: "d_state \<Rightarrow> d_state MM" where
     case (dest_f_finished f) of
     None \<Rightarrow> (find_step f |> fmap (% f'. D_down(f',r0)))
     | Some x \<Rightarrow> (
-      let (k,r,kvs,stk) = x in
-      free (r#(r_stk_to_rs stk)) |> bind 
+      let (r0,k,r,kvs,stk) = x in
+      free (r0#(r_stk_to_rs stk)) |> bind 
       (% _.
       case k : set (kvs|>List.map fst) of
       True \<Rightarrow> (

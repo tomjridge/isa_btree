@@ -1,5 +1,15 @@
 open Our
 
+(* debug config  ---------------------------------------- *)
+
+type config = {
+  check_wellformedness: bool
+}
+
+
+let config = { check_wellformedness=false }
+
+
 (* misc ---------------------------------------- *)
 
 let dest_Some = function (Some x) -> x | _ -> failwith "dest_Some"
@@ -147,7 +157,9 @@ module Make = functor (S:S) -> struct
 
     let check_state s = (
       last_state:=Some(s);
-      assert (Find.wellformed_find_state s.store s.tree s.fs);
+      if (config.check_wellformedness) then
+        assert (Find.wellformed_find_state s.store s.tree s.fs)
+      else ();
     )
 
     let check_trans s s' = (
@@ -185,7 +197,7 @@ module Make = functor (S:S) -> struct
       fun st k r ->
         let s' = find_1 st k r in
         (* s' is finished *)
-        let (k,(r,(kvs,stk))) = (s').fs|>Find.dest_f_finished|>dest_Some in
+        let (r0,(k,(r,(kvs,stk)))) = (s').fs|>Find.dest_f_finished|>dest_Some in
         let kv = 
           try
             Some(kvs|>List.find (function (x,y) -> KV.key_eq x k))
@@ -214,8 +226,9 @@ module Make = functor (S:S) -> struct
 
     let check_state s = (
       last_state:=Some(s);
-      assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is);
-      ()
+      if (config.check_wellformedness) then
+        assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is)
+      else ();
     )
 
     let check_trans x y = (
@@ -268,7 +281,9 @@ module Make = functor (S:S) -> struct
 
     let check_state s = (
       last_state:=Some(s);
-      assert (Delete.wellformed_delete_state s.t s.k s.store s.ds)
+      if (config.check_wellformedness) then
+        assert (Delete.wellformed_delete_state s.t s.k s.store s.ds)
+      else ()
     )
 
     let check_trans x y = (

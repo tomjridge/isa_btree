@@ -236,8 +236,16 @@ let rec kvs_insert
                  else (k, v) :: (ka, va) :: kvs));;
 
 let rec split_leaf
-  kvs = let min = Constants.min_leaf_size in
-        let (l, r) = Util.split_at min kvs in
+  kvs = let cut_point =
+          Arith.minus_nat (Arith.plus_nat Constants.max_leaf_size Arith.one_nat)
+            Constants.min_leaf_size
+          in
+        let (l, r) = Util.split_at cut_point kvs in
+        let _ =
+          Util.assert_truea
+            (Arith.less_eq_nat Constants.min_leaf_size (List.size_list l) &&
+              Arith.less_eq_nat Constants.min_leaf_size (List.size_list r))
+          in
         let k =
           (match r
             with [] ->
@@ -250,9 +258,17 @@ let rec split_leaf
 
 let rec split_node
   n = let (ks, rs) = n in
-      let min = Constants.min_node_keys in
-      let (ks1, (k, ks2)) = Util.split_at_3 min ks in
-      let (rs1, rs2) = Util.split_at (Arith.plus_nat min Arith.one_nat) rs in
+      let cut_point =
+        Arith.minus_nat (Arith.plus_nat Constants.max_node_keys Arith.one_nat)
+          Constants.min_node_keys
+        in
+      let (ks1, (k, ks2)) = Util.split_at_3 cut_point ks in
+      let _ =
+        Util.assert_truea
+          (Arith.less_eq_nat Constants.min_node_keys (List.size_list ks2))
+        in
+      let (rs1, rs2) = Util.split_at (Arith.plus_nat cut_point Arith.one_nat) rs
+        in
       ((ks1, rs1), (k, (ks2, rs2)));;
 
 let rec search_key_to_index
@@ -745,26 +761,29 @@ module Find : sig
   val mk_find_state : Key_value_types.key -> Store.page_ref -> find_state
   val dest_f_finished :
     find_state ->
-      (Key_value_types.key *
-        (Store.page_ref *
-          ((Key_value_types.key * Key_value_types.value_t) list *
-            (Store.page_ref, unit) Tree_stack.frame_ext list))) option
+      (Store.page_ref *
+        (Key_value_types.key *
+          (Store.page_ref *
+            ((Key_value_types.key * Key_value_types.value_t) list *
+              (Store.page_ref, unit) Tree_stack.frame_ext list)))) option
   val wellformed_find_state : Store.store -> Tree.tree -> find_state -> bool
 end = struct
 
 type find_state =
   F_down of
-    (Key_value_types.key *
-      (Store.page_ref * (Store.page_ref, unit) Tree_stack.frame_ext list))
-  | F_finished of
+    (Store.page_ref *
       (Key_value_types.key *
-        (Store.page_ref *
-          ((Key_value_types.key * Key_value_types.value_t) list *
-            (Store.page_ref, unit) Tree_stack.frame_ext list))) [@@deriving yojson];;
+        (Store.page_ref * (Store.page_ref, unit) Tree_stack.frame_ext list)))
+  | F_finished of
+      (Store.page_ref *
+        (Key_value_types.key *
+          (Store.page_ref *
+            ((Key_value_types.key * Key_value_types.value_t) list *
+              (Store.page_ref, unit) Tree_stack.frame_ext list)))) [@@deriving yojson];;
 
 let rec find_step
   fs = (match fs
-         with F_down (k, (r, stk)) ->
+         with F_down (r0, (k, (r, stk))) ->
            Util.rev_apply (Monad2.page_ref_to_frame r)
              (Monad.fmap
                (fun a ->
@@ -772,23 +791,24 @@ let rec find_step
                    with Frame_types.Node_frame (ks, rs) ->
                      let (stka, ra) =
                        Tree_stack.add_new_stk_frame k (ks, rs) stk in
-                     F_down (k, (ra, stka))
+                     F_down (r0, (k, (ra, stka)))
                    | Frame_types.Leaf_frame kvs ->
-                     F_finished (k, (r, (kvs, stk))))))
+                     F_finished (r0, (k, (r, (kvs, stk)))))))
          | F_finished _ -> Monad2.return fs);;
 
-let rec mk_find_state k r = F_down (k, (r, []));;
+let rec mk_find_state k r = F_down (r, (k, (r, [])));;
 
 let rec dest_f_finished
   fs = (match fs with F_down _ -> None
-         | F_finished (k, (r, (kvs, stk))) -> Some (k, (r, (kvs, stk))));;
+         | F_finished (r0, (k, (r, (kvs, stk)))) ->
+           Some (r0, (k, (r, (kvs, stk)))));;
 
 let rec wellformed_find_state
   s t0 fs =
     Util.assert_truea
       (let r_to_t = Frame.r_to_t s in
        (match fs
-         with F_down (k, (r, stk)) ->
+         with F_down (_, (k, (r, stk))) ->
            let (t_fo, t_stk) =
              Tree_stack.tree_to_stack k t0 (List.size_list stk) in
            Product_Type.equal_proda Tree.equal_tree
@@ -797,7 +817,7 @@ let rec wellformed_find_state
                  Product_Type.equal_unit))
              (t_fo, t_stk)
              (r_to_t r, Util.rev_apply stk (Tree_stack.stack_map r_to_t))
-         | F_finished (k, (_, (kvs, stk))) ->
+         | F_finished (_, (k, (_, (kvs, stk)))) ->
            let (t_fo, t_stk) =
              Tree_stack.tree_to_stack k t0 (List.size_list stk) in
            Product_Type.equal_proda Tree.equal_tree
@@ -1204,8 +1224,8 @@ let rec delete_step
             with None ->
               Util.rev_apply (Find.find_step f)
                 (Monad.fmap (fun fa -> D_down (fa, r0)))
-            | Some (k, (r, (kvs, stk))) ->
-              Util.rev_apply (Monad2.free (r :: Frame.r_stk_to_rs stk))
+            | Some (r0a, (k, (_, (kvs, stk)))) ->
+              Util.rev_apply (Monad2.free (r0a :: Frame.r_stk_to_rs stk))
                 (Monad2.bind
                   (fun _ ->
                     (match
@@ -1222,7 +1242,7 @@ let rec delete_step
                           Arith.less_nat (List.size_list kvsa)
                             Constants.min_leaf_size
                           with true ->
-                            Monad2.return (D_up (D_small_leaf kvsa, (stk, r0)))
+                            Monad2.return (D_up (D_small_leaf kvsa, (stk, r0a)))
                           | false ->
                             Util.rev_apply
                               (Util.rev_apply
@@ -1230,9 +1250,9 @@ let rec delete_step
                                   Frame_types.frame_to_page)
                                 Monad2.alloc)
                               (Monad.fmap
-                                (fun ra ->
-                                  D_up (D_updated_subtree ra, (stk, r0)))))
-                      | false -> Monad2.return (D_finished r0)))))
+                                (fun r ->
+                                  D_up (D_updated_subtree r, (stk, r0a)))))
+                      | false -> Monad2.return (D_finished r0a)))))
         | D_up (f, (stk, r0)) ->
           (match stk
             with [] ->
@@ -1424,8 +1444,8 @@ let rec step_bottom
           Util.impossible1
             ['i'; 'n'; 's'; 'e'; 'r'; 't'; ','; ' '; 's'; 't'; 'e'; 'p'; '_';
               'b'; 'o'; 't'; 't'; 'o'; 'm']
-        | Some (k, (r, (kvs, stk))) ->
-          Util.rev_apply (Monad2.free (r :: Frame.r_stk_to_rs stk))
+        | Some (r0, (k, (_, (kvs, stk)))) ->
+          Util.rev_apply (Monad2.free (r0 :: Frame.r_stk_to_rs stk))
             (Monad2.bind
               (fun _ ->
                 let kvsa = Util.rev_apply kvs (Key_value.kvs_insert (k, v)) in

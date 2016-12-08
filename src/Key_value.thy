@@ -68,8 +68,11 @@ definition kvs_delete :: "key \<Rightarrow> kvs \<Rightarrow> kvs" where
 (* FIXME aren't this aux funs shared with its? *)
 definition split_leaf :: "kvs \<Rightarrow> (kvs * k * kvs)" where
 "split_leaf kvs = (
-  let min = min_leaf_size in
-  let (l,r) = split_at min kvs in
+  (* FIXME what is the best choice? min is probably too small; could split in two, but what if order is not dense? we may never insert any more keys at this point *)
+  (* FIXME following assumes leaf has size max_leaf_size+1, not anything more? *)
+  let cut_point = (max_leaf_size+1 - min_leaf_size) in  
+  let (l,r) = split_at cut_point kvs in 
+  let _ = assert_true' (List.length l \<ge> min_leaf_size & List.length r \<ge> min_leaf_size) in
   let k = (case r of (k,_)#_ \<Rightarrow> k | _ \<Rightarrow> impossible1 ''key_value, split_leaf'') in
   (l,k,r)
 )"
@@ -77,9 +80,10 @@ definition split_leaf :: "kvs \<Rightarrow> (kvs * k * kvs)" where
 definition split_node :: "(ks * 'a list) \<Rightarrow> (ks * 'a list) * k * (ks * 'a list)" where
 "split_node n = (
   let (ks,rs) = n in
-  let min = min_node_keys in
-  let (ks1,k,ks2) = split_at_3 min ks in
-  let (rs1,rs2) = split_at (min+1) rs in
+  let cut_point = (max_node_keys+1-min_node_keys) in  (* FIXME see above *)
+  let (ks1,k,ks2) = split_at_3 cut_point ks in
+  let _ = assert_true' (List.length ks2 \<ge> min_node_keys) in
+  let (rs1,rs2) = split_at (cut_point+1) rs in
   ((ks1,rs1),k,(ks2,rs2))
 )"
 
