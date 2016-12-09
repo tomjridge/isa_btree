@@ -1,5 +1,5 @@
 theory Export_code
-imports Find Insert Delete "~~/src/HOL/Library/Code_Target_Numeral"
+imports Find Insert Delete Insert_many "~~/src/HOL/Library/Code_Target_Numeral"
 "~~/src/HOL/Library/Code_Char"
 begin
 
@@ -41,11 +41,18 @@ find_step
 wellformed_find_state 
 
 (* insert *)
-mk_insert_state
-dest_i_finished
-I1 I2 I_down I_up I_finished
-insert_step
-wellformed_insert_state
+Insert.mk_insert_state
+Insert.dest_i_finished
+Insert.I1 Insert.I2 Insert.I_down Insert.I_up Insert.I_finished
+Insert.insert_step
+Insert.wellformed_insert_state
+
+(* insert_many *)
+Insert_many.mk_insert_state
+Insert_many.dest_i_finished
+Insert_many.I1 Insert_many.I2 Insert_many.I_down Insert_many.I_up Insert_many.I_finished
+Insert_many.insert_step
+
 
 (* delete *)
 mk_delete_state

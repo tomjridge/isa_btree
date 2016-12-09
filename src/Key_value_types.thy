@@ -14,7 +14,7 @@ type_synonym kv_t = "key * value_t"
 type_synonym k = key
 type_synonym v = value_t
 type_synonym ks = "k list"
- 
+type_synonym kv = "kv_t" 
 
 type_synonym kvs_t = "kv_t list" (* FIXME remove *)
 type_synonym kvs = kvs_t

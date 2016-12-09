@@ -264,6 +264,65 @@ module Make = functor (S:S) -> struct
   end
 
 
+  module Insert_many = struct
+
+    module Insert_many = M.Insert_many
+
+    type t = {
+      t: Tree.tree;
+      k:KV.key;
+      v:KV.value_t;
+      store: Store.store;
+      is: Insert_many.i_state_t
+    }
+
+    let last_state : t option ref = ref None   
+
+    let last_trans : (t*t) option ref = ref None
+
+    let check_state s = (
+      last_state:=Some(s);
+      if (config.check_wellformedness) then
+        assert (true)
+      else ();
+    )
+
+    let check_trans x y = (
+      last_trans:=Some(x,y);
+      check_state x;
+      check_state y
+    )
+
+    type kvs = (KV.key * KV.value_t) list
+
+    let mk : Store.store -> KV.key -> KV.value_t -> kvs -> Store.page_ref -> t = 
+      fun s k v kvs r ->{t=(Frame.r_to_t s r);k;v;store=s;is=(Insert_many.mk_insert_state k v kvs r)}
+
+    let step : t -> t = (fun x ->
+        let (s',Our.Util.Ok is') = Insert_many.insert_step x.is x.store in
+        {x with store=s';is=is'})
+
+    let dest = Insert_many.dest_i_finished
+
+    let insert : KV.key -> KV.value_t -> kvs -> Store.page_ref -> Store.store -> (Store.store * (Store.page_ref * kvs)) = (
+      fun k v kvs r store ->
+        let s = ref (mk store k v kvs r) in
+        let _ = check_state !s in
+        let s' = ref(!s) in
+        let _ = 
+          while((!s').is|>dest = None) do
+            s := !s';
+            s' := step !s;
+            check_trans !s !s';
+          done
+        in        
+        let (r,kvs') = (!s').is|>dest|>dest_Some in
+        ((!s').store,(r,kvs')))
+
+  end
+
+
+
   module Delete = struct
 
     module Delete = M.Delete

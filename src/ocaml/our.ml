@@ -13,6 +13,7 @@ module Util : sig
   val failwitha : char list -> 'a
   val split_at : Arith.nat -> 'a list -> 'a list * 'a list
   val dest_list : 'a list -> 'a * 'a list
+  val iter_step : ('a -> 'a option) -> 'a -> 'a
   val dest_lista : 'a list -> 'a list * 'a
   val split_at_3 : Arith.nat -> 'a list -> 'a list * ('a * 'a list)
   val assert_true : 'a -> bool -> bool
@@ -36,6 +37,10 @@ let rec dest_list
   xs = (match xs
          with [] -> failwitha ['d'; 'e'; 's'; 't'; '_'; 'l'; 'i'; 's'; 't']
          | a :: b -> (a, b));;
+
+let rec iter_step
+  f x = let a = f x in
+        (match a with None -> x | Some aa -> iter_step f aa);;
 
 let rec dest_lista
   xs = (match xs
@@ -1511,6 +1516,219 @@ let rec wellformed_insert_state
     Util.assert_truea
       (match is with I_down a -> wf_d t0 s a | I_up a -> wf_u t0 k v s a
         | I_finished a -> wf_f t0 k v s a);;
+
+end;;
+
+module Insert_many : sig
+  type i_t =
+    I1 of (Store.page_ref *
+            (Key_value_types.key * Key_value_types.value_t) list)
+    | I2 of ((Store.page_ref * (Key_value_types.key * Store.page_ref)) *
+              (Key_value_types.key * Key_value_types.value_t) list) [@@deriving yojson]
+  type i_state_t =
+    I_down of
+      (Find.find_state *
+        (Key_value_types.value_t *
+          (Key_value_types.key * Key_value_types.value_t) list))
+    | I_up of (i_t * (Store.page_ref, unit) Tree_stack.frame_ext list) |
+    I_finished of
+      (Store.page_ref * (Key_value_types.key * Key_value_types.value_t) list) [@@deriving yojson]
+  val insert_step :
+    i_state_t ->
+      Store.store -> Store.store * (i_state_t, Monad2.error) Util.rresult
+  val dest_i_finished :
+    i_state_t ->
+      (Store.page_ref *
+        (Key_value_types.key * Key_value_types.value_t) list) option
+  val mk_insert_state :
+    Key_value_types.key ->
+      Key_value_types.value_t ->
+        (Key_value_types.key * Key_value_types.value_t) list ->
+          Store.page_ref -> i_state_t
+end = struct
+
+type i_t =
+  I1 of (Store.page_ref * (Key_value_types.key * Key_value_types.value_t) list)
+  | I2 of ((Store.page_ref * (Key_value_types.key * Store.page_ref)) *
+            (Key_value_types.key * Key_value_types.value_t) list) [@@deriving yojson];;
+
+type i_state_t =
+  I_down of
+    (Find.find_state *
+      (Key_value_types.value_t *
+        (Key_value_types.key * Key_value_types.value_t) list))
+  | I_up of (i_t * (Store.page_ref, unit) Tree_stack.frame_ext list) |
+  I_finished of
+    (Store.page_ref * (Key_value_types.key * Key_value_types.value_t) list) [@@deriving yojson];;
+
+let rec step_up
+  u = (match u
+        with (_, []) ->
+          Util.impossible1
+            ['i'; 'n'; 's'; 'e'; 'r'; 't'; ','; ' '; 's'; 't'; 'e'; 'p'; '_';
+              'u'; 'p']
+        | (fo, x :: stk) ->
+          let a = Tree_stack.dest_frame x in
+          let (aa, b) = a in
+          let (ks1, rs1) = aa in
+          (fun (_, (ks2, rs2)) ->
+            (match fo
+              with I1 (r, kvs0) ->
+                Util.rev_apply
+                  (Util.rev_apply
+                    (Util.rev_apply
+                      (Frame_types.Node_frame (ks1 @ ks2, rs1 @ [r] @ rs2))
+                      Frame_types.frame_to_page)
+                    Monad2.alloc)
+                  (Monad.fmap (fun ra -> (I1 (ra, kvs0), stk)))
+              | I2 ((r1, (k, r2)), kvs0) ->
+                let ks = ks1 @ [k] @ ks2 in
+                let rs = rs1 @ [r1; r2] @ rs2 in
+                (match
+                  Arith.less_eq_nat (List.size_list ks) Constants.max_node_keys
+                  with true ->
+                    Util.rev_apply
+                      (Util.rev_apply
+                        (Util.rev_apply (Frame_types.Node_frame (ks, rs))
+                          Frame_types.frame_to_page)
+                        Monad2.alloc)
+                      (Monad.fmap (fun r -> (I1 (r, kvs0), stk)))
+                  | false ->
+                    let (ks_rs1, (ka, ks_rs2)) = Key_value.split_node (ks, rs)
+                      in
+                    Util.rev_apply
+                      (Util.rev_apply
+                        (Util.rev_apply (Frame_types.Node_frame ks_rs1)
+                          Frame_types.frame_to_page)
+                        Monad2.alloc)
+                      (Monad2.bind
+                        (fun r1a ->
+                          Util.rev_apply
+                            (Util.rev_apply
+                              (Util.rev_apply (Frame_types.Node_frame ks_rs2)
+                                Frame_types.frame_to_page)
+                              Monad2.alloc)
+                            (Monad.fmap
+                              (fun r2a ->
+                                (I2 ((r1a, (ka, r2a)), kvs0), stk))))))))
+            b);;
+
+let rec step_down
+  d = let (fs, v) = d in
+      Util.rev_apply (Find.find_step fs) (Monad.fmap (fun da -> (da, v)));;
+
+let rec split_leaf
+  kvs = let n1 = List.size_list kvs in
+        let n2 = Arith.zero_nat in
+        let delta = Constants.min_leaf_size in
+        let n1a = Arith.minus_nat n1 delta in
+        let n2a = Arith.plus_nat n2 delta in
+        let deltaa = Arith.minus_nat n1a Constants.max_leaf_size in
+        let n1b = Arith.minus_nat n1a deltaa in
+        let _ = Arith.plus_nat n2a deltaa in
+        let (l, r) = Util.split_at n1b kvs in
+        let k =
+          (match r
+            with [] ->
+              Util.impossible1
+                ['i'; 'n'; 's'; 'e'; 'r'; 't'; '_'; 'm'; 'a'; 'n'; 'y'; ':';
+                  ' '; 's'; 'p'; 'l'; 'i'; 't'; '_'; 'l'; 'e'; 'a'; 'f']
+            | (k, _) :: _ -> k)
+          in
+        (l, (k, r));;
+
+let rec kvs_insert_2
+  u kv newa existing =
+    let step =
+      (fun (acc, newb) ->
+        (match
+          Arith.less_eq_nat
+            (Arith.times_nat (Arith.nat_of_integer (Big_int.big_int_of_int 2))
+              Constants.max_leaf_size)
+            (List.size_list acc)
+          with true -> None
+          | false ->
+            (match newb with [] -> None
+              | (k, v) :: newc ->
+                (match
+                  Key_value.check_keys None
+                    (Set.insert Key_value_types.equal_key k Set.bot_set) u
+                  with true -> Some (Key_value.kvs_insert (k, v) acc, newc)
+                  | false -> None))))
+      in
+    Util.iter_step step (existing, newa);;
+
+let rec step_bottom
+  d = let (fs, (v, kvs0)) = d in
+      (match Find.dest_f_finished fs
+        with None ->
+          Util.impossible1
+            ['i'; 'n'; 's'; 'e'; 'r'; 't'; ','; ' '; 's'; 't'; 'e'; 'p'; '_';
+              'b'; 'o'; 't'; 't'; 'o'; 'm']
+        | Some (r0, (k, (_, (kvs, stk)))) ->
+          Util.rev_apply (Monad2.free (r0 :: Frame.r_stk_to_rs stk))
+            (Monad2.bind
+              (fun _ ->
+                let (_, u) = Tree_stack.stack_to_lu_of_child stk in
+                let (kvsa, kvs0a) = kvs_insert_2 u (k, v) kvs0 kvs in
+                let fo =
+                  (match
+                    Arith.less_eq_nat (List.size_list kvsa)
+                      Constants.max_leaf_size
+                    with true ->
+                      Util.rev_apply
+                        (Util.rev_apply
+                          (Util.rev_apply (Frame_types.Leaf_frame kvsa)
+                            Frame_types.frame_to_page)
+                          Monad2.alloc)
+                        (Monad.fmap (fun r -> I1 (r, kvs0a)))
+                    | false ->
+                      let (kvs1, (ka, kvs2)) = split_leaf kvsa in
+                      Util.rev_apply
+                        (Util.rev_apply
+                          (Util.rev_apply (Frame_types.Leaf_frame kvs1)
+                            Frame_types.frame_to_page)
+                          Monad2.alloc)
+                        (Monad2.bind
+                          (fun r1 ->
+                            Util.rev_apply
+                              (Util.rev_apply
+                                (Util.rev_apply (Frame_types.Leaf_frame kvs2)
+                                  Frame_types.frame_to_page)
+                                Monad2.alloc)
+                              (Monad.fmap
+                                (fun r2 -> I2 ((r1, (ka, r2)), kvs0a))))))
+                  in
+                Util.rev_apply fo (Monad.fmap (fun foa -> (foa, stk))))));;
+
+let rec insert_step
+  s = (match s
+        with I_down d ->
+          let (fs, (_, _)) = d in
+          (match Find.dest_f_finished fs
+            with None ->
+              Util.rev_apply (step_down d) (Monad.fmap (fun a -> I_down a))
+            | Some _ ->
+              Util.rev_apply (step_bottom d) (Monad.fmap (fun a -> I_up a)))
+        | I_up u ->
+          (match u
+            with (I1 (r, kvs0), []) -> Monad2.return (I_finished (r, kvs0))
+            | (I2 ((r1, (k, r2)), kvs0), []) ->
+              Util.rev_apply
+                (Util.rev_apply
+                  (Util.rev_apply (Frame_types.Node_frame ([k], [r1; r2]))
+                    Frame_types.frame_to_page)
+                  Monad2.alloc)
+                (Monad.fmap (fun r -> I_finished (r, kvs0)))
+            | (_, _ :: _) ->
+              Util.rev_apply (step_up u) (Monad.fmap (fun a -> I_up a)))
+        | I_finished _ -> Monad2.return s);;
+
+let rec dest_i_finished
+  s = (match s with I_down _ -> None | I_up _ -> None
+        | I_finished (r, kvs) -> Some (r, kvs));;
+
+let rec mk_insert_state k v kvs r = I_down (Find.mk_find_state k r, (v, kvs));;
 
 
 end;;

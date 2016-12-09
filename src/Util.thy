@@ -135,6 +135,7 @@ else left@e#right)"
 
 (* iteration ---------------------------------------------------- *)
 
+
 (*no termination proof for the following*)
 (*begin iterator*)
 function iter_step :: "('a => 'a option) => 'a => 'a" where
