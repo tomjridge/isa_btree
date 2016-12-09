@@ -4,6 +4,9 @@
 
 module Set_int = Set.Make(struct type t = int let compare: t -> t -> int = Pervasives.compare end)
 
+module Map_int = Map.Make(struct type t = int let compare: t -> t -> int = Pervasives.compare end)
+
+
 open Sexplib.Std
 
 let failwith x = failwith ("b1_filestore: "^x)
@@ -404,3 +407,56 @@ end
 
 
 module T = Btree.Make(S_int_int)
+
+
+(* a high-level cache over Insert_many *)
+module Int_int_cached (* : Btree.S *) = struct
+  
+  open T
+
+  type kvs = (KV.key * KV.value_t) list
+
+  type pending_inserts = int Map_int.t
+
+  type t = Store.page_ref * Store.store * pending_inserts
+
+  module Insert = struct
+
+    (* just add to cache *)
+    let insert : KV.key -> KV.value_t -> t -> t = (
+      fun k v t -> 
+        let (r,s,ps) = t in
+        let ps' = Map_int.add k v ps in
+        (r,s,ps'))
+
+
+
+  end
+
+    let sync : t -> t = (
+      fun t -> 
+        let (r,s,kvs) = t in
+        (* insert all that are in the cache, using insert_many.cache *)
+        let kvs = Map_int.bindings kvs in
+        match kvs with 
+        | [] -> (
+            let () = S_int_int.ST.sync s in
+            (r,s,Map_int.empty))
+        | _ -> (  
+            let f (s,r,kvs) = (
+              match kvs with
+              [] -> None
+              | (k,v)::kvs -> (
+                  let (s,(r,kvs)) = Insert_many.insert k v kvs r s in
+                  Some(s,r,kvs)))
+            in
+            let (s,r,kvs) = Btree.iter_step f (s,r,kvs) in
+            let () = S_int_int.ST.sync s in
+            (r,s,Map_int.empty)
+          )
+    )
+        
+
+
+end
+

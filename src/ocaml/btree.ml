@@ -23,6 +23,12 @@ module X = struct
 
 end
 
+let rec iter_step (f:'s -> 's option) (x:'s) = (
+  let s' = f x in
+  match s' with
+  | None -> x
+  | Some x' -> iter_step f x')
+
 
 (* simplified structs ---------------------------------------- *)
 
