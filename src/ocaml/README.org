@@ -1,0 +1,21 @@
+Files:
+
+  - bash_env.sh, Makefile: build
+
+  - btree.ml: layer over our.ml implementation
+
+  - gen_our.ml: isabelle-generated code
+
+  - int_int_store.ml: example on-disk map
+
+  - our.ml: patched version of gen_our.ml
+
+  - test_ii.ml: simple exhaustive test of int_int_store
+
+  - test_in_mem.ml/sh: generic testing; reads params from stdin;
+    in-memory (doesn't depend on test_ii)
+
+  - test.sh: generic testing using ocaml toplevel (slow!)
+
+
+For .ml dependencies, see bash_env.sh

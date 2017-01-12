@@ -77,10 +77,18 @@ definition split_leaf :: "kvs \<Rightarrow> (kvs * k * kvs)" where
   (l,k,r)
 )"
 
+(* let max and min be the relevant bounds; suppose node has max+1 keys; we could divide by 2 to get
+max+1/2; but here we try to get the most in the left hand tree; 
+
+we need min in rhs; 1 for the middle, so we need max+1 -1 -min = max-min in left
+
+*)
+
+
 definition split_node :: "(ks * 'a list) \<Rightarrow> (ks * 'a list) * k * (ks * 'a list)" where
 "split_node n = (
   let (ks,rs) = n in
-  let cut_point = (max_node_keys+1-min_node_keys) in  (* FIXME see above *)
+  let cut_point = (max_node_keys-min_node_keys) in  (* FIXME see above *)
   let (ks1,k,ks2) = split_at_3 cut_point ks in
   let _ = assert_true' (List.length ks2 \<ge> min_node_keys) in
   let (rs1,rs2) = split_at (cut_point+1) rs in

@@ -30,8 +30,13 @@ mk_cma="$DISABLE_BYTE ocamlfind ocamlc $FLGS "
 mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt $FLGS"
 
 
-mls="gen_isa.ml our.ml btree.ml test.ml int_int_store.ml test_ii.ml"
+mls="gen_isa.ml our.ml btree_util.ml btree.ml block_device.ml int_int_store.ml"
+# test_in_mem.ml  test_ii.ml
+
 cmos="${mls//.ml/.cmo}"
 cmxs="${mls//.ml/.cmx}"
 
-natives="test_ii.native"
+natives="test_in_mem.native test_ii.native"
+
+bytes="test_in_mem.byte test_ii.native"
+

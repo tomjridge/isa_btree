@@ -16,8 +16,11 @@ all:
 %.native: %.ml btree.cmxa
 	$$ocamlopt -g -linkpkg -o $*.native btree.cmxa $*.ml
 
+%.byte: %.ml btree.cma
+	$$ocamlc -g -linkpkg -o $*.byte btree.cma $*.ml
+
 clean:
-	rm -f *.{cmi,cmo,cmx,o} a.out 
+	rm -f *.{cmi,cmo,cmx,o} a.out *.cma *.cmxa *.a *.byte *.native
 
 test:
 	OCAMLRUNPARAM=b ./test.sh

@@ -242,9 +242,7 @@ let rec split_leaf
 let rec split_node
   n = let (ks, rs) = n in
       let cut_point =
-        Arith.minus_nat (Arith.plus_nat Constants.max_node_keys Arith.one_nat)
-          Constants.min_node_keys
-        in
+        Arith.minus_nat Constants.max_node_keys Constants.min_node_keys in
       let (ks1, (k, ks2)) = Util.split_at_3 cut_point ks in
       let _ =
         Util.assert_truea

@@ -1,6 +1,8 @@
-(* Testing the B-tree ---------------------------------------- *)
+(* in-mem testing ---------------------------------------- *)
 
-(* We concentrate on relatively small parameters *)
+let failwith x = failwith ("test_in_mem: "^x)
+
+(* we concentrate on relatively small parameters *)
 
 
 (* setup ---------------------------------------- *)
@@ -38,7 +40,7 @@ module FT = struct
       Node_frame of (key list * page_ref list) |
       Leaf_frame of (key * value_t) list[@@deriving yojson]
 
-  type page = pframe
+  type page = pframe[@@deriving yojson]
 
   let frame_to_page : pframe -> page = fun x -> x
   let page_to_frame : page -> pframe = fun x -> x
@@ -54,6 +56,11 @@ module ST' = struct
 
   type store = {free:int; m:page Map_int.t}
 
+  (* for yojson *)
+  type store' = {free':int; m':(int * page) list}[@@deriving yojson]
+
+  let store_to_' s = {free'=s.free; m'=s.m|>Map_int.bindings}
+
   type store_error = unit
 
   let dest_Store : store -> page_ref -> page = (fun s r -> Map_int.find r s.m)
@@ -64,7 +71,9 @@ module ST' = struct
     let f = s.free in
     ({free=(f+1);m=Map_int.add f p s.m}),Our.Util.Ok(f))
 
-  let free ps s = failwith ""
+  let free :
+    page_ref list -> store -> store * (unit, store_error) Our.Util.rresult = (
+    fun ps s -> (s,Our.Util.Ok(())))
 
 
   (* for empty store, we want an empty leaf at page 0 *)
@@ -98,16 +107,17 @@ module BT = Btree.Make(S)
 open BT.M
 
 
-(* state type for testing *)
-module S_1 = struct 
+(* state type for testing ---------------------------------------- *)
+module Test_state = struct 
     type t = {t:Tree.tree;s:Store.store;r:Store.page_ref }
 
     (* we want to ignore the store and page_ref *)
     let compare (x:t) (y:t) = (Pervasives.compare (x.t) (y.t))
 end
 
+
 (* for maintaing a set of states *)
-module S_2 = Set.Make(S_1)
+module Test_state_set = Set.Make(Test_state)
 
 
 type action = Insert of int | Delete of int
@@ -138,32 +148,32 @@ type range_t = int list[@@deriving yojson]
 (* explore all possible states for the given range *)
 
 let test range = (
-  let s = ref S_1.(S_2.(singleton {t=Tree.Leaf[];s=init_store;r=init_r })) in
+  let s = ref Test_state.(Test_state_set.(singleton {t=Tree.Leaf[];s=init_store;r=init_r })) in
   let todo = ref (!s) in
   (* next states from a given tree *)
   let step t = (
     (range|>List.map (fun x -> action:=Insert x; 
-                       BT.Insert.insert x x (t.S_1.r) (t.S_1.s))) @
+                       BT.Insert.insert x x (t.Test_state.r) (t.Test_state.s))) @
     (range|>List.map (fun x -> action:=Delete x; 
-                       BT.Delete.delete x (t.S_1.r) (t.S_1.s)))
-  ) |> List.map (fun (s,r) -> S_1.{t=(Frame.r_to_t s r) ;s;r}) |> S_2.of_list
+                       BT.Delete.delete x (t.Test_state.r) (t.Test_state.s)))
+  ) |> List.map (fun (s,r) -> Test_state.{t=(Frame.r_to_t s r) ;s;r}) |> Test_state_set.of_list
   in
   let _ = 
     (* FIXME this may be faster if we store todo as a list and check
        for membership when computing next state of the head of todo;
        use rev_append *)
     Printf.printf "test: starting while\n";
-    while (not(S_2.is_empty !todo)) do
-      let nexts : S_2.t list = !todo|>S_2.elements|>List.map step in
-      let next = List.fold_left (fun a b -> S_2.union a b) S_2.empty nexts in
-      let new_ = S_2.diff next !s in
-      s:=S_2.union !s new_;
+    while (not(Test_state_set.is_empty !todo)) do
+      let nexts : Test_state_set.t list = !todo|>Test_state_set.elements|>List.map step in
+      let next = List.fold_left (fun a b -> Test_state_set.union a b) Test_state_set.empty nexts in
+      let new_ = Test_state_set.diff next !s in
+      s:=Test_state_set.union !s new_;
       todo:=new_;
       print_string "."; flush_all ();
       ()
     done
   in
-  Printf.printf "Tests passed; num states explored: %d\n" (S_2.cardinal !s))
+  Printf.printf "Tests passed; num states explored: %d\n" (Test_state_set.cardinal !s))
 
 
 let main () = (  
@@ -175,5 +185,33 @@ let main () = (
     test range
 )
 
+let test_insert () = (
+  let r0 = ref init_r in
+  let s0 = ref init_store in
+  try (
+  let xs = ref (Batteries.(1 -- 1000000 |> List.of_enum)) in
+    while (!xs <> []) do
+      let x = List.hd !xs in
+      let (s0',r0') = BT.Insert.insert x (2*x) !r0 !s0 in
+      s0:=s0';r0:=r0';xs:=List.tl !xs
+    done;
+  ) with _ -> (
+      print_endline "Failure...";
+      !s0|>ST'.store_to_'|>ST'.store'_to_yojson|>Yojson.Safe.to_string|>print_endline;
+      ()
+    );
+    ()
+)
+
+let big () = 
+  let range = Batteries.(0 -- 100 |> List.of_enum) in
+  test range
+
 let _ = 
-  if 1 < Array.length Sys.argv && Sys.argv.(1) = "test" then main() else ()
+  if 1 < Array.length Sys.argv then
+    match Sys.argv.(1) with
+    | "test" -> main() 
+    | "big" -> big()
+    | "insert" -> test_insert()
+  else ()
+                                                                         
