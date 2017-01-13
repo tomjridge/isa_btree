@@ -80,7 +80,8 @@ definition split_leaf :: "kvs \<Rightarrow> (kvs * k * kvs)" where
 (* let max and min be the relevant bounds; suppose node has max+1 keys; we could divide by 2 to get
 max+1/2; but here we try to get the most in the left hand tree; 
 
-we need min in rhs; 1 for the middle, so we need max+1 -1 -min = max-min in left
+we need min in rhs; 1 for the middle, so we need max+1 -1 -min = max-min in left (assumes that the node has
+max+1 size; obviously we need to be more careful otherwise FIXME for bulk insert
 
 *)
 

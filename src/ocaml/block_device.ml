@@ -150,6 +150,14 @@ module Filestore (* : Our.Store_t *) = struct
 
   open Blk_fd
 
+  (* alloc without write; free block can then be used to write data
+     out of the btree *)
+  let alloc_block : store -> store * (page_ref, store_error) Util.rresult = (
+    fun s -> 
+      let r = s.free_ref in
+      ({s with free_ref=r+1},Our.Util.Ok(r))  
+  )
+
   let alloc : page -> store -> store * (page_ref, store_error) Util.rresult = (
     fun p s -> 
       try (

@@ -60,28 +60,7 @@ module type STORE = sig
 end
 
 
-module type S = sig
-
-  module C : CONSTANTS
-
-  module KV: KEY_VALUE_TYPES
-  
-  module ST: STORE
-
-  (* this module's types depend on the previous modules *)
-  module FT : sig
-    open KV
-    open ST
-    type pframe =  
-        Node_frame of (key list * page_ref list) |
-        Leaf_frame of (key * value_t) list[@@deriving yojson]
-
-    val frame_to_page : pframe -> page
-    val page_to_frame : page -> pframe
-  end
-
-end
-
+(* construct non-simple versions ---------------------------------------- *)
 
 module Mk_kv = functor (KV:KEY_VALUE_TYPES) -> struct
 
@@ -107,7 +86,31 @@ module Mk_c = functor (C:CONSTANTS) -> struct
 end
 
 
+
 (* main functor ---------------------------------------- *)
+
+module type S = sig
+
+  module C : CONSTANTS
+
+  module KV: KEY_VALUE_TYPES
+  
+  module ST: STORE
+
+  (* this module's types depend on the previous modules *)
+  module FT : sig
+    open KV
+    open ST
+    type pframe =  
+        Node_frame of (key list * page_ref list) |
+        Leaf_frame of (key * value_t) list[@@deriving yojson]
+
+    val frame_to_page : pframe -> page
+    val page_to_frame : page -> pframe
+  end
+
+end
+
 
 module Make = functor (S:S) -> struct
 
@@ -116,26 +119,34 @@ module Make = functor (S:S) -> struct
 
   module S = S
 
-  module C = Mk_c(S.C)
+  (* don't want these infecting the namespace *)
+  module Btree_private = struct
 
-  module KV = Mk_kv(S.KV)
+    module C = Mk_c(S.C)
 
-  module Frame_types = struct
-    module Store = S.ST
-    module Key_value_types = KV
-    include S.FT
+    module KV = Mk_kv(S.KV)
+
+    module Frame_types = struct
+      module Store = S.ST
+      module Key_value_types = KV
+      include S.FT
+    end
+
   end
-
 
   (* use our.make functor ---------------------------------------- *)
 
-  module M = Our.Make(C)(Frame_types)
-  
-  module Tree = M.Tree
-  module Store = M.Frame_types.Store
-  module Frame = M.Frame
+  module Our' = Our.Make(Btree_private.C)(Btree_private.Frame_types)
 
-  type t = M.Tree.tree
+  open Our'
+  
+  (*
+  module Tree = Our'.Tree
+  module Store = Our'.Frame_types.Store
+  module Frame = Our'.Frame
+     *)
+
+  type t = Tree.tree
   type t0 = t (* so we can refer to it without shadowing *)
 
   (* open M *)
@@ -146,7 +157,7 @@ module Make = functor (S:S) -> struct
 
   module Find = struct
 
-    module Find = M.Find
+    module Find = Our'.Find
 
     (* FIXME wrap in constructor to get nice type? *)
     type t = {
@@ -174,7 +185,7 @@ module Make = functor (S:S) -> struct
       check_state s'
     )
 
-    let mk : KV.key -> Store.page_ref -> Store.store -> t = 
+    let mk : Key_value_types.key -> Store.page_ref -> Store.store -> t = 
       fun k0 r s -> {tree=Frame.r_to_t s r; store=s; fs=Find.mk_find_state k0 r}
 
     let step : t -> t = (fun x ->
@@ -183,7 +194,7 @@ module Make = functor (S:S) -> struct
 
 
     (* for testing *)
-    let find_1 : Store.store -> KV.key -> Store.page_ref -> t = (
+    let find_1 : Store.store -> Key_value_types.key -> Store.page_ref -> t = (
       fun st k r ->
         let s = ref (mk k r st) in
         let _ = check_state !s in
@@ -199,14 +210,14 @@ module Make = functor (S:S) -> struct
         !s'
     )
 
-    let find : Store.store -> KV.key -> Store.page_ref -> KV.value_t option = (
+    let find : Store.store -> Key_value_types.key -> Store.page_ref -> Key_value_types.value_t option = (
       fun st k r ->
         let s' = find_1 st k r in
         (* s' is finished *)
         let (r0,(k,(r,(kvs,stk)))) = (s').fs|>Find.dest_f_finished|>dest_Some in
         let kv = 
           try
-            Some(kvs|>List.find (function (x,y) -> KV.key_eq x k))
+            Some(kvs|>List.find (function (x,y) -> Key_value.key_eq x k))
           with Not_found -> None
         in
         kv|>option_map snd)
@@ -216,12 +227,12 @@ module Make = functor (S:S) -> struct
 
   module Insert = struct
 
-    module Insert = M.Insert
+    module Insert = Our'.Insert
 
     type t = {
       t: Tree.tree;
-      k:KV.key;
-      v:KV.value_t;
+      k:Key_value_types.key;
+      v:Key_value_types.value_t;
       store: Store.store;
       is: Insert.i_state_t
     }
@@ -243,7 +254,7 @@ module Make = functor (S:S) -> struct
       check_state y
     )
 
-    let mk : Store.store -> KV.key -> KV.value_t -> Store.page_ref -> t = 
+    let mk : Store.store -> Key_value_types.key -> Key_value_types.value_t -> Store.page_ref -> t = 
       fun s k v r ->{t=(Frame.r_to_t s r);k;v;store=s;is=(Insert.mk_insert_state k v r)}
 
     let step : t -> t = (fun x ->
@@ -252,7 +263,7 @@ module Make = functor (S:S) -> struct
 
     let dest = Insert.dest_i_finished
 
-    let insert : KV.key -> KV.value_t -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
+    let insert : Key_value_types.key -> Key_value_types.value_t -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
       fun k v r store ->
         let s = ref (mk store k v r) in
         let _ = check_state !s in
@@ -272,12 +283,12 @@ module Make = functor (S:S) -> struct
 
   module Insert_many = struct
 
-    module Insert_many = M.Insert_many
+    module Insert_many = Our'.Insert_many
 
     type t = {
       t: Tree.tree;
-      k:KV.key;
-      v:KV.value_t;
+      k:Key_value_types.key;
+      v:Key_value_types.value_t;
       store: Store.store;
       is: Insert_many.i_state_t
     }
@@ -299,9 +310,9 @@ module Make = functor (S:S) -> struct
       check_state y
     )
 
-    type kvs = (KV.key * KV.value_t) list
+    type kvs = (Key_value_types.key * Key_value_types.value_t) list
 
-    let mk : Store.store -> KV.key -> KV.value_t -> kvs -> Store.page_ref -> t = 
+    let mk : Store.store -> Key_value_types.key -> Key_value_types.value_t -> kvs -> Store.page_ref -> t = 
       fun s k v kvs r ->{t=(Frame.r_to_t s r);k;v;store=s;is=(Insert_many.mk_insert_state k v kvs r)}
 
     let step : t -> t = (fun x ->
@@ -310,7 +321,7 @@ module Make = functor (S:S) -> struct
 
     let dest = Insert_many.dest_i_finished
 
-    let insert : KV.key -> KV.value_t -> kvs -> Store.page_ref -> Store.store -> (Store.store * (Store.page_ref * kvs)) = (
+    let insert : Key_value_types.key -> Key_value_types.value_t -> kvs -> Store.page_ref -> Store.store -> (Store.store * (Store.page_ref * kvs)) = (
       fun k v kvs r store ->
         let s = ref (mk store k v kvs r) in
         let _ = check_state !s in
@@ -331,11 +342,11 @@ module Make = functor (S:S) -> struct
 
   module Delete = struct
 
-    module Delete = M.Delete
+    module Delete = Our'.Delete
 
     type t = {
       t:Tree.tree;
-      k:KV.key;
+      k:Key_value_types.key;
       store:Store.store;
       ds:Delete.d_state
     }
@@ -357,7 +368,7 @@ module Make = functor (S:S) -> struct
       check_state y
     )
 
-    let mk : Store.store -> KV.key -> Store.page_ref -> t = 
+    let mk : Store.store -> Key_value_types.key -> Store.page_ref -> t = 
       fun s k r -> {
           t=(Frame.r_to_t s r);
           k;
@@ -371,7 +382,7 @@ module Make = functor (S:S) -> struct
 
     let dest = Delete.dest_d_finished
 
-    let delete : KV.key -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
+    let delete : Key_value_types.key -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
       fun k r store ->
         let s = ref (mk store k r) in
         let _ = check_state !s in
@@ -399,7 +410,7 @@ module Make = functor (S:S) -> struct
       in
       match t.ds with
       | D_down (fs,r) -> `D_down (* FIXME fs *)
-      | D_up (f,(stk,r)) -> `D_up(from_store s f,stk|>List.map (M.Monad2.r_frame_to_t_frame s))
+      | D_up (f,(stk,r)) -> `D_up(from_store s f,stk|>List.map (Our'.Monad2.r_frame_to_t_frame s))
       | D_finished(r) -> `D_finished(r|>Frame.r_to_t s)
     )
 

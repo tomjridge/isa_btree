@@ -192,7 +192,7 @@ module Int_int_cached (* : Btree.S *) = struct
 
   type pending_inserts = int Map_int.t  (* the high-level cache *)
 
-  type t = Store.page_ref * Store.store * pending_inserts
+  type t = ST.page_ref * ST.store * pending_inserts
 
   module Insert = struct
 

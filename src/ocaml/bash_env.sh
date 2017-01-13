@@ -12,7 +12,9 @@ root=$(realpath $(dirname $BASH_SOURCE))/../..
  # if using nix, this may not be present
 test -f $root/config.sh && source $root/config.sh
 
-PKGS="-package num,yojson,ppx_deriving_yojson,batteries,bos.setup,ppx_assert,ppx_assert.runtime-lib,sexplib,core,lru-cache,tjr_lib"
+PKGS="-package num,yojson,ppx_deriving_yojson,batteries,bos.setup \
+  -package ppx_assert,ppx_assert.runtime-lib,sexplib,core,lru-cache,tjr_lib"
+
 SYNTAX="" # "-syntax camlp4o" # simplify: use for every file
 FLGS="-g -thread"
 
@@ -30,7 +32,9 @@ mk_cma="$DISABLE_BYTE ocamlfind ocamlc $FLGS "
 mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt $FLGS"
 
 
-mls="gen_isa.ml our.ml btree_util.ml btree.ml block_device.ml int_int_store.ml"
+mls="gen_isa.ml our.ml btree_util.ml btree.ml in_mem.ml \
+  block_device.ml int_int_store.ml bytestore.ml"
+
 # test_in_mem.ml  test_ii.ml
 
 cmos="${mls//.ml/.cmo}"

@@ -7,107 +7,15 @@ let failwith x = failwith ("test_in_mem: "^x)
 
 (* setup ---------------------------------------- *)
 
-open Btree
+open In_mem
+open In_mem.Example
+open Example.Private.S'
+open Our'
 
-module Map_int = Map.Make(
-  struct type t = int let compare: t -> t -> int = Pervasives.compare end)
-
-module C : CONSTANTS = struct
-  let max_leaf_size = 5
-  let max_node_keys = 5
-  let min_leaf_size = 2
-  let min_node_keys = 2
-end
-
-
-module KV (* : KEY_VALUE_TYPES *) = struct 
-  type key = int[@@deriving yojson]
-  type value_t = int[@@deriving yojson]
-  let key_ord k1 k2 = Pervasives.compare k1 k2
-  let equal_value = (=)
-end
-
-module PR = struct 
-  type page_ref = int[@@deriving yojson]
-end
-
-module FT = struct
-
-  open KV
-  open PR
-
-  type pframe =  
-      Node_frame of (key list * page_ref list) |
-      Leaf_frame of (key * value_t) list[@@deriving yojson]
-
-  type page = pframe[@@deriving yojson]
-
-  let frame_to_page : pframe -> page = fun x -> x
-  let page_to_frame : page -> pframe = fun x -> x
-
-end
-
-module ST' = struct
-
-  open FT
-  open PR
-
-  type page = FT.page
-
-  type store = {free:int; m:page Map_int.t}
-
-  (* for yojson *)
-  type store' = {free':int; m':(int * page) list}[@@deriving yojson]
-
-  let store_to_' s = {free'=s.free; m'=s.m|>Map_int.bindings}
-
-  type store_error = unit
-
-  let dest_Store : store -> page_ref -> page = (fun s r -> Map_int.find r s.m)
-
-  let page_ref_to_page r s = (s,Our.Util.Ok(Map_int.find r s.m))
-
-  let alloc p s = (
-    let f = s.free in
-    ({free=(f+1);m=Map_int.add f p s.m}),Our.Util.Ok(f))
-
-  let free :
-    page_ref list -> store -> store * (unit, store_error) Our.Util.rresult = (
-    fun ps s -> (s,Our.Util.Ok(())))
-
-
-  (* for empty store, we want an empty leaf at page 0 *)
-  (*
-  let empty_store () = (
-    {free=1;m=Map_int.empty |> Map_int.add 0 (Leaf_frame[])},
-    0)
-  *)  
-end
-
-module ST (* : STORE *) = struct
-  include PR
-  include ST'
-end
-
-module S (* : Btree.S *) = struct
-
-  module C = C
-
-  module KV = KV
-
-  module ST = ST
-
-  module FT = FT
-
-
-end
-
-module BT = Btree.Make(S)
-
-open BT.M
-
+module BT=Example
 
 (* state type for testing ---------------------------------------- *)
+
 module Test_state = struct 
     type t = {t:Tree.tree;s:Store.store;r:Store.page_ref }
 
@@ -197,7 +105,7 @@ let test_insert () = (
     done;
   ) with _ -> (
       print_endline "Failure...";
-      !s0|>ST'.store_to_'|>ST'.store'_to_yojson|>Yojson.Safe.to_string|>print_endline;
+      !s0|>Private.ST'.store_to_'|>Private.ST'.store'_to_yojson|>Yojson.Safe.to_string|>print_endline; 
       ()
     );
     ()
