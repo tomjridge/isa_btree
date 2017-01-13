@@ -9,17 +9,16 @@ open Our.Util
 
 type blk_index = int
 
-module type S = sig 
+type offset = int
 
+
+module type S = sig 
 
 
   (* in-memory buffer *)
   module Buff : (sig  
 
-    (* in-mem buffers *)
     type t
-
-    type offset = int
 
     val length: t -> int
 
@@ -37,11 +36,11 @@ module type S = sig
 
     module M : (sig
 
-      type 'a m  (* store -> ('a,store_error) rresult *)
+      type 'a m  (* store -> store * ('a,store_error) rresult *)
 
       val bind: ('a -> 'b m) -> 'a m -> 'b m
 
-      val map: ('a -> 'b) -> 'a m -> 'b m
+      (* val map: ('a -> 'b) -> 'a m -> 'b m *)
 
       val return: 'a -> 'a m
 
@@ -55,9 +54,9 @@ module type S = sig
     val blocksize: int 
 
     (* write blocksize bytes from buff, unless at end of buff, in which case write the remainder *)
-    val write_buff: Buff.t -> Buff.offset -> blk_id M.m
+    val write_buff: Buff.t -> offset -> blk_id M.m
 
-    val read_buff: Buff.t -> Buff.offset -> blk_id -> unit M.m
+    val read_buff: Buff.t -> offset -> blk_id -> unit M.m
 
     (* write a single int (buff length) into a block *)
     val write_int: int -> blk_id M.m
@@ -75,9 +74,10 @@ module type S = sig
      buf? FIXME this is actually expected to mutate the block, but
      isn't in the monad (which is really concerned with the store);
      dont' use "original" block after this op! *)
+  (*
   val copy: Buff.t -> int (* start *) -> int (* end *) 
     -> Disk.block -> Disk.block
-
+     *)
 
 
   module Btree : (sig

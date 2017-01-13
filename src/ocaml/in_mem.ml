@@ -1,6 +1,10 @@
 (* simple in-mem implementation ---------------------------------------- *)
 
-let failwith x = failwith ("test_in_mem: "^x)
+(* NB pages are not simple byte arrays; they are frames; this avoids
+   need to fiddle with frame<->page mappings *)
+
+
+let failwith x = failwith ("in_mem: "^x)
 
 (* we concentrate on relatively small parameters *)
 
