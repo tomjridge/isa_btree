@@ -35,6 +35,7 @@ Frame_types.Node_frame Frame_types.page_to_frame Frame_types.frame_to_page
 Monad2.r_frame_to_t_frame
 
 (* find *)
+empty_btree
 mk_find_state
 dest_f_finished
 find_step

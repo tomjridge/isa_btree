@@ -40,7 +40,7 @@ mls="gen_isa.ml our.ml btree_util.ml btree.ml in_mem.ml \
 cmos="${mls//.ml/.cmo}"
 cmxs="${mls//.ml/.cmx}"
 
-natives="test_in_mem.native test_ii.native"
+natives="test_in_mem.native test_ii.native test_bytestore.native"
 
-bytes="test_in_mem.byte test_ii.native"
+bytes="test_in_mem.byte test_ii.byte test_bytestore.byte"
 

@@ -761,6 +761,9 @@ module Find : sig
   val find_step :
     find_state ->
       Store.store -> Store.store * (find_state, Monad2.error) Util.rresult
+  val empty_btree :
+    unit ->
+      Store.store -> Store.store * (Store.page_ref, Monad2.error) Util.rresult
   val mk_find_state : Key_value_types.key -> Store.page_ref -> find_state
   val dest_f_finished :
     find_state ->
@@ -798,6 +801,11 @@ let rec find_step
                    | Frame_types.Leaf_frame kvs ->
                      F_finished (r0, (k, (r, (kvs, stk)))))))
          | F_finished _ -> Monad2.return fs);;
+
+let rec empty_btree
+  uu = let lf = Frame_types.Leaf_frame [] in
+       Util.rev_apply (Util.rev_apply lf Frame_types.frame_to_page)
+         Monad2.alloc;;
 
 let rec mk_find_state k r = F_down (r, (k, (r, [])));;
 

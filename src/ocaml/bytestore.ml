@@ -49,7 +49,7 @@ module type S = sig
 
     type block
 
-    type blk_id
+    type blk_id = int
 
     val blocksize: int 
 
@@ -58,12 +58,13 @@ module type S = sig
 
     val read_buff: Buff.t -> offset -> blk_id -> unit M.m
 
+    (*
     (* write a single int (buff length) into a block *)
-    val write_int: int -> blk_id M.m
+    FIXME we don't need these - just write the length to index -1 in the btree val write_int: int -> blk_id M.m
 
 
     val read_int: blk_id -> int M.m
-
+       *)
 
   end)
 
@@ -82,11 +83,11 @@ module type S = sig
 
   module Btree : (sig
 
-    type ref_t  (* typically a blk_id *)
+    type ref_t = int (* typically a blk_id; FIXME exposed to make debugging easier *)
 
     open Disk
 
-    val empty: unit -> ref_t M.m
+    val empty_btree: unit -> ref_t M.m
 
     val insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t M.m
         
@@ -114,20 +115,21 @@ module Make = functor (S:S) -> struct
   open M
 
 
-  let meta_block = -1
+  (* use this to store the length of the buffer *)
+  let meta_key = -1
 
   let write_buff : Buff.t -> Btree.ref_t M.m = (
     fun buf -> 
+      (* create an empty btree *)
+      Btree.empty_btree () 
+      |> bind (fun r -> 
+      (* let _ = Printf.printf "bytestore: write_buff: %d \n" r in *)
       (* allocate first block, and write length *)
       let len = Buff.length buf in
-      write_int len 
-      |> bind (fun blk_id ->
-      (* create an empty btree *)
-      empty () 
-      |> bind (fun r -> 
-      (* insert ref to block -1 *)
-      insert meta_block blk_id r
+      (* insert len to metablock *)
+      insert meta_key len r
       |> bind (fun r ->
+          (* let _ = print_endline "bytestore 132" in *)
           (* now write out other blocks *)
           let rec f: blk_index -> ref_t -> ref_t m = (
             fun n r -> (
@@ -144,16 +146,14 @@ module Make = functor (S:S) -> struct
               ))
           in
           f 0 r
-        ))))
+        )))
 
 
   let read_buff : Btree.ref_t -> Buff.t M.m = (
     fun r -> 
       (* get blk_id corresponding to meta block and determine length *)
-      find r meta_block 
-      |> bind (fun i -> 
-      read_int i 
-      |> bind (fun len ->
+      find r meta_key
+      |> bind (fun len -> 
       (* allocate buffer *)
       let buf = Buff.create len in
       (* now read the blocks and update the buf *)
@@ -172,6 +172,6 @@ module Make = functor (S:S) -> struct
       f 0 
       |> bind (fun () -> 
       return buf
-        ))))
+        )))
 
 end

@@ -36,6 +36,7 @@ module Disk = struct
 
   type store_error  (* no constructors *)
 
+  let empty_disk = {free=0; map=Map_int.empty}
 
   module M = struct
 
@@ -64,13 +65,13 @@ module Disk = struct
         let x = Bytes.length buf - off in
         if x < blocksize then x else blocksize
       in
-      let _ = Bytes.blit buf off page off len in
-      let free = s.free in
-      ({free=free+1; map=Map_int.add free page s.map},free)
+      let _ = Bytes.blit buf off page 0 len in
+      let page_id = s.free in
+      ({free=s.free+1; map=Map_int.add page_id page s.map},page_id)
   )
 
   let read_buff: Buff.t -> offset -> blk_id -> unit M.m = (
-    fun buf off i s ->
+    fun buf off i s -> try (
         let len = 
           let x = Bytes.length buf - off in
           if x>blocksize then blocksize else x
@@ -78,8 +79,10 @@ module Disk = struct
         let page = Map_int.find i s.map in
         let _ = Bytes.blit page 0 buf off len in
         (s,())
+    ) with _ -> failwith "read_buff"
   )
 
+(*
   (* write a single int (buff length) into a block *)
   let write_int: int -> blk_id M.m = (
     fun i s -> 
@@ -96,7 +99,7 @@ module Disk = struct
       let j::_ = bytes_to_ints blk in
       let j' = Int32.to_int j in
       (s,j') )
-
+*)
 
   (* additional Btree.STORE interface -------------------------------------- *)
   type page = bytes
@@ -105,16 +108,17 @@ module Disk = struct
 
   let alloc : page -> store -> store * (page_ref, store_error) rresult = (
     fun p s -> 
-      let free = s.free in
-      let s' = {s with free=free+1} in
-      (s,Ok free))
+      ({free=s.free+1; map=Map_int.add s.free p s.map},Ok s.free))
 
   let dest_Store : store -> page_ref -> page (* FIXME remove *) = (
-    fun s r -> Map_int.find r s.map )
+    fun s r -> 
+      (* print_endline (string_of_int r);  *)
+      try (Map_int.find r s.map) with _ -> failwith "dest_Store" )
 
   let page_ref_to_page :
     page_ref -> store -> store * (page, store_error) rresult = (
-    fun r s -> (s,Ok(Map_int.find r s.map)))
+    fun r s -> 
+      try (s,Ok(Map_int.find r s.map)) with _ -> failwith "page_ref_to_page")
 
   let free : page_ref list -> store -> store * (unit, store_error) rresult = (
     fun rs s -> (s,Ok ()))
@@ -132,13 +136,25 @@ module Btree' = struct
 
   open Disk
 
-  FIXME following
+  let empty_btree: unit -> ref_t M.m = (
+    fun _ s -> 
+      Find.Find.empty_btree () s |> (fun (s,r) -> (s,Btree_util.dest_Ok r))
+  )
 
-  let empty: unit -> ref_t M.m = failwith ""
-
-  let insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t M.m = failwith ""
+  let insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t M.m = (
+    fun k v r -> (
+        fun s ->
+          Insert.insert k v r s
+      )
+  )
         
-  let find: ref_t -> blk_index -> blk_id M.m = failwith ""
+  let find: ref_t -> blk_index -> blk_id M.m = (
+    fun r k -> (
+        fun s ->
+          Find.find s k r |> (
+            fun x -> match x with
+              | Some y -> (s,y)
+              | _ -> failwith "find")))
 
 end
 
@@ -151,3 +167,27 @@ module Bytestore' = Bytestore.Make(struct
     module Btree=Btree'
 end)
 
+
+(* do some tests ---------------------------------------- *)
+
+
+open Disk.M
+
+
+let test len = (
+  let buf = Bytes.make len 'a' in
+  let r = (Bytestore'.write_buff buf)
+          |> bind (fun r -> 
+              (* Printf.printf "write_buff: ref1 %d\n" r; *)
+          Bytestore'.read_buff r)
+          |> bind (fun buf' ->
+          assert (Bytes.to_string buf' = Bytes.to_string buf);
+          return ())    
+  in
+  r Disk.empty_disk
+  )
+
+
+let _ = test 1
+
+let _ = List.map test [0;1;4095;4096;4097;8191;8192;8193;40000]

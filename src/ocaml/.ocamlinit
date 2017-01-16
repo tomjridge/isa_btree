@@ -1,6 +1,11 @@
 #use "topfind";;
-#require "bos.setup";;
+#thread;;
 #require "ppx_deriving";;
 #require "ppx_deriving_yojson";;
 #require "batteries";;
+#require "bos.setup";;
+#require "ppx_assert";;
+#require "sexplib";;
+#require "core";;
+#require "tjr_lib";;
 #load "btree.cma";;

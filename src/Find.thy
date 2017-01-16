@@ -2,6 +2,21 @@ theory Find
 imports Monad2 (* FIXME for sktoi; move to kv *)
 begin
 
+(* empty ----------------------------------------------------------------------- *)
+
+(* we put this here because this is the "start" of the interface defns for the btree *)
+
+definition empty_btree :: "unit \<Rightarrow> r MM" where
+"empty_btree _ = (
+  (* empty leaf *)
+  let lf = Leaf_frame([]) in
+  lf |> frame_to_page |> alloc 
+)"
+
+
+
+(* find ------------------------------------------------------------------------- *)
+
 type_synonym stk = "r stk"
 
 datatype find_state = 

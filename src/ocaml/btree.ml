@@ -7,7 +7,7 @@ type config = {
 }
 
 
-let config = { check_wellformedness=false }
+let config = { check_wellformedness=true }
 
 
 (* misc ---------------------------------------- *)

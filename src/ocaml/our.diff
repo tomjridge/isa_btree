@@ -1,5 +1,5 @@
---- gen_our.ml	2016-12-09 14:28:28.705893352 +0000
-+++ our.ml	2016-12-09 14:29:46.443931969 +0000
+--- gen_our.ml	2017-01-16 11:25:28.771030544 +0000
++++ our.ml	2017-01-16 11:25:48.247611294 +0000
 @@ -1,3 +1,11 @@
 +let string_of_chars chars = chars|>List.map (String.make 1)|>String.concat ""
 +
@@ -139,7 +139,7 @@
  
  module Key_value : sig
    val key_eq : Key_value_types.key -> Key_value_types.key -> bool
-@@ -283,11 +305,13 @@ let rec ordered_key_list
+@@ -281,11 +303,13 @@ let rec ordered_key_list
               (Arith.minus_nat (List.size_list ks)
                 (Arith.nat_of_integer (Big_int.big_int_of_int 2))));;
  
@@ -154,7 +154,7 @@
    val equal_tree : tree HOL.equal
    val equal_treea : tree -> tree -> bool
    val dest_Node : tree -> Key_value_types.key list * tree list
-@@ -299,7 +323,7 @@ module Tree : sig
+@@ -297,7 +321,7 @@ module Tree : sig
  end = struct
  
  type tree = Node of (Key_value_types.key list * tree list) |
@@ -163,7 +163,7 @@
  
  let rec equal_tree () = ({HOL.equal = equal_treea} : tree HOL.equal)
  and equal_treea
-@@ -471,10 +495,15 @@ let rec wellformed_tree
+@@ -469,10 +493,15 @@ let rec wellformed_tree
         let wf = b1 && (b2 && (b3 && (b4 && b5))) in
         wf);;
  
@@ -180,7 +180,7 @@
    val equal_frame_ext :
      'a HOL.equal -> 'b HOL.equal -> ('a, 'b) frame_ext HOL.equal
    val no_focus :
-@@ -502,7 +531,7 @@ end = struct
+@@ -500,7 +529,7 @@ end = struct
  type ('a, 'b) frame_ext =
    Frame_ext of
      Key_value_types.key list * 'a list * 'a * Key_value_types.key list *
@@ -189,7 +189,7 @@
  
  let rec equal_frame_exta _A _B
    (Frame_ext (f_ks1a, f_ts1a, f_ta, f_ks2a, f_ts2a, morea))
-@@ -730,7 +759,7 @@ let rec r_frame_to_t_frame s = Tree_stac
+@@ -728,7 +757,7 @@ let rec r_frame_to_t_frame s = Tree_stac
  end;;
  
  module Find : sig
@@ -198,7 +198,7 @@
    val find_step :
      find_state ->
        Store.store -> Store.store * (find_state, Monad2.error) Util.rresult
-@@ -755,7 +784,7 @@ type find_state =
+@@ -756,7 +785,7 @@ type find_state =
          (Key_value_types.key *
            (Store.page_ref *
              ((Key_value_types.key * Key_value_types.value_t) list *
@@ -207,7 +207,7 @@
  
  let rec find_step
    fs = (match fs
-@@ -810,12 +839,12 @@ module Delete : sig
+@@ -816,12 +845,12 @@ module Delete : sig
    type del_t =
      D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
      D_small_node of (Key_value_types.key list * Store.page_ref list) |
@@ -222,7 +222,7 @@
    val delete_step :
      d_state -> Store.store -> Store.store * (d_state, Monad2.error) Util.rresult
    val dest_d_finished : d_state -> Store.page_ref option
-@@ -829,13 +858,13 @@ type 'a d12_t = D1 of 'a | D2 of ('a * (
+@@ -835,13 +864,13 @@ type 'a d12_t = D1 of 'a | D2 of ('a * (
  type del_t =
    D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
    D_small_node of (Key_value_types.key list * Store.page_ref list) |
@@ -238,7 +238,7 @@
  
  let rec wf_d
    t0 s d =
-@@ -1271,10 +1300,10 @@ end;;
+@@ -1277,10 +1306,10 @@ end;;
  
  module Insert : sig
    type i_t = I1 of Store.page_ref |
@@ -251,7 +251,7 @@
    val insert_step :
      i_state_t ->
        Store.store -> Store.store * (i_state_t, Monad2.error) Util.rresult
-@@ -1289,11 +1318,11 @@ module Insert : sig
+@@ -1295,11 +1324,11 @@ module Insert : sig
  end = struct
  
  type i_t = I1 of Store.page_ref |
@@ -265,7 +265,7 @@
  
  let rec wf_d
    t0 s d =
-@@ -1495,7 +1524,7 @@ module Insert_many : sig
+@@ -1501,7 +1530,7 @@ module Insert_many : sig
      I1 of (Store.page_ref *
              (Key_value_types.key * Key_value_types.value_t) list)
      | I2 of ((Store.page_ref * (Key_value_types.key * Store.page_ref)) *
@@ -274,7 +274,7 @@
    type i_state_t =
      I_down of
        (Find.find_state *
-@@ -1503,7 +1532,7 @@ module Insert_many : sig
+@@ -1509,7 +1538,7 @@ module Insert_many : sig
            (Key_value_types.key * Key_value_types.value_t) list))
      | I_up of (i_t * (Store.page_ref, unit) Tree_stack.frame_ext list) |
      I_finished of
@@ -283,7 +283,7 @@
    val insert_step :
      i_state_t ->
        Store.store -> Store.store * (i_state_t, Monad2.error) Util.rresult
-@@ -1521,7 +1550,7 @@ end = struct
+@@ -1527,7 +1556,7 @@ end = struct
  type i_t =
    I1 of (Store.page_ref * (Key_value_types.key * Key_value_types.value_t) list)
    | I2 of ((Store.page_ref * (Key_value_types.key * Store.page_ref)) *
@@ -292,7 +292,7 @@
  
  type i_state_t =
    I_down of
-@@ -1530,7 +1559,7 @@ type i_state_t =
+@@ -1536,7 +1565,7 @@ type i_state_t =
          (Key_value_types.key * Key_value_types.value_t) list))
    | I_up of (i_t * (Store.page_ref, unit) Tree_stack.frame_ext list) |
    I_finished of
@@ -301,7 +301,7 @@
  
  let rec step_up
    u = (match u
-@@ -1701,4 +1730,8 @@ let rec dest_i_finished
+@@ -1707,4 +1736,8 @@ let rec dest_i_finished
  
  let rec mk_insert_state k v kvs r = I_down (Find.mk_find_state k r, (v, kvs));;
  

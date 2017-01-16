@@ -9,7 +9,7 @@ all:
 	$$ocamlopt -c $$mls
 	$$mk_cma -g -a -o btree.cma $$cmos
 	$$mk_cmxa -g -a -o btree.cmxa $$cmxs
-	$(MAKE) $$natives
+	$(MAKE) $$natives $$bytes
 
 #	$$ocamlopt -g -linkpkg -o a.out $$mls # FIXME
 

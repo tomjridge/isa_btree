@@ -5,6 +5,11 @@ module Set_int = Set.Make(struct type t = int let compare: t -> t -> int = Perva
 module Map_int = Map.Make(struct type t = int let compare: t -> t -> int = Pervasives.compare end)
 
 
+let dest_Ok x = Our.Util.(
+  match x with
+  | Ok y -> y
+  | _ -> failwith "dest_Ok")
+
 
 
 (* int array <-> bytes ---------------------------------------- *)
@@ -42,6 +47,8 @@ let bytes_to_ints buf = Int32.(
     done;
     Array.to_list is
   )
+
+
 
 
 
