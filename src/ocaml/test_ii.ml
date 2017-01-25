@@ -1,7 +1,7 @@
 (* test int int map backed by a file *)
 
 open Btree_util
-open Int_int_store
+open Ext_int_int_store
 
 let default_filename = "/tmp/store"
 
@@ -19,7 +19,7 @@ let main () =
     let (s',r') = X.Insert.insert x (2*x) !r !s in
     s:=s';r:=r';xs:=List.tl !xs
   done;
-  Int_int_store.ST.sync !s;
+  Ext_int_int_store.ST.sync !s;
   ()
 
 let main_2 () = 

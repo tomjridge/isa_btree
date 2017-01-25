@@ -1,7 +1,7 @@
 (* implement and test bytestore ---------------------------------------- *)
 
 
-open Bytestore
+open Ext_bytestore
 open Btree_util
 
 
@@ -130,7 +130,7 @@ end
 
 module Btree' = struct 
 
-  include Int_int_store.Make(Disk)
+  include Ext_int_int_store.Make(Disk)
 
   type ref_t = int
 
@@ -161,7 +161,7 @@ end
 
 (* instantiate Bytestore ---------------------------------------- *)
 
-module Bytestore' = Bytestore.Make(struct
+module Bytestore' = Ext_bytestore.Make(struct
     module Buff=Buff
     module Disk=Disk
     module Btree=Btree'

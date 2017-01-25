@@ -1,7 +1,12 @@
-(* simple in-mem implementation ---------------------------------------- *)
+(* simple in-mem implementation, mainly for testing ----------------------------- *)
 
 (* NB pages are not simple byte arrays; they are frames; this avoids
-   need to fiddle with frame<->page mappings *)
+   need to fiddle with frame<->page mappings 
+
+
+   We are parametric over KV and C
+
+*)
 
 
 let failwith x = failwith ("in_mem: "^x)

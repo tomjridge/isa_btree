@@ -6,7 +6,7 @@ open Sexplib.Std  (* for ppx_assert *)
 
 let failwith x = failwith ("int_int_store: "^x)
 
-open Block_device
+open Ext_block_device
 
 open Btree_util
 

@@ -7,8 +7,8 @@ let failwith x = failwith ("test_in_mem: "^x)
 
 (* setup ---------------------------------------- *)
 
-open In_mem
-open In_mem.Example
+open Ext_in_mem
+open Ext_in_mem.Example
 open Example.Private.S'
 open Our'
 

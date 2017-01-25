@@ -2,6 +2,15 @@
 
 (* each buffer is stored using an initial "metadata" block (eg
    recording the length of the file); the other blocks store the actual data
+
+
+   parameters: buff (in-mem buffer); disk (with function to write buff
+   at offset to a block, and monad); btree implementation (sharing
+   with disk)
+
+
+   provides: write_buff : buff -> btree.ref; read_buff: btree.ref -> buff
+
 *)
 
 open Our.Util
@@ -121,57 +130,55 @@ module Make = functor (S:S) -> struct
   let write_buff : Buff.t -> Btree.ref_t M.m = (
     fun buf -> 
       (* create an empty btree *)
-      Btree.empty_btree () 
-      |> bind (fun r -> 
-      (* let _ = Printf.printf "bytestore: write_buff: %d \n" r in *)
-      (* allocate first block, and write length *)
-      let len = Buff.length buf in
-      (* insert len to metablock *)
-      insert meta_key len r
-      |> bind (fun r ->
-          (* let _ = print_endline "bytestore 132" in *)
-          (* now write out other blocks *)
-          let rec f: blk_index -> ref_t -> ref_t m = (
-            fun n r -> (
-                (* if len=4096, we write 1 block; if 4097, 2; if 0, 0 *)
-                let off = n * blocksize in
-                match off < len with
-                | true -> (
-                    (* alloc, write out, update btree, and recurse *)
-                    Disk.write_buff buf off 
-                    |> bind (fun blk_id ->
-                    insert n blk_id r 
-                    |> bind (fun r -> f (n+1) r)))
-                | false -> (return r)
-              ))
-          in
-          f 0 r
-        )))
+      Btree.empty_btree () |> bind (
+        fun r -> 
+          (* let _ = Printf.printf "bytestore: write_buff: %d \n" r in *)
+          (* allocate first block, and write length *)
+          let len = Buff.length buf in
+          (* insert len to metablock *)
+          insert meta_key len r |> bind (
+            fun r ->
+              (* let _ = print_endline "bytestore 132" in *)
+              (* now write out other blocks *)
+              let rec f: blk_index -> ref_t -> ref_t m = (
+                fun n r -> (
+                    (* if len=4096, we write 1 block; if 4097, 2; if 0, 0 *)
+                    let off = n * blocksize in
+                    match off < len with
+                    | true -> (
+                        (* alloc, write out, update btree, and recurse *)
+                        Disk.write_buff buf off |> bind (
+                          fun blk_id ->
+                            insert n blk_id r |> bind (
+                              fun r -> f (n+1) r)))
+                    | false -> (return r)
+                  ))
+              in
+              f 0 r
+          )))
 
 
   let read_buff : Btree.ref_t -> Buff.t M.m = (
     fun r -> 
       (* get blk_id corresponding to meta block and determine length *)
-      find r meta_key
-      |> bind (fun len -> 
-      (* allocate buffer *)
-      let buf = Buff.create len in
-      (* now read the blocks and update the buf *)
-      let rec f: blk_index -> unit m = (
-        fun n ->
-          let off = n*blocksize in
-          match off < len with
-          | true -> (
-              find r n 
-              |> bind (fun blk_id ->
-              Disk.read_buff buf off blk_id
-              |> bind (fun () ->
-              f (n+1))))
-          | false -> (return ()))
-      in
-      f 0 
-      |> bind (fun () -> 
-      return buf
-        )))
+      find r meta_key |> bind (
+        fun len -> 
+          (* allocate buffer *)
+          let buf = Buff.create len in
+          (* now read the blocks and update the buf *)
+          let rec f: blk_index -> unit m = (
+            fun n ->
+              let off = n*blocksize in
+              match off < len with
+              | true -> (find r n |> bind (
+                  fun blk_id ->
+                    Disk.read_buff buf off blk_id |> bind (
+                      fun () ->
+                        f (n+1))))
+              | false -> (return ()))
+          in
+          f 0 |> bind (
+            fun () -> return buf
+          )))
 
 end
