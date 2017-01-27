@@ -4,12 +4,15 @@ SHELL:=/bin/bash
 BASH_ENV=bash_env.sh
 export BASH_ENV
 
-all:
+all: links
 	$$ocamlc -c $$mls
 	$$ocamlopt -c $$mls
 	$$mk_cma -g -a -o btree.cma $$cmos
 	$$mk_cmxa -g -a -o btree.cmxa $$cmxs
 	$(MAKE) $$natives $$bytes
+
+links:
+	`mk_links`
 
 #	$$ocamlopt -g -linkpkg -o a.out $$mls # FIXME
 
@@ -20,14 +23,15 @@ all:
 	$$ocamlc -g -linkpkg -o $*.byte btree.cma $*.ml
 
 clean:
-	rm -f *.{cmi,cmo,cmx,o} a.out *.cma *.cmxa *.a *.byte *.native
+	rm -f *.{cmi,cmo,cmx,o} a.out *.cma *.cmxa *.a *.byte *.native 
 
 test:
 	OCAMLRUNPARAM=b ./test.sh
 
 
 real_clean: clean
-	mv *.bak.* /tmp
+	-mv *.bak.* /tmp
+	`rm_links`
 
 FORCE:
 

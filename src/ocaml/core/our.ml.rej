@@ -1,0 +1,11 @@
+--- gen_our.ml	2017-01-16 10:09:36.384033643 +0000
++++ our.ml	2017-01-16 10:10:53.030191622 +0000
+@@ -757,7 +786,7 @@ let rec r_frame_to_t_frame s = Tree_stac
+ end;;
+ 
+ module Find : sig
+-  type find_state
++  type find_state[@@deriving yojson]
+   val empty :
+     unit ->
+       Store.store -> Store.store * (Store.page_ref, Monad2.error) Util.rresult
