@@ -33,6 +33,7 @@ mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt $FLGS"
 
 
 mls="test.ml gen_isa.ml our.ml btree_util.ml btree.ml \
+ext_pickle.ml \
 ext_in_mem.ml ext_block_device.ml \
 ext_int_int_store.ml ext_bytestore.ml ext_string_int.ml"
 
