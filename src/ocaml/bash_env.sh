@@ -32,7 +32,9 @@ mk_cma="$DISABLE_BYTE ocamlfind ocamlc $FLGS "
 mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt $FLGS"
 
 
-mls="test.ml gen_isa.ml our.ml btree_util.ml btree.ml \
+mls="test.ml gen_isa.ml our.ml btree_util.ml \
+btree_api.ml \
+btree.ml \
 ext_pickle.ml \
 ext_in_mem.ml ext_block_device.ml \
 ext_int_int_store.ml ext_bytestore.ml ext_string_int.ml"
@@ -53,7 +55,7 @@ bytes="test_in_mem.byte test_ii.byte test_bytestore.byte"
 # links ----------------------------------------
 
 function mk_links() {
-    ln -s core/* ext/* test/* .
+    ln -s api/* core/* ext/* test/* .
     touch links
 }
 

@@ -39,8 +39,8 @@ module Make = functor (ST:STORE) -> struct
       let equal_value x y = (x:int) = y
 
     end (* KV *)
-
-    module KV_ = (KV : Btree.KEY_VALUE_TYPES)
+    
+    let _ = (module KV : Btree.KEY_VALUE_TYPES)
 
     module ST=ST
 
@@ -62,7 +62,8 @@ module Make = functor (ST:STORE) -> struct
 
   end (* S *)
 
-  module S_ = (S: Btree.Simple.S)
+  (* check type *)
+  let _ = (module S: Btree.Simple.S)
 
   module Simple' = Btree.Simple.Make(S)
 

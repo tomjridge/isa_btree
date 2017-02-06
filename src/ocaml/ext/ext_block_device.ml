@@ -1,5 +1,7 @@
 (* Things related to block devices *)
 
+(* FIXME put everything in monads, so that we can easily compose things *)
+
 let failwith x = failwith ("block_device: "^x)
 
 open Sexplib.Std (* for ppx_assert *)
@@ -216,13 +218,17 @@ module Recycling_filestore = struct
   module Set_r = Btree_util.Set_int
 
   (* we maintain a set of blocks that have been allocated and not
-     freed, and a set of page refs that have been freed without being
-     synced (ie which don't need to go to store) *)
+     freed since last sync (ie which need to be written), and a set of
+     page refs that have been allocated since last sync and freed
+     without being synced (ie which don't need to go to store at
+     all) *)
+
+  (* FIXME worth checking no alloc/free misuse? *)
 
   type store = { 
     fs: Filestore.store; 
     cache: page Cache.t;  (* a cache of pages which need to be written *)
-    freed_not_synced: Set_r.t 
+    freed_not_synced: Set_r.t   (* could be a list - we don't free something that has already been freed *)
   }
 
   let alloc : page -> store -> store * (page_ref, store_error) Util.rresult = (
@@ -277,6 +283,7 @@ module Recycling_filestore = struct
      happens on a sync, when the cache is written out *)
 
 
+  (* FIXME this should also flush the cache of course *)
   let sync : store -> unit = (
     fun s ->
       let () = 

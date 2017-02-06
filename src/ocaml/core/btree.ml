@@ -56,6 +56,8 @@ module type STORE = sig
   val dest_Store : store -> page_ref -> page (* FIXME remove *)
   val page_ref_to_page :
     page_ref -> store -> store * (page, store_error) Util.rresult
+
+  (* at the moment this is just a hint to the cache api *)
   val free : page_ref list -> store -> store * (unit, store_error) Util.rresult
 end
 
