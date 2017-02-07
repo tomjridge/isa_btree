@@ -61,31 +61,43 @@ end
 
 (* simple interface ---------------------------------------- *)
 
+module Pickle_params = struct
+
+  open Pickle
+
+  type ('k,'v) t = {
+    p_k: 'k -> unit P.m;
+    u_k: 'k U.m;
+    k_len: int;
+    p_v: 'v -> unit P.m;
+    u_v: 'v U.m;
+    v_len: int      
+  }
+
+end  
+
 module Simple = struct
 
   module type S = sig
+
     module KV : KEY_VALUE
+
     module ST : sig 
-      include STORE with type page_ref = int and type page = string (* ie immutable bytes *)
+
+      include STORE with type page_ref = int 
+                     and type page = string (* ie immutable bytes *)
+
       val page_size : int (* bytes per page *)
+
     end
 
-    (* FIXME include in ST? then don't need Sz; what do we need from S?  *)
-    module Pickle_parameters : sig
-      open Btree_util
-      open M_int32s  (* marshall to int32 *)
-      val i : int cnv (* assume m_t has length 1 *)
-      val k : KV.k cnv (* FIXME make cnv carry info about #bytes needed *)
-      val v : KV.v cnv
-      (* val r : ST.page_ref cnv  (* FIXME this is just i ! *) *)
-    end
-      
+    open KV
+    val pp: (k,v) Pickle_params.t 
+
   end (* S *)
 
-  (* output type of Simple.Make(S) *)
-  module type T = sig
-    include MAP
-  end
+  module type T = MAP  (* output type of Simple.Make(S) *)
+
 end
 
 

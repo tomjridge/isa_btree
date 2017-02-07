@@ -1,3 +1,42 @@
+(* marshalling (low-level), followed by pickling *)
+
+(* various marshalling stuff ---------------------------------------- *)
+
+
+module Basic_marshalling = struct
+
+  (* convert int to bytes *)
+
+  let int32_to_bytes = Int32.(
+      fun i0 -> 
+        let arr = Array.make 4 (Char.chr 0) in
+        for j = 0 to 3 do 
+          let off = j in
+          let c = (shift_right i0 (8*j)) |> logand (of_int 255) in
+          arr.(off) <- (c|>to_int|>Char.chr)
+        done;
+        [arr.(0);arr.(1);arr.(2);arr.(3)])
+
+  (* assumes bs length 4 *)
+  let bytes_to_int32 = Int32.(fun bs -> 
+      assert (List.length bs = 4);
+      let arr = Array.of_list bs in
+      let i = ref (Int32.of_int 0) in
+      for j = 0 to 3 do
+        let off = j in
+        let c = shift_left (arr.(off)|>Char.code|>Int32.of_int) off in
+        i:=(logor !i c)
+      done;
+      !i)
+
+
+
+
+end
+
+
+
+
 (* various pickle/parsing routines ---------------------------------------- *)
 
 (* FIXME move to tjr_lib *)
@@ -63,88 +102,114 @@ module U = struct
     fun f -> fun x -> x |> bind (fun x -> ret (f x))
   )
 
-  let read_string : int -> string m = (fun n s -> 
+  let read_bytes : int -> char list m = (fun n s -> 
       assert (String.length s >= n);
-      Tjr_string.split_at s n |> (fun (bs,s') -> (bs,s')))
+      Tjr_string.split_at s n |> (fun (bs,s') -> (bs|>BatString.explode,s')))
 
 end
 
 
-open Btree_util
+module Examples = struct
 
-let p_int32 : int32 -> unit P.m = P.(
-    fun i -> 
-      M_byte_list.X.i32.m i |> write_bytes
-)
+  open Btree_util
 
-let u_int32 : int32 U.m = U.(
-    read_string 4 |> bind (function s -> 
-        let [a;b;c;d] = s|>BatString.explode in
-        ret (Btree_util.M_byte_list.X.i32.u [a;b;c;d]))
-  )
+  let p_int32 : int32 -> unit P.m = P.(
+      fun i -> Basic_marshalling.int32_to_bytes i |> write_bytes
+    )
 
-let p_int i = i |>Int32.of_int|>p_int32
+  let u_int32 : int32 U.m = U.(
+      read_bytes 4 |> bind (function s -> 
+          let [a;b;c;d] = s in
+          ret (Basic_marshalling.bytes_to_int32 [a;b;c;d]))
+    )
 
-let u_int = U.(u_int32 |> map Int32.to_int)
+  let p_int i = i |>Int32.of_int|>p_int32
 
-(* assume we know the length somehow *)
-let p_string : string -> unit P.m = P.(
-    fun s ->
-      BatString.explode s|>write_bytes
-  )
+  let u_int = U.(u_int32 |> map Int32.to_int)
 
-let p_string_w_len : string -> unit P.m = P.(fun s ->
-    p_int (String.length s) |> bind (
-      fun _ -> p_string s)
-  )
+  (* assume we know the length somehow *)
+  let p_string : string -> unit P.m = P.(
+      fun s ->
+        BatString.explode s|>write_bytes
+    )
+  let u_string: int -> string U.m = U.(
+      fun n -> read_bytes n |> map BatString.implode
+    )
 
-let u_string_w_len : string U.m = U.(
-    u_int |> bind (fun n -> 
-        read_string n))
+  let p_string_w_len : string -> unit P.m = P.(fun s ->
+      p_int (String.length s) |> bind (
+        fun _ -> p_string s)
+    )
 
+  let u_string_w_len : string U.m = U.(
+      u_int |> bind (fun n -> 
+          read_bytes n |> map (fun bs -> BatString.implode bs )))
+
+
+  let p_list : ('a -> unit P.m) -> 'a list -> unit P.m = P.(
+      fun p xs ->
+        (* write length *)
+        p_int (List.length xs) |> bind (
+          (* write list *)
+          fun _ ->
+            let rec loop xs = (
+              match xs with
+              | [] -> ret ()
+              | x::xs' -> (p x |> bind (fun _ -> loop xs')))
+            in
+            loop xs
+        ))
+
+
+  let u_list : ('a U.m) -> 'a list U.m = U.(
+      fun u ->
+        u_int |> bind (fun n ->
+            let rec loop xs = (
+              (* FIXME inefficient *)
+              match List.length xs < n with
+                true -> u |> bind (fun x -> loop (x::xs))
+              | false -> ret (List.rev xs))
+            in
+            loop [])
+    )
+
+end
 
 
 (* example for btree.simple ---------------------------------------- *)
 
-type k = string
-
-(* we know the string has length 16 *)
-let p_key : string -> unit P.m = (fun s -> 
-    assert (String.length s = 16);
-    p_string s)
+module String_int = struct
 
 
-let u_k : k U.m = U.(read_string 16)
+  module KV = struct
+
+    (* the key is actually a 16 byte hash of the full string *)
+    type k = string [@@deriving yojson]
+    type v = int [@@deriving yojson]
+
+    let key_ord: k -> k -> int = Pervasives.compare
+    let equal_value : v -> v -> bool = (=)
+
+  end
+
+  (* let _ = (module KV: Btree_api.KV) *)
 
 
-let p_list : ('a -> unit P.m) -> 'a list -> unit P.m = P.(
-    fun p xs ->
-      (* write length *)
-      p_int (List.length xs) |> bind (
-        (* write list *)
-        fun _ ->
-          let rec loop xs = (
-            match xs with
-            | [] -> ret ()
-            | x::xs' -> (p x |> bind (fun _ -> loop xs')))
-          in
-          loop xs
-    ))
+  open KV
+  open Examples
+
+  (* we know the string has length 16 *)
+  let p_key : string -> unit P.m = (fun s -> 
+      assert (String.length s = 16);
+      p_string s)
 
 
-let p_ks : k list -> unit P.m = p_list p_key
+  let u_k : k U.m = (u_string 16)
+
+  let p_ks : k list -> unit P.m = p_list p_key
+
+  let u_ks : k list U.m = u_list u_k
 
 
-let u_list : ('a U.m) -> 'a list U.m = U.(
-    fun u ->
-      u_int |> bind (fun n ->
-          let rec loop xs = (
-            (* FIXME inefficient *)
-            match List.length xs < n with
-            true -> u |> bind (fun x -> loop (x::xs))
-            | false -> ret (List.rev xs))
-          in
-          loop [])
-  )
+end
 
-let u_ks : k list U.m = u_list u_k

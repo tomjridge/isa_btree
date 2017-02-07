@@ -36,8 +36,7 @@ mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt $FLGS"
 mls=" \
 gen_isa.ml \
 our.ml \
-btree_util.ml pickle.ml btree_api.ml \
-test.ml btree_util.ml \
+test.ml btree_util.ml pickle.ml btree_api.ml \
 btree.ml \
 ext_in_mem.ml ext_block_device.ml \
 ext_int_int_store.ml ext_bytestore.ml ext_string_int.ml"
@@ -61,7 +60,6 @@ link_files=`ls b_from_isa/* c_pre/* d_core/* e_post/* f_test/*`
 
 function mk_links() {
     ln -s $link_files .
-    touch _links
 }
 
 

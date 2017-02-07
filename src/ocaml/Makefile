@@ -4,15 +4,16 @@ SHELL:=/bin/bash
 BASH_ENV=bash_env.sh
 export BASH_ENV
 
-all: links
+all: _links
 	$$ocamlc -c $$mls
 	$$ocamlopt -c $$mls
 	$$mk_cma -g -a -o btree.cma $$cmos
 	$$mk_cmxa -g -a -o btree.cmxa $$cmxs
 	$(MAKE) $$natives $$bytes
 
-links:
+_links:
 	`mk_links`
+	touch $@
 
 #	$$ocamlopt -g -linkpkg -o a.out $$mls # FIXME
 
@@ -32,7 +33,7 @@ test:
 real_clean: clean
 	-mv *.bak.* /tmp
 	`rm_links`
-	rm _generated
+	rm -f _generated
 
 FORCE:
 
@@ -48,13 +49,13 @@ FORCE:
 # our.diff - diff from gen_our.ml.bak to our; reapply when gen_our changes
 
 # save old versions
-backup: FORCE
+_backup: FORCE
 	cp gen_our.ml `new_bak gen_our.ml`
 	cp our.ml `new_bak our.ml`
 	cp our.diff `new_bak our.diff`
 
 # call munger to split generated code into gen_isa and gen_our
-generated: backup FORCE
+_generated: backup FORCE
 	btree_munge2
 	cp ../generated/gen_our.ml b_from_isa
 	cp ../generated/gen_isa.ml b_from_isa
@@ -62,11 +63,11 @@ generated: backup FORCE
 
 # make this after editing our.ml
 # https://forums.anandtech.com/threads/best-practices-for-creating-patch-with-diff.2264468/
-our.diff: backup FORCE
+our.diff: _backup FORCE
 	-diff -u3 -p gen_our.ml our.ml >$@
 
 
 
-our.ml: backup generated FORCE
+our.ml: _backup _generated FORCE
 	patch -i our.diff gen_our.ml -o $@
 
