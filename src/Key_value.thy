@@ -73,7 +73,7 @@ definition split_leaf :: "kvs \<Rightarrow> (kvs * k * kvs)" where
   let cut_point = (max_leaf_size+1 - min_leaf_size) in  
   let (l,r) = split_at cut_point kvs in 
   let _ = assert_true' (List.length l \<ge> min_leaf_size & List.length r \<ge> min_leaf_size) in
-  let k = (case r of (k,_)#_ \<Rightarrow> k | _ \<Rightarrow> impossible1 ''key_value, split_leaf'') in
+  let k = (case r of (k,_)#_ \<Rightarrow> k | _ \<Rightarrow> impossible1 (STR ''key_value, split_leaf'')) in
   (l,k,r)
 )"
 

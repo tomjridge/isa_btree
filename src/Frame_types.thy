@@ -11,9 +11,11 @@ datatype pframe = Node_frame "ks_rs" | Leaf_frame kvs
 
 type_synonym pfr = pframe
 
-definition page_to_frame :: "p \<Rightarrow> pfr" where "page_to_frame = failwith ''FIXME''"
+definition page_to_frame :: "p \<Rightarrow> pfr" where 
+"page_to_frame = failwith (STR ''FIXME'')"
 
-definition frame_to_page :: "pfr \<Rightarrow> p" where "frame_to_page = failwith ''FIXME''"
+definition frame_to_page :: "pfr \<Rightarrow> p" where 
+"frame_to_page = failwith (STR ''FIXME'')"
 
 
 

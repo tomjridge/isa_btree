@@ -11,10 +11,10 @@ end
 
 
 module type KEY_VALUE = sig
-  type k [@@deriving yojson]
-  type v [@@deriving yojson]
-  val key_ord : k -> k -> int
-  val equal_value : v -> v -> bool (* only for wf checking *)
+  type k_t [@@deriving yojson]
+  type v_t [@@deriving yojson]
+  val key_ord : k_t -> k_t -> int
+  val equal_value : v_t -> v_t -> bool (* only for wf checking *)
 end
 
 module type CONSTANTS = sig
@@ -50,10 +50,10 @@ module type MAP = sig
   module M : MONAD
 
   open KV
-  val insert: k -> v -> unit M.m
-  val insert_many: (k*v) list -> unit M.m
-  val find: k -> v option M.m
-  val delete: k -> unit M.m
+  val insert: k_t -> v_t -> unit M.m
+  val insert_many: (k_t*v_t) list -> unit M.m
+  val find: k_t -> v_t option M.m
+  val delete: k_t -> unit M.m
 
 end
 
@@ -92,7 +92,7 @@ module Simple = struct
     end
 
     open KV
-    val pp: (k,v) Pickle_params.t 
+    val pp: (k_t,v_t) Pickle_params.t 
 
   end (* S *)
 

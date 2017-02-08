@@ -39,7 +39,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
 "step_bottom d = (
   let (fs,v) = d in
   case dest_f_finished fs of 
-  None \<Rightarrow> impossible1 ''insert, step_bottom''
+  None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
   | Some(r0,k,r,kvs,stk) \<Rightarrow> (
     free (r0#(r_stk_to_rs stk)) |> bind 
     (% _.
@@ -59,7 +59,7 @@ definition step_up :: "u \<Rightarrow> u MM" where
 "step_up u = (
   let (fo,stk) = u in
   case stk of 
-  [] \<Rightarrow> impossible1 ''insert, step_up'' (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
+  [] \<Rightarrow> impossible1 (STR ''insert, step_up'') (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
   | x#stk' \<Rightarrow> (
     let ((ks1,rs1),_,(ks2,rs2)) = dest_frame x in
     case fo of

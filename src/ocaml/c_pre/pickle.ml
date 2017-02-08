@@ -113,6 +113,16 @@ module Examples = struct
 
   open Btree_util
 
+  let p_pair : 'a P.m -> 'b P.m -> ('a * 'b) P.m = P.(fun p q ->
+      p |> bind (fun x -> q |> bind (fun y -> ret (x,y))))
+
+  let p_pair : unit P.m -> unit P.m -> unit P.m = P.(fun p q ->
+      p |> bind (fun x -> q |> bind (fun y -> ret ())))
+
+  let u_pair : 'a U.m -> 'b U.m -> ('a * 'b) U.m = U.(fun p q ->
+      p |> bind (fun x -> q |> bind (fun y -> ret (x,y)))
+    )
+
   let p_int32 : int32 -> unit P.m = P.(
       fun i -> Basic_marshalling.int32_to_bytes i |> write_bytes
     )
@@ -199,12 +209,14 @@ module String_int = struct
   open Examples
 
   (* we know the string has length 16 *)
+  let key_size = 16
+
   let p_key : string -> unit P.m = (fun s -> 
-      assert (String.length s = 16);
+      assert (String.length s = key_size);
       p_string s)
 
 
-  let u_k : k U.m = (u_string 16)
+  let u_k : k U.m = (u_string key_size)
 
   let p_ks : k list -> unit P.m = p_list p_key
 

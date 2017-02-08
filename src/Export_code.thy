@@ -1,5 +1,5 @@
 theory Export_code
-imports Find Insert Delete Insert_many "~~/src/HOL/Library/Code_Target_Numeral"
+imports Find Insert Delete Insert_many Code_Numeral "~~/src/HOL/Library/Code_Target_Numeral"
 "~~/src/HOL/Library/Code_Char"
 begin
 
@@ -23,6 +23,9 @@ Frame_types.Node_frame
 key_ord
 
 tree_to_leaves wellformed_tree
+
+(* monad *)
+Monad.M Monad.dest_M fmap fmap_error bind
 
 (* store *)
 Store.Page_ref Store.Page Store.Store 

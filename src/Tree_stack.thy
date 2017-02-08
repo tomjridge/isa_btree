@@ -69,7 +69,7 @@ primrec tree_to_stack :: "key \<Rightarrow> tree \<Rightarrow> nat \<Rightarrow>
 | "tree_to_stack k t (Suc n) = (
     let (fo,stk) = tree_to_stack k t n in
     case fo of 
-    Leaf kvs \<Rightarrow> (failwith ''tree_to_stack'')
+    Leaf kvs \<Rightarrow> (failwith (STR ''tree_to_stack''))
     | Node(ks,ts) \<Rightarrow> (
       let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs k (ks,ts) in
       let frm = \<lparr>f_ks1=ks1,f_ts1=ts1,f_t=t',f_ks2=ks2,f_ts2=ts2\<rparr> in

@@ -1,5 +1,6 @@
 theory Frame
-imports Monad (* FIXME may want to move this to Frame_tree *)
+imports Frame_types Tree_stack
+(* FIXME may want to move this to Frame_tree *)
 begin
 
 (* FIXME rename page_frame *)
@@ -14,21 +15,27 @@ definition page_ref_to_frame :: "r \<Rightarrow> pfr se_M" where
 )"
 
 definition dest_Node_frame :: "pframe \<Rightarrow> ks_rs" where
-"dest_Node_frame f = (case f of Node_frame x \<Rightarrow> x  | _ \<Rightarrow> failwith ''dest_Node_frame'')"
+"dest_Node_frame f = (case f of Node_frame x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Node_frame''))"
 
 definition dest_Leaf_frame :: "pframe \<Rightarrow> kvs" where
-"dest_Leaf_frame f = (case f of Leaf_frame x \<Rightarrow> x  | _ \<Rightarrow> failwith ''dest_Leaf_frame'')"
+"dest_Leaf_frame f = (case f of Leaf_frame x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Leaf_frame''))"
+
+
+(* mapping a block ref to a tree ----------------  *)
+
 
 fun r_to_t' :: "store \<Rightarrow> nat \<Rightarrow> r \<Rightarrow> t" where
 "r_to_t' s n r = (
   case n of 
-  0 \<Rightarrow> failwith ''r_to_t''
+  0 \<Rightarrow> failwith (STR ''r_to_t'')
   | Suc n \<Rightarrow> (
-    s|>dest_Store|>(% f. f r) |> page_to_frame |>
-    (% frm. 
-      case frm of
-      Node_frame(ks,rs) \<Rightarrow> (Node(ks,List.map (r_to_t' s n) rs))
-      | Leaf_frame(kvs) \<Rightarrow> Leaf(kvs))
+    (dest_M (page_ref_to_page r)) s |> (% x. case x of
+    (_,Ok(page)) \<Rightarrow> (page |> page_to_frame |>
+      (% frm. 
+        case frm of
+        Node_frame(ks,rs) \<Rightarrow> (Node(ks,List.map (r_to_t' s n) rs))
+        | Leaf_frame(kvs) \<Rightarrow> Leaf(kvs)))
+    | _ \<Rightarrow> (failwith (STR ''r_to_t' '')))
   )
 )"
 

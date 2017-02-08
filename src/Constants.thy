@@ -2,10 +2,10 @@ theory Constants
 imports Main String Prelude
 begin
 
-definition min_leaf_size :: nat where "min_leaf_size = (failwith ''FIXME'')"
-definition max_leaf_size :: nat where "max_leaf_size = (failwith ''FIXME'')"
-definition min_node_keys :: nat where "min_node_keys = (failwith ''FIXME'')"
-definition max_node_keys :: nat where "max_node_keys = (failwith ''FIXME'')"
+definition min_leaf_size :: nat where "min_leaf_size = (failwith (STR ''FIXME''))"
+definition max_leaf_size :: nat where "max_leaf_size = (failwith (STR ''FIXME''))"
+definition min_node_keys :: nat where "min_node_keys = (failwith (STR ''FIXME''))"
+definition max_node_keys :: nat where "max_node_keys = (failwith (STR ''FIXME''))"
 
 
 (* FIXME tr: check these are the right restrictions - where are they used in proof?  

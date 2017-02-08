@@ -25,11 +25,11 @@ type_synonym node_t = "node_lbl_t * tree list"
 
 fun dest_Node :: "tree \<Rightarrow> node_t" where
 "dest_Node (Node(ks,rs)) = (ks,rs)" | 
-"dest_Node (Leaf _) = (failwith ''dest_Node'')"
+"dest_Node (Leaf _) = (failwith (STR ''dest_Node''))"
 
 fun dest_Leaf :: "tree \<Rightarrow> kvs_t" where
 "dest_Leaf (Leaf(kvs)) = kvs" | 
-"dest_Leaf _ = (failwith ''dest_Leaf'')"
+"dest_Leaf _ = (failwith (STR ''dest_Leaf''))"
 
 fun is_Leaf :: "tree \<Rightarrow> bool" where
 "is_Leaf (Leaf l) = True" |

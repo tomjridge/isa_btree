@@ -1,11 +1,58 @@
---- gen_our.ml	2017-01-16 10:09:36.384033643 +0000
-+++ our.ml	2017-01-16 10:10:53.030191622 +0000
-@@ -757,7 +786,7 @@ let rec r_frame_to_t_frame s = Tree_stac
- end;;
+--- gen_our.ml	2017-01-16 11:25:28.771030544 +0000
++++ our.ml	2017-01-16 11:25:48.247611294 +0000
+@@ -53,9 +61,12 @@ let rec split_at_3
+     (List.take n xs,
+       (List.nth xs n, List.drop (Arith.plus_nat n Arith.one_nat) xs));;
  
- module Find : sig
--  type find_state
-+  type find_state[@@deriving yojson]
-   val empty :
-     unit ->
-       Store.store -> Store.store * (Store.page_ref, Monad2.error) Util.rresult
+-let rec assert_true arg b = b;;
++let rec assert_true arg b = (
++  let _ = any_ref := ((Obj.magic arg):any_t) in
++  if b then b else failwith "assert_true")
++;;
+ 
+-let rec impossible1 x = failwitha [];;
++let rec impossible1 x = failwitha x;;
+ 
+ let rec assert_truea b = assert_true () b;;
+ 
+@@ -116,19 +130,19 @@ let equal_value_t = ({HOL.equal = equal_
+ 
+ let rec key_ord k1 k2 = Util.failwitha ['k'; 'e'; 'y'; '_'; 'o'; 'r'; 'd'];;
+ 
+-end;;
++end;; *)
+ 
+-module Store : sig
+-  type page = Page of Arith.nat
+-  type page_ref = Page_ref of Arith.nat
+-  type store = Store of (page_ref -> page)
++module type Store_t = sig
++  type page 
++  type page_ref [@@deriving yojson]
++  type store 
+   type store_error
+   val free : page_ref list -> store -> store * (unit, store_error) Util.rresult
+   val alloc : page -> store -> store * (page_ref, store_error) Util.rresult
+   val dest_Store : store -> page_ref -> page
+   val page_ref_to_page :
+     page_ref -> store -> store * (page, store_error) Util.rresult
+-end = struct
++end (* = struct
+ 
+ type page = Page of Arith.nat;;
+ 
+@@ -842,12 +871,12 @@ module Delete : sig
+   type del_t =
+     D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
+     D_small_node of (Key_value_types.key list * Store.page_ref list) |
+-    D_updated_subtree of Store.page_ref
++    D_updated_subtree of Store.page_ref [@@deriving yojson]
+   type d_state = D_down of (Find.find_state * Store.page_ref) |
+     D_up of
+       (del_t *
+         ((Store.page_ref, unit) Tree_stack.frame_ext list * Store.page_ref))
+-    | D_finished of Store.page_ref
++    | D_finished of Store.page_ref [@@deriving yojson]
+   val delete_step :
+     d_state -> Store.store -> Store.store * (d_state, Monad2.error) Util.rresult
+   val dest_d_finished : d_state -> Store.page_ref option

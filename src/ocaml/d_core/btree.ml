@@ -33,12 +33,15 @@ let rec iter_step (f:'s -> 's option) (x:'s) = (
 (* simplified structs ---------------------------------------- *)
 
 
-module type KEY_VALUE_TYPES = sig
+module type KEY_VALUE_TYPES = Btree_api.KEY_VALUE
+(*
+sig
   type key [@@deriving yojson]
   type value_t [@@deriving yojson]
   val key_ord : key -> key -> int
   val equal_value : value_t -> value_t -> bool (* only for wf checking *)
 end
+*)
 
 module type CONSTANTS = sig
   val max_leaf_size : int
@@ -47,7 +50,9 @@ module type CONSTANTS = sig
   val min_node_keys : int
 end
 
-module type STORE = sig
+module type STORE = Btree_api.STORE
+(*
+sig
   type page 
   type page_ref [@@deriving yojson]
   type store 
@@ -60,6 +65,7 @@ module type STORE = sig
   (* at the moment this is just a hint to the cache api *)
   val free : page_ref list -> store -> store * (unit, store_error) Util.rresult
 end
+*)
 
 
 (* construct non-simple versions ---------------------------------------- *)
@@ -108,8 +114,8 @@ module Main = struct
       open KV
       open ST
       type pframe =  
-          Node_frame of (key list * page_ref list) |
-          Leaf_frame of (key * value_t) list[@@deriving yojson]
+          Node_frame of (k_t list * page_ref list) |
+          Leaf_frame of (k_t * v_t) list[@@deriving yojson]
 
       val frame_to_page : pframe -> page
       val page_to_frame : page -> pframe
@@ -136,6 +142,12 @@ module Main = struct
         module Store = S.ST
         module Key_value_types = KV
         include S.FT
+        type key = KV.k_t
+        type value = KV.v_t
+        let value_t_of_yojson = KV.v_t_of_yojson
+        let key_t_of_yojson = KV.k_t_of_yojson
+
+        (* implement dest_Store *)
       end
 
     end
@@ -426,178 +438,4 @@ module Main = struct
 
 
 end (* Main *)
-
-
-(* simple ------------------------------------------------------------ *)
-
-(* this is a simplified interface *)
-
-(* alternative that does one particular mapping from FT to bytes *)
-
-
-module Simple = struct
-
-  open Btree_util
-
-
-  (* NB page=bytes; sizeof block is in Sz *)
-  module type STORE = STORE with type page_ref=int and type page=bytes
-
-
-
-  (* sizes in int32, except b *)
-  module type Sz_t = sig
-    val b : int  (* size of block, in bytes *)
-    val k : int
-    val v : int
-    val r : int
-  end
-
-
-  (* input *)
-  module type S = sig
-    
-    module KV : KEY_VALUE_TYPES
-    module ST : STORE
-
-    module Sz : Sz_t
-
-    module X : sig
-      open M_int32s  (* marshall to int32 *)
-      val i : int cnv (* assume m_t has length 1 *)
-      val k : KV.key cnv
-      val v : KV.value_t cnv
-      val r : ST.page_ref cnv
-    end
-      
-  end (* S *)
-
-
-  module Make = functor (S:S) -> struct
-
-    module S = S
-
-    module KV=S.KV
-    module ST=S.ST
-    module C : CONSTANTS = struct
-      open S
-      let max_leaf_size = 
-        Sz.b - 1 -4  (* for tag and length *)
-        / (Sz.k+Sz.v)
-      let max_node_keys =
-        Sz.b - 1 -4
-        - Sz.v (* always one val more than # keys *)
-        / (Sz.k + Sz.v)
-      let min_leaf_size = 2
-      let min_node_keys = 2
-    end
-
-
-    module FT = struct
-      open KV
-      open ST
-      (* format: int node_or_leaf; int number of entries; entries *)
-
-
-      type pframe =  
-          Node_frame of (key list * page_ref list) |
-          Leaf_frame of (key * value_t) list[@@deriving yojson]
-
-      open Btree_util
-
-      open S
-
-      (* following assumes tags marshall to single int32 *)
-      let node_tag = match X.i.m 0 with [x] -> x
-      let leaf_tag = match X.i.m 1 with [x] -> x
-
-
-      (* generic marshalling *)
-
-      let frame_to_page' : pframe -> page = (
-        fun p ->
-          let is = (
-            match p with
-              Node_frame(ks,rs) -> (
-                [node_tag]::
-                (List.length ks|>X.i.m)::
-                (ks|>List.map X.k.m)@
-                (rs|>List.map X.r.m))
-            | Leaf_frame(kvs) -> (
-                [leaf_tag]::
-                (List.length kvs|>X.i.m)::
-                (List.map fst kvs|>List.map X.k.m)@
-                (List.map snd kvs|>List.map X.v.m)) )
-          in
-          let buf = Bytes.make Sz.b (Char.chr 0) in
-          M_bytes.X.i32s.m (is|>List.concat)
-      )
-
-      let page_to_frame' : page -> pframe = (
-        fun buf -> 
-          let is = M_bytes.X.i32s.u buf in
-          match is with
-          (* assume len marshalls as single int32 *)
-          | tag::l::rest when tag=node_tag -> (
-              let l = [l]|>X.i.u in
-              let sz = Sz.k * l in
-              let ks = 
-                rest |> BatList.take sz |> BatList.ntake Sz.k 
-                |> List.map X.k.u
-              in
-              let rs = 
-                rest |> BatList.drop sz |> BatList.take (Sz.r * (l+1))
-                |> BatList.ntake Sz.r |> List.map X.r.u
-              in
-              Node_frame(ks,rs))
-          | tag::l::rest when tag=leaf_tag -> (
-              let l = [l]|>X.i.u in
-              let sz = Sz.k * l in
-              let ks = 
-                rest |> BatList.take sz |> BatList.ntake Sz.k 
-                |> List.map X.k.u
-              in
-              let vs = 
-                rest |> BatList.drop sz |> BatList.take (Sz.v * l)
-                |> BatList.ntake Sz.v |> List.map X.v.u
-              in
-              let kvs = List.combine ks vs in
-              Leaf_frame(kvs)
-            )
-      )
-
-      (* FIXME can remove these once code is trusted *)
-      let frame_to_page = fun f -> 
-        let p = frame_to_page' f in
-        let _ = Test.test (fun _ -> 
-            let f' = page_to_frame' p in
-            assert (f' = f)) 
-        in
-        p
-
-      let page_to_frame = fun p -> 
-        let f = page_to_frame' p in
-        let _ = Test.test (fun _ -> 
-            let p' = frame_to_page' f in
-            assert Bytes.(to_string p = to_string p')) 
-        in
-        f
-
-    end (* FT *)
-
-
-    (* now we instantiate the btree functor *)
-
-    module Main' = Main.Make(
-        struct
-          module C = C
-          module KV = KV
-          module ST = ST
-          module FT = FT
-        end)
-
-  end (* Make *)
-
-end (* Simple *)
-
 

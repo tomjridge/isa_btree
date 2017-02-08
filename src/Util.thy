@@ -6,11 +6,12 @@ lemma FIXME: "P" sorry
 
 (* various undefinedness constants ----------------------------- *)
 
-definition failwith :: "string \<Rightarrow> 'b" where
+
+definition failwith :: "String.literal \<Rightarrow> 'b" where
 "failwith x = undefined"
 
-definition impossible1 :: "string \<Rightarrow> 'a" where
-  "impossible1 x = failwith ''''"  
+definition impossible1 :: "String.literal \<Rightarrow> 'a" where
+  "impossible1 x = failwith (STR '''')"  
   
 (*
 definition FIXME :: "'a" where
@@ -24,6 +25,7 @@ definition arb :: "'a" where
 
 (* misc ------------------------------------------ *)  
   
+
 definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
   "rev_apply x f = f x"
 
@@ -67,10 +69,10 @@ definition dest_Ok :: "('a,'b) rresult \<Rightarrow> 'a" where
 "dest_Ok x == x |> rresult_to_option |> dest_Some"
 
 definition dest_list :: "'a list \<Rightarrow> ('a * 'a list)" where
-"dest_list xs = (case xs of x#xs \<Rightarrow> (x,xs) | _ \<Rightarrow> failwith ''dest_list'')"
+"dest_list xs = (case xs of x#xs \<Rightarrow> (x,xs) | _ \<Rightarrow> failwith (STR ''dest_list''))"
 
 definition dest_list' :: "'a list \<Rightarrow> ('a list * 'a)" where
-"dest_list' xs = (case xs of [] \<Rightarrow> failwith ''dest_list' '' | _ \<Rightarrow> (butlast xs,last xs))"
+"dest_list' xs = (case xs of [] \<Rightarrow> failwith (STR ''dest_list' '') | _ \<Rightarrow> (butlast xs,last xs))"
 
 
 definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where

@@ -141,7 +141,7 @@ definition get_sibling :: "(ks_rs * ks_rs) \<Rightarrow> bool (* right *) * (ks_
             let (p_1_ts,s) = dest_list' p_ts1 in
             let (p_1,p2) = ((p_1_ks,p_1_ts),p_2) in
             (right,(p_1,p_2),(p_k,s)))
-          | _ \<Rightarrow> impossible1 ''delete, get_sibling''
+          | _ \<Rightarrow> impossible1 (STR ''delete, get_sibling'')
         ))
 "
 
@@ -149,7 +149,7 @@ definition step_up :: "u \<Rightarrow> u MM" where
 "step_up du = (
   let (f,stk) = du in
   case stk of
-  [] \<Rightarrow> (impossible1 ''delete, step_up'')
+  [] \<Rightarrow> (impossible1 (STR ''delete, step_up''))
   | p#stk' \<Rightarrow> (
     case f of   
     D_updated_subtree r \<Rightarrow> (

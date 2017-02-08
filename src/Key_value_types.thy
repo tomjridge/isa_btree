@@ -23,7 +23,7 @@ type_synonym kvs = kvs_t
 
 (* FIXME really an abstract parameter; this for code export *)
 definition key_ord :: "key => key => int"  where (* as ocaml compare *)
-"key_ord k1 k2 = failwith ''key_ord''"
+"key_ord k1 k2 = failwith (STR ''key_ord'')"
 
 (*
 (* nonsense to get code export to work *)

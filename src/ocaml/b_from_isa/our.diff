@@ -1,5 +1,5 @@
---- gen_our.ml	2017-01-16 11:25:28.771030544 +0000
-+++ our.ml	2017-01-16 11:25:48.247611294 +0000
+--- gen_our.ml	2017-02-08 16:27:05.236585309 +0000
++++ our.ml	2017-02-08 16:29:18.632334128 +0000
 @@ -1,3 +1,11 @@
 +let string_of_chars chars = chars|>List.map (String.make 1)|>String.concat ""
 +
@@ -17,11 +17,11 @@
           rev_apply xs (List.map Product_Type.snd));;
  
 -let rec failwitha x = failwith "undefined";;
-+let rec failwitha x = x|>string_of_chars|>failwith;;
++let rec failwitha x = x|>failwith;;
  
  let rec split_at n xs = (List.take n xs, List.drop n xs);;
  
-@@ -45,9 +53,12 @@ let rec split_at_3
+@@ -41,7 +49,10 @@ let rec split_at_3
      (List.take n xs,
        (List.nth xs n, List.drop (Arith.plus_nat n Arith.one_nat) xs));;
  
@@ -31,12 +31,9 @@
 +  if b then b else failwith "assert_true")
 +;;
  
--let rec impossible1 x = failwitha [];;
-+let rec impossible1 x = failwitha x;;
+ let rec impossible1 x = failwitha "";;
  
- let rec assert_truea b = assert_true () b;;
- 
-@@ -61,13 +72,15 @@ let rec from_to x y = List.upt x (Arith.
+@@ -89,13 +100,15 @@ let rec fmap_error
  
  end;;
  
@@ -54,9 +51,9 @@
  
  type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf;;
  
-@@ -79,16 +92,17 @@ let min_leaf_size : Arith.nat = Util.fai
+@@ -107,16 +120,17 @@ let min_leaf_size : Arith.nat = Util.fai
  
- let min_node_keys : Arith.nat = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+ let min_node_keys : Arith.nat = Util.failwitha "FIXME";;
  
 -end;;
  
@@ -77,9 +74,9 @@
  
  type key = Private_key of Arith.nat;;
  
-@@ -105,19 +119,19 @@ let equal_value_t = ({HOL.equal = equal_
+@@ -133,17 +147,17 @@ let equal_value_t = ({HOL.equal = equal_
  
- let rec key_ord k1 k2 = Util.failwitha ['k'; 'e'; 'y'; '_'; 'o'; 'r'; 'd'];;
+ let rec key_ord k1 k2 = Util.failwitha "key_ord";;
  
 -end;;
 +end;; *)
@@ -89,23 +86,21 @@
 -  type page_ref = Page_ref of Arith.nat
 -  type store = Store of (page_ref -> page)
 +module type Store_t = sig
-+  type page 
++  type page
 +  type page_ref [@@deriving yojson]
 +  type store 
    type store_error
-   val free : page_ref list -> store -> store * (unit, store_error) Util.rresult
-   val alloc : page -> store -> store * (page_ref, store_error) Util.rresult
-   val dest_Store : store -> page_ref -> page
-   val page_ref_to_page :
-     page_ref -> store -> store * (page, store_error) Util.rresult
+   val free : page_ref list -> (unit, store, store_error) Monad.m_t
+   val alloc : page -> (page_ref, store, store_error) Monad.m_t
+   val page_ref_to_page : page_ref -> (page, store, store_error) Monad.m_t
 -end = struct
 +end (* = struct
  
  type page = Page of Arith.nat;;
  
-@@ -136,14 +150,16 @@ let rec dest_Store x = let Store y = x i
+@@ -159,14 +173,16 @@ let rec alloc p = Util.failwitha "FIXME"
  
- let rec page_ref_to_page p = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+ let rec page_ref_to_page p = Util.failwitha "FIXME";;
  
 -end;;
 +end;; *)
@@ -124,9 +119,9 @@
  
  type pframe = Node_frame of (Key_value_types.key list * Store.page_ref list) |
    Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list;;
-@@ -152,7 +168,13 @@ let rec frame_to_page x = Util.failwitha
+@@ -175,7 +191,13 @@ let rec frame_to_page x = Util.failwitha
  
- let rec page_to_frame x = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'] x;;
+ let rec page_to_frame x = Util.failwitha "FIXME" x;;
  
 -end;;
 +end;; *)
@@ -139,7 +134,7 @@
  
  module Key_value : sig
    val key_eq : Key_value_types.key -> Key_value_types.key -> bool
-@@ -281,11 +303,13 @@ let rec ordered_key_list
+@@ -300,11 +322,13 @@ let rec ordered_key_list
               (Arith.minus_nat (List.size_list ks)
                 (Arith.nat_of_integer (Big_int.big_int_of_int 2))));;
  
@@ -154,7 +149,7 @@
    val equal_tree : tree HOL.equal
    val equal_treea : tree -> tree -> bool
    val dest_Node : tree -> Key_value_types.key list * tree list
-@@ -297,7 +321,7 @@ module Tree : sig
+@@ -316,7 +340,7 @@ module Tree : sig
  end = struct
  
  type tree = Node of (Key_value_types.key list * tree list) |
@@ -163,7 +158,7 @@
  
  let rec equal_tree () = ({HOL.equal = equal_treea} : tree HOL.equal)
  and equal_treea
-@@ -469,10 +493,15 @@ let rec wellformed_tree
+@@ -488,10 +512,15 @@ let rec wellformed_tree
         let wf = b1 && (b2 && (b3 && (b4 && b5))) in
         wf);;
  
@@ -180,7 +175,7 @@
    val equal_frame_ext :
      'a HOL.equal -> 'b HOL.equal -> ('a, 'b) frame_ext HOL.equal
    val no_focus :
-@@ -500,7 +529,7 @@ end = struct
+@@ -519,7 +548,7 @@ end = struct
  type ('a, 'b) frame_ext =
    Frame_ext of
      Key_value_types.key list * 'a list * 'a * Key_value_types.key list *
@@ -189,16 +184,16 @@
  
  let rec equal_frame_exta _A _B
    (Frame_ext (f_ks1a, f_ts1a, f_ta, f_ks2a, f_ts2a, morea))
-@@ -728,7 +757,7 @@ let rec r_frame_to_t_frame s = Tree_stac
+@@ -699,7 +728,7 @@ let rec r_frame_to_t_frame s = Tree_stac
  end;;
  
  module Find : sig
 -  type find_state
 +  type find_state[@@deriving yojson]
    val find_step :
-     find_state ->
-       Store.store -> Store.store * (find_state, Monad2.error) Util.rresult
-@@ -756,7 +785,7 @@ type find_state =
+     find_state -> (find_state, Store.store, Monad2.error) Monad.m_t
+   val empty_btree :
+@@ -725,7 +754,7 @@ type find_state =
          (Key_value_types.key *
            (Store.page_ref *
              ((Key_value_types.key * Key_value_types.value_t) list *
@@ -207,7 +202,7 @@
  
  let rec find_step
    fs = (match fs
-@@ -816,12 +845,12 @@ module Delete : sig
+@@ -785,7 +814,7 @@ module Delete : sig
    type del_t =
      D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
      D_small_node of (Key_value_types.key list * Store.page_ref list) |
@@ -216,13 +211,7 @@
    type d_state = D_down of (Find.find_state * Store.page_ref) |
      D_up of
        (del_t *
-         ((Store.page_ref, unit) Tree_stack.frame_ext list * Store.page_ref))
--    | D_finished of Store.page_ref
-+    | D_finished of Store.page_ref [@@deriving yojson]
-   val delete_step :
-     d_state -> Store.store -> Store.store * (d_state, Monad2.error) Util.rresult
-   val dest_d_finished : d_state -> Store.page_ref option
-@@ -835,13 +864,13 @@ type 'a d12_t = D1 of 'a | D2 of ('a * (
+@@ -803,13 +832,13 @@ type 'a d12_t = D1 of 'a | D2 of ('a * (
  type del_t =
    D_small_leaf of (Key_value_types.key * Key_value_types.value_t) list |
    D_small_node of (Key_value_types.key list * Store.page_ref list) |
@@ -238,7 +227,7 @@
  
  let rec wf_d
    t0 s d =
-@@ -1277,10 +1306,10 @@ end;;
+@@ -1227,10 +1256,10 @@ end;;
  
  module Insert : sig
    type i_t = I1 of Store.page_ref |
@@ -249,9 +238,9 @@
 -    I_finished of Store.page_ref
 +    I_finished of Store.page_ref [@@deriving yojson]
    val insert_step :
-     i_state_t ->
-       Store.store -> Store.store * (i_state_t, Monad2.error) Util.rresult
-@@ -1295,11 +1324,11 @@ module Insert : sig
+     i_state_t -> (i_state_t, Store.store, Monad2.error) Monad.m_t
+   val dest_i_finished : i_state_t -> Store.page_ref option
+@@ -1244,11 +1273,11 @@ module Insert : sig
  end = struct
  
  type i_t = I1 of Store.page_ref |
@@ -265,7 +254,7 @@
  
  let rec wf_d
    t0 s d =
-@@ -1501,7 +1530,7 @@ module Insert_many : sig
+@@ -1443,7 +1472,7 @@ module Insert_many : sig
      I1 of (Store.page_ref *
              (Key_value_types.key * Key_value_types.value_t) list)
      | I2 of ((Store.page_ref * (Key_value_types.key * Store.page_ref)) *
@@ -274,16 +263,16 @@
    type i_state_t =
      I_down of
        (Find.find_state *
-@@ -1509,7 +1538,7 @@ module Insert_many : sig
+@@ -1451,7 +1480,7 @@ module Insert_many : sig
            (Key_value_types.key * Key_value_types.value_t) list))
      | I_up of (i_t * (Store.page_ref, unit) Tree_stack.frame_ext list) |
      I_finished of
 -      (Store.page_ref * (Key_value_types.key * Key_value_types.value_t) list)
 +      (Store.page_ref * (Key_value_types.key * Key_value_types.value_t) list) [@@deriving yojson]
    val insert_step :
-     i_state_t ->
-       Store.store -> Store.store * (i_state_t, Monad2.error) Util.rresult
-@@ -1527,7 +1556,7 @@ end = struct
+     i_state_t -> (i_state_t, Store.store, Monad2.error) Monad.m_t
+   val dest_i_finished :
+@@ -1468,7 +1497,7 @@ end = struct
  type i_t =
    I1 of (Store.page_ref * (Key_value_types.key * Key_value_types.value_t) list)
    | I2 of ((Store.page_ref * (Key_value_types.key * Store.page_ref)) *
@@ -292,7 +281,7 @@
  
  type i_state_t =
    I_down of
-@@ -1536,7 +1565,7 @@ type i_state_t =
+@@ -1477,7 +1506,7 @@ type i_state_t =
          (Key_value_types.key * Key_value_types.value_t) list))
    | I_up of (i_t * (Store.page_ref, unit) Tree_stack.frame_ext list) |
    I_finished of
@@ -300,8 +289,8 @@
 +    (Store.page_ref * (Key_value_types.key * Key_value_types.value_t) list) [@@deriving yojson];;
  
  let rec step_up
-   u = (match u
-@@ -1707,4 +1736,8 @@ let rec dest_i_finished
+   u = (match u with (_, []) -> Util.impossible1 "insert, step_up"
+@@ -1637,4 +1666,8 @@ let rec dest_i_finished
  
  let rec mk_insert_state k v kvs r = I_down (Find.mk_find_state k r, (v, kvs));;
  

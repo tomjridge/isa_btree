@@ -105,7 +105,7 @@ definition wellformed_find_state :: "store \<Rightarrow> tree \<Rightarrow> find
 (* find_trans ----------------------------------------- *)
 
 definition find_trans :: "(store * fs) trans_t" where
-"find_trans = { ((s,fs),(s',fs')). (find_step fs s = (s',Ok fs')) }"
+"find_trans = { ((s,fs),(s',fs')). ( s|>(find_step fs|>dest_M) = (s',Ok fs')) }"
 
 
 (* lemmas ------------------------------------------- *)

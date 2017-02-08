@@ -16,17 +16,18 @@ type_synonym e = error
 definition se_to_e :: "se \<Rightarrow> e" where 
 "se_to_e se = Store_error se"
   
-type_synonym 'a MM = "('a,e) M"
+type_synonym 'a MM = "('a,s,e) M"
  
 definition bind :: "('a \<Rightarrow> 'b MM) \<Rightarrow> 'a MM \<Rightarrow> 'b MM" where 
 "bind f v = Monad.bind f v"
 
 definition return :: "'a \<Rightarrow> 'a MM" where
-"return x = (% s. (s, Ok x))"
+"return x = M (% s. (s, Ok x))"
 
+(*
 definition get_store :: "store MM" where
 "get_store = (% s. (s,Ok s))"
-
+*)
 
 definition r_frame_to_t_frame :: "store \<Rightarrow> r frame \<Rightarrow> t frame" where
 "r_frame_to_t_frame s = frame_map (r_to_t s)"

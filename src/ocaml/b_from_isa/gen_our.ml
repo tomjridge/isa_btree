@@ -2,14 +2,14 @@ module Util : sig
   type ('a, 'b) rresult = Ok of 'a | Error of 'b
   val rev_apply : 'a -> ('a -> 'b) -> 'b
   val unzip : ('a * 'b) list -> 'a list * 'b list
-  val failwitha : char list -> 'a
+  val failwitha : string -> 'a
   val split_at : Arith.nat -> 'a list -> 'a list * 'a list
   val dest_list : 'a list -> 'a * 'a list
   val iter_step : ('a -> 'a option) -> 'a -> 'a
   val dest_lista : 'a list -> 'a list * 'a
   val split_at_3 : Arith.nat -> 'a list -> 'a list * ('a * 'a list)
   val assert_true : 'a -> bool -> bool
-  val impossible1 : char list -> 'a
+  val impossible1 : string -> 'a
   val assert_truea : bool -> bool
 end = struct
 
@@ -26,18 +26,14 @@ let rec failwitha x = failwith "undefined";;
 let rec split_at n xs = (List.take n xs, List.drop n xs);;
 
 let rec dest_list
-  xs = (match xs
-         with [] -> failwitha ['d'; 'e'; 's'; 't'; '_'; 'l'; 'i'; 's'; 't']
-         | a :: b -> (a, b));;
+  xs = (match xs with [] -> failwitha "dest_list" | a :: b -> (a, b));;
 
 let rec iter_step
   f x = let a = f x in
         (match a with None -> x | Some aa -> iter_step f aa);;
 
 let rec dest_lista
-  xs = (match xs
-         with [] ->
-           failwitha ['d'; 'e'; 's'; 't'; '_'; 'l'; 'i'; 's'; 't'; '\039'; ' ']
+  xs = (match xs with [] -> failwitha "dest_list\039 "
          | _ :: _ -> (List.butlast xs, List.last xs));;
 
 let rec split_at_3
@@ -47,7 +43,7 @@ let rec split_at_3
 
 let rec assert_true arg b = b;;
 
-let rec impossible1 x = failwitha [];;
+let rec impossible1 x = failwitha "";;
 
 let rec assert_truea b = assert_true () b;;
 
@@ -61,6 +57,38 @@ let rec from_to x y = List.upt x (Arith.suc y);;
 
 end;;
 
+module Monad : sig
+  type ('a, 'b, 'c) m_t = M of ('b -> 'b * ('a, 'c) Util.rresult)
+  val dest_M : ('a, 'b, 'c) m_t -> 'b -> 'b * ('a, 'c) Util.rresult
+  val bind : ('a -> ('b, 'c, 'd) m_t) -> ('a, 'c, 'd) m_t -> ('b, 'c, 'd) m_t
+  val fmap : ('a -> 'b) -> ('a, 'c, 'd) m_t -> ('b, 'c, 'd) m_t
+  val fmap_error : ('a -> 'b) -> ('c, 'd, 'a) m_t -> ('c, 'd, 'b) m_t
+end = struct
+
+type ('a, 'b, 'c) m_t = M of ('b -> 'b * ('a, 'c) Util.rresult);;
+
+let rec dest_M m = let M x = m in
+                   x;;
+
+let rec bind
+  f m = M (fun s ->
+            (match dest_M m s with (s1, Util.Ok y) -> dest_M (f y) s1
+              | (s1, Util.Error x) -> (s1, Util.Error x)));;
+
+let rec fmap
+  f m = M (fun s ->
+            let (sa, r) = dest_M m s in
+            (sa, (match r with Util.Ok y -> Util.Ok (f y)
+                   | Util.Error a -> Util.Error a)));;
+
+let rec fmap_error
+  f m = M (fun s ->
+            let (sa, r) = dest_M m s in
+            (sa, (match r with Util.Ok a -> Util.Ok a
+                   | Util.Error x -> Util.Error (f x))));;
+
+end;;
+
 module Constants : sig
   type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf
   val max_leaf_size : Arith.nat
@@ -71,13 +99,13 @@ end = struct
 
 type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf;;
 
-let max_leaf_size : Arith.nat = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+let max_leaf_size : Arith.nat = Util.failwitha "FIXME";;
 
-let max_node_keys : Arith.nat = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+let max_node_keys : Arith.nat = Util.failwitha "FIXME";;
 
-let min_leaf_size : Arith.nat = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+let min_leaf_size : Arith.nat = Util.failwitha "FIXME";;
 
-let min_node_keys : Arith.nat = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+let min_node_keys : Arith.nat = Util.failwitha "FIXME";;
 
 end;;
 
@@ -103,7 +131,7 @@ let rec equal_value_ta
 
 let equal_value_t = ({HOL.equal = equal_value_ta} : value_t HOL.equal);;
 
-let rec key_ord k1 k2 = Util.failwitha ['k'; 'e'; 'y'; '_'; 'o'; 'r'; 'd'];;
+let rec key_ord k1 k2 = Util.failwitha "key_ord";;
 
 end;;
 
@@ -112,11 +140,9 @@ module Store : sig
   type page_ref = Page_ref of Arith.nat
   type store = Store of (page_ref -> page)
   type store_error
-  val free : page_ref list -> store -> store * (unit, store_error) Util.rresult
-  val alloc : page -> store -> store * (page_ref, store_error) Util.rresult
-  val dest_Store : store -> page_ref -> page
-  val page_ref_to_page :
-    page_ref -> store -> store * (page, store_error) Util.rresult
+  val free : page_ref list -> (unit, store, store_error) Monad.m_t
+  val alloc : page -> (page_ref, store, store_error) Monad.m_t
+  val page_ref_to_page : page_ref -> (page, store, store_error) Monad.m_t
 end = struct
 
 type page = Page of Arith.nat;;
@@ -125,16 +151,13 @@ type page_ref = Page_ref of Arith.nat;;
 
 type store = Store of (page_ref -> page);;
 
-type store_error = String;;
+type store_error = Store_error of char list;;
 
-let rec free ps = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+let rec free ps = Util.failwitha "FIXME";;
 
-let rec alloc p = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+let rec alloc p = Util.failwitha "FIXME";;
 
-let rec dest_Store x = let Store y = x in
-                       y;;
-
-let rec page_ref_to_page p = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'];;
+let rec page_ref_to_page p = Util.failwitha "FIXME";;
 
 end;;
 
@@ -148,9 +171,9 @@ end = struct
 type pframe = Node_frame of (Key_value_types.key list * Store.page_ref list) |
   Leaf_frame of (Key_value_types.key * Key_value_types.value_t) list;;
 
-let rec frame_to_page x = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'] x;;
+let rec frame_to_page x = Util.failwitha "FIXME" x;;
 
-let rec page_to_frame x = Util.failwitha ['F'; 'I'; 'X'; 'M'; 'E'] x;;
+let rec page_to_frame x = Util.failwitha "FIXME" x;;
 
 end;;
 
@@ -230,11 +253,7 @@ let rec split_leaf
               Arith.less_eq_nat Constants.min_leaf_size (List.size_list r))
           in
         let k =
-          (match r
-            with [] ->
-              Util.impossible1
-                ['k'; 'e'; 'y'; '_'; 'v'; 'a'; 'l'; 'u'; 'e'; ','; ' '; 's';
-                  'p'; 'l'; 'i'; 't'; '_'; 'l'; 'e'; 'a'; 'f']
+          (match r with [] -> Util.impossible1 "key_value, split_leaf"
             | (k, _) :: _ -> k)
           in
         (l, (k, r));;
@@ -401,7 +420,7 @@ let rec wf_ks_rs t0 = Util.assert_true t0 (forall_subtrees wf_ks_rs_1 t0);;
 
 let rec dest_Node
   = function Node (ks, rs) -> (ks, rs)
-    | Leaf uu -> Util.failwitha ['d'; 'e'; 's'; 't'; '_'; 'N'; 'o'; 'd'; 'e'];;
+    | Leaf uu -> Util.failwitha "dest_Node";;
 
 let rec tree_to_leaves
   t0 = (match t0
@@ -558,10 +577,7 @@ let rec tree_to_stack
                  let frm = Frame_ext (ks1, ts1, ta, ks2, ts2, ()) in
                  (ta, frm :: stk))
                  b
-             | (Tree.Leaf _, _) ->
-               Util.failwitha
-                 ['t'; 'r'; 'e'; 'e'; '_'; 't'; 'o'; '_'; 's'; 't'; 'a'; 'c';
-                   'k']));;
+             | (Tree.Leaf _, _) -> Util.failwitha "tree_to_stack"));;
 
 let rec stack_to_lu_of_child
   = function [] -> (None, None)
@@ -591,40 +607,6 @@ let rec add_new_stk_frame
 
 end;;
 
-module Monad : sig
-  val bind :
-    ('a -> Store.store -> Store.store * ('b, 'c) Util.rresult) ->
-      (Store.store -> Store.store * ('a, 'c) Util.rresult) ->
-        Store.store -> Store.store * ('b, 'c) Util.rresult
-  val fmap :
-    ('a -> 'b) ->
-      (Store.store -> Store.store * ('a, 'c) Util.rresult) ->
-        Store.store -> Store.store * ('b, 'c) Util.rresult
-  val fmap_error :
-    ('a -> 'b) ->
-      (Store.store -> Store.store * ('c, 'a) Util.rresult) ->
-        Store.store -> Store.store * ('c, 'b) Util.rresult
-end = struct
-
-let rec bind
-  f v = (fun s ->
-          (match v s with (s1, Util.Ok y) -> f y s1
-            | (s1, Util.Error x) -> (s1, Util.Error x)));;
-
-let rec fmap
-  f m s =
-    let (sa, r) = m s in
-    (sa, (match r with Util.Ok y -> Util.Ok (f y)
-           | Util.Error a -> Util.Error a));;
-
-let rec fmap_error
-  f m s =
-    let (sa, r) = m s in
-    (sa, (match r with Util.Ok a -> Util.Ok a
-           | Util.Error x -> Util.Error (f x)));;
-
-end;;
-
 module Frame : sig
   val r_to_t : Store.store -> Store.page_ref -> Tree.tree
   val r_stk_to_rs :
@@ -635,26 +617,28 @@ module Frame : sig
     Frame_types.pframe -> Key_value_types.key list * Store.page_ref list
   val page_ref_to_frame :
     Store.page_ref ->
-      Store.store ->
-        Store.store * (Frame_types.pframe, Store.store_error) Util.rresult
+      (Frame_types.pframe, Store.store, Store.store_error) Monad.m_t
 end = struct
 
 let rec r_to_ta
   s n r =
-    (if Arith.equal_nat n Arith.zero_nat
-      then Util.failwitha ['r'; '_'; 't'; 'o'; '_'; 't']
-      else Util.rev_apply
-             (Util.rev_apply
-               (Util.rev_apply (Util.rev_apply s Store.dest_Store)
-                 (fun f -> f r))
-               Frame_types.page_to_frame)
+    (if Arith.equal_nat n Arith.zero_nat then Util.failwitha "r_to_t"
+      else Util.rev_apply (Monad.dest_M (Store.page_ref_to_page r) s)
              (fun a ->
                (match a
-                 with Frame_types.Node_frame (ks, rs) ->
-                   Tree.Node
-                     (ks, List.map (r_to_ta s (Arith.minus_nat n Arith.one_nat))
-                            rs)
-                 | Frame_types.Leaf_frame aa -> Tree.Leaf aa)));;
+                 with (_, Util.Ok page) ->
+                   Util.rev_apply
+                     (Util.rev_apply page Frame_types.page_to_frame)
+                     (fun aa ->
+                       (match aa
+                         with Frame_types.Node_frame (ks, rs) ->
+                           Tree.Node
+                             (ks, List.map
+                                    (r_to_ta s
+                                      (Arith.minus_nat n Arith.one_nat))
+                                    rs)
+                         | Frame_types.Leaf_frame ab -> Tree.Leaf ab))
+                 | (_, Util.Error _) -> Util.failwitha "r_to_t\039 ")));;
 
 let rec r_to_t
   s r = r_to_ta s (Arith.nat_of_integer (Big_int.big_int_of_int 1000)) r;;
@@ -662,19 +646,12 @@ let rec r_to_t
 let rec r_stk_to_rs xs = Util.rev_apply xs (List.map Tree_stack.f_t);;
 
 let rec dest_Leaf_frame
-  f = (match f
-        with Frame_types.Node_frame _ ->
-          Util.failwitha
-            ['d'; 'e'; 's'; 't'; '_'; 'L'; 'e'; 'a'; 'f'; '_'; 'f'; 'r'; 'a';
-              'm'; 'e']
+  f = (match f with Frame_types.Node_frame _ -> Util.failwitha "dest_Leaf_frame"
         | Frame_types.Leaf_frame x -> x);;
 
 let rec dest_Node_frame
   f = (match f with Frame_types.Node_frame x -> x
-        | Frame_types.Leaf_frame _ ->
-          Util.failwitha
-            ['d'; 'e'; 's'; 't'; '_'; 'N'; 'o'; 'd'; 'e'; '_'; 'f'; 'r'; 'a';
-              'm'; 'e']);;
+        | Frame_types.Leaf_frame _ -> Util.failwitha "dest_Node_frame");;
 
 let rec page_ref_to_frame
   r = Util.rev_apply (Store.page_ref_to_page r)
@@ -685,19 +662,13 @@ end;;
 module Monad2 : sig
   type error
   val bind :
-    ('a -> Store.store -> Store.store * ('b, error) Util.rresult) ->
-      (Store.store -> Store.store * ('a, error) Util.rresult) ->
-        Store.store -> Store.store * ('b, error) Util.rresult
-  val free :
-    Store.page_ref list ->
-      Store.store -> Store.store * (unit, error) Util.rresult
-  val alloc :
-    Store.page ->
-      Store.store -> Store.store * (Store.page_ref, error) Util.rresult
-  val return : 'a -> Store.store -> Store.store * ('a, error) Util.rresult
+    ('a -> ('b, Store.store, error) Monad.m_t) ->
+      ('a, Store.store, error) Monad.m_t -> ('b, Store.store, error) Monad.m_t
+  val free : Store.page_ref list -> (unit, Store.store, error) Monad.m_t
+  val alloc : Store.page -> (Store.page_ref, Store.store, error) Monad.m_t
+  val return : 'a -> ('a, Store.store, error) Monad.m_t
   val page_ref_to_frame :
-    Store.page_ref ->
-      Store.store -> Store.store * (Frame_types.pframe, error) Util.rresult
+    Store.page_ref -> (Frame_types.pframe, Store.store, error) Monad.m_t
   val r_frame_to_t_frame :
     Store.store ->
       (Store.page_ref, unit) Tree_stack.frame_ext ->
@@ -716,7 +687,7 @@ let rec alloc
   p = Util.rev_apply (Store.alloc p)
         (Monad.fmap_error (fun a -> Store_error a));;
 
-let rec return x = (fun s -> (s, Util.Ok x));;
+let rec return x = Monad.M (fun s -> (s, Util.Ok x));;
 
 let rec se_to_e se = Store_error se;;
 
@@ -730,11 +701,9 @@ end;;
 module Find : sig
   type find_state
   val find_step :
-    find_state ->
-      Store.store -> Store.store * (find_state, Monad2.error) Util.rresult
+    find_state -> (find_state, Store.store, Monad2.error) Monad.m_t
   val empty_btree :
-    unit ->
-      Store.store -> Store.store * (Store.page_ref, Monad2.error) Util.rresult
+    unit -> (Store.page_ref, Store.store, Monad2.error) Monad.m_t
   val mk_find_state : Key_value_types.key -> Store.page_ref -> find_state
   val dest_f_finished :
     find_state ->
@@ -822,8 +791,7 @@ module Delete : sig
       (del_t *
         ((Store.page_ref, unit) Tree_stack.frame_ext list * Store.page_ref))
     | D_finished of Store.page_ref
-  val delete_step :
-    d_state -> Store.store -> Store.store * (d_state, Monad2.error) Util.rresult
+  val delete_step : d_state -> (d_state, Store.store, Monad2.error) Monad.m_t
   val dest_d_finished : d_state -> Store.page_ref option
   val mk_delete_state : Key_value_types.key -> Store.page_ref -> d_state
   val wellformed_delete_state :
@@ -1038,15 +1006,8 @@ let rec get_sibling
   p = let (p_1, p_2) = p in
       (match p_2
         with ([], _) ->
-          (match p_1
-            with ([], _) ->
-              Util.impossible1
-                ['d'; 'e'; 'l'; 'e'; 't'; 'e'; ','; ' '; 'g'; 'e'; 't'; '_';
-                  's'; 'i'; 'b'; 'l'; 'i'; 'n'; 'g']
-            | (_ :: _, []) ->
-              Util.impossible1
-                ['d'; 'e'; 'l'; 'e'; 't'; 'e'; ','; ' '; 'g'; 'e'; 't'; '_';
-                  's'; 'i'; 'b'; 'l'; 'i'; 'n'; 'g']
+          (match p_1 with ([], _) -> Util.impossible1 "delete, get_sibling"
+            | (_ :: _, []) -> Util.impossible1 "delete, get_sibling"
             | (_ :: _, _ :: _) ->
               let right = false in
               let (p_ks1, p_ts1) = p_1 in
@@ -1055,15 +1016,8 @@ let rec get_sibling
               let (p_1a, _) = ((p_1_ks, p_1_ts), p_2) in
               (right, ((p_1a, p_2), (p_k, s))))
         | (_ :: _, []) ->
-          (match p_1
-            with ([], _) ->
-              Util.impossible1
-                ['d'; 'e'; 'l'; 'e'; 't'; 'e'; ','; ' '; 'g'; 'e'; 't'; '_';
-                  's'; 'i'; 'b'; 'l'; 'i'; 'n'; 'g']
-            | (_ :: _, []) ->
-              Util.impossible1
-                ['d'; 'e'; 'l'; 'e'; 't'; 'e'; ','; ' '; 'g'; 'e'; 't'; '_';
-                  's'; 'i'; 'b'; 'l'; 'i'; 'n'; 'g']
+          (match p_1 with ([], _) -> Util.impossible1 "delete, get_sibling"
+            | (_ :: _, []) -> Util.impossible1 "delete, get_sibling"
             | (_ :: _, _ :: _) ->
               let right = false in
               let (p_ks1, p_ts1) = p_1 in
@@ -1076,11 +1030,7 @@ let rec get_sibling
           (right, ((p_1, (p_ks2, p_ts2)), (p_k, r))));;
 
 let rec step_up
-  du = (match du
-         with (_, []) ->
-           Util.impossible1
-             ['d'; 'e'; 'l'; 'e'; 't'; 'e'; ','; ' '; 's'; 't'; 'e'; 'p'; '_';
-               'u'; 'p']
+  du = (match du with (_, []) -> Util.impossible1 "delete, step_up"
          | (D_small_leaf kvs, p :: stk) ->
            let leaf = true in
            let mk_c = (fun (ks, vs) -> Frame_types.Leaf_frame (List.zip ks vs))
@@ -1282,8 +1232,7 @@ module Insert : sig
     I_up of (i_t * (Store.page_ref, unit) Tree_stack.frame_ext list) |
     I_finished of Store.page_ref
   val insert_step :
-    i_state_t ->
-      Store.store -> Store.store * (i_state_t, Monad2.error) Util.rresult
+    i_state_t -> (i_state_t, Store.store, Monad2.error) Monad.m_t
   val dest_i_finished : i_state_t -> Store.page_ref option
   val mk_insert_state :
     Key_value_types.key ->
@@ -1365,11 +1314,7 @@ let rec wf_u
                      Util.rev_apply t2 Tree.tree_to_kvs))));;
 
 let rec step_up
-  u = (match u
-        with (_, []) ->
-          Util.impossible1
-            ['i'; 'n'; 's'; 'e'; 'r'; 't'; ','; ' '; 's'; 't'; 'e'; 'p'; '_';
-              'u'; 'p']
+  u = (match u with (_, []) -> Util.impossible1 "insert, step_up"
         | (fo, x :: stk) ->
           let a = Tree_stack.dest_frame x in
           let (aa, b) = a in
@@ -1422,10 +1367,7 @@ let rec step_down
 let rec step_bottom
   d = let (fs, v) = d in
       (match Find.dest_f_finished fs
-        with None ->
-          Util.impossible1
-            ['i'; 'n'; 's'; 'e'; 'r'; 't'; ','; ' '; 's'; 't'; 'e'; 'p'; '_';
-              'b'; 'o'; 't'; 't'; 'o'; 'm']
+        with None -> Util.impossible1 "insert, step_bottom"
         | Some (r0, (k, (_, (kvs, stk)))) ->
           Util.rev_apply (Monad2.free (r0 :: Frame.r_stk_to_rs stk))
             (Monad2.bind
@@ -1511,8 +1453,7 @@ module Insert_many : sig
     I_finished of
       (Store.page_ref * (Key_value_types.key * Key_value_types.value_t) list)
   val insert_step :
-    i_state_t ->
-      Store.store -> Store.store * (i_state_t, Monad2.error) Util.rresult
+    i_state_t -> (i_state_t, Store.store, Monad2.error) Monad.m_t
   val dest_i_finished :
     i_state_t ->
       (Store.page_ref *
@@ -1539,11 +1480,7 @@ type i_state_t =
     (Store.page_ref * (Key_value_types.key * Key_value_types.value_t) list);;
 
 let rec step_up
-  u = (match u
-        with (_, []) ->
-          Util.impossible1
-            ['i'; 'n'; 's'; 'e'; 'r'; 't'; ','; ' '; 's'; 't'; 'e'; 'p'; '_';
-              'u'; 'p']
+  u = (match u with (_, []) -> Util.impossible1 "insert, step_up"
         | (fo, x :: stk) ->
           let a = Tree_stack.dest_frame x in
           let (aa, b) = a in
@@ -1605,11 +1542,7 @@ let rec split_leaf
         let _ = Arith.plus_nat n2a deltaa in
         let (l, r) = Util.split_at n1b kvs in
         let k =
-          (match r
-            with [] ->
-              Util.impossible1
-                ['i'; 'n'; 's'; 'e'; 'r'; 't'; '_'; 'm'; 'a'; 'n'; 'y'; ':';
-                  ' '; 's'; 'p'; 'l'; 'i'; 't'; '_'; 'l'; 'e'; 'a'; 'f']
+          (match r with [] -> Util.impossible1 "insert_many: split_leaf"
             | (k, _) :: _ -> k)
           in
         (l, (k, r));;
@@ -1638,10 +1571,7 @@ let rec kvs_insert_2
 let rec step_bottom
   d = let (fs, (v, kvs0)) = d in
       (match Find.dest_f_finished fs
-        with None ->
-          Util.impossible1
-            ['i'; 'n'; 's'; 'e'; 'r'; 't'; ','; ' '; 's'; 't'; 'e'; 'p'; '_';
-              'b'; 'o'; 't'; 't'; 'o'; 'm']
+        with None -> Util.impossible1 "insert, step_bottom"
         | Some (r0, (k, (_, (kvs, stk)))) ->
           Util.rev_apply (Monad2.free (r0 :: Frame.r_stk_to_rs stk))
             (Monad2.bind
