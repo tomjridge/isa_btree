@@ -31,7 +31,7 @@ definition dest_i_finished :: "is_t \<Rightarrow> (r * kvs) option" where
 
 (* defns ------------------------------------ *)
 
-definition step_down :: "d \<Rightarrow> d MM" where
+definition step_down :: "d \<Rightarrow> d SM_t" where
 "step_down d = (
   let (fs,v) = d in
   find_step fs |> fmap (% d'. (d',v))
@@ -87,7 +87,7 @@ definition split_leaf :: "kvs \<Rightarrow> kvs * k * kvs" where
 )"
 
 
-definition step_bottom :: "d \<Rightarrow> u MM" where
+definition step_bottom :: "d \<Rightarrow> u SM_t" where
 "step_bottom d = (
   let (fs,(v,kvs0)) = d in
   case dest_f_finished fs of 
@@ -108,7 +108,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
     fo |> fmap (% fo. (fo,stk))))
 )"
 
-definition step_up :: "u \<Rightarrow> u MM" where
+definition step_up :: "u \<Rightarrow> u SM_t" where
 "step_up u = (
   let (fo,stk) = u in
   case stk of 
@@ -133,7 +133,7 @@ definition step_up :: "u \<Rightarrow> u MM" where
   )
 )"
 
-definition insert_step :: "is_t \<Rightarrow> is_t MM" where
+definition insert_step :: "is_t \<Rightarrow> is_t SM_t" where
 "insert_step s = (
   case s of 
   I_down d \<Rightarrow> (

@@ -114,8 +114,8 @@ module Main = struct
       open KV
       open ST
       type pframe =  
-          Node_frame of (k_t list * page_ref list) |
-          Leaf_frame of (k_t * v_t) list[@@deriving yojson]
+          Node_frame of (key list * page_ref list) |
+          Leaf_frame of (key * value) list[@@deriving yojson]
 
       val frame_to_page : pframe -> page
       val page_to_frame : page -> pframe
@@ -140,12 +140,13 @@ module Main = struct
 
       module Frame_types = struct
         module Store = S.ST
-        module Key_value_types = KV
+        module Key_value_types = struct 
+          include KV
+          type value_t = value
+          let value_t_of_yojson = KV.value_of_yojson
+          let value_t_to_yojson = KV.value_to_yojson
+        end
         include S.FT
-        type key = KV.k_t
-        type value = KV.v_t
-        let value_t_of_yojson = KV.v_t_of_yojson
-        let key_t_of_yojson = KV.k_t_of_yojson
 
         (* implement dest_Store *)
       end
@@ -207,7 +208,7 @@ module Main = struct
         fun k0 r s -> {tree=Frame.r_to_t s r; store=s; fs=Find.mk_find_state k0 r}
 
       let step : t -> t = (fun x ->
-          let (s',Our.Util.Ok fs') = Find.find_step x.fs x.store in
+          let (s',Our.Util.Ok fs') = (Find.find_step x.fs |> Monad.dest_M) x.store in
           {x with fs=fs'})
 
 
@@ -276,7 +277,7 @@ module Main = struct
         fun s k v r ->{t=(Frame.r_to_t s r);k;v;store=s;is=(Insert.mk_insert_state k v r)}
 
       let step : t -> t = (fun x ->
-          let (s',Our.Util.Ok is') = Insert.insert_step x.is x.store in
+          let (s',Our.Util.Ok is') = (Insert.insert_step x.is|>Monad.dest_M) x.store in
           {x with store=s';is=is'})
 
       let dest = Insert.dest_i_finished
@@ -334,7 +335,7 @@ module Main = struct
         fun s k v kvs r ->{t=(Frame.r_to_t s r);k;v;store=s;is=(Insert_many.mk_insert_state k v kvs r)}
 
       let step : t -> t = (fun x ->
-          let (s',Our.Util.Ok is') = Insert_many.insert_step x.is x.store in
+          let (s',Our.Util.Ok is') = (Insert_many.insert_step x.is|>Monad.dest_M) x.store in
           {x with store=s';is=is'})
 
       let dest = Insert_many.dest_i_finished
@@ -395,7 +396,7 @@ module Main = struct
           }
 
       let step : t -> t = (fun x ->
-          let (s',Our.Util.Ok ds') = Delete.delete_step x.ds x.store in
+          let (s',Our.Util.Ok ds') = (Delete.delete_step x.ds|>Monad.dest_M) x.store in
           {x with store=s';ds=ds'})
 
       let dest = Delete.dest_d_finished
@@ -428,7 +429,7 @@ module Main = struct
           in
           match t.ds with
           | D_down (fs,r) -> `D_down (* FIXME fs *)
-          | D_up (f,(stk,r)) -> `D_up(from_store s f,stk|>List.map (Our'.Monad2.r_frame_to_t_frame s))
+          | D_up (f,(stk,r)) -> `D_up(from_store s f,stk|>List.map (Our'.Frame.r_frame_to_t_frame s))
           | D_finished(r) -> `D_finished(r|>Frame.r_to_t s)
         )
 

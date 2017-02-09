@@ -11,10 +11,10 @@ end
 
 
 module type KEY_VALUE = sig
-  type k_t [@@deriving yojson]
-  type v_t [@@deriving yojson]
-  val key_ord : k_t -> k_t -> int
-  val equal_value : v_t -> v_t -> bool (* only for wf checking *)
+  type key [@@deriving yojson]
+  type value [@@deriving yojson]
+  val key_ord : key -> key -> int
+  val equal_value : value -> value -> bool (* only for wf checking *)
 end
 
 module type CONSTANTS = sig
@@ -24,23 +24,7 @@ module type CONSTANTS = sig
   val min_node_keys : int
 end
 
-module type STORE = sig
-  module M : MONAD
-
-  type page 
-  type page_ref [@@deriving yojson]
-
-  (*  type store 
-  type store_error *)
-  (* val dest_Store : store -> page_ref -> page (* FIXME remove *) *)
-  (* at the moment this is just a hint to the cache api *)
-  val alloc : page -> page_ref M.m
-  val page_ref_to_page :  page_ref -> page M.m
-  val free : page_ref list -> unit M.m
-
-  val sync: unit M.m  (* the btree routines are oblivious to this, but the store should be aware eg to implement recycling filestore *)
-end
-
+module type STORE = Our.Store_t
 
 
 module type MAP = sig
@@ -50,10 +34,10 @@ module type MAP = sig
   module M : MONAD
 
   open KV
-  val insert: k_t -> v_t -> unit M.m
-  val insert_many: (k_t*v_t) list -> unit M.m
-  val find: k_t -> v_t option M.m
-  val delete: k_t -> unit M.m
+  val insert: key -> value -> unit M.m
+  val insert_many: (key*value) list -> unit M.m
+  val find: key -> value option M.m
+  val delete: key -> unit M.m
 
 end
 
@@ -78,21 +62,23 @@ end
 
 module Simple = struct
 
+  module type ST_t = sig 
+
+    include STORE with type page_ref = int 
+                   and type page = string (* ie immutable bytes *)
+
+    val page_size : int (* bytes per page *)
+
+  end
+
   module type S = sig
 
-    module KV : KEY_VALUE
+    module KV: KEY_VALUE
 
-    module ST : sig 
-
-      include STORE with type page_ref = int 
-                     and type page = string (* ie immutable bytes *)
-
-      val page_size : int (* bytes per page *)
-
-    end
+    module ST: ST_t
 
     open KV
-    val pp: (k_t,v_t) Pickle_params.t 
+    val pp: (key,value) Pickle_params.t 
 
   end (* S *)
 

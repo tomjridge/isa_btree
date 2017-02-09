@@ -56,8 +56,8 @@ module Make = functor (S:S) -> struct
 
 
     type pframe =  
-        Node_frame of (k_t list * page_ref list) |
-        Leaf_frame of (k_t * v_t) list[@@deriving yojson]
+        Node_frame of (key list * page_ref list) |
+        Leaf_frame of (key * value) list[@@deriving yojson]
 
     open Btree_util
 

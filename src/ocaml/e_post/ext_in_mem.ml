@@ -51,7 +51,7 @@ module Make = functor (S:S) -> struct
 
       type pframe =  
           Node_frame of (key list * page_ref list) |
-          Leaf_frame of (key * value_t) list[@@deriving yojson]
+          Leaf_frame of (key * value) list[@@deriving yojson]
 
       type page = pframe[@@deriving yojson]
 
@@ -65,6 +65,7 @@ module Make = functor (S:S) -> struct
 
       open FT
       open PR
+      open Our.Monad
 
       type page = FT.page
 
@@ -75,19 +76,21 @@ module Make = functor (S:S) -> struct
 
       let store_to_' s = {free'=s.free; m'=s.m|>Map_int.bindings}
 
-      type store_error = unit
+      let dest_Store : store -> page_ref -> page = (
+        fun s r -> Map_int.find r s.m)
 
-      let dest_Store : store -> page_ref -> page = (fun s r -> Map_int.find r s.m)
+      
+      let page_ref_to_page: page_ref -> (page,store) m_t = (
+        fun r -> M(fun s -> (s,Our.Util.Ok(Map_int.find r s.m))))
 
-      let page_ref_to_page r s = (s,Our.Util.Ok(Map_int.find r s.m))
+      let alloc: page -> (page_ref, store) m_t = (
+        fun p -> M(
+            fun s ->
+              let f = s.free in
+              ({free=(f+1);m=Map_int.add f p s.m}),Our.Util.Ok(f)))
 
-      let alloc p s = (
-        let f = s.free in
-        ({free=(f+1);m=Map_int.add f p s.m}),Our.Util.Ok(f))
-
-      let free :
-        page_ref list -> store -> store * (unit, store_error) Our.Util.rresult = (
-        fun ps s -> (s,Our.Util.Ok(())))
+      let free: page_ref list -> (unit, store) m_t = (
+        fun ps -> Our.Monad.M(fun s -> (s,Our.Util.Ok(()))))
 
     end (* ST' *)
 
@@ -136,7 +139,7 @@ module Example = struct
 
   module KV (* : KEY_VALUE_TYPES *) = struct 
     type key = int[@@deriving yojson]
-    type value_t = int[@@deriving yojson]
+    type value = int[@@deriving yojson]
     let key_ord k1 k2 = Pervasives.compare k1 k2
     let equal_value = (=)
   end

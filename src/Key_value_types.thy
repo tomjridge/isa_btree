@@ -7,6 +7,7 @@ begin
 (* this makes code export easier; of course, key is abstract *)
 datatype key = Private_key nat
 
+(* value is reserved in isa *)
 datatype value_t = Private_value nat
 
 
@@ -22,7 +23,7 @@ type_synonym kvs = kvs_t
 
 
 (* FIXME really an abstract parameter; this for code export *)
-definition key_ord :: "key => key => int"  where (* as ocaml compare *)
+definition key_ord :: "k => k => int"  where (* as ocaml compare *)
 "key_ord k1 k2 = failwith (STR ''key_ord'')"
 
 (*
