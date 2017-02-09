@@ -25,7 +25,7 @@ key_ord
 tree_to_leaves wellformed_tree
 
 (* monad *)
-Monad.M Monad.dest_M fmap fmap_error bind
+Monad.M Monad.dest_M fmap  bind
 
 (* store *)
 Store.Page_ref Store.Page Store.Store 
@@ -35,7 +35,7 @@ Store.page_ref_to_page Store.alloc
 Frame_types.Node_frame Frame_types.page_to_frame Frame_types.frame_to_page
 
 
-Monad2.r_frame_to_t_frame
+Frame.r_frame_to_t_frame
 
 (* find *)
 empty_btree

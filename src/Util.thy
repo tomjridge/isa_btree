@@ -23,6 +23,15 @@ definition arb :: "'a" where
 
 *)
 
+(* a single error type, for all proof-relevant errors ------------------------------------ *)
+
+datatype error_t = String_error "String.literal"
+
+definition mk_err :: "String.literal \<Rightarrow> error_t" where
+"mk_err s = String_error s"
+
+type_synonym e = error_t
+
 (* misc ------------------------------------------ *)  
   
 

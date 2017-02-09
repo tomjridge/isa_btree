@@ -6,7 +6,7 @@ begin
 
 (* we put this here because this is the "start" of the interface defns for the btree *)
 
-definition empty_btree :: "unit \<Rightarrow> r MM" where
+definition empty_btree :: "unit \<Rightarrow> r SM_t" where
 "empty_btree _ = (
   (* empty leaf *)
   let lf = Leaf_frame([]) in
@@ -43,7 +43,7 @@ definition mk_find_state :: "key \<Rightarrow> r \<Rightarrow> find_state" where
 
 (* FIXME maybe want to store ks,rs as a list of (k,r), with the invariant that the last k is +inf *)
 
-definition find_step :: "fs \<Rightarrow> fs MM" where
+definition find_step :: "fs \<Rightarrow> fs SM_t" where
 "find_step fs = (
   case fs of 
   F_finished _ \<Rightarrow> (return fs)  (* FIXME impossible, or return none? or have a finished error? or stutter? *)
@@ -62,7 +62,7 @@ definition find_step :: "fs \<Rightarrow> fs MM" where
 
 type_synonym 'a trace = "nat \<Rightarrow> 'a"
 
-fun find :: "fs \<Rightarrow> (fs MM) trace" where
+fun find :: "fs \<Rightarrow> (fs SM_t) trace" where
 "find fs n = (
   case n of 0 \<Rightarrow> (find_step fs)
   | Suc n \<Rightarrow> ( (find fs n) |>bind find_step)

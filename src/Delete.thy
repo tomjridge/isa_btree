@@ -87,7 +87,7 @@ definition steal_or_merge ::
 (* when called on a node (D_...) which is a root resulting from a delete op,
 we may have the situation that the root contains no keys, or is small *)
 
-definition post_steal_or_merge :: "stk \<Rightarrow> r frame \<Rightarrow> ks_rs \<Rightarrow> ks_rs \<Rightarrow> r d12_t => u MM" where
+definition post_steal_or_merge :: "stk \<Rightarrow> r frame \<Rightarrow> ks_rs \<Rightarrow> ks_rs \<Rightarrow> r d12_t => u SM_t" where
 "post_steal_or_merge stk' p p_1 p_2 x = (
       let m = frac_mult in
       case x of 
@@ -145,7 +145,7 @@ definition get_sibling :: "(ks_rs * ks_rs) \<Rightarrow> bool (* right *) * (ks_
         ))
 "
 
-definition step_up :: "u \<Rightarrow> u MM" where
+definition step_up :: "u \<Rightarrow> u SM_t" where
 "step_up du = (
   let (f,stk) = du in
   case stk of
@@ -161,9 +161,9 @@ definition step_up :: "u \<Rightarrow> u MM" where
       let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Leaf_frame(List.zip ks vs)) in
       let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_frame in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
-      let frm :: pframe MM = r |> page_ref_to_frame in
-      let d12 :: pframe d12_t MM = frm |> fmap (% frm. steal_or_merge right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Leaf_frame|>unzip)) in
-      let d12' :: r d12_t MM = d12 |> bind
+      let frm :: pframe SM_t = r |> page_ref_to_frame in
+      let d12 :: pframe d12_t SM_t = frm |> fmap (% frm. steal_or_merge right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Leaf_frame|>unzip)) in
+      let d12' :: r d12_t SM_t = d12 |> bind
       (% x. case x of
         D1 frm \<Rightarrow> frm |> frame_to_page |> alloc |> fmap (% r. D1 r)
         | D2(frm1,p_k,frm2) \<Rightarrow> (
@@ -184,8 +184,8 @@ definition step_up :: "u \<Rightarrow> u MM" where
       let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_frame in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = r|>page_ref_to_frame in
-      let d12 :: pframe d12_t MM = frm |> fmap (% frm. steal_or_merge right leaf mk_c (ks,rs) p_k (frm|>dest_Node_frame)) in
-      let d12' :: r d12_t MM = d12 |> bind
+      let d12 :: pframe d12_t SM_t = frm |> fmap (% frm. steal_or_merge right leaf mk_c (ks,rs) p_k (frm|>dest_Node_frame)) in
+      let d12' :: r d12_t SM_t = d12 |> bind
       (% x. case x of
         D1 frm \<Rightarrow> frm |> frame_to_page |> alloc |> fmap(% r. D1 r)
         | D2(frm1,p_k,frm2) \<Rightarrow> (
@@ -198,7 +198,7 @@ definition step_up :: "u \<Rightarrow> u MM" where
   )
 )"
 
-definition delete_step :: "d_state \<Rightarrow> d_state MM" where
+definition delete_step :: "d_state \<Rightarrow> d_state SM_t" where
 "delete_step s = (
   case s of 
   D_down(f,r0) \<Rightarrow> (
