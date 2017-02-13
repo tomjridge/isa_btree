@@ -1,13 +1,5 @@
 open Our
 
-(* debug config  ---------------------------------------- *)
-
-type config = {
-  check_wellformedness: bool
-}
-
-
-let config = { check_wellformedness=true }
 
 
 (* misc ---------------------------------------- *)
@@ -16,13 +8,6 @@ let dest_Some = function (Some x) -> x | _ -> failwith "dest_Some"
 
 let option_map f = function Some x -> Some(f x) | _ -> None
 
-module X = struct
-
-  let int_to_nat x = Gen_isa.(x |>Big_int.big_int_of_int|>Arith.nat_of_integer)
-  let int_to_int x = Gen_isa.(x |>Big_int.big_int_of_int|>(fun x -> Arith.Int_of_integer x))
-
-end
-
 let rec iter_step (f:'s -> 's option) (x:'s) = (
   let s' = f x in
   match s' with
@@ -30,45 +15,28 @@ let rec iter_step (f:'s -> 's option) (x:'s) = (
   | Some x' -> iter_step f x')
 
 
+(* isa translations ---------------------------------------- *)
+
+module X = struct
+
+  let int_to_nat x = Gen_isa.(x |>Big_int.big_int_of_int|>Arith.nat_of_integer)
+  let int_to_int x = Gen_isa.(x |>Big_int.big_int_of_int|>(fun x -> Arith.Int_of_integer x))
+
+end
+
+
+
 (* simplified structs ---------------------------------------- *)
 
 
 module type KEY_VALUE_TYPES = Btree_api.KEY_VALUE
-(*
-sig
-  type key [@@deriving yojson]
-  type value_t [@@deriving yojson]
-  val key_ord : key -> key -> int
-  val equal_value : value_t -> value_t -> bool (* only for wf checking *)
-end
-*)
 
-module type CONSTANTS = sig
-  val max_leaf_size : int
-  val max_node_keys : int
-  val min_leaf_size : int
-  val min_node_keys : int
-end
+module type CONSTANTS = Btree_api.CONSTANTS
 
 module type STORE = Btree_api.STORE
-(*
-sig
-  type page 
-  type page_ref [@@deriving yojson]
-  type store 
-  type store_error
-  val alloc : page -> store -> store * (page_ref, store_error) Util.rresult
-  val dest_Store : store -> page_ref -> page (* FIXME remove *)
-  val page_ref_to_page :
-    page_ref -> store -> store * (page, store_error) Util.rresult
-
-  (* at the moment this is just a hint to the cache api *)
-  val free : page_ref list -> store -> store * (unit, store_error) Util.rresult
-end
-*)
 
 
-(* construct non-simple versions ---------------------------------------- *)
+(* construct non-simple versions suitable for isa -------------------------- *)
 
 module Mk_kv = functor (KV:KEY_VALUE_TYPES) -> struct
 
@@ -93,6 +61,41 @@ module Mk_c = functor (C:CONSTANTS) -> struct
   let min_node_keys = C.min_node_keys|>X.int_to_nat
 end
 
+module Mk_st = functor (ST:STORE) -> struct
+
+  module ST = ST
+
+  module T = struct
+    type page = ST.page
+    type store = ST.store
+    type page_ref = ST.page_ref[@@deriving yojson]
+    
+    open Our
+    let to_our_monad : 'a ST.M.m -> ('a,store) Our.Monad.m_t = (
+      fun x -> Our.Monad.M(
+          fun s -> (
+              x |> ST.M.run s |> (fun r -> 
+                  match r with
+                  (s',Ok(z)) -> (s',Our.Util.Ok(z))
+                  | (s',Error e) -> (s',Our.Util.Error (Our.Util.String_error e)))
+        )
+    ))
+
+    let free : page_ref list -> (unit, store) Monad.m_t = (fun ps ->
+        ST.free ps |> to_our_monad)
+
+    let alloc : page -> (page_ref, store) Monad.m_t = (fun p ->
+        ST.alloc p |> to_our_monad)
+
+    let dest_Store : store -> page_ref -> page = ST.dest_Store
+
+    let page_ref_to_page : page_ref -> (page, store) Monad.m_t = (fun r ->
+        ST.page_ref_to_page r |> to_our_monad)
+  end
+
+  include T
+
+end
 
 
 (* main functor ---------------------------------------- *)
@@ -138,8 +141,10 @@ module Main = struct
 
       module KV = Mk_kv(S.KV)
 
+      module ST = Mk_st(S.ST)
+
       module Frame_types = struct
-        module Store = S.ST
+        module Store = ST
         module Key_value_types = struct 
           include KV
           type value_t = value
@@ -193,9 +198,8 @@ module Main = struct
 
       let check_state s = (
         last_state:=Some(s);
-        if (config.check_wellformedness) then
-          assert (Find.wellformed_find_state s.store s.tree s.fs)
-        else ();
+        Test.test (fun _ -> 
+          assert (Find.wellformed_find_state s.store s.tree s.fs));            
       )
 
       let check_trans s s' = (
@@ -262,9 +266,8 @@ module Main = struct
 
       let check_state s = (
         last_state:=Some(s);
-        if (config.check_wellformedness) then
-          assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is)
-        else ();
+        Test.test (fun _ ->
+            assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is));
       )
 
       let check_trans x y = (
@@ -318,9 +321,9 @@ module Main = struct
 
       let check_state s = (
         last_state:=Some(s);
-        if (config.check_wellformedness) then
-          assert (true)
-        else ();
+        Test.test (fun _ -> 
+            assert (true));
+        ()
       )
 
       let check_trans x y = (
@@ -376,9 +379,9 @@ module Main = struct
 
       let check_state s = (
         last_state:=Some(s);
-        if (config.check_wellformedness) then
-          assert (Delete.wellformed_delete_state s.t s.k s.store s.ds)
-        else ()
+        Test.test (fun _ -> 
+          assert (Delete.wellformed_delete_state s.t s.k s.store s.ds));
+        ()
       )
 
       let check_trans x y = (

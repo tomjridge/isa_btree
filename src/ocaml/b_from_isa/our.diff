@@ -1,6 +1,6 @@
---- gen_our.ml	2017-02-09 16:45:45.385185404 +0000
-+++ our.ml	2017-02-09 16:45:58.385562646 +0000
-@@ -1,3 +1,11 @@
+--- gen_our.ml	2017-02-09 16:46:05.357764967 +0000
++++ our.ml	2017-02-13 09:57:25.852675619 +0000
+@@ -1,5 +1,13 @@
 +let string_of_chars chars = chars|>List.map (String.make 1)|>String.concat ""
 +
 +type any_t
@@ -10,8 +10,11 @@
 +open Gen_isa
 +
  module Util : sig
-   type error_t
+-  type error_t
++  type error_t = String_error of string
    type ('a, 'b) rresult = Ok of 'a | Error of 'b
+   val rev_apply : 'a -> ('a -> 'b) -> 'b
+   val unzip : ('a * 'b) list -> 'a list * 'b list
 @@ -24,7 +32,7 @@ let rec unzip
    xs = (rev_apply xs (List.map Product_Type.fst),
           rev_apply xs (List.map Product_Type.snd));;

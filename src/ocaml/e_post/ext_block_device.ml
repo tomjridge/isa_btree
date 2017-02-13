@@ -2,23 +2,28 @@
 
 (* FIXME put everything in monads, so that we can easily compose things *)
 
+(* FIXME make a config modules, which contains basic config params - default blocksize; how many bytes to store an int etc *)
+
 let failwith x = failwith ("block_device: "^x)
 
 open Sexplib.Std (* for ppx_assert *)
 
 
 (* basic type for in-mem block, and on-disk block ref -------------------- *)
-module Block = struct
 
-  type t = bytes (* 4096 *)
+(* FIXME move to config? *)
+module Defaults = struct
 
-  let size = 4096 (* bytes *)
+  (* page of block? at this level we prefer block; in mem we use page *)
+  type block = Btree_api.Simple.page 
+
+  let page_size = 4096 (* bytes *)
 
   (* block ref *)
-  type r = int[@@deriving yojson]
+  type block_ref = Btree_api.Simple.page_ref[@@deriving yojson]
 
   (* to make an empty block before writing to disk *)
-  let empty () = Bytes.make size (Char.chr 0) 
+  let empty () = String.make page_size (Char.chr 0) 
 
 end
 
@@ -26,19 +31,17 @@ end
 
 (* a block device backed by a file ---------------------------------------- *)
 
-module Blk_fd = struct
-
-  type r = Block.r
-
-  type block = Block.t
-
+module Blkdev_on_fd = struct
   type fd = Unix.file_descr
-
   type t = fd
+  type r = Defaults.block_ref
+  type blk = Defaults.block
+               
+  module M = Btree_util.State_error_monad.Make(struct type state = fd end)
 
-  let block_size = Block.size
+  let block_size = Defaults.page_size
 
-  let mk_block : bytes -> block = (
+  let mk_block : string -> blk = (
     fun x -> 
       assert(Bytes.length x = block_size);
       x
@@ -48,49 +51,43 @@ module Blk_fd = struct
 
   let r_to_off r = block_size * r
 
-  let read : fd -> r -> block = (
-    fun s r -> 
-      try Unix.(
-          let _ = lseek s (r_to_off r) SEEK_SET in
-          let buf = Block.empty() in (* bytes are mutable *)
-          let n = read s buf 0 block_size in
-(*
-          let _ = print_endline (
-              X_string.replace_list {| $n $r $bs |} 
-                [("$n",n|>string_of_int);
-                 ("$r",r|>string_of_int);
-                 ("$bs",block_size|>string_of_int);
-                ]
-            )
-          in
-*)
-          let _ = [%test_eq: int] n block_size in
-          let _ = assert (n=block_size) in
-          buf)
-      with Unix.Unix_error _ -> failwith "read"  (* FIXME *)
+  let read : r -> blk M.m = (
+    fun r -> (
+        fun s ->
+          try Unix.(
+              let _ = lseek s (r_to_off r) SEEK_SET in
+              let buf = Bytes.make block_size (Char.chr 0) in 
+              let n = read s buf 0 block_size in
+              (* let _ = [%test_eq: int] n block_size in *)
+              let _ = assert (n=block_size) in
+              (s,Ok buf))
+          with Unix.Unix_error _ -> failwith "read"  (* FIXME *)
+      )
   )
 
-  let write: fd -> r -> block -> unit = (
-    fun s r buf -> 
-      try Unix.(
-          let _ = lseek s (r_to_off r) SEEK_SET in        
-          let n = single_write s buf 0 block_size in
-          let _ = assert (n=block_size) in
-          ())
-      with _ -> failwith "write"  (* FIXME *)
+  let write: r -> blk -> unit M.m = (
+    fun r buf -> (fun s ->
+        try Unix.(
+            let _ = lseek s (r_to_off r) SEEK_SET in        
+            let n = single_write s buf 0 block_size in
+            let _ = assert (n=block_size) in
+            (s,Ok ()))
+        with _ -> failwith "write"  (* FIXME *)
+      )
   )
 
 
-  (* FIXME was existing_file_to_fd *)
+  let sync : unit M.m = (fun s -> 
+      try ExtUnixSpecific.fsync s; (s,Ok())
+      with _ -> failwith "sync")
+
   let open_file: string -> fd = Unix.(
-      fun s ->
-        openfile s [O_RDWR] 0o640 
-    )
+      fun s -> openfile s [O_RDWR] 0o640 )
 
 
 end
 
-
+let _ = (module Blkdev_on_fd : Btree_api.BLOCK_DEVICE)
 
 
 (*
@@ -98,7 +95,7 @@ module Cached_blockstore = struct
 
   type r = Blockstore.r (* ref to a block *)
 
-  type block = Block.t
+  type block = Default_block.t
 
   module Lru = struct
     module Key = struct
@@ -135,66 +132,71 @@ end
 
 (* a store backed by a file ---------------------------------------- *)
 
+(* we target Btree_api.Simple.STORE *)
+
 module Filestore (* : Our.Store_t *) = struct
 
-  open Our
-
-  type page_ref = int [@@deriving yojson]
-  type page = Block.t
-
+  type page_ref = Btree_api.Simple.page_ref [@@deriving yojson]
+  type page = Btree_api.Simple.page
+  let page_size = Defaults.page_size
 
   type store = { 
-    fd: Blk_fd.fd; 
-    free_ref: int;
+    fd: Blkdev_on_fd.fd; 
+    free_ref: page_ref;
   }
 
-  type store_error = string
 
-  open Blk_fd
+  open Blkdev_on_fd
 
+  module M = Btree_util.State_error_monad.Make(
+    struct type state = store end)
+
+      
   (* alloc without write; free block can then be used to write data
-     out of the btree *)
-  let alloc_block : store -> store * (page_ref, store_error) Util.rresult = (
+     outside the btree *)
+  let alloc_block : page_ref M.m = (
     fun s -> 
       let r = s.free_ref in
-      ({s with free_ref=r+1},Our.Util.Ok(r))  
+      ({s with free_ref=r+1},Ok(r))
   )
 
-  let alloc : page -> store -> store * (page_ref, store_error) Util.rresult = (
-    fun p s -> 
-      try (
-        (* go to end, identify corresponding ref, and write *)
-        (*
-        let n = Unix.(lseek (s|>get_fd) 0 SEEK_END) in
-        let _ = assert (n mod Block.size = 0) in
-        let r = n / Block.size in
-           *)
-        let r = s.free_ref in
-        let _ = write s.fd r p in
-        ({s with free_ref=r+1},Our.Util.Ok(r))  
-      )
-      with _ -> (s,Our.Util.Error "Filestore.alloc")
-  )
+  let alloc : page -> page_ref M.m = (
+    fun p -> (fun s -> 
+        try (
+          let r = s.free_ref in
+          let x = Blkdev_on_fd.M.(write r p |> run s.fd) in
+          ({s with free_ref=r+1},Ok(r))
+        )
+        with _ -> (s,Error "Filestore.alloc")
+      ))
 
 
-  let free: 
-    page_ref list -> store -> store * (unit, store_error) Util.rresult = (
-    fun ps -> fun s -> (s,Util.Ok()))
+  let free: page_ref list -> unit M.m = (fun ps -> fun s -> (s,Ok()))
 
-  let page_ref_to_page: 
-    page_ref -> store -> store * (page, store_error) Util.rresult = (
-    fun r s ->
-      try (
-        (s,Util.Ok(read s.fd r))
-      )
-      with _ -> (s,Util.Error "Filestore.page_ref_to_page")
-  )
+  let page_ref_to_page: page_ref -> page M.m = (
+    fun r -> (fun s ->
+        try (
+          let x = Blkdev_on_fd.M.(read r|>run s.fd) in
+          match x with
+          | (_,Ok(p)) -> (s,Ok(p))
+          | (_,Error e) -> (s,Error e)
+        ) 
+        with _ -> (s,Error "Filestore.page_ref_to_page")
+  ))
 
+  
   let dest_Store : store -> page_ref -> page = (
-    fun s r -> read s.fd r)
+    fun s r -> M.(
+        page_ref_to_page r |> run s |> (fun x -> 
+            match x with
+              (_,Ok(p)) -> p
+            | _ -> failwith __LOC__)))
 
 end
 
+let _ = (module Filestore : Btree_api.STORE)
+
+let _ = (module Filestore : Btree_api.Simple.STORE)
 
 
 
@@ -202,12 +204,9 @@ end
 
 module Recycling_filestore = struct
 
-  open Our
-
   type page_ref = Filestore.page_ref [@@deriving yojson]
   type page = Filestore.page
-  type store_error = Filestore.store_error
-
+  let page_size = Defaults.page_size
   
   module Cache = Map.Make(
     struct 
@@ -228,51 +227,56 @@ module Recycling_filestore = struct
   type store = { 
     fs: Filestore.store; 
     cache: page Cache.t;  (* a cache of pages which need to be written *)
-    freed_not_synced: Set_r.t   (* could be a list - we don't free something that has already been freed *)
+    freed_not_synced: Set_r.t   
+    (* could be a list - we don't free something that has already been freed *)
   }
 
-  let alloc : page -> store -> store * (page_ref, store_error) Util.rresult = (
-    fun p s -> 
-      match (Set_r.is_empty s.freed_not_synced) with
-      | true -> Filestore.(
-          (* want to delay filestore write, but allocate a ref upfront *)
-          let free_r = s.fs.free_ref in
-          let fs' = { s.fs with free_ref = free_r+1 } in
-          let cache' = Cache.add free_r p s.cache in
-          ({s with fs=fs';cache=cache'},Util.Ok free_r))
-      | false -> (
-          (* just return a ref we allocated previously *)
-          s.freed_not_synced 
-          |> Set_r.min_elt 
-          |> (fun r -> 
-              let s' = 
-                {s with 
-                 freed_not_synced=(Set_r.remove r s.freed_not_synced);
-                 cache=(Cache.add r p s.cache)
-                } 
-              in
-              (s',Util.Ok(r))
-            )
-        )
-    )
+  module M = Btree_util.State_error_monad.Make(
+      struct type state = store end)
+
+  (* FIXME following should use the monad from filestore *)
+  let alloc : page -> page_ref M.m = (
+    fun p -> (fun s -> 
+        match (Set_r.is_empty s.freed_not_synced) with
+        | true -> Filestore.(
+            (* want to delay filestore write, but allocate a ref upfront *)
+            let free_r = s.fs.free_ref in
+            let fs' = { s.fs with free_ref = free_r+1 } in
+            let cache' = Cache.add free_r p s.cache in
+            ({s with fs=fs';cache=cache'},Ok free_r))
+        | false -> (
+            (* just return a ref we allocated previously *)
+            s.freed_not_synced 
+            |> Set_r.min_elt 
+            |> (fun r -> 
+                let s' = 
+                  {s with 
+                   freed_not_synced=(Set_r.remove r s.freed_not_synced);
+                   cache=(Cache.add r p s.cache)
+                  } 
+                in
+                (s',Ok(r))
+              )
+          )
+      )
+  )
 
 
-  let free : page_ref list -> store -> store * (unit, store_error) Util.rresult
-    = (fun ps s -> (
+  let free : page_ref list -> unit M.m = (
+    fun ps -> (fun s -> 
         {s with freed_not_synced=(
              Set_r.union s.freed_not_synced (Set_r.of_list ps)) },
-        Util.Ok()))
+        Ok()))
 
 
-  let page_ref_to_page : 
-    page_ref -> store -> store * (page, store_error) Util.rresult = (
-    fun r s -> 
-      (* consult cache first *)
-      let p = try Some(Cache.find r s.cache) with Not_found -> None in
-      match p with
-      | Some p -> (s,Util.Ok p)
-      | None -> (Filestore.page_ref_to_page r s.fs 
-                 |> (fun (fs',p) -> ({s with fs=fs'},p))))
+  let page_ref_to_page: page_ref -> page M.m = (
+    fun r -> (fun s -> 
+        (* consult cache first *)
+        let p = try Some(Cache.find r s.cache) with Not_found -> None in
+        match p with
+        | Some p -> (s,Ok p)
+        | None -> (Filestore.page_ref_to_page r s.fs 
+                   |> (fun (fs',p) -> ({s with fs=fs'},p)))))
 
 
   let dest_Store : store -> page_ref -> page = (
@@ -282,7 +286,6 @@ module Recycling_filestore = struct
   (* FIXME at the moment this doesn't write anything to store - that
      happens on a sync, when the cache is written out *)
 
-
   (* FIXME this should also flush the cache of course *)
   let sync : store -> unit = (
     fun s ->
@@ -291,10 +294,17 @@ module Recycling_filestore = struct
           Filestore.(fun r p -> 
               match (Set_r.mem r s.freed_not_synced) with 
               | true -> () 
-              | false -> Blk_fd.write s.fs.fd r p)
+              | false -> (
+                  match Blkdev_on_fd.(write r p|>M.run s.fs.fd) with
+                  | (_,Error e) -> failwith (__LOC__ ^ e)
+                  | (_,Ok _) -> ()))
           s.cache 
       in
       ())
 
 end
 
+
+let _ = (module Recycling_filestore : Btree_api.STORE)
+
+let _ = (module Recycling_filestore : Btree_api.Simple.STORE)

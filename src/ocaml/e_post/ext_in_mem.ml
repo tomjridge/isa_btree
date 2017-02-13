@@ -11,8 +11,6 @@
 
 let failwith x = failwith ("in_mem: "^x)
 
-(* we concentrate on relatively small parameters *)
-
 
 (* setup ---------------------------------------- *)
 
@@ -32,95 +30,66 @@ module Map_int = Btree_util.Map_int
 
 module Make = functor (S:S) -> struct
 
-  module Private = struct
-
-    module S = S
-
-    open S
+  module S = S
 
 
-    module PR = struct 
-      type page_ref = int[@@deriving yojson]
-    end
+  (* want to construct Btree.Main.S in order to call Main.Make *)
+  module Btree = Btree.Main.Make(struct 
+
+      module C = S.C
+      module KV = S.KV
+
+      module PR = struct 
+        type page_ref = int[@@deriving yojson]
+      end
+
+      module FT = struct
+        open KV
+        open PR
+        type pframe =  
+            Node_frame of (key list * page_ref list) |
+            Leaf_frame of (key * value) list[@@deriving yojson]
+
+        type page = pframe[@@deriving yojson]
+
+        let frame_to_page : pframe -> page = fun x -> x
+        let page_to_frame : page -> pframe = fun x -> x
+
+      end
+
+      module ST = struct
+
+        type page = FT.page  [@@deriving yojson]
+        type page_ref = PR.page_ref  [@@deriving yojson]
+        type store = {free:int; m:page Map_int.t}
+
+        module M = Btree_util.State_error_monad.Make(
+          struct type state = store end)
 
 
-    module FT = struct
+        (* for yojson *)
+        type store' = {free':int; m':(int * page) list}[@@deriving yojson]
 
-      open KV
-      open PR
+        let store_to_' s = {free'=s.free; m'=s.m|>Map_int.bindings}
 
-      type pframe =  
-          Node_frame of (key list * page_ref list) |
-          Leaf_frame of (key * value) list[@@deriving yojson]
+        let dest_Store : store -> page_ref -> page = (
+          fun s r -> Map_int.find r s.m)
 
-      type page = pframe[@@deriving yojson]
+        let page_ref_to_page: page_ref -> page M.m = (
+          fun r -> (fun s -> (s,Ok(Map_int.find r s.m))))
 
-      let frame_to_page : pframe -> page = fun x -> x
-      let page_to_frame : page -> pframe = fun x -> x
-
-    end
-
-
-    module ST' = struct
-
-      open FT
-      open PR
-      open Our.Monad
-
-      type page = FT.page
-
-      type store = {free:int; m:page Map_int.t}
-
-      (* for yojson *)
-      type store' = {free':int; m':(int * page) list}[@@deriving yojson]
-
-      let store_to_' s = {free'=s.free; m'=s.m|>Map_int.bindings}
-
-      let dest_Store : store -> page_ref -> page = (
-        fun s r -> Map_int.find r s.m)
-
-      
-      let page_ref_to_page: page_ref -> (page,store) m_t = (
-        fun r -> M(fun s -> (s,Our.Util.Ok(Map_int.find r s.m))))
-
-      let alloc: page -> (page_ref, store) m_t = (
-        fun p -> M(
-            fun s ->
+        let alloc: page -> page_ref M.m = (
+          fun p -> (fun s ->
               let f = s.free in
-              ({free=(f+1);m=Map_int.add f p s.m}),Our.Util.Ok(f)))
+              ({free=(f+1);m=Map_int.add f p s.m}),Ok(f)))
 
-      let free: page_ref list -> (unit, store) m_t = (
-        fun ps -> Our.Monad.M(fun s -> (s,Our.Util.Ok(()))))
+        let free: page_ref list -> unit M.m = (
+          fun ps -> (fun s -> (s,Ok(()))))
 
-    end (* ST' *)
-
-
-    module ST (* : STORE *) = struct
-      include PR
-      include ST'
-    end
+      end (* ST *)
 
 
-    module S' (* : Btree.S *) = struct
-
-      module C = C
-
-      module KV = KV
-
-      module ST = ST
-
-      module FT = FT
-
-    end
-
-
-    module Btree' = Btree.Main.Make(S')
-    
-  end (* Private *)
-
-
-  include Private.Btree'
-
+    end)  (* Btree *)
 
 end  (* Make *)
 
@@ -128,27 +97,23 @@ end  (* Make *)
 (* example int int btree ---------------------------------------- *)
 
 module Example = struct 
+  include Make(struct 
+      module C : CONSTANTS = struct
+        let max_leaf_size = 5
+        let max_node_keys = 5
+        let min_leaf_size = 2
+        let min_node_keys = 2
+      end
 
-  module C : CONSTANTS = struct
-    let max_leaf_size = 5
-    let max_node_keys = 5
-    let min_leaf_size = 2
-    let min_node_keys = 2
-  end
-
-
-  module KV (* : KEY_VALUE_TYPES *) = struct 
-    type key = int[@@deriving yojson]
-    type value = int[@@deriving yojson]
-    let key_ord k1 k2 = Pervasives.compare k1 k2
-    let equal_value = (=)
-  end
-
-
-  include Make(struct module C=C module KV=KV end)
-
+      module KV (* : KEY_VALUE_TYPES *) = struct 
+        type key = int[@@deriving yojson]
+        type value = int[@@deriving yojson]
+        let key_ord k1 k2 = Pervasives.compare k1 k2
+        let equal_value = (=)
+      end
+    end)
 
   let empty = Map_int.empty
 
-
 end
+

@@ -7,7 +7,7 @@ let any_ref = ref ((Obj.magic 1):any_t)
 open Gen_isa
 
 module Util : sig
-  type error_t
+  type error_t = String_error of string
   type ('a, 'b) rresult = Ok of 'a | Error of 'b
   val rev_apply : 'a -> ('a -> 'b) -> 'b
   val unzip : ('a * 'b) list -> 'a list * 'b list

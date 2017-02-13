@@ -111,7 +111,7 @@ end
 
 module Examples = struct
 
-  open Btree_util
+  (* open Btree_util *)
 
   let p_pair : 'a P.m -> 'b P.m -> ('a * 'b) P.m = P.(fun p q ->
       p |> bind (fun x -> q |> bind (fun y -> ret (x,y))))

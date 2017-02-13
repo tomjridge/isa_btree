@@ -14,13 +14,12 @@ open Btree_util
 
 (* assumptions ---------------------------------------- *)
 
-let block_size = Block.size
-
 let int_size = 4  (* bytes *)
 
 
 (* KV, C, STORE, FT --------------------------------------- *)
 
+(* for ints *)
 module KV = struct
   type key = int[@@deriving yojson]
   type value = int[@@deriving yojson]
@@ -28,14 +27,17 @@ module KV = struct
   let equal_value : value -> value -> bool = (=)
 end
 
+let _ = (module KV : Btree_api.KEY_VALUE)
+
 
 (* NB page=string *)
-module type STORE = Btree_api.Simple.ST_t
-
+module type STORE = Btree_api.Simple.STORE
 
 module Make = functor (ST:STORE) -> struct
 
-  module S = struct
+  module ST = ST
+
+  module Btree_simple = Btree_simple.Make(struct
     module KV=KV
     module ST=ST
     open KV
@@ -48,53 +50,47 @@ module Make = functor (ST:STORE) -> struct
         u_v = u_int;
         v_len = 4;
       }
-  end
-
-  module Btree_simple' = Btree_simple.Make(S)
-
+  end)
 
 end
 
 
-(* frame mapping for int int kv ---------------------------------------- *)
+(* int-int store on recycling filestore ------------------------------------- *)
 
-(* ties together C, KV, store and frame maps *)
+(* from here we specialize to recycling_filestore *)
 
-(* from here, we specialize to the following filestore *)
 module ST = Recycling_filestore
 
-module Int_int_filestore (* : Btree.S *) = struct
+module Int_int_filestore = struct
 
-  include Make(ST)
+  module Int_int_store = Make(ST)
 
   let existing_file_to_new_store = (
-    let open S in
+    let open Int_int_store.Btree_simple.S. in
     let open ST in
-    let open FT in
     let f : string -> store * page_ref = (
       fun s ->
-        let fd = Blk_fd.open_file s in
+        let fd = Blkdev_on_fd.open_file s in
         (* now need to write the initial frame *)
         let frm = Leaf_frame [] in
         let p = frm|>frame_to_page in
         let r = 0 in
-        let () = Blk_fd.write fd r p in
-
-        Recycling_filestore.(
+        let () = (
+          match Blkdev_on_fd.(write r p |> M.run fd) with
+          | (_,Error e) -> failwith (__LOC__ ^ e)
+          | _ -> ())
+        in
+        ST.(
           {fs = Filestore.{fd=fd;free_ref=r+1} ;
-           cache=Cache.empty;
+           cache=ST.Cache.empty;
            freed_not_synced=Set_int.empty;
-          },r)
-
-      (*        
-        Filestore.({ fd=fd; free_ref = r+1},r)
-*)
-    )
+          },r))
     in
     f)
 
 end
 
+(* FIXME want this let _ = (module Int_int_filestore.Btree : Btree_api.MAP) *)
 
 
 (* a high-level cache over Insert_many -------------------------------------- *)
@@ -105,7 +101,7 @@ module Int_int_cached (* : Btree.S *) = struct
 
   open Int_int_filestore
 
-  type kvs = (KV.key * KV.value_t) list
+  type kvs = (KV.key * KV.value) list
 
   type pending_inserts = int Map_int.t  (* the high-level cache *)
 
@@ -114,7 +110,7 @@ module Int_int_cached (* : Btree.S *) = struct
   module Insert = struct
 
     (* just add to cache *)
-    let insert : KV.key -> KV.value_t -> t -> t = (
+    let insert : KV.key -> KV.value -> t -> t = (
       fun k v t -> 
         let (r,s,ps) = t in
         let ps' = Map_int.add k v ps in
