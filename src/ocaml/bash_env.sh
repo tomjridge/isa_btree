@@ -76,3 +76,10 @@ function rm_links() {
     rm -f _links
     for f in $link_files; do rm -f `basename $f`; done
 }
+
+
+# mlis ----------------------------------------
+
+function mk_mlis() {
+    for f in $mls; do $ocamlc -i $f > tmp/${f/.ml/.mli}; done
+}

@@ -4,137 +4,99 @@
 open Ext_bytestore
 open Btree_util
 
+module Params = struct
+  type page = string (* 4096 *)
+  let page_size = 4096
 
-
-module Page = struct
-
-  type t = bytes (* 4096 *)
-
-  let pagesize = 4096
-
+  type block = string
+  type blk_id = int
 end
-
-
 
 module Buff = struct
-
-  type t = bytes
-
+  type t = bytes (* we want to read into a buf; different from block/page *)
   let length = Bytes.length
-
-  let create = Bytes.create
-
+  let create = (fun n -> Bytes.make n (Char.chr 0))
 end
 
-
+let _ = (module Buff : Buff_t)
 
 (* FIXME here we want to have an in-mem store to page *)
 
 module Disk = struct
-
-  type store = {free:int; map: Page.t Map_int.t}
-
+  module Buff = Buff
+  type store = {free:int; map: Params.page Map_int.t}
   type store_error  (* no constructors *)
-
   let empty_disk = {free=0; map=Map_int.empty}
 
-  module M = struct
+  module M = Btree_util.State_error_monad.Make(struct type state = store end)
 
-    type 'a m = store -> store * 'a 
-
-    let bind: ('a -> 'b m) -> 'a m -> 'b m = (
-      fun f fa -> fun s -> 
-        fa s |> (fun (s,a) -> f a s))
-
-    let return: 'a -> 'a m = fun a -> fun s -> (s,a)
-
-  end      
-  
-
-  type block = Page.t (* 4096 *)
-
-  type blk_id = int
-
-  let blocksize = Page.pagesize
-
+  type block = Params.block (* 4096 *)
+  type blk_id = Params.blk_id
+  let block_size = Params.page_size
 
   let write_buff: Buff.t -> offset -> blk_id M.m = (
     fun buf off s -> 
-      let page = Bytes.create blocksize in
+      let page = Bytes.create block_size in
       let len = 
-        let x = Bytes.length buf - off in
-        if x < blocksize then x else blocksize
+        let x = Buff.length buf - off in
+        if x < block_size then x else block_size
       in
-      let _ = Bytes.blit buf off page 0 len in
+      let _ = Bytes.blit buf off (Bytes.of_string page) 0 len in
       let page_id = s.free in
-      ({free=s.free+1; map=Map_int.add page_id page s.map},page_id)
+      ({free=s.free+1; map=Map_int.add page_id page s.map},Ok page_id)
   )
 
   let read_buff: Buff.t -> offset -> blk_id -> unit M.m = (
     fun buf off i s -> try (
         let len = 
           let x = Bytes.length buf - off in
-          if x>blocksize then blocksize else x
+          if x>block_size then block_size else x
         in
         let page = Map_int.find i s.map in
         let _ = Bytes.blit page 0 buf off len in
-        (s,())
+        (s,Ok ())
     ) with _ -> failwith "read_buff"
   )
 
-(*
-  (* write a single int (buff length) into a block *)
-  let write_int: int -> blk_id M.m = (
-    fun i s -> 
-      let buf = Bytes.create blocksize in
-      let bs = ints_to_bytes [Int32.of_int i] buf in
-      let free = s.free in
-      ({free=free+1; map=Map_int.add free buf s.map},free)
-  )
-
-
-  let read_int: blk_id -> int M.m = (
-    fun i s ->
-      let blk = Map_int.find i s.map in
-      let j::_ = bytes_to_ints blk in
-      let j' = Int32.to_int j in
-      (s,j') )
-*)
-
   (* additional Btree.STORE interface -------------------------------------- *)
-  type page = bytes
-
+  type page = string
   type page_ref = int[@@deriving yojson]
 
-  let alloc : page -> store -> store * (page_ref, store_error) rresult = (
+  let alloc : page -> page_ref M.m = (
     fun p s -> 
       ({free=s.free+1; map=Map_int.add s.free p s.map},Ok s.free))
 
-  let dest_Store : store -> page_ref -> page (* FIXME remove *) = (
+  let dest_Store : store -> page_ref -> page = (
     fun s r -> 
       (* print_endline (string_of_int r);  *)
       try (Map_int.find r s.map) with _ -> failwith "dest_Store" )
 
-  let page_ref_to_page :
-    page_ref -> store -> store * (page, store_error) rresult = (
+  let page_ref_to_page: page_ref -> page M.m = (
     fun r s -> 
       try (s,Ok(Map_int.find r s.map)) with _ -> failwith "page_ref_to_page")
 
-  let free : page_ref list -> store -> store * (unit, store_error) rresult = (
+  let free : page_ref list -> unit M.m = (
     fun rs s -> (s,Ok ()))
 
+  let page_size = Params.page_size
+
 end
+
+let _ = (module Disk: Disk_t)
+
+let _ = (module Disk: Btree_api.STORE)
 
 
 (* btree backed by Disk ---------------------------------------- *)
 
 module Btree' = struct 
 
-  include Ext_int_int_store.Make(Disk)
+  module Int_int_store = Ext_int_int_store.Make(Disk)
 
   type ref_t = int
 
   open Disk
+  open Int_int_store.Btree_simple.
 
   let empty_btree: unit -> ref_t M.m = (
     fun _ s -> 

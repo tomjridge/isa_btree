@@ -24,6 +24,9 @@ test:
 _generated: FORCE
 	$(MAKE) -C b_from_isa
 
+mlis: 
+	`mk_mlis`
+
 # ----------------------------------------
 
 #	$$ocamlopt -g -linkpkg -o a.out $$mls # FIXME

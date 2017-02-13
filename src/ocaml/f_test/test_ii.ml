@@ -2,21 +2,22 @@
 
 open Btree_util
 open Ext_int_int_store
+open Int_int_filestore
 
 let default_filename = "/tmp/store"
 
-module X = Int_int_filestore
-
 let (s,r) = Int_int_filestore.existing_file_to_new_store default_filename
 
-let (s',r') = X.Insert.insert 1 2 r s
+module Btree = Int_int_store.Btree_simple.Btree
+
+let (s',r') = Btree.Insert.insert 1 2 r s
 
 let main () = 
   let (s,r) = (ref s,ref r) in
   let xs = ref (Batteries.(1 -- 1000 |> List.of_enum)) in
   while (!xs <> []) do
     let x = List.hd !xs in
-    let (s',r') = X.Insert.insert x (2*x) !r !s in
+    let (s',r') = Btree.Insert.insert x (2*x) !r !s in
     s:=s';r:=r';xs:=List.tl !xs
   done;
   Ext_int_int_store.ST.sync !s;

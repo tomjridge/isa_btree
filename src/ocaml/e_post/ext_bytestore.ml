@@ -15,72 +15,40 @@
 
 open Our.Util
 
-
 type blk_index = int
-
 type offset = int
 
+module type Buff_t = sig  
+  type t
+  val length: t -> int
+  val create: int -> t
+end
+
+module type Disk_t = sig
+  module Buff: Buff_t
+  type store
+  (* type store_error *)
+  module M : (sig
+    type 'a m 
+    val bind: ('a -> 'b m) -> 'a m -> 'b m
+    val return: 'a -> 'a m
+  end)
+  type block
+  type blk_id = int
+  val block_size: int 
+  (* write block_size bytes from buff, unless at end of buff, in
+     which case write the remainder *)
+  val write_buff: Buff.t -> offset -> blk_id M.m
+  val read_buff: Buff.t -> offset -> blk_id -> unit M.m
+end
 
 module type S = sig 
-
-
   (* in-memory buffer *)
-  module Buff : (sig  
-
-    type t
-
-    val length: t -> int
-
-    val create: int -> t
-
-  end)
-
-
-  module Disk : (sig
-
-    type store
-
-    type store_error
-
-
-    module M : (sig
-
-      type 'a m  (* store -> store * ('a,store_error) rresult *)
-
-      val bind: ('a -> 'b m) -> 'a m -> 'b m
-
-      (* val map: ('a -> 'b) -> 'a m -> 'b m *)
-
-      val return: 'a -> 'a m
-
-    end)
-
-
-    type block
-
-    type blk_id = int
-
-    val blocksize: int 
-
-    (* write blocksize bytes from buff, unless at end of buff, in which case write the remainder *)
-    val write_buff: Buff.t -> offset -> blk_id M.m
-
-    val read_buff: Buff.t -> offset -> blk_id -> unit M.m
-
-    (*
-    (* write a single int (buff length) into a block *)
-    FIXME we don't need these - just write the length to index -1 in the btree val write_int: int -> blk_id M.m
-
-
-    val read_int: blk_id -> int M.m
-       *)
-
-  end)
-
-
+  module Buff: Buff_t
+  module Disk: Disk_t with module Buff = Buff
 
   (* copy from in-mem buffer to block; expect start to be block
-     aligned? expect end to be start+blocksize unless last part of
+     aligned? expect end to be start+block_size unless last part of
      buf? FIXME this is actually expected to mutate the block, but
      isn't in the monad (which is really concerned with the store);
      dont' use "original" block after this op! *)
@@ -88,26 +56,13 @@ module type S = sig
   val copy: Buff.t -> int (* start *) -> int (* end *) 
     -> Disk.block -> Disk.block
      *)
-
-
   module Btree : (sig
-
     type ref_t = int (* typically a blk_id; FIXME exposed to make debugging easier *)
-
     open Disk
-
     val empty_btree: unit -> ref_t M.m
-
     val insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t M.m
-        
     val find: ref_t -> blk_index -> blk_id M.m
-
-
   end)
-
-
-
-
 end
 
 
@@ -122,7 +77,6 @@ module Make = functor (S:S) -> struct
   open Btree
 
   open M
-
 
   (* use this to store the length of the buffer *)
   let meta_key = -1
@@ -143,7 +97,7 @@ module Make = functor (S:S) -> struct
               let rec f: blk_index -> ref_t -> ref_t m = (
                 fun n r -> (
                     (* if len=4096, we write 1 block; if 4097, 2; if 0, 0 *)
-                    let off = n * blocksize in
+                    let off = n * block_size in
                     match off < len with
                     | true -> (
                         (* alloc, write out, update btree, and recurse *)
@@ -168,7 +122,7 @@ module Make = functor (S:S) -> struct
           (* now read the blocks and update the buf *)
           let rec f: blk_index -> unit m = (
             fun n ->
-              let off = n*blocksize in
+              let off = n*block_size in
               match off < len with
               | true -> (find r n |> bind (
                   fun blk_id ->
