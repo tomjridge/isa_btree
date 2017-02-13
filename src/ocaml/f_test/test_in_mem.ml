@@ -9,10 +9,9 @@ let failwith x = failwith ("test_in_mem: "^x)
 
 open Ext_in_mem
 open Ext_in_mem.Example
-open Example.Private.S'
-open Our'
 
-module BT=Example
+open Example.Btree
+open Example.Btree.Our'
 
 (* state type for testing ---------------------------------------- *)
 
@@ -39,10 +38,12 @@ type action = Insert of int | Delete of int
 (* if we hit an exception, we want to know what the input tree was,
    and what the command was *)
 
+
 (* FIXME remove *)
 let (init_store, init_r) = (
-  let open ST in
-  let open FT in
+  let open Our'.Store in
+  let open Our'.Frame_types in
+  let open Example.ST in
   ({free=1;m=Map_int.empty |> Map_int.add 0 (Leaf_frame[])}, 0)
 )
 
@@ -61,9 +62,9 @@ let test range = (
   (* next states from a given tree *)
   let step t = (
     (range|>List.map (fun x -> action:=Insert x; 
-                       BT.Insert.insert x x (t.Test_state.r) (t.Test_state.s))) @
+                       Btree.Insert.insert x x (t.Test_state.r) (t.Test_state.s))) @
     (range|>List.map (fun x -> action:=Delete x; 
-                       BT.Delete.delete x (t.Test_state.r) (t.Test_state.s)))
+                       Btree.Delete.delete x (t.Test_state.r) (t.Test_state.s)))
   ) |> List.map (fun (s,r) -> Test_state.{t=(Frame.r_to_t s r) ;s;r}) |> Test_state_set.of_list
   in
   let _ = 
@@ -100,12 +101,12 @@ let test_insert () = (
   let xs = ref (Batteries.(1 -- 1000000 |> List.of_enum)) in
     while (!xs <> []) do
       let x = List.hd !xs in
-      let (s0',r0') = BT.Insert.insert x (2*x) !r0 !s0 in
+      let (s0',r0') = Btree.Insert.insert x (2*x) !r0 !s0 in
       s0:=s0';r0:=r0';xs:=List.tl !xs
     done;
   ) with _ -> (
       print_endline "Failure...";
-      !s0|>Private.ST'.store_to_'|>Private.ST'.store'_to_yojson|>Yojson.Safe.to_string|>print_endline; 
+      !s0|>ST.store_to_'|>ST.store'_to_yojson|>Yojson.Safe.to_string|>print_endline; 
       ()
     );
     ()
