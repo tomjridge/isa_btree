@@ -13,7 +13,7 @@ root=$(realpath $(dirname $BASH_SOURCE))/../..
 test -f $root/config.sh && source $root/config.sh
 
 PKGS="-package num,yojson,ppx_deriving_yojson,batteries,bos.setup \
-  -package ppx_assert,ppx_assert.runtime-lib,sexplib,core,lru-cache,tjr_lib"
+  -package ppx_assert,ppx_assert.runtime-lib,sexplib,core,lru-cache,tjr_lib,extunix"
 
 SYNTAX="" # "-syntax camlp4o" # simplify: use for every file
 FLGS="-g -thread"
@@ -34,10 +34,12 @@ mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt $FLGS"
 
 # gen_isa.ml 
 
+# mls ----------------------------------------
+
 mls=" \
 gen_isa.ml \
 our.ml \
-test.ml btree_util.ml pickle.ml btree_api.ml \
+test.ml pickle.ml btree_api.ml btree_util.ml \
 btree.ml \
 btree_simple.ml \
 ext_in_mem.ml ext_block_device.ml \
@@ -59,7 +61,7 @@ bytes="test_in_mem.byte test_ii.byte test_bytestore.byte"
 # links ----------------------------------------
 
 function init() {
-    link_files=`ls b_from_isa/* c_pre/* d_core/* e_post/* f_test/*`
+    link_files=`ls b_from_isa/*.ml c_pre/*.ml d_core/*.ml e_post/*.ml f_test/*.ml`
 }
 
 function mk_links() {

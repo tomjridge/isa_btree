@@ -66,7 +66,7 @@ module Int_int_filestore = struct
   module Int_int_store = Make(ST)
 
   let existing_file_to_new_store = (
-    let open Int_int_store.Btree_simple.S. in
+    let open Int_int_store.Btree_simple.Btree.S.FT in
     let open ST in
     let f : string -> store * page_ref = (
       fun s ->
@@ -132,7 +132,8 @@ module Int_int_cached (* : Btree.S *) = struct
             match kvs with
               [] -> None
             | (k,v)::kvs -> (
-                let (s,(r,kvs)) = Insert_many.insert k v kvs r s in
+                let (s,(r,kvs)) = 
+                  Int_int_filestore.Int_int_store.Btree_simple.Btree.Insert_many.insert k v kvs r s in
                 Some(s,r,kvs)))
           in
           let (s,r,kvs) = Btree.iter_step f (s,r,kvs) in
