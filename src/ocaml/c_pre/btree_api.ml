@@ -107,7 +107,6 @@ end
 
 (* like a map, but pointers are explicit *)
 module type RAW_MAP = sig
-
   module KV : KEY_VALUE
   module ST : STORE
   type ref_t = ST.page_ref

@@ -300,6 +300,79 @@ module Main = struct
     end)
 
 
+
+    module Insert_many_ = struct  (* ---------------------------------------- *)
+
+      open Our_
+      module KV_ = Key_value_types
+      module ST_ = Store
+
+      type t = {
+        t: Tree.tree;
+        k:Key_value_types.key;
+        v:Key_value_types.value_t;
+        store: Store.store;
+        is: Insert_many.i_state_t
+      }
+
+      let last_state : t option ref = ref None   
+
+      let last_trans : (t*t) option ref = ref None
+
+      let check_state s = (
+        last_state:=Some(s);
+        Test.test (fun _ -> 
+            assert (true))  (* FIXME *)
+      )
+
+      let check_trans x y = (
+        last_trans:=Some(x,y);
+        check_state x;
+        check_state y
+      )
+
+      type kvs = (KV_.key * KV_.value_t) list
+
+      let mk: KV_.key -> KV_.value_t -> kvs -> ST_.page_ref -> ST_.store -> t = 
+        fun k v kvs r s -> {
+            t=(Frame.r_to_t s r);k;v;store=s;
+            is=(Insert_many.mk_insert_state k v kvs r)}
+
+      exception E of (t*string)
+
+      open Btree_util
+      open Btree_api
+
+      let step : t -> t = (fun x ->
+          x.store |> (Insert_many.insert_step x.is|>Monad.dest_M)
+          |> (fun (s',y) -> (s',rresult_to_result y))
+          |> (fun (s',y) ->
+              match y with
+              | Ok is' -> { x with store=s';is=is' }
+              | Error e -> raise (E({ x with store=s'},e))))
+
+      let dest s' = s'.is |> Insert_many.dest_i_finished
+
+      let insert : KV_.key -> KV_.value_t -> kvs -> ST_.page_ref -> 
+        (ST_.page_ref * kvs,ST_.store) Sem.m = (
+        fun k v kvs r store ->
+          try (
+            let s = ref (mk k v kvs r store) in
+            let _ = check_state !s in
+            let s' = ref(!s) in
+            let _ = 
+              while((!s')|>dest = None) do
+                s := !s';
+                s' := step !s;
+                check_trans !s !s';
+              done
+            in        
+            let (r,kvs') = (!s')|>dest|>dest_Some in
+            ((!s').store,Ok(r,kvs'))
+          ) with E(t,e) -> (t.store,Error e))
+    end
+
+
     module Delete_ = (struct  (* ---------------------------------------- *)
       open Our_
       module KV_ = Key_value_types
@@ -416,20 +489,21 @@ module Main = struct
           fun (s,r) -> 
             Insert_.insert k v r |> Sem.run s |> (fun (s',res) ->
                 match res with
-                | Ok r' -> ((s',r'),Ok ())
-                | Error e -> ((s',r),Error e)))
+                | Ok r' -> ((s',r'),Pervasives.Ok ())
+                | Error e -> ((s',r),Pervasives.Error e)))
 
       let delete: key -> unit m = (
         fun k (s,r) -> 
           Delete_.delete k r |> Sem.run s |> (fun (s',res) ->
               match res with
-              Ok r' -> ((s',r'),Ok ())
-              | Error e -> ((s',r),Error e)))
+                Ok r' -> ((s',r'),Pervasives.Ok ())
+              | Error e -> ((s',r),Pervasives.Error e)))
 
+
+      let insert_many: (key*value) list -> unit m = failwith ""
 
 (*
       let insert_many: (key*value) list -> unit m
-      let delete: key -> unit m
 *)
     end
 
