@@ -20,7 +20,8 @@ let rec iter_step (f:'s -> 's option) (x:'s) = (
 module X = struct
 
   let int_to_nat x = Gen_isa.(x |>Big_int.big_int_of_int|>Arith.nat_of_integer)
-  let int_to_int x = Gen_isa.(x |>Big_int.big_int_of_int|>(fun x -> Arith.Int_of_integer x))
+  let int_to_int x = Gen_isa.(
+      x |>Big_int.big_int_of_int|>(fun x -> Arith.Int_of_integer x))
 
 end
 
@@ -39,11 +40,8 @@ module type STORE = Btree_api.STORE
 (* construct non-simple versions suitable for isa -------------------------- *)
 
 module Mk_kv = functor (KV:KEY_VALUE_TYPES) -> struct
-
   open X
-
   include KV
-
   let key_eq k1 k2 = KV.key_ord k1 k2 = 0
   let key_ord k1 k2 = KV.key_ord k1 k2|>int_to_int
   let equal_keya k1 k2 = KV.key_ord k1 k2 = 0
@@ -62,25 +60,26 @@ module Mk_c = functor (C:CONSTANTS) -> struct
 end
 
 module Mk_st = functor (ST:STORE) -> struct
-
   module ST = ST
-
-  module T = struct
+  module T (* : Our.Store_t *) = struct
     type page = ST.page
     type store = ST.store
     type page_ref = ST.page_ref[@@deriving yojson]
-    
+
     open Our
-    let to_our_monad : 'a ST.M.m -> ('a,store) Our.Monad.m_t = (
+    open Btree_api
+    let to_our_monad: 
+      ('a,store) State_error_monad.m -> ('a,store) Our.Monad.m_t = (
       fun x -> Our.Monad.M(
           fun s -> (
-              x |> ST.M.run s |> (fun r -> 
+              x |> State_error_monad.run s |> (fun r -> 
                   match r with
-                  (s',Ok(z)) -> (s',Our.Util.Ok(z))
-                  | (s',Error e) -> (s',Our.Util.Error (Our.Util.String_error e)))
-        )
-    ))
-
+                  | (s',Ok(z)) -> (s',Our.Util.Ok(z))
+                  | (s',Error e) -> 
+                    (s',Our.Util.Error (Our.Util.String_error e)))
+            )
+        ))
+    
     let free : page_ref list -> (unit, store) Monad.m_t = (fun ps ->
         ST.free ps |> to_our_monad)
 
@@ -93,8 +92,9 @@ module Mk_st = functor (ST:STORE) -> struct
         ST.page_ref_to_page r |> to_our_monad)
   end
 
-  include T
+  let _ = (module T : Our.Store_t)
 
+  include T
 end
 
 
@@ -103,15 +103,10 @@ end
 (* this is the most general interface to the btree routines *)
 
 module Main = struct
-
   module type S = sig
-
     module C : CONSTANTS
-
     module KV: KEY_VALUE_TYPES
-
     module ST: STORE
-
     (* this module's types depend on the previous modules *)
     module FT : sig
       open KV
@@ -123,26 +118,17 @@ module Main = struct
       val frame_to_page : pframe -> page
       val page_to_frame : page -> pframe
     end
-
   end
-
 
   module Make = functor (S:S) -> struct
 
-
     (* set up to call our.make ---------------------------------------- *)
-
     module S = S
-
     (* don't want these infecting the namespace *)
     module Btree_private = struct
-
       module C = Mk_c(S.C)
-
       module KV = Mk_kv(S.KV)
-
       module ST = Mk_st(S.ST)
-
       module Frame_types = struct
         module Store = ST
         module Key_value_types = struct 
@@ -152,45 +138,25 @@ module Main = struct
           let value_t_to_yojson = KV.value_to_yojson
         end
         include S.FT
-
-        (* implement dest_Store *)
       end
-
     end
 
     (* use our.make functor ---------------------------------------- *)
+    module Our_ = Our.Make(Btree_private.C)(Btree_private.Frame_types)
 
-    module Our' = Our.Make(Btree_private.C)(Btree_private.Frame_types)
 
-    open Our'
-
-  (*
-  module Tree = Our'.Tree
-  module Store = Our'.Frame_types.Store
-  module Frame = Our'.Frame
-     *)
-
-    type t = Tree.tree
-    type t0 = t (* so we can refer to it without shadowing *)
-
-    (* open M *)
-
-    let empty : t = Tree.(Leaf[])
-
-    (* let tree_to_leaves : t -> (key * value_t) list list = Tree.tree_to_leaves *)
-
-    module Find = struct
-
-      module Find = Our'.Find
-
+    (* Raw_map exposes a monad, but here we repeatedly run the step
+       function; this allows us to check various invariants *)
+    module Find_ = (struct  (* ---------------------------------------- *)
+      open Our_
+      module KV_ = Key_value_types
+      
       (* FIXME wrap in constructor to get nice type? *)
       type t = {
         tree: Tree.tree;
         store: Store.store;
         fs: Find.find_state
       }
-
-      let dest_finished s' = (s').fs|>Find.dest_f_finished|>dest_Some
 
       let last_state : t option ref = ref None   
 
@@ -208,22 +174,31 @@ module Main = struct
         check_state s'
       )
 
-      let mk : Key_value_types.key -> Store.page_ref -> Store.store -> t = 
-        fun k0 r s -> {tree=Frame.r_to_t s r; store=s; fs=Find.mk_find_state k0 r}
+      let mk : KV_.key -> Store.page_ref -> Store.store -> t = 
+        fun k0 r s -> {
+            tree=Frame.r_to_t s r; store=s; fs=Find.mk_find_state k0 r}
+
+      exception E of (t*string)
 
       let step : t -> t = (fun x ->
-          let (s',Our.Util.Ok fs') = (Find.find_step x.fs |> Monad.dest_M) x.store in
-          {x with fs=fs'})
+          x.store |> (Find.find_step x.fs |> Monad.dest_M) 
+          |> (fun (s',y) -> (s',Btree_util.rresult_to_result y))
+          |> (fun (s',y) -> (
+                match y with
+                | Ok fs' -> ({ x with store = s';fs=fs'})
+                | Error e -> raise (E({ x with store=s'}, e)))
+            ))
 
+      let dest s' = (s').fs|>Find.dest_f_finished
 
-      (* for testing *)
-      let find_1 : Store.store -> Key_value_types.key -> Store.page_ref -> t = (
-        fun st k r ->
+      (* loop until finished *)
+      let find_1 : KV_.key -> Store.page_ref -> Store.store -> t = (
+        fun k r st ->
           let s = ref (mk k r st) in
           let _ = check_state !s in
           let s' = s in
           let _ = 
-            while((!s').fs|>Find.dest_f_finished = None) do
+            while(dest (!s') = None) do
               s := !s';
               s' := step !s;
               check_trans !s !s'
@@ -233,29 +208,37 @@ module Main = struct
           !s'
       )
 
-      let find : Store.store -> Key_value_types.key -> Store.page_ref -> Key_value_types.value_t option = (
-        fun st k r ->
-          let s' = find_1 st k r in
-          (* s' is finished *)
-          let (r0,(k,(r,(kvs,stk)))) = (s').fs|>Find.dest_f_finished|>dest_Some in
-          let kv = 
-            try
-              Some(kvs|>List.find (function (x,y) -> Key_value.key_eq x k))
-            with Not_found -> None
-          in
-          kv|>option_map snd)
+      open Btree_api
 
-    end
+      let find: 
+        KV_.key -> Store.page_ref -> (KV_.value_t option,Store.store) Sem.m = (
+        fun k r st ->
+          try (
+            let s' = find_1 k r st in
+            (* s' is finished *)
+            let (r0,(k,(r,(kvs,stk)))) = s'|>dest|>dest_Some in
+            let v = 
+              try
+                Some(
+                  kvs|>List.find (function (x,y) -> Key_value.key_eq x k)
+                  |>snd)
+              with Not_found -> None
+            in
+            (s'.store,Ok v)
+          ) with E(t,e) -> (t.store,Error e)
+      )
+    end)
 
 
-    module Insert = struct
-
-      module Insert = Our'.Insert
+    module Insert_ = (struct  (* ---------------------------------------- *)
+      open Our_
+      module KV_ = Key_value_types
+      module ST_ = Store
 
       type t = {
         t: Tree.tree;
-        k:Key_value_types.key;
-        v:Key_value_types.value_t;
+        k:KV_.key;
+        v:KV_.value_t;
         store: Store.store;
         is: Insert.i_state_t
       }
@@ -267,45 +250,62 @@ module Main = struct
       let check_state s = (
         last_state:=Some(s);
         Test.test (fun _ ->
-            assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is));
+            assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is))
       )
-
+      
       let check_trans x y = (
         last_trans:=Some(x,y);
         check_state x;
         check_state y
       )
 
-      let mk : Store.store -> Key_value_types.key -> Key_value_types.value_t -> Store.page_ref -> t = 
-        fun s k v r ->{t=(Frame.r_to_t s r);k;v;store=s;is=(Insert.mk_insert_state k v r)}
+      let mk: KV_.key -> KV_.value_t -> ST_.page_ref -> ST_.store -> t =
+        fun k v r s -> { 
+            t=(Frame.r_to_t s r);k;v;store=s;
+            is=(Insert.mk_insert_state k v r)
+          }
+
+      exception E of (t*string)
+
+      open Btree_util
+      open Btree_api
 
       let step : t -> t = (fun x ->
-          let (s',Our.Util.Ok is') = (Insert.insert_step x.is|>Monad.dest_M) x.store in
-          {x with store=s';is=is'})
+          x.store |> (Insert.insert_step x.is |> Monad.dest_M)
+          |> (fun (s',y) -> (s',rresult_to_result y))
+          |> (fun (s',y) -> 
+              match y with
+              | Ok is' -> ({ x with store = s'; is=is'})
+              | Error e -> raise (E({ x with store=s'},e))))
 
-      let dest = Insert.dest_i_finished
+      let dest s' = s'.is |> Insert.dest_i_finished
 
-      let insert : Key_value_types.key -> Key_value_types.value_t -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
+      let insert: KV_.key -> KV_.value_t -> ST_.page_ref -> (ST_.page_ref,ST_.store) Sem.m = (
         fun k v r store ->
-          let s = ref (mk store k v r) in
-          let _ = check_state !s in
-          let s' = ref(!s) in
-          let _ = 
-            while((!s').is|>dest = None) do
-              s := !s';
-              s' := step !s;
-              check_trans !s !s';
-            done
-          in        
-          let r = (!s').is|>dest|>dest_Some in
-          ((!s').store,r))
+          try (
+            let s = ref (mk k v r store) in
+            let _ = check_state !s in
+            let s' = ref(!s) in
+            let _ = 
+              while((!s')|>dest = None) do
+                s := !s';
+                s' := step !s;
+                check_trans !s !s';
+              done
+            in        
+            let r = (!s')|>dest|>dest_Some in
+            ((!s').store,Ok r)
+          ) with E(t,e) -> (t.store,Error e))
 
-    end
+    end)
 
 
-    module Insert_many = struct
 
-      module Insert_many = Our'.Insert_many
+    module Insert_many_ = struct  (* ---------------------------------------- *)
+
+      open Our_
+      module KV_ = Key_value_types
+      module ST_ = Store
 
       type t = {
         t: Tree.tree;
@@ -322,8 +322,7 @@ module Main = struct
       let check_state s = (
         last_state:=Some(s);
         Test.test (fun _ -> 
-            assert (true));
-        ()
+            assert (true))  (* FIXME *)
       )
 
       let check_trans x y = (
@@ -332,39 +331,52 @@ module Main = struct
         check_state y
       )
 
-      type kvs = (Key_value_types.key * Key_value_types.value_t) list
+      type kvs = (KV_.key * KV_.value_t) list
 
-      let mk : Store.store -> Key_value_types.key -> Key_value_types.value_t -> kvs -> Store.page_ref -> t = 
-        fun s k v kvs r ->{t=(Frame.r_to_t s r);k;v;store=s;is=(Insert_many.mk_insert_state k v kvs r)}
+      let mk: KV_.key -> KV_.value_t -> kvs -> ST_.page_ref -> ST_.store -> t = 
+        fun k v kvs r s -> {
+            t=(Frame.r_to_t s r);k;v;store=s;
+            is=(Insert_many.mk_insert_state k v kvs r)}
+
+      exception E of (t*string)
+
+      open Btree_util
+      open Btree_api
 
       let step : t -> t = (fun x ->
-          let (s',Our.Util.Ok is') = (Insert_many.insert_step x.is|>Monad.dest_M) x.store in
-          {x with store=s';is=is'})
+          x.store |> (Insert_many.insert_step x.is|>Monad.dest_M)
+          |> (fun (s',y) -> (s',rresult_to_result y))
+          |> (fun (s',y) ->
+              match y with
+              | Ok is' -> { x with store=s';is=is' }
+              | Error e -> raise (E({ x with store=s'},e))))
 
-      let dest = Insert_many.dest_i_finished
+      let dest s' = s'.is |> Insert_many.dest_i_finished
 
-      let insert : Key_value_types.key -> Key_value_types.value_t -> kvs -> Store.page_ref -> Store.store -> (Store.store * (Store.page_ref * kvs)) = (
+      let insert : KV_.key -> KV_.value_t -> kvs -> ST_.page_ref -> 
+        (ST_.page_ref * kvs,ST_.store) Sem.m = (
         fun k v kvs r store ->
-          let s = ref (mk store k v kvs r) in
-          let _ = check_state !s in
-          let s' = ref(!s) in
-          let _ = 
-            while((!s').is|>dest = None) do
-              s := !s';
-              s' := step !s;
-              check_trans !s !s';
-            done
-          in        
-          let (r,kvs') = (!s').is|>dest|>dest_Some in
-          ((!s').store,(r,kvs')))
-
+          try (
+            let s = ref (mk k v kvs r store) in
+            let _ = check_state !s in
+            let s' = ref(!s) in
+            let _ = 
+              while((!s')|>dest = None) do
+                s := !s';
+                s' := step !s;
+                check_trans !s !s';
+              done
+            in        
+            let (r,kvs') = (!s')|>dest|>dest_Some in
+            ((!s').store,Ok(r,kvs'))
+          ) with E(t,e) -> (t.store,Error e))
     end
 
 
-
-    module Delete = struct
-
-      module Delete = Our'.Delete
+    module Delete_ = (struct  (* ---------------------------------------- *)
+      open Our_
+      module KV_ = Key_value_types
+      module ST_ = Store
 
       type t = {
         t:Tree.tree;
@@ -380,8 +392,7 @@ module Main = struct
       let check_state s = (
         last_state:=Some(s);
         Test.test (fun _ -> 
-          assert (Delete.wellformed_delete_state s.t s.k s.store s.ds));
-        ()
+          assert (Delete.wellformed_delete_state s.t s.k s.store s.ds))
       )
 
       let check_trans x y = (
@@ -390,7 +401,7 @@ module Main = struct
         check_state y
       )
 
-      let mk : Store.store -> Key_value_types.key -> Store.page_ref -> t = 
+      let mk : Store.store -> KV_.key -> Store.page_ref -> t = 
         fun s k r -> {
             t=(Frame.r_to_t s r);
             k;
@@ -398,29 +409,40 @@ module Main = struct
             ds=(Delete.mk_delete_state k r)
           }
 
+      exception E of (t*string)
+
+      open Btree_util
+      open Btree_api
+
       let step : t -> t = (fun x ->
-          let (s',Our.Util.Ok ds') = (Delete.delete_step x.ds|>Monad.dest_M) x.store in
-          {x with store=s';ds=ds'})
+          x.store |> (Delete.delete_step x.ds|>Monad.dest_M)
+          |> (fun (s',y) -> (s',rresult_to_result y))
+          |> (fun (s',y) ->
+              match y with
+              | Ok ds' -> { x with store=s'; ds=ds' }
+              | Error e -> raise (E({ x with store=s'},e))))
 
-      let dest = Delete.dest_d_finished
+      let dest s' = s'.ds |> Delete.dest_d_finished
 
-      let delete : Key_value_types.key -> Store.page_ref -> Store.store -> (Store.store * Store.page_ref) = (
+      let delete: KV_.key -> ST_.page_ref -> (ST_.page_ref,ST_.store) Sem.m = (
         fun k r store ->
-          let s = ref (mk store k r) in
-          let _ = check_state !s in
-          let s' = ref(!s) in
-          let _ = 
-            while((!s').ds|>dest = None) do
-              s := !s';
-              s' := step !s;
-              check_trans !s !s';
-            done
-          in
-          let r = (!s').ds|>dest|>dest_Some in
-          (* !s' is None, so s holds the result *)
-          ((!s').store,r))
+          try (
+            let s = ref (mk store k r) in
+            let _ = check_state !s in
+            let s' = ref(!s) in
+            let _ = 
+              while((!s')|>dest = None) do
+                s := !s';
+                s' := step !s;
+                check_trans !s !s';
+              done
+            in
+            let r = (!s')|>dest|>dest_Some in
+            (* !s' is None, so s holds the result *)
+            ((!s').store,Ok r)
+          ) with E(t,e) -> (t.store,Error e))
 
-
+      
       (* need some pretty *)
       let from_store s t = Delete.(
           let from_store s f = (
@@ -432,14 +454,68 @@ module Main = struct
           in
           match t.ds with
           | D_down (fs,r) -> `D_down (* FIXME fs *)
-          | D_up (f,(stk,r)) -> `D_up(from_store s f,stk|>List.map (Our'.Frame.r_frame_to_t_frame s))
+          | D_up (f,(stk,r)) -> `D_up(from_store s f,stk|>List.map (Frame.r_frame_to_t_frame s))
           | D_finished(r) -> `D_finished(r|>Frame.r_to_t s)
         )
 
+    end)
+
+
+
+    module Raw_map (* : RAW_MAP *) = struct
+      open Our_
+      open Btree_api
+      module KV = S.KV
+      module ST = S.ST           let _ = (module ST: Btree_api.STORE)
+      type ref_t = ST.page_ref
+      type 'a m = ('a,ST.store * ref_t) Sem.m
+      
+      open KV
+
+      open Btree_util
+
+      let empty: ST.store -> (ST.store * (ref_t,string)result) = ( 
+        fun s -> (
+            let m = Find.empty_btree ()|>Monad.dest_M in
+            m s |> (fun (s,r) -> (s,r|>rresult_to_result))
+          ))
+
+      let find: key -> value option m = (fun k ->
+          fun (s,r) -> 
+            Find_.find k r |> Sem.run s |> (fun (s',res) -> 
+                ((s',r),res)))
+
+      let insert: key -> value -> unit m = (fun k v ->
+          fun (s,r) -> 
+            Insert_.insert k v r |> Sem.run s |> (fun (s',res) ->
+                match res with
+                | Ok r' -> ((s',r'),Pervasives.Ok ())
+                | Error e -> ((s',r),Pervasives.Error e)))
+
+      let delete: key -> unit m = (
+        fun k (s,r) -> 
+          Delete_.delete k r |> Sem.run s |> (fun (s',res) ->
+              match res with
+                Ok r' -> ((s',r'),Pervasives.Ok ())
+              | Error e -> ((s',r),Pervasives.Error e)))
+
+
+      let insert_many: 
+        key -> value -> (key*value) list -> (key*value) list m = (
+        fun k v kvs (s,r) ->
+          Insert_many_.insert k v kvs r |> Sem.run s |> (fun (s',res) ->
+              match res with
+              | Ok (r',kvs') -> ((s',r'),Pervasives.Ok kvs')
+              | Error e -> ((s',r),Pervasives.Error e)))
+
+(*
+      let insert_many: (key*value) list -> unit m
+*)
     end
 
+    open Our_
+        
   end
-
 
 end (* Main *)
 

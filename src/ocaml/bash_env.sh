@@ -42,7 +42,7 @@ mls=" \
 gen_isa.ml \
 our.ml \
 test.ml pickle.ml btree_api.ml btree_util.ml \
- btree2.ml \
+btree.ml \
 btree_simple.ml \
 ext_in_mem.ml ext_block_device.ml \
 ext_int_int_store.ml ext_bytestore.ml ext_string_int.ml"
