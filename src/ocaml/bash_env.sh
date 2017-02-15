@@ -13,7 +13,7 @@ root=$(realpath $(dirname $BASH_SOURCE))/../..
 test -f $root/config.sh && source $root/config.sh
 
 PKGS="-package num,yojson,ppx_deriving_yojson,batteries,bos.setup \
-  -package ppx_assert,ppx_assert.runtime-lib,sexplib,core,lru-cache,tjr_lib,extunix"
+  -package ppx_assert,ppx_assert.runtime-lib,sexplib,core,lru-cache,tjr_lib,extunix,core_kernel"
 
 SYNTAX="" # "-syntax camlp4o" # simplify: use for every file
 FLGS="-g -thread"
@@ -36,11 +36,13 @@ mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt $FLGS"
 
 # mls ----------------------------------------
 
+#btree.ml 
+
 mls=" \
 gen_isa.ml \
 our.ml \
 test.ml pickle.ml btree_api.ml btree_util.ml \
-btree.ml \
+ btree2.ml \
 btree_simple.ml \
 ext_in_mem.ml ext_block_device.ml \
 ext_int_int_store.ml ext_bytestore.ml ext_string_int.ml"

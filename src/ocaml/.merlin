@@ -1,5 +1,5 @@
 FLG -w @f@p@u@s@40-8-11-26-40
 
-PKG yojson ppx_deriving_yojson batteries bos.setup ppx_assert sexplib core lru-cache tjr_lib extunix
+PKG yojson ppx_deriving_yojson batteries bos.setup ppx_assert sexplib core lru-cache tjr_lib extunix core_kernel
 
 B .

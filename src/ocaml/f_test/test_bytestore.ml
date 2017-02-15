@@ -89,17 +89,18 @@ let _ = (module Disk: Btree_api.STORE)
 
 (* btree backed by Disk ---------------------------------------- *)
 
-module Btree' = struct 
+module Btree' (* : Ext_bytestore.Btree_t *) = struct 
+
+  module Disk = Disk
+  type ref_t = int
 
   module Int_int_store = Ext_int_int_store.Make(Disk)
 
-  type ref_t = int
-
   open Disk
-  open Int_int_store.Btree_simple.
+  open Int_int_store.Btree_simple.Btree
 
   let empty_btree: unit -> ref_t M.m = (
-    fun _ s -> 
+    fun () -> 
       Find.Find.empty_btree () s |> (fun (s,r) -> (s,Btree_util.dest_Ok r))
   )
 
@@ -120,6 +121,8 @@ module Btree' = struct
 
 end
 
+
+let _ = (module Btree': Ext_bytestore.Btree_t)
 
 (* instantiate Bytestore ---------------------------------------- *)
 

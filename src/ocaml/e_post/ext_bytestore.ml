@@ -42,6 +42,16 @@ module type Disk_t = sig
   val read_buff: Buff.t -> offset -> blk_id -> unit M.m
 end
 
+module type Btree_t = sig
+  module Disk : Disk_t
+  type ref_t = int (* typically a blk_id; FIXME exposed to make debugging easier *)
+  open Disk
+  val empty_btree: unit -> ref_t M.m
+  val insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t M.m
+  val find: ref_t -> blk_index -> blk_id M.m
+end
+
+
 module type S = sig 
   (* in-memory buffer *)
   module Buff: Buff_t
@@ -56,13 +66,7 @@ module type S = sig
   val copy: Buff.t -> int (* start *) -> int (* end *) 
     -> Disk.block -> Disk.block
      *)
-  module Btree : (sig
-    type ref_t = int (* typically a blk_id; FIXME exposed to make debugging easier *)
-    open Disk
-    val empty_btree: unit -> ref_t M.m
-    val insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t M.m
-    val find: ref_t -> blk_index -> blk_id M.m
-  end)
+  module Btree: Btree_t with module Disk = Disk
 end
 
 

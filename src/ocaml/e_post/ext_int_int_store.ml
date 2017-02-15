@@ -33,10 +33,9 @@ let _ = (module KV : Btree_api.KEY_VALUE)
 (* NB page=string *)
 module type STORE = Btree_api.Simple.STORE
 
+
 module Make = functor (ST:STORE) -> struct
-
   module ST = ST
-
   module Btree_simple = Btree_simple.Make(struct
     module KV=KV
     module ST=ST
@@ -51,7 +50,6 @@ module Make = functor (ST:STORE) -> struct
         v_len = 4;
       }
   end)
-
 end
 
 

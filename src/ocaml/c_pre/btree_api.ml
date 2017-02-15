@@ -1,17 +1,77 @@
 (* various interfaces ---------------------------------------- *)
 
+(*
+module type RUNNABLE = sig
+  type 'a m
+  type state
+  val run: state -> 'a m -> (state * ('a,string) result) 
+end
+*)
+
+(* store passing with error *)
+
+module State_error_monad : sig
+  type ('a,'s) m = 's -> ('s * ('a,string) result)
+  val return: 'a -> ('a,'s) m
+  val bind: ('a -> ('b,'s) m) -> ('a,'s) m -> ('b,'s) m
+  val run: 's -> ('a,'s) m -> 's * ('a,string) result
+  val get: ('s,'s) m 
+end = struct
+  type ('a,'s) m = 's -> ('s * ('a,string) result)
+  let return: 'a -> ('a,'s) m = (fun x -> (fun s -> (s,Ok x)))
+  let bind: ('a -> ('b,'s) m) -> ('a,'s) m -> ('b,'s) m = (
+    fun f x -> (
+        fun s -> match x s with
+          | (s',Error e) -> (s',Error e)
+          | (s',Ok y) -> (f y s')
+      ))
+  let run: 's -> ('a,'s) m -> 's * ('a,string) result = (
+    fun s f -> f s)
+  let get: ('s,'s)m = (fun s -> (s,Ok s)) 
+end
+
+(* short name *)
+module Sem = State_error_monad
+
+
+(*
+module Step : sig
+
+end = struct
+
+  type ('a,'t,'g) m = Core_kernel.
+
+(* Suc of ('g -> ('a,'t,'g) m) | Finished of ('a,'t,'g) *)
+
+  let is_finished = (function
+      | Suc _ -> false
+      | _ -> true)
+
+  let step: 'g -> ('a,'t,'g) m -> ('a,'t,'g) m = (function
+      | Suc x -> x()
+      | _ -> failwith "Step.step")
+
+  let rec run: 'g -> ('a,'t,'g) m -> ('a,'t,'g) = (function
+      | Finished x -> x
+      | Suc x -> run (step x))
+
+end
+*)
+
+(* from a runnable we can concoct a store_monad? *)
+(*
 module type MONAD = sig
   type 'a m
   val return: 'a -> 'a m
   val bind: ('a -> 'b m) -> 'a m -> 'b m
 end
-
+*)
+(*
 module type STORE_MONAD = sig
-  include MONAD
-  type store
-  val run: store -> 'a m -> (store * ('a,string) result)
+  module Runnable : RUNNABLE
+  include MONAD with type 'a m = 'a Runnable.m 
 end
-
+*)
 
 module type KEY_VALUE = sig
   type key [@@deriving yojson]
@@ -27,29 +87,57 @@ module type CONSTANTS = sig
   val min_node_keys : int
 end
 
+(* we require that the store makes errors explicit so we can
+   explicitly handle them (ie maintain invariants); if we don't have
+   any resources, then an exception just unwinds the stack (so is
+   safe); otherwise we need to use exceptions very carefully, in which
+   case we might as well be explicit *)
 module type STORE = sig
   type page
   type store
   type page_ref [@@deriving yojson]
-  module M : STORE_MONAD with type store = store
-  val free : page_ref list -> unit M.m
-  val alloc : page -> page_ref M.m
-  val dest_Store : store -> page_ref -> page
-  val page_ref_to_page : page_ref -> page M.m
+
+  type 'a m = ('a,store) State_error_monad.m
+
+  val free: page_ref list -> unit m
+  val alloc: page -> page_ref m
+  val dest_Store: store -> page_ref -> page
+  val page_ref_to_page: page_ref -> page m
+end
+
+(* like a map, but pointers are explicit *)
+module type RAW_MAP = sig
+
+  module KV : KEY_VALUE
+  module ST : STORE
+  type ref_t = ST.page_ref
+
+  type 'a m = ('a,ST.store * ref_t) State_error_monad.m
+
+  open KV
+  val empty: ST.store -> (ST.store * (ref_t,string)result)
+  val insert: key -> value -> unit m
+  val insert_many: (key*value) list -> unit m
+  val find: key -> value option m
+  val delete: key -> unit m
 end
 
 
+(*
 module type MAP = sig
+  type t  (* a pointer to a page_ref; pointer changes as tree is updated *)
   module KV : KEY_VALUE
   module ST : STORE
   module M : MONAD
   open KV
-  val insert: key -> value -> unit M.m
-  val insert_many: (key*value) list -> unit M.m
-  val find: key -> value option M.m
-  val delete: key -> unit M.m
+  open ST
+  val empty: unit -> t M.m
+  val insert: t -> key -> value -> unit M.m
+  val insert_many: t -> (key*value) list -> unit M.m
+  val find: t -> key -> value option M.m
+  val delete: t -> key -> unit M.m
 end
-
+*)
 
 
 (* simple interface ---------------------------------------- *)
@@ -87,19 +175,22 @@ module Simple = struct
     val pp: (key,value) Pickle_params.t 
   end (* S *)
 
-  module type T = MAP  (* output type of Simple.Make(S) *)
+  (* module type T = MAP  (* output type of Simple.Make(S) *) *)
 end
 
 
 (* block device ---------------------------------------- *)
 
-(* what is typically provided by the file system; used to provide the store interface *)
+(* what is typically provided by the file system; used to provide the
+   store interface *)
 module type BLOCK_DEVICE = sig
   type t (* FIXME needed? *)
   type r
   type blk
-  module M : MONAD
-  val read: r -> blk M.m
-  val write: r -> blk -> unit M.m
-  val sync: unit M.m  (* FIXME needed in interface? *)
+    
+  type 'a m = ('a,t) State_error_monad.m
+
+  val read: r -> blk m
+  val write: r -> blk -> unit m
+  val sync: unit m  (* FIXME needed in interface? *)
 end
