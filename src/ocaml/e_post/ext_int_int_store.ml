@@ -8,8 +8,6 @@ open Sexplib.Std  (* for ppx_assert *)
 
 let failwith x = failwith ("int_int_store: "^x)
 
-open Ext_block_device
-
 open Btree_util
 
 (* assumptions ---------------------------------------- *)
@@ -50,6 +48,7 @@ module Make = functor (ST:STORE) -> struct
         v_len = 4;
       }
   end)
+  let _ = (module Btree_simple.Btree.Raw_map : Btree_api.RAW_MAP)
 end
 
 
@@ -57,9 +56,12 @@ end
 
 (* from here we specialize to recycling_filestore *)
 
-module ST = Recycling_filestore
+module ST = Ext_block_device.Recycling_filestore
 
 module Int_int_filestore = struct
+
+  open Btree_api
+  open Ext_block_device
 
   module Int_int_store = Make(ST)
 
@@ -74,7 +76,7 @@ module Int_int_filestore = struct
         let p = frm|>frame_to_page in
         let r = 0 in
         let () = (
-          match Blkdev_on_fd.(write r p |> M.run fd) with
+          match Blkdev_on_fd.(write r p |> Sem.run fd) with
           | (_,Error e) -> failwith (__LOC__ ^ e)
           | _ -> ())
         in
@@ -116,30 +118,28 @@ module Int_int_cached (* : Btree.S *) = struct
 
   end
 
-  let sync : t -> t = (
+  open Btree_api
+  type 'a m = ('a,t) State_error_monad.m
+
+  (* FIXME monads a bit of a hassle :( *)
+  let sync : unit m = (
     fun t -> 
       let (r,s,kvs) = t in
       (* insert all that are in the cache, using insert_many.cache *)
       let kvs = Map_int.bindings kvs in
-      match kvs with 
-      | [] -> (
-          let () = ST.sync s in
-          (r,s,Map_int.empty))
-      | _ -> (  
-          let f (s,r,kvs) = (
-            match kvs with
-              [] -> None
-            | (k,v)::kvs -> (
-                let (s,(r,kvs)) = 
-                  Int_int_filestore.Int_int_store.Btree_simple.Btree.Insert_many.insert k v kvs r s in
-                Some(s,r,kvs)))
-          in
-          let (s,r,kvs) = Btree.iter_step f (s,r,kvs) in
-          let () = ST.sync s in
-          (r,s,Map_int.empty)
-        )
+      let rec loop kvs = (        
+        match kvs with 
+        | [] -> (Sem.return ())
+        | (k,v)::kvs -> Sem.(
+            let open Int_int_filestore.Int_int_store.Btree_simple.Btree in
+            Raw_map.insert_many k v kvs |> bind (fun kvs -> 
+                loop kvs)))
+      in
+      loop kvs |> Sem.run (s,r) |> (fun ((s',r'),res) -> 
+          match res with 
+          | Ok () -> ((r',s',Map_int.empty),Ok ())
+          | Error e -> ((r',s',Map_int.empty),Error e))
   )
-
 
 
 end

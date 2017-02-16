@@ -120,7 +120,7 @@ module Main = struct
     end
   end
 
-  module Make = functor (S:S) -> struct
+  module Make = functor (S:S) -> (struct
 
     (* set up to call our.make ---------------------------------------- *)
     module S = S
@@ -438,7 +438,6 @@ module Main = struct
               done
             in
             let r = (!s')|>dest|>dest_Some in
-            (* !s' is None, so s holds the result *)
             ((!s').store,Ok r)
           ) with E(t,e) -> (t.store,Error e))
 
@@ -508,14 +507,10 @@ module Main = struct
               | Ok (r',kvs') -> ((s',r'),Pervasives.Ok kvs')
               | Error e -> ((s',r),Pervasives.Error e)))
 
-(*
-      let insert_many: (key*value) list -> unit m
-*)
     end
+    
+    let _ = (module Raw_map : Btree_api.RAW_MAP)
 
-    open Our_
-        
-  end
-
+  end)  (* Make *)
 end (* Main *)
 

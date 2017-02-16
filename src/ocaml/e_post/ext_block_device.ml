@@ -36,9 +36,9 @@ module Blkdev_on_fd = struct
   type t = fd
   type r = Defaults.block_ref
   type blk = Defaults.block
-               
-  module M = Btree_util.State_error_monad.Make(struct type state = fd end)
 
+  type 'a m = ('a,t) Btree_api.State_error_monad.m
+               
   let block_size = Defaults.page_size
 
   let mk_block : string -> blk = (
@@ -51,7 +51,7 @@ module Blkdev_on_fd = struct
 
   let r_to_off r = block_size * r
 
-  let read : r -> blk M.m = (
+  let read : r -> blk m = (
     fun r -> (
         fun s ->
           try Unix.(
@@ -65,7 +65,7 @@ module Blkdev_on_fd = struct
       )
   )
 
-  let write: r -> blk -> unit M.m = (
+  let write: r -> blk -> unit m = (
     fun r buf -> (fun s ->
         try Unix.(
             let _ = lseek s (r_to_off r) SEEK_SET in        
@@ -77,7 +77,7 @@ module Blkdev_on_fd = struct
   )
 
 
-  let sync : unit M.m = (fun s -> 
+  let sync : unit m = (fun s -> 
       try ExtUnixSpecific.fsync s; (s,Ok())
       with _ -> failwith "sync")
 
@@ -148,35 +148,35 @@ module Filestore (* : Our.Store_t *) = struct
 
   open Blkdev_on_fd
 
-  module M = Btree_util.State_error_monad.Make(
-    struct type state = store end)
+  type 'a m = ('a,store) Btree_api.State_error_monad.m
 
+  open Btree_api
       
   (* alloc without write; free block can then be used to write data
      outside the btree *)
-  let alloc_block : page_ref M.m = (
+  let alloc_block : page_ref m = (
     fun s -> 
       let r = s.free_ref in
       ({s with free_ref=r+1},Ok(r))
   )
 
-  let alloc : page -> page_ref M.m = (
+  let alloc : page -> page_ref m = (
     fun p -> (fun s -> 
         try (
           let r = s.free_ref in
-          let x = Blkdev_on_fd.M.(write r p |> run s.fd) in
+          let x = Blkdev_on_fd.(write r p |> Sem.run s.fd) in
           ({s with free_ref=r+1},Ok(r))
         )
         with _ -> (s,Error "Filestore.alloc")
       ))
 
 
-  let free: page_ref list -> unit M.m = (fun ps -> fun s -> (s,Ok()))
+  let free: page_ref list -> unit m = (fun ps -> fun s -> (s,Ok()))
 
-  let page_ref_to_page: page_ref -> page M.m = (
+  let page_ref_to_page: page_ref -> page m = (
     fun r -> (fun s ->
         try (
-          let x = Blkdev_on_fd.M.(read r|>run s.fd) in
+          let x = Blkdev_on_fd.(read r|>Sem.run s.fd) in
           match x with
           | (_,Ok(p)) -> (s,Ok(p))
           | (_,Error e) -> (s,Error e)
@@ -186,8 +186,8 @@ module Filestore (* : Our.Store_t *) = struct
 
   
   let dest_Store : store -> page_ref -> page = (
-    fun s r -> M.(
-        page_ref_to_page r |> run s |> (fun x -> 
+    fun s r -> (
+        page_ref_to_page r |> Sem.run s |> (fun x -> 
             match x with
               (_,Ok(p)) -> p
             | _ -> failwith __LOC__)))
@@ -231,11 +231,12 @@ module Recycling_filestore = struct
     (* could be a list - we don't free something that has already been freed *)
   }
 
-  module M = Btree_util.State_error_monad.Make(
-      struct type state = store end)
+  open Btree_api
+
+  type 'a m = ('a,store) Sem.m
 
   (* FIXME following should use the monad from filestore *)
-  let alloc : page -> page_ref M.m = (
+  let alloc : page -> page_ref m = (
     fun p -> (fun s -> 
         match (Set_r.is_empty s.freed_not_synced) with
         | true -> Filestore.(
@@ -262,14 +263,14 @@ module Recycling_filestore = struct
   )
 
 
-  let free : page_ref list -> unit M.m = (
+  let free : page_ref list -> unit m = (
     fun ps -> (fun s -> 
         {s with freed_not_synced=(
              Set_r.union s.freed_not_synced (Set_r.of_list ps)) },
         Ok()))
 
 
-  let page_ref_to_page: page_ref -> page M.m = (
+  let page_ref_to_page: page_ref -> page m = (
     fun r -> (fun s -> 
         (* consult cache first *)
         let p = try Some(Cache.find r s.cache) with Not_found -> None in
@@ -286,21 +287,26 @@ module Recycling_filestore = struct
   (* FIXME at the moment this doesn't write anything to store - that
      happens on a sync, when the cache is written out *)
 
-  (* FIXME this should also flush the cache of course *)
-  let sync : store -> unit = (
+  (* FIXME this should also flush the store cache of course using its
+     sync *)
+  let rec sync : unit m = (
     fun s ->
-      let () = 
-        Cache.iter 
-          Filestore.(fun r p -> 
+      let es = Cache.bindings s.cache in
+      let s' = { s with cache = Cache.empty } in
+      let mk_action = (
+        fun (r,p) -> (
+            fun s -> 
               match (Set_r.mem r s.freed_not_synced) with 
-              | true -> () 
+              | true -> (s,Ok ())  (* don't sync if freed *)
               | false -> (
-                  match Blkdev_on_fd.(write r p|>M.run s.fs.fd) with
-                  | (_,Error e) -> failwith (__LOC__ ^ e)
-                  | (_,Ok _) -> ()))
-          s.cache 
+                  match Blkdev_on_fd.(write r p|>Sem.run s.fs.fd) with
+                  | (fd',Error e) -> (s,Error e)
+                  | (fd',Ok ()) -> (s,Ok ()))))
       in
-      ())
+      let actions = es |> List.map mk_action in
+      (* we flush these bindings, but thread s through; each binding
+         then gets removed from s *)
+      actions |> Sem.run_list s')
 
 end
 

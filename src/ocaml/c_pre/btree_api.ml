@@ -16,6 +16,7 @@ module State_error_monad : sig
   val bind: ('a -> ('b,'s) m) -> ('a,'s) m -> ('b,'s) m
   val run: 's -> ('a,'s) m -> 's * ('a,string) result
   val get: ('s,'s) m 
+  val run_list: 's -> (unit,'s) m list -> 's * (unit,string) result
 end = struct
   type ('a,'s) m = 's -> ('s * ('a,string) result)
   let return: 'a -> ('a,'s) m = (fun x -> (fun s -> (s,Ok x)))
@@ -28,6 +29,15 @@ end = struct
   let run: 's -> ('a,'s) m -> 's * ('a,string) result = (
     fun s f -> f s)
   let get: ('s,'s)m = (fun s -> (s,Ok s)) 
+  let rec run_list s xs = (
+    match xs with
+    | [] -> (s,Ok())
+    | x::xs' -> (
+        x|>run s|>(fun (s',res) ->
+            match res with
+            | Ok () -> (run_list s' xs')
+            | Error e -> (s',Error e))
+      ))
 end
 
 (* short name *)
@@ -116,7 +126,7 @@ module type RAW_MAP = sig
   open KV
   val empty: ST.store -> (ST.store * (ref_t,string)result)
   val insert: key -> value -> unit m
-  val insert_many: (key*value) list -> unit m
+  val insert_many: key -> value -> (key*value) list -> (key*value) list m
   val find: key -> value option m
   val delete: key -> unit m
 end
