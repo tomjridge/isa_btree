@@ -517,6 +517,43 @@ module Main = struct
     
     let _ = (module Raw_map : Btree_api.RAW_MAP)
 
+
+    module Map_with_exceptions (* : MAP_WITH_EXCEPTIONS *) = struct
+      module KV = Raw_map.KV
+      module ST = Raw_map.ST
+      type ref_t = ST.page_ref
+                     
+      open Btree_api
+      type 'a m = ('a,ST.store * ref_t) State_monad.m
+
+      let conv: 'a Raw_map.m -> 'a m = (fun m -> fun s ->
+        m s |> (fun (s',res) -> (
+              match res with
+              | Ok x -> (s',x)
+              | Error e -> failwith e)))
+
+      open KV
+      module RM_ = Raw_map
+
+      let empty: ST.store -> ST.store * ref_t = (fun s ->
+          RM_.empty |> Sem.run s |> (fun (s',res) ->
+            match res with
+            | Ok r' -> (s',r')
+            | Error e -> failwith e))
+
+      let insert: key -> value -> unit m = (fun k v ->
+          RM_.insert k v|>conv)
+
+      let insert_many: key -> value -> (key*value) list -> unit m = (
+        fun k v kvs -> RM_.insert_many k v kvs |> conv)
+
+      let find: key -> value option m = (fun k ->
+          RM_.find k |> conv)
+
+      let delete: key -> unit m = (fun k ->
+          RM_.delete k |> conv)
+    end
+
   end)  (* Make *)
 end (* Main *)
 

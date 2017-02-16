@@ -5,10 +5,24 @@ module type RUNNABLE = sig
   type 'a m
   type state
   val run: state -> 'a m -> (state * ('a,string) result) 
-end
+qend
 *)
 
 (* store passing with error *)
+
+module State_monad : sig
+  type ('a,'s) m = 's -> ('s * 'a)
+  val return: 'a -> ('a,'s) m
+  val bind: ('a -> ('b,'s) m) -> ('a,'s) m -> ('b,'s) m
+  val run: 's -> ('a,'s) m -> 's * 'a
+end = struct
+  type ('a,'s) m = 's -> ('s * 'a)
+  let return: 'a -> ('a,'s) m = fun x -> fun s -> (s,x)
+  let bind: ('a -> ('b,'s) m) -> ('a,'s) m -> ('b,'s) m = 
+    fun f m -> fun s ->
+      m s |> (fun (s',a) -> f a s') 
+  let run: 's -> ('a,'s) m -> 's * 'a = fun s -> fun m -> m s
+end
 
 module State_error_monad : sig
   type ('a,'s) m = 's -> ('s * ('a,string) result)
@@ -130,6 +144,24 @@ module type RAW_MAP = sig
   val find: key -> value option m
   val delete: key -> unit m
 end
+
+
+(* as RAW_MAP, but throw exceptions *)
+module type MAP_WITH_EXCEPTIONS = sig
+  module KV : KEY_VALUE
+  module ST : STORE
+  type ref_t = ST.page_ref
+
+  type 'a m = ('a,ST.store * ref_t) State_monad.m
+
+  open KV
+  val empty: ST.store -> ST.store * ref_t
+  val insert: key -> value -> unit m
+  val insert_many: key -> value -> (key*value) list -> unit m
+  val find: key -> value option m
+  val delete: key -> unit m
+end
+
 
 
 (*
