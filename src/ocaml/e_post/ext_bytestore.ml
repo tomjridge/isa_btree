@@ -27,28 +27,26 @@ end
 module type Disk_t = sig
   module Buff: Buff_t
   type store
+
+  type 'a m = ('a,store) Btree_api.Sem.m
   (* type store_error *)
-  module M : (sig
-    type 'a m 
-    val bind: ('a -> 'b m) -> 'a m -> 'b m
-    val return: 'a -> 'a m
-  end)
   type block
   type blk_id = int
   val block_size: int 
   (* write block_size bytes from buff, unless at end of buff, in
      which case write the remainder *)
-  val write_buff: Buff.t -> offset -> blk_id M.m
-  val read_buff: Buff.t -> offset -> blk_id -> unit M.m
+  val write_buff: Buff.t -> offset -> blk_id m
+  val read_buff: Buff.t -> offset -> blk_id -> unit m
 end
 
+(* effectively a map from blk_index (include -1) to blk_id *)
 module type Btree_t = sig
   module Disk : Disk_t
   type ref_t = int (* typically a blk_id; FIXME exposed to make debugging easier *)
   open Disk
-  val empty_btree: unit -> ref_t M.m
-  val insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t M.m
-  val find: ref_t -> blk_index -> blk_id M.m
+  val empty_btree: unit -> ref_t m
+  val insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t m
+  val find: ref_t -> blk_index -> blk_id option m
 end
 
 
@@ -80,16 +78,17 @@ module Make = functor (S:S) -> struct
   open Disk
   open Btree
 
-  open M
-
+  open Btree_api.Sem
+  open Disk
+      
   (* use this to store the length of the buffer *)
   let meta_key = -1
 
-  let write_buff : Buff.t -> Btree.ref_t M.m = (
+  let write_buff : Buff.t -> Btree.ref_t m = (
     fun buf -> 
       (* create an empty btree *)
       Btree.empty_btree () |> bind (
-        fun r -> 
+        fun (r:Btree.ref_t) -> 
           (* let _ = Printf.printf "bytestore: write_buff: %d \n" r in *)
           (* allocate first block, and write length *)
           let len = Buff.length buf in
@@ -116,27 +115,30 @@ module Make = functor (S:S) -> struct
           )))
 
 
-  let read_buff : Btree.ref_t -> Buff.t M.m = (
+  let read_buff : Btree.ref_t -> Buff.t m = (
     fun r -> 
       (* get blk_id corresponding to meta block and determine length *)
       find r meta_key |> bind (
-        fun len -> 
-          (* allocate buffer *)
-          let buf = Buff.create len in
-          (* now read the blocks and update the buf *)
-          let rec f: blk_index -> unit m = (
-            fun n ->
-              let off = n*block_size in
-              match off < len with
-              | true -> (find r n |> bind (
-                  fun blk_id ->
-                    Disk.read_buff buf off blk_id |> bind (
-                      fun () ->
-                        f (n+1))))
-              | false -> (return ()))
-          in
-          f 0 |> bind (
-            fun () -> return buf
-          )))
+        fun (len:blk_id option) -> 
+          match len with
+          | None -> err __LOC__
+          | Some len -> (
+              (* allocate buffer *)
+              let buf = Buff.create len in
+              (* now read the blocks and update the buf *)
+              let rec f: blk_index -> unit m = (
+                fun n ->
+                  let off = n*block_size in
+                  match off < len with
+                  | true -> (find r n |> bind (
+                      fun blk_id ->
+                        match blk_id with
+                        | None -> (err __LOC__)
+                        | Some blk_id -> 
+                          Disk.read_buff buf off blk_id |> bind (
+                            fun () -> f (n+1))))
+                  | false -> (return ()))
+              in
+              f 0 |> bind (fun () -> return buf))))
 
 end

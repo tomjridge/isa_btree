@@ -28,13 +28,13 @@ module Disk = struct
   type store_error  (* no constructors *)
   let empty_disk = {free=0; map=Map_int.empty}
 
-  module M = Btree_util.State_error_monad.Make(struct type state = store end)
+  type 'a m = ('a,store) Btree_api.Sem.m  
 
   type block = Params.block (* 4096 *)
   type blk_id = Params.blk_id
   let block_size = Params.page_size
 
-  let write_buff: Buff.t -> offset -> blk_id M.m = (
+  let write_buff: Buff.t -> offset -> blk_id m = (
     fun buf off s -> 
       let page = Bytes.create block_size in
       let len = 
@@ -46,7 +46,7 @@ module Disk = struct
       ({free=s.free+1; map=Map_int.add page_id page s.map},Ok page_id)
   )
 
-  let read_buff: Buff.t -> offset -> blk_id -> unit M.m = (
+  let read_buff: Buff.t -> offset -> blk_id -> unit m = (
     fun buf off i s -> try (
         let len = 
           let x = Bytes.length buf - off in
@@ -62,7 +62,7 @@ module Disk = struct
   type page = string
   type page_ref = int[@@deriving yojson]
 
-  let alloc : page -> page_ref M.m = (
+  let alloc : page -> page_ref m = (
     fun p s -> 
       ({free=s.free+1; map=Map_int.add s.free p s.map},Ok s.free))
 
@@ -71,11 +71,11 @@ module Disk = struct
       (* print_endline (string_of_int r);  *)
       try (Map_int.find r s.map) with _ -> failwith "dest_Store" )
 
-  let page_ref_to_page: page_ref -> page M.m = (
+  let page_ref_to_page: page_ref -> page m = (
     fun r s -> 
       try (s,Ok(Map_int.find r s.map)) with _ -> failwith "page_ref_to_page")
 
-  let free : page_ref list -> unit M.m = (
+  let free : page_ref list -> unit m = (
     fun rs s -> (s,Ok ()))
 
   let page_size = Params.page_size
@@ -91,33 +91,38 @@ let _ = (module Disk: Btree_api.STORE)
 
 module Btree' (* : Ext_bytestore.Btree_t *) = struct 
 
+  open Btree_api
   module Disk = Disk
   type ref_t = int
 
   module Int_int_store = Ext_int_int_store.Make(Disk)
+  
 
   open Disk
   open Int_int_store.Btree_simple.Btree
 
-  let empty_btree: unit -> ref_t M.m = (
-    fun () -> 
-      Find.Find.empty_btree () s |> (fun (s,r) -> (s,Btree_util.dest_Ok r))
+  let empty_btree: unit -> ref_t m = (
+    fun () -> fun s ->
+      Raw_map.empty s
   )
 
-  let insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t M.m = (
+  let insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t m = (
     fun k v r -> (
         fun s ->
-          Insert.insert k v r s
-      )
-  )
-        
-  let find: ref_t -> blk_index -> blk_id M.m = (
+          Raw_map.insert k v |> Sem.run (s,r) |> (fun ((s',r'),res) -> 
+              match res with
+              | Ok () -> (s',Ok r')
+              | Error e -> (s',Error e)
+            )
+      ))
+
+  let find: ref_t -> blk_index -> blk_id option m = (
     fun r k -> (
         fun s ->
-          Find.find s k r |> (
-            fun x -> match x with
-              | Some y -> (s,y)
-              | _ -> failwith "find")))
+          Raw_map.find k |> Sem.run (s,r) |> (fun ((s',r'),res) ->
+              match res with
+              | Ok v -> (s',Ok v)  (* assume r' = r *)
+              | Error e -> (s',Error e))))
 
 end
 
@@ -136,8 +141,8 @@ end)
 (* do some tests ---------------------------------------- *)
 
 
-open Disk.M
-
+open Disk
+open Btree_api.Sem
 
 let test len = (
   let buf = Bytes.make len 'a' in

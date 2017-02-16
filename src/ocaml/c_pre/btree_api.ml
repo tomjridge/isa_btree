@@ -31,6 +31,7 @@ module State_error_monad : sig
   val run: 's -> ('a,'s) m -> 's * ('a,string) result
   val get: ('s,'s) m 
   val run_list: 's -> (unit,'s) m list -> 's * (unit,string) result
+  val err: string -> ('a,'s) m
 end = struct
   type ('a,'s) m = 's -> ('s * ('a,string) result)
   let return: 'a -> ('a,'s) m = (fun x -> (fun s -> (s,Ok x)))
@@ -52,6 +53,7 @@ end = struct
             | Ok () -> (run_list s' xs')
             | Error e -> (s',Error e))
       ))
+  let err e = (fun s -> (s,Error e))
 end
 
 (* short name *)
