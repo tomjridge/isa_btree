@@ -1,7 +1,3 @@
-open Our
-
-
-
 (* misc ---------------------------------------- *)
 
 let dest_Some = function (Some x) -> x | _ -> failwith "dest_Some"
@@ -181,7 +177,7 @@ module Main = struct
       exception E of (t*string)
 
       let step : t -> t = (fun x ->
-          x.store |> (Find.find_step x.fs |> Monad.dest_M) 
+          x.store |> (Find.find_step x.fs |> Our.Monad.dest_M) 
           |> (fun (s',y) -> (s',Btree_util.rresult_to_result y))
           |> (fun (s',y) -> (
                 match y with
@@ -271,7 +267,7 @@ module Main = struct
       open Btree_api
 
       let step : t -> t = (fun x ->
-          x.store |> (Insert.insert_step x.is |> Monad.dest_M)
+          x.store |> (Insert.insert_step x.is |> Our.Monad.dest_M)
           |> (fun (s',y) -> (s',rresult_to_result y))
           |> (fun (s',y) -> 
               match y with
@@ -344,7 +340,7 @@ module Main = struct
       open Btree_api
 
       let step : t -> t = (fun x ->
-          x.store |> (Insert_many.insert_step x.is|>Monad.dest_M)
+          x.store |> (Insert_many.insert_step x.is|>Our.Monad.dest_M)
           |> (fun (s',y) -> (s',rresult_to_result y))
           |> (fun (s',y) ->
               match y with
@@ -415,7 +411,7 @@ module Main = struct
       open Btree_api
 
       let step : t -> t = (fun x ->
-          x.store |> (Delete.delete_step x.ds|>Monad.dest_M)
+          x.store |> (Delete.delete_step x.ds|>Our.Monad.dest_M)
           |> (fun (s',y) -> (s',rresult_to_result y))
           |> (fun (s',y) ->
               match y with
@@ -471,11 +467,11 @@ module Main = struct
       
       open KV
 
-      open Btree_util
+      let rresult_to_result = Btree_util.rresult_to_result
 
       let empty: ST.store -> (ST.store * (ref_t,string)result) = ( 
         fun s -> (
-            let m = Find.empty_btree ()|>Monad.dest_M in
+            let m = Find.empty_btree ()|>Our.Monad.dest_M in
             m s |> (fun (s,r) -> (s,r|>rresult_to_result))
           ))
 
@@ -488,24 +484,34 @@ module Main = struct
           fun (s,r) -> 
             Insert_.insert k v r |> Sem.run s |> (fun (s',res) ->
                 match res with
-                | Ok r' -> ((s',r'),Pervasives.Ok ())
-                | Error e -> ((s',r),Pervasives.Error e)))
+                | Ok r' -> ((s',r'),Ok ())
+                | Error e -> ((s',r),Error e)))
 
       let delete: key -> unit m = (
         fun k (s,r) -> 
           Delete_.delete k r |> Sem.run s |> (fun (s',res) ->
               match res with
-                Ok r' -> ((s',r'),Pervasives.Ok ())
-              | Error e -> ((s',r),Pervasives.Error e)))
+                Ok r' -> ((s',r'),Ok ())
+              | Error e -> ((s',r),Error e)))
 
 
-      let insert_many: 
-        key -> value -> (key*value) list -> (key*value) list m = (
-        fun k v kvs (s,r) ->
-          Insert_many_.insert k v kvs r |> Sem.run s |> (fun (s',res) ->
-              match res with
-              | Ok (r',kvs') -> ((s',r'),Pervasives.Ok kvs')
-              | Error e -> ((s',r),Pervasives.Error e)))
+      (* FIXME monad hassle *)
+      let insert_many: key -> value -> (key*value) list -> unit m = (
+        fun k v kvs -> Sem.(
+            fun (s,r) -> 
+              let rec loop r kvs = (
+                match kvs with
+                | [] -> return r
+                | (k,v)::kvs -> (
+                    Insert_many_.insert k v kvs r |> bind
+                      (fun (r',kvs') -> 
+                         loop r' kvs')))
+              in
+              loop r ((k,v)::kvs) |> Sem.run s |> (fun (s',res) -> 
+                  match res with
+                  | Ok r' -> ((s',r'),Ok ())
+                  | Error e -> ((s',r),Error e))))
+
 
     end
     

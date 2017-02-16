@@ -126,7 +126,7 @@ module type RAW_MAP = sig
   open KV
   val empty: ST.store -> (ST.store * (ref_t,string)result)
   val insert: key -> value -> unit m
-  val insert_many: key -> value -> (key*value) list -> (key*value) list m
+  val insert_many: key -> value -> (key*value) list -> unit m
   val find: key -> value option m
   val delete: key -> unit m
 end

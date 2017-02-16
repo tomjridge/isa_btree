@@ -123,24 +123,27 @@ module Int_int_cached (* : Btree.S *) = struct
 
   (* FIXME monads a bit of a hassle :( *)
   let sync : unit m = (
-    fun t -> 
+    fun t -> Sem.(
       let (r,s,kvs) = t in
       (* insert all that are in the cache, using insert_many.cache *)
       let kvs = Map_int.bindings kvs in
-      let rec loop kvs = (        
-        match kvs with 
-        | [] -> (Sem.return ())
-        | (k,v)::kvs -> Sem.(
-            let open Int_int_filestore.Int_int_store.Btree_simple.Btree in
-            Raw_map.insert_many k v kvs |> bind (fun kvs -> 
+      match kvs with 
+      | [] -> (t,Ok ())
+      | (k,v)::kvs -> (
+          let open Int_int_filestore.Int_int_store.Btree_simple.Btree in
+          Raw_map.insert_many k v kvs |> Sem.run (s,r) |> (fun ((s',r'),res) ->
+              match res with
+              | Ok () -> ((r',s',Map_int.empty),Ok())
+              | Error e -> ((r',s',Map_int.empty),Error e)))))
+(*
+      Raw_map.insert_many k v kvs |> bind (fun kvs -> 
                 loop kvs)))
-      in
+      
       loop kvs |> Sem.run (s,r) |> (fun ((s',r'),res) -> 
           match res with 
           | Ok () -> ((r',s',Map_int.empty),Ok ())
           | Error e -> ((r',s',Map_int.empty),Error e))
-  )
-
+*)
 
 end
 
