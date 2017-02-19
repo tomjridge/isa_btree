@@ -4,15 +4,42 @@ let failwith x = failwith ("test_in_mem: "^x)
 
 (* we concentrate on relatively small parameters *)
 
+(* example int int btree ---------------------------------------- *)
+
+module Example = struct 
+  open Btree
+  open Ext_in_mem
+  include Ext_in_mem.Make(struct 
+      module C : CONSTANTS = struct
+        let max_leaf_size = 5
+        let max_node_keys = 5
+        let min_leaf_size = 2
+        let min_node_keys = 2
+      end
+
+      module KV (* : KEY_VALUE_TYPES *) = struct 
+        type key = int[@@deriving yojson]
+        type value = int[@@deriving yojson]
+        let key_ord k1 k2 = Pervasives.compare k1 k2
+        let equal_value = (=)
+      end
+    end)
+
+  let empty = Map_int.empty
+
+end
 
 (* setup ---------------------------------------- *)
+
+module Map_int = Btree_util.Map_int
 open Btree_api
-open Ext_in_mem
-open Ext_in_mem.Example
+open Example
 
 open Example.Btree
 module Tree = Btree.Our_.Tree
 module Store = Example.ST
+
+
 
 (* state type for testing ---------------------------------------- *)
 
@@ -55,66 +82,61 @@ type range_t = int list[@@deriving yojson]
 (* explore all possible states for the given range *)
 
 let test range = TS.(
-  let s = ref TSS.(singleton {t=Tree.Leaf[];s=init_store;r=init_r }) in
-  let todo = ref (!s) in
-  (* next states from a given tree *)
-  let step t = 
-    let r1 = (
-      range|>List.map (
-        fun x -> 
-          action:=Insert x; 
-          Raw_map.insert x x|>Sem.run (t.s,t.r)))
-    in
-    let r2 = (
-      range|>List.map (
-        fun x -> 
-          action:=Delete x; 
-          Raw_map.delete x|> Sem.run (t.s,t.r)))
-    in
-    r1@r2 |> List.map (
-      fun ((s',r'),res) -> 
-        match res with
-        | Ok () -> {t=Btree.Our_.Frame.r_to_t s' r'; s=s'; r=r' }
-        | Error e -> (failwith e))
-    |> TSS.of_list
-  in
-  let _ = 
-    (* FIXME this may be faster if we store todo as a list and check
-       for membership when computing next state of the head of todo;
-       use rev_append *)
-    Printf.printf "test: starting while\n";
-    while (not(TSS.is_empty !todo)) do
-      let nexts : TSS.t list = 
-        !todo|>TSS.elements|>List.map step in
-      let next = List.fold_left 
-          (fun a b -> TSS.union a b) 
-          TSS.empty nexts 
+    Printf.printf "%s: test range" __MODULE__;
+    let s = ref TSS.(singleton {t=Tree.Leaf[];s=init_store;r=init_r }) in
+    let todo = ref (!s) in
+    (* next states from a given tree *)
+    let step t = 
+      let r1 = (
+        range|>List.map (
+          fun x -> 
+            action:=Insert x; 
+            Raw_map.insert x x|>Sem.run (t.s,t.r)))
       in
-      let new_ = TSS.diff next !s in
-      s:=TSS.union !s new_;
-      todo:=new_;
-      print_string "."; flush_all ();
-      ()
-    done
-  in
-  Printf.printf "Tests passed; num states explored: %d\n" (TSS.cardinal !s))
+      let r2 = (
+        range|>List.map (
+          fun x -> 
+            action:=Delete x; 
+            Raw_map.delete x|> Sem.run (t.s,t.r)))
+      in
+      r1@r2 |> List.map (
+        fun ((s',r'),res) -> 
+          match res with
+          | Ok () -> {t=Btree.Our_.Frame.r_to_t s' r'; s=s'; r=r' }
+          | Error e -> (failwith e))
+      |> TSS.of_list
+    in
+    let _ = 
+      (* FIXME this may be faster if we store todo as a list and check
+         for membership when computing next state of the head of todo;
+         use rev_append *)
+      (* Printf.printf "test: starting while\n"; *)
+      while (not(TSS.is_empty !todo)) do
+        let nexts : TSS.t list = 
+          !todo|>TSS.elements|>List.map step in
+        let next = List.fold_left 
+            (fun a b -> TSS.union a b) 
+            TSS.empty nexts 
+        in
+        let new_ = TSS.diff next !s in
+        s:=TSS.union !s new_;
+        todo:=new_;
+        print_string "."; flush_all ();
+        ()
+      done
+    in
+    Printf.printf "\nTests passed; num states explored: %d\n" (TSS.cardinal !s))
 
 
-let main () = (  
-    (* read stdin and convert to an int list range *)
-    let _ = Printf.printf "test: reading input from stdin\n" in
-    let js = Yojson.Safe.from_channel Pervasives.stdin in
-    let _ = Printf.printf "test: read %s\n" (Yojson.Safe.to_string js) in
-    let range = range_t_of_yojson js |> function Ok x -> x in
-    test range
-)
-
+(* do 1000 inserts; check wf *)
 let test_insert () = (
+  Printf.printf "%s: test_insert" __MODULE__;
   let r0 = ref init_r in
   let s0 = ref init_store in
   try (
-    let xs = ref (Batteries.(1 -- 1000000 |> List.of_enum)) in
+    let xs = ref (Batteries.(1 -- 1000 |> List.of_enum)) in
     while (!xs <> []) do
+      print_string ".";
       let x = List.hd !xs in
       let ((s0',r0'),res) = 
         Raw_map.insert x (2*x) |>Sem.run (!s0,!r0) in
@@ -123,6 +145,7 @@ let test_insert () = (
       | Ok () -> 
         s0:=s0';r0:=r0';xs:=List.tl !xs; ()
     done;
+    print_newline ();
   ) with _ -> (
       print_endline "Failure...";
       !s0|>ST.store_to_'|>ST.store'_to_yojson
@@ -130,15 +153,3 @@ let test_insert () = (
       ()
     )
 )
-
-let big () = 
-  let range = Batteries.(0 -- 100 |> List.of_enum) in
-  test range
-
-let _ = 
-  if 1 < Array.length Sys.argv then
-    match Sys.argv.(1) with
-    | "test" -> main() 
-    | "big" -> big()
-    | "insert" -> test_insert()
-  else ()

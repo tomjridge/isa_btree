@@ -25,11 +25,11 @@ module Make = functor (S:S) -> (struct
         open S
         let pp = S.pp
         let max_leaf_size = 
-          ST.page_size - 4 - 4 (* for tag and length *)
+          (ST.page_size - 4 - 4) (* for tag and length *)
                              / (pp.k_len+pp.v_len)
         let max_node_keys =
-          ST.page_size - 4 - 4 - 4 (* tag, length x 2 *)
-          - pp.v_len (* always one val more than # keys *)
+          (ST.page_size - 4 - 4 - 4 (* tag, length x 2 *)
+          - pp.v_len) (* always one val more than # keys *)
             / (pp.k_len + pp.v_len)
         let min_leaf_size = 2
         let min_node_keys = 2
@@ -70,6 +70,12 @@ module Make = functor (S:S) -> (struct
                 )
               in
               let (_,s) = is "" in (* retrieve from monad *)
+              let _ = Test.test (fun _ ->
+                  let (l1,l2) = String.length s , ST.page_size in
+                  let b =  l1 <= l2 in
+                  (if (not b) then Printf.printf "%d %d" l1 l2);
+                  assert b)
+              in
               let s = s ^ 
                       (String.make (ST.page_size - String.length s) (Char.chr 0)) in
               s

@@ -21,10 +21,12 @@ let main () =
   let (s,r) = (ref s,ref r) in
   let xs = ref (Batteries.(1 -- 1000 |> List.of_enum)) in
   while (!xs <> []) do
+    print_string ".";
     let x = List.hd !xs in
     let ((s',r'),_) = MWE.insert x (2*x) |> run (!s,!r) in
     s:=s';r:=r';xs:=List.tl !xs
   done;
+  print_newline ();
   (* FIXME check res? *)
   Ext_int_int_store.ST.sync |> Sem.run !s |> (fun (s',res) -> ());
   ()
@@ -40,10 +42,6 @@ let main_2 () =
   (* FIXME should we check res in following? *)
   (Int_int_cached.sync |> Sem.run !s0 |> (fun (s',res) -> s0:=s'));
   ()
-
-
-let _ = print_endline "test_ii"; main_2 ()
-
 
 
 

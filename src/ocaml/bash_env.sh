@@ -45,16 +45,17 @@ test.ml pickle.ml btree_api.ml btree_util.ml \
 btree.ml \
 btree_simple.ml \
 ext_in_mem.ml ext_block_device.ml \
-ext_int_int_store.ml ext_bytestore.ml ext_string_int.ml"
+ext_int_int_store.ml ext_bytestore.ml ext_string_int.ml \
+test_bytestore.ml test_in_mem.ml test_ii.ml"
 
 # test_in_mem.ml  test_ii.ml
 
 cmos="${mls//.ml/.cmo}"
 cmxs="${mls//.ml/.cmx}"
 
-natives="test_in_mem.native test_ii.native test_bytestore.native"
+natives="test_main.native"
 
-bytes="test_in_mem.byte test_ii.byte test_bytestore.byte"
+bytes="test_main.byte"
 
 
 

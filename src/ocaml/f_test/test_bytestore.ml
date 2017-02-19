@@ -34,28 +34,30 @@ module Disk = struct
   type blk_id = Params.blk_id
   let block_size = Params.page_size
 
+  (* write at most block_size bytes from buf at position off; returns
+     id of block containing write *)
   let write_buff: Buff.t -> offset -> blk_id m = (
     fun buf off s -> 
-      let page = Bytes.create block_size in
+      (* get at most block_size bytes from buf, pad to block_size, and update store *)
       let len = 
         let x = Buff.length buf - off in
         if x < block_size then x else block_size
       in
-      let _ = Bytes.blit buf off (Bytes.of_string page) 0 len in
+      let page = Bytes.sub_string buf off len ^ (String.make (block_size - len) '\000') in
       let page_id = s.free in
       ({free=s.free+1; map=Map_int.add page_id page s.map},Ok page_id)
   )
 
+  (* read at most block_size bytes into buf at offset off from blk_id *)
   let read_buff: Buff.t -> offset -> blk_id -> unit m = (
-    fun buf off i s -> try (
-        let len = 
-          let x = Bytes.length buf - off in
-          if x>block_size then block_size else x
-        in
-        let page = Map_int.find i s.map in
-        let _ = Bytes.blit page 0 buf off len in
-        (s,Ok ())
-    ) with _ -> failwith "read_buff"
+    fun buf off i s -> 
+      let len = 
+        let x = Bytes.length buf - off in
+        if x>block_size then block_size else x
+      in
+      let page = Map_int.find i s.map in
+      let _ = Bytes.blit_string page 0 buf off len in
+      (s,Ok ())
   )
 
   (* additional Btree.STORE interface -------------------------------------- *)
@@ -143,6 +145,7 @@ end)
 
 open Disk
 open Btree_api.Sem
+open Btree_api
 
 let test len = (
   let buf = Bytes.make len 'a' in
@@ -152,12 +155,16 @@ let test len = (
           Bytestore'.read_buff r)
           |> bind (fun buf' ->
           assert (Bytes.to_string buf' = Bytes.to_string buf);
+          print_string ".";
           return ())    
   in
-  r Disk.empty_disk
-  )
+  r |> Sem.run Disk.empty_disk 
+)
 
+let main () = 
+  print_string __MODULE__;
+  ignore (test 1);
+  let _ = List.map test [0;1;4095;4096;4097;8191;8192;8193;40000] in ();
+  print_newline ();
+  ()
 
-let _ = test 1
-
-let _ = List.map test [0;1;4095;4096;4097;8191;8192;8193;40000]

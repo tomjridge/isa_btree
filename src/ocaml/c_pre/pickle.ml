@@ -12,7 +12,7 @@ module Basic_marshalling = struct
         let arr = Array.make 4 (Char.chr 0) in
         for j = 0 to 3 do 
           let off = j in
-          let c = (shift_right i0 (8*j)) |> logand (of_int 255) in
+          let c = (shift_right i0 (8*off)) |> logand (of_int 255) in
           arr.(off) <- (c|>to_int|>Char.chr)
         done;
         [arr.(0);arr.(1);arr.(2);arr.(3)])
@@ -24,7 +24,7 @@ module Basic_marshalling = struct
       let i = ref (Int32.of_int 0) in
       for j = 0 to 3 do
         let off = j in
-        let c = shift_left (arr.(off)|>Char.code|>Int32.of_int) off in
+        let c = shift_left (arr.(off)|>Char.code|>Int32.of_int) (8*off) in
         i:=(logor !i c)
       done;
       !i)
