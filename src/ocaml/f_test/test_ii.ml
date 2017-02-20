@@ -17,9 +17,12 @@ let run = Btree_api.State_monad.run
 
 let ((s',r'),_) = MWE.insert 1 2 |> run (s,r)
 
-let main () = 
+let test_int_int_filestore range = 
+  Printf.printf "%s, test_int_int_filestore, int map backed by recycling filestore, %d elts: " 
+    __MODULE__ (List.length range);
+  flush_all();
   let (s,r) = (ref s,ref r) in
-  let xs = ref (Batteries.(1 -- 1000 |> List.of_enum)) in
+  let xs = ref range in
   while (!xs <> []) do
     print_string ".";
     let x = List.hd !xs in
@@ -31,9 +34,14 @@ let main () =
   Ext_int_int_store.ST.sync |> Sem.run !s |> (fun (s',res) -> ());
   ()
 
-let main_2 () = 
+(* using int_int_cached ---------------------------------------- *)
+
+let test_int_int_cached range = 
+  Printf.printf "%s, test_int_int_cached, int map backed by recycling filestore and api cache, %d elts: " 
+    __MODULE__ (List.length range);
+  flush_all();
   let s0 = ref (r,s,Map_int.empty) in
-  let xs = ref (Batteries.(1 -- 1000000 |> List.of_enum)) in
+  let xs = ref range in
   while (!xs <> []) do
     let x = List.hd !xs in
     let s0' = Int_int_cached.Insert.insert x (2*x) !s0 in

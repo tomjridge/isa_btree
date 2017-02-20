@@ -1,5 +1,6 @@
 (* implement and test bytestore ---------------------------------------- *)
 
+(* backing store is in memory;  *)
 
 open Ext_bytestore
 open Btree_util
@@ -21,6 +22,8 @@ end
 let _ = (module Buff : Buff_t)
 
 (* FIXME here we want to have an in-mem store to page *)
+
+(* in memory disk for testing ---------------------------------------- *)
 
 module Disk = struct
   module Buff = Buff
@@ -131,6 +134,7 @@ end
 
 let _ = (module Btree': Ext_bytestore.Btree_t)
 
+
 (* instantiate Bytestore ---------------------------------------- *)
 
 module Bytestore' = Ext_bytestore.Make(struct
@@ -142,6 +146,7 @@ end)
 
 (* do some tests ---------------------------------------- *)
 
+(* write and read back various length strings *)
 
 open Disk
 open Btree_api.Sem
@@ -162,7 +167,7 @@ let test len = (
 )
 
 let main () = 
-  print_string __MODULE__;
+  Printf.printf "%s: " __MODULE__;
   ignore (test 1);
   let _ = List.map test [0;1;4095;4096;4097;8191;8192;8193;40000] in ();
   print_newline ();

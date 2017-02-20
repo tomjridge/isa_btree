@@ -1,21 +1,16 @@
-Files:
+* Implementations (in e_post)
 
-  - bash_env.sh, Makefile: build
+- ext_block_device
+  - Blkdev_on_fd
+  - Filestore (backed by Blkdev_on_fd)
+  - Recycling_filestore (caches writes, recycles unsynced blocks)
 
-  - btree.ml: layer over our.ml implementation
+- ext_bytestore (implement arbitrary length files using blocks and btree)
 
-  - gen_our.ml: isabelle-generated code
+- ext_in_mem (in-memory fo rtesting; no pickling)
 
-  - int_int_store.ml: example on-disk map
+- ext_int_int_store 
+  - Make - int int map parameterized by store
+  - Int_int_filestore - specialized to Recycling_filestore
+  - Int_int_cached - further caching at the api level, using insert_many
 
-  - our.ml: patched version of gen_our.ml
-
-  - test_ii.ml: simple exhaustive test of int_int_store
-
-  - test_in_mem.ml/sh: generic testing; reads params from stdin;
-    in-memory (doesn't depend on test_ii)
-
-  - test.sh: generic testing using ocaml toplevel (slow!)
-
-
-For .ml dependencies, see bash_env.sh

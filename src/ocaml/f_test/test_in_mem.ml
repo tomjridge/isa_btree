@@ -1,4 +1,5 @@
-(* in-mem testing ---------------------------------------- *)
+(* exhaustive in-mem testing ---------------------------------------- *)
+
 
 let failwith x = failwith ("test_in_mem: "^x)
 
@@ -81,8 +82,13 @@ type range_t = int list[@@deriving yojson]
 
 (* explore all possible states for the given range *)
 
+
+(* exhaustive testing ---------------------------------------- *)
+
 let test range = TS.(
-    Printf.printf "%s: test range" __MODULE__;
+    Printf.printf "%s: exhaustive test, %d elts: " 
+      __MODULE__ (List.length range);
+    flush_all();
     let s = ref TSS.(singleton {t=Tree.Leaf[];s=init_store;r=init_r }) in
     let todo = ref (!s) in
     (* next states from a given tree *)
@@ -125,16 +131,19 @@ let test range = TS.(
         ()
       done
     in
-    Printf.printf "\nTests passed; num states explored: %d\n" (TSS.cardinal !s))
+    Printf.printf "tests passed; num states explored: %d\n" (TSS.cardinal !s))
 
 
-(* do 1000 inserts; check wf *)
-let test_insert () = (
-  Printf.printf "%s: test_insert" __MODULE__;
+(* testing insert ---------------------------------------- *)
+
+(* do n inserts; check wf *)
+let test_insert range = (
+  Printf.printf "%s: test_insert, %d inserts, check wf etc:" __MODULE__ (List.length range);
+  flush_all();
   let r0 = ref init_r in
   let s0 = ref init_store in
   try (
-    let xs = ref (Batteries.(1 -- 1000 |> List.of_enum)) in
+    let xs = ref range in
     while (!xs <> []) do
       print_string ".";
       let x = List.hd !xs in
