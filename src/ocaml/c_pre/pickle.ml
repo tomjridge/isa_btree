@@ -50,18 +50,12 @@ pickled
 
 *)
 
-module type M = sig
+type pickle_target_t = string
+type ptt = pickle_target_t
 
-  type 'a m
+type pickle_error = string
 
-  val ret : 'a -> 'a m
-  val bind : ('a -> 'b m) -> ('a m) -> ('b m)
-end
-
-(* for pickling, we take 'a m  = fun s -> 'a * s *)
-
-module P = struct
-
+exception Pickle_exception of string
 
   (* FIXME change this to buffer? yes; or even rev byte list? or
      bytes? what are we going to convert to eventually? probably bytes
@@ -69,65 +63,79 @@ module P = struct
      limited size; so use buffer; buffer append char is reasonably
      efficient; perhaps create with suitable 4096 byte size *)
 
-
-  (* FIXME shouldn't 'a m = 'a -> t -> t + e ? then bind is always working
-     with unit ? or doesn't this make sense? *)
-
-  type t = string
-
-  type 'a m = t -> 'a * t
-
-  let ret x = (fun s -> (x,s))
-
-  let bind f g = (
-    fun s -> 
-      g s |> (fun (x,s') -> f x s'))
-
-  let write_bytes bs = (fun s -> ((),s^(BatString.implode bs)))
-
+(* pickle *)
+module P : sig
+  type m  (* = ptt -> ptt * pickle_error option *)
+  val ret: unit -> m
+  val bind: (unit -> m) -> m -> m
+  val run:  ptt -> m -> ptt * pickle_error option
+  val run_w_exception:  ptt -> m -> ptt
+  val write_bytes: char list -> m
+end = struct
+  type m = ptt -> ptt * pickle_error option
+  let ret () = (fun s -> (s,None))
+  let  bind: (unit -> m) -> m -> m = (
+    fun f m -> (
+        fun s -> 
+          match m s with
+          | (s',None) -> (f () s')
+          | (s',Some e) -> (s',Some e))
+  )
+  let run = (fun s m -> m s)
+  let run_w_exception ptt m = m |> run ptt |> (fun (s',e) ->
+      match e with 
+      | None -> s'
+      | Some e -> raise (Pickle_exception e))
+  let write_bytes bs = (fun s -> (s^(BatString.implode bs),None))
 end
 
-module P_ : M = P
+module U : sig
+  type 'a m = ptt -> ptt * ('a,pickle_error) result
+  val bind: ('a -> 'b m) -> ('a m) -> ('b m)
+  val ret: 'a -> 'a m
+  val run: ptt -> 'a m -> ptt * ('a,pickle_error) result
+  val run_w_exception: ptt -> 'a m -> ptt * 'a
+  val read_bytes: int -> char list m 
+  val map: ('a -> 'b) -> ('a m) -> ('b m)
+end = struct 
 
-module U = struct
+  type 'a m = ptt -> ptt * ('a,pickle_error) result
 
-  (* FIXME change this to bytes? no; string and offset? *)
-  type t = string
-
-  type 'a m = t -> 'a * t
-
-  let ret x = (fun s -> (x,s))
-
-  let bind f g = (
-    fun s -> 
-      g s |> (fun (x,s') -> f x s'))
-
-  let map : ('a -> 'b) -> ('a m) -> ('b m) = (
-    fun f -> fun x -> x |> bind (fun x -> ret (f x))
+  let bind f m = (fun s ->
+      match m s with
+      | (s',Ok x) -> (f x s')
+      | (s',Error e) -> (s',Error e)
   )
+  let ret x = (fun s -> (s,Ok x))
+  let run s m = m s
+  let run_w_exception s m = m |>run s|>(fun (s',e) ->
+      match e with 
+      | Ok(x) -> (s',x)
+      | Error e -> raise (Pickle_exception e))
 
   let read_bytes : int -> char list m = (fun n s -> 
       assert (String.length s >= n);
-      Tjr_string.split_at s n |> (fun (bs,s') -> (bs|>BatString.explode,s')))
+      Tjr_string.split_at s n |> 
+      (fun (bs,s') -> (s',Ok (bs|>BatString.explode))))
+
+  let map f m s = (match m s with
+      | (s',Ok x) -> (s',Ok (f x))
+      | (s',Error e) -> (s',Error e))
 
 end
-
 
 module Examples = struct
 
   (* open Btree_util *)
 
-  let p_pair : 'a P.m -> 'b P.m -> ('a * 'b) P.m = P.(fun p q ->
-      p |> bind (fun x -> q |> bind (fun y -> ret (x,y))))
-
-  let p_pair : unit P.m -> unit P.m -> unit P.m = P.(fun p q ->
+  let p_pair : P.m -> P.m -> P.m = P.(fun p q ->
       p |> bind (fun x -> q |> bind (fun y -> ret ())))
 
   let u_pair : 'a U.m -> 'b U.m -> ('a * 'b) U.m = U.(fun p q ->
       p |> bind (fun x -> q |> bind (fun y -> ret (x,y)))
     )
 
-  let p_int32 : int32 -> unit P.m = P.(
+  let p_int32 : int32 -> P.m = P.(
       fun i -> Basic_marshalling.int32_to_bytes i |> write_bytes
     )
 
@@ -142,7 +150,7 @@ module Examples = struct
   let u_int = U.(u_int32 |> map Int32.to_int)
 
   (* assume we know the length somehow *)
-  let p_string : string -> unit P.m = P.(
+  let p_string : string -> P.m = P.(
       fun s ->
         BatString.explode s|>write_bytes
     )
@@ -150,7 +158,7 @@ module Examples = struct
       fun n -> read_bytes n |> map BatString.implode
     )
 
-  let p_string_w_len : string -> unit P.m = P.(fun s ->
+  let p_string_w_len : string -> P.m = P.(fun s ->
       p_int (String.length s) |> bind (
         fun _ -> p_string s)
     )
@@ -159,8 +167,7 @@ module Examples = struct
       u_int |> bind (fun n -> 
           read_bytes n |> map (fun bs -> BatString.implode bs )))
 
-
-  let p_list : ('a -> unit P.m) -> 'a list -> unit P.m = P.(
+  let p_list : ('a -> P.m) -> 'a list -> P.m = P.(
       fun p xs ->
         (* write length *)
         p_int (List.length xs) |> bind (
@@ -174,7 +181,6 @@ module Examples = struct
             loop xs
         ))
 
-
   let u_list : ('a U.m) -> 'a list U.m = U.(
       fun u ->
         u_int |> bind (fun n ->
@@ -187,8 +193,63 @@ module Examples = struct
             loop [])
     )
 
+
 end
 
+(* FIXME not sure combining for 'a pu really buys anything *)
+(*
+module PU = struct
+  open Examples_
+  (* the combination of p and u *)
+  type 'a pu = { 
+    appP: 'a -> P.m;
+    appU: 'a U.m
+  }
+  let pair: 'a pu -> 'b pu -> ('a*'b) pu = (fun p1 p2 ->
+      { appP=(fun (x,y) -> p_pair (p1.appP x) (p2.appP y));
+        appU=u_pair p1.appU p2.appU 
+      }
+  )
+
+  let list: 'a pu -> 'a list pu = (fun pu ->
+      { appP=(fun as_ -> p_list pu.appP as_);
+        appU=(u_list pu.appU) }
+  )
+
+  (* use the pickler or unpickler *)
+  let pickle: 'a pu -> 'a -> P.m = (fun pu x -> x|>pu.appP)
+  let unpickle: 'a pu -> 'a U.m  = (fun pu -> pu.appU)
+
+end
+
+
+
+module PU_examples = struct
+
+   (* in general, appP looks at argument, appU uses previous unpickle *)
+
+  open PU
+  open Examples_
+
+  let pu_int : int pu = { appP = p_int; appU = u_int }
+
+  let pu_pair: 'a pu -> 'b pu -> ('a * 'b) pu = (
+    fun p1 p2 -> {
+        appP=(fun (x,y) -> p_pair (p1.appP x) (p2.appP y)); 
+        appU=u_pair p1.appU p2.appU 
+      })
+  (* FIXME Following can be done using 'a pu *)
+
+  let pu_string: int -> string pu = (fun l -> 
+      { appP=p_string; appU=u_string l })
+
+  let pu_string_w_len: string pu = {
+    appP=p_string_w_len;
+    appU=u_string_w_len
+  }
+
+end
+*)
 
 (* example for btree.simple ---------------------------------------- *)
 
@@ -215,17 +276,16 @@ module String_int = struct
   (* we know the string has length 16 *)
   let key_size = 16
 
-  let p_key : string -> unit P.m = (fun s -> 
+  let p_key : string -> P.m = (fun s -> 
       assert (String.length s = key_size);
       p_string s)
 
 
   let u_k : k U.m = (u_string key_size)
 
-  let p_ks : k list -> unit P.m = p_list p_key
+  let p_ks : k list -> P.m = p_list p_key
 
   let u_ks : k list U.m = u_list u_k
-
 
 end
 

@@ -69,7 +69,7 @@ module Make = functor (S:S) -> (struct
                           p_list p kvs))
                 )
               in
-              let (_,s) = is "" in (* retrieve from monad *)
+              let s = is |> Pickle.P.run_w_exception "" in 
               let _ = Test.test (fun _ ->
                   let (l1,l2) = String.length s , ST.page_size in
                   let b =  l1 <= l2 in
@@ -98,7 +98,7 @@ module Make = functor (S:S) -> (struct
                               ret (Leaf_frame(kvs)))))
                 )
               in
-              let (r,_) = x buf in
+              let (_,r) = x |> Pickle.U.run_w_exception buf in
               r)
 
         (* FIXME can remove these once code is trusted *)
