@@ -131,8 +131,8 @@ module Examples = struct
   let p_pair : P.m -> P.m -> P.m = P.(fun p q ->
       p |> bind (fun x -> q |> bind (fun y -> ret ())))
 
-  let u_pair : 'a U.m -> 'b U.m -> ('a * 'b) U.m = U.(fun p q ->
-      p |> bind (fun x -> q |> bind (fun y -> ret (x,y)))
+  let u_pair : 'a U.m -> ('a -> 'b U.m) -> ('a * 'b) U.m = U.(fun p q ->
+      p |> bind (fun x -> q x |> bind (fun y -> ret (x,y)))
     )
 
   let p_int32 : int32 -> P.m = P.(

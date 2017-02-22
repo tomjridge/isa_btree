@@ -46,7 +46,7 @@ module Make = functor (ST:Btree_api.Simple.STORE) -> struct
           u_k = (Examples.u_string key_size);
           k_len = key_size;
           p_v = (fun (s,i) -> Examples.(p_pair (p_string_w_len s) (p_int i)));
-          u_v = Examples.(u_pair u_string_w_len u_int);
+          u_v = Examples.(u_pair u_string_w_len (fun _ -> u_int));
           v_len = value_size;
         })
 

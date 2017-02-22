@@ -65,7 +65,7 @@ module Make = functor (S:S) -> (struct
                               p_list p_int rs)))
                   | Leaf_frame(kvs) -> (
                       p_int leaf_tag |> bind (fun () -> 
-                          let p = fun kv -> pp.p_k (fst kv) |> bind (fun () -> pp.p_v (snd kv)) in
+                          let p = fun (k,v) -> p_pair (pp.p_k k) (pp.p_v v) in
                           p_list p kvs))
                 )
               in
@@ -91,9 +91,7 @@ module Make = functor (S:S) -> (struct
                               u_list u_int |> bind (fun rs ->
                                   ret (Node_frame(ks,rs)))))
                       | _ when tag = leaf_tag -> (
-                          let u = pp.u_k |> bind (fun k -> pp.u_v |> bind (fun v -> 
-                              ret (k,v)))
-                          in
+                          let u = u_pair pp.u_k (fun k -> pp.u_v) in
                           u_list u |> bind (fun kvs -> 
                               ret (Leaf_frame(kvs)))))
                 )
