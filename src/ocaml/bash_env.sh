@@ -45,7 +45,8 @@ test.ml pickle.ml btree_api.ml btree_util.ml \
 btree.ml \
 btree_simple.ml \
 ext_in_mem.ml ext_block_device.ml \
-ext_int_int_store.ml ext_bytestore.ml ext_string_int.ml \
+ext_int_int_store.ml ext_bytestore.ml \
+map_digest_int.ml map_digest_to_string_int.ml map_string_int.ml \
 test_bytestore.ml test_in_mem.ml test_ii.ml"
 
 # test_in_mem.ml  test_ii.ml

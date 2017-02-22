@@ -69,6 +69,10 @@ module P = struct
      limited size; so use buffer; buffer append char is reasonably
      efficient; perhaps create with suitable 4096 byte size *)
 
+
+  (* FIXME shouldn't 'a m = 'a -> t -> t + e ? then bind is always working
+     with unit ? or doesn't this make sense? *)
+
   type t = string
 
   type 'a m = t -> 'a * t

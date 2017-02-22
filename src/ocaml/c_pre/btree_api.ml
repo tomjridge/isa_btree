@@ -24,6 +24,8 @@ end = struct
   let run: 's -> ('a,'s) m -> 's * 'a = fun s -> fun m -> m s
 end
 
+module S_m = State_monad
+
 module State_error_monad : sig
   type ('a,'s) m = 's -> ('s * ('a,string) result)
   val return: 'a -> ('a,'s) m
@@ -157,7 +159,8 @@ module type MAP_WITH_EXCEPTIONS = sig
   type 'a m = ('a,ST.store * ref_t) State_monad.m
 
   open KV
-  val empty: ST.store -> ST.store * ref_t
+  (* empty: not unit m - we don't have a ref_t *)
+  val empty: ST.store -> ST.store * ref_t  
   val insert: key -> value -> unit m
   val insert_many: key -> value -> (key*value) list -> unit m
   val find: key -> value option m
@@ -165,22 +168,21 @@ module type MAP_WITH_EXCEPTIONS = sig
 end
 
 
-
-(*
-module type MAP = sig
-  type t  (* a pointer to a page_ref; pointer changes as tree is updated *)
+(* as MAP_WITH_EXCEPTIONS, but with mutable state, and btree_ref is
+   encapsulated in an object *)
+module type IMPERATIVE_MAP = sig
   module KV : KEY_VALUE
-  module ST : STORE
-  module M : MONAD
+  (* module ST : STORE *)
   open KV
-  open ST
-  val empty: unit -> t M.m
-  val insert: t -> key -> value -> unit M.m
-  val insert_many: t -> (key*value) list -> unit M.m
-  val find: t -> key -> value option M.m
-  val delete: t -> key -> unit M.m
+  type ops_t = { 
+    insert: key -> value -> unit;
+    insert_many: key -> value -> (key*value) list -> unit;
+    find: key -> value option;
+    delete: key -> unit
+  }
+  val empty: unit -> ops_t
 end
-*)
+
 
 
 (* simple interface ---------------------------------------- *)

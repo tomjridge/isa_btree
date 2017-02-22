@@ -443,13 +443,15 @@ module Main = struct
           let from_store s f = (
             match f with
               D_small_leaf kvs -> `D_small_leaf kvs
-            | D_small_node(ks,rs) -> `D_small_node(ks,rs|>List.map (Frame.r_to_t s))
+            | D_small_node(ks,rs) -> 
+              `D_small_node(ks,rs|>List.map (Frame.r_to_t s))
             | D_updated_subtree(r) -> `D_updated_subtree(r|>Frame.r_to_t s)
           )
           in
           match t.ds with
           | D_down (fs,r) -> `D_down (* FIXME fs *)
-          | D_up (f,(stk,r)) -> `D_up(from_store s f,stk|>List.map (Frame.r_frame_to_t_frame s))
+          | D_up (f,(stk,r)) -> 
+            `D_up(from_store s f,stk|>List.map (Frame.r_frame_to_t_frame s))
           | D_finished(r) -> `D_finished(r|>Frame.r_to_t s)
         )
 
@@ -554,6 +556,57 @@ module Main = struct
           RM_.delete k |> conv)
     end
 
+
+    module Imperative_map = struct
+      open Btree_api
+      module Make = (
+        functor (S:sig val store: S.ST.store ref end) -> (struct
+            module T_ = (struct
+              module S = S
+              module KV = Raw_map.KV
+              open KV
+              type ops_t = { 
+                insert: key -> value -> unit;
+                insert_many: key -> value -> (key*value) list -> unit;
+                find: key -> value option;
+                delete: key -> unit
+              }
+              module MWE_ = Map_with_exceptions
+
+              let empty: unit -> ops_t  = (fun () -> 
+                  let r = ref (MWE_.empty (!S.store) |> snd) in
+                  let lift = (fun f x ->  
+                      (* lift f x = ... type check problems *)
+                      f x |> S_m.run (!S.store,!r)
+                      |>(fun ((s',r'),v) -> (
+                            r:=r';
+                            S.store:=s';
+                            v
+                          )))
+                  in
+                  let insert: key -> value -> unit = (fun k v ->
+                      lift (fun (k,v) -> MWE_.insert k v) (k,v))
+                  in
+                  let insert_many: key -> value -> (key*value) list -> unit = (
+                    fun k v kvs -> 
+                    lift (fun (k,v,kvs) -> MWE_.insert_many k v kvs) (k,v,kvs))
+                  in
+                  let find: key -> value option = (fun k ->
+                      lift MWE_.find k)
+                  in
+                  let delete: key -> unit = (lift MWE_.delete) in
+                  { insert; insert_many; find; delete })
+
+            end)  (* T_ *)
+
+            let _ = (module T_ : IMPERATIVE_MAP)
+            include T_
+
+          end)  (* functor *)
+      ) (* Make *)
+    end (* Imperative_map *)
+
   end)  (* Make *)
+
 end (* Main *)
 
