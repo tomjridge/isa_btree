@@ -45,6 +45,7 @@ let tests = [
       let (l,h) = get_range ps in
       Test_ii.(fun () -> 
       test_int_int_cached Batteries.(l -- h |> List.of_enum)));
+  ("tis", fun ps -> Test_string_int.test);
 ]
 
 (* FIXME also main2 *)

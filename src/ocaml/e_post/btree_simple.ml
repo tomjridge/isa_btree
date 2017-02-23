@@ -39,22 +39,19 @@ module Make = functor (S:S) -> (struct
       module FT = struct
         open KV
         open ST
-        (* format: int node_or_leaf; int number of entries; entries *)
-
-
         type pframe =  
             Node_frame of (key list * page_ref list) |
             Leaf_frame of (key * value) list[@@deriving yojson]
 
         open Btree_util
-
         open S
 
         (* following assumes tags marshall to single int32 *)
         let node_tag = 0
         let leaf_tag = 1
 
-        (* generic marshalling *)
+        (* generic marshalling; format: int node_or_leaf; int number
+           of entries; entries *)
         let frame_to_page' : pframe -> page = Pickle.P.(
             fun p ->
               let is = Pickle.Examples.(
@@ -76,9 +73,7 @@ module Make = functor (S:S) -> (struct
                   (if (not b) then Printf.printf "%d %d" l1 l2);
                   assert b)
               in
-              let s = s ^ 
-                      (String.make (ST.page_size - String.length s) (Char.chr 0)) in
-              s
+              s ^ (String.make (ST.page_size - String.length s) (Char.chr 0))
           )
 
         let page_to_frame' : page -> pframe = Pickle.U.(

@@ -143,15 +143,20 @@ module Filestore (* : Our.Store_t *) = struct
   type store = { 
     fd: Blkdev_on_fd.fd; 
     free_ref: page_ref;
-  }
-
+  }  
 
   open Blkdev_on_fd
 
   type 'a m = ('a,store) Btree_api.State_error_monad.m
 
   open Btree_api
-      
+   
+  let existing_file_to_new_store: string -> store = (fun s ->
+      let fd = Blkdev_on_fd.open_file s in
+      (* now need to write the initial frame *)
+      let free_ref = 0 in
+      {fd; free_ref})      
+   
   (* alloc without write; free block can then be used to write data
      outside the btree *)
   let alloc_block : page_ref m = (
@@ -202,38 +207,36 @@ let _ = (module Filestore : Btree_api.Simple.STORE)
 
 (* a filestore which caches page writes and recycles page refs -------------- *)
 
-module Recycling_filestore = struct
+(* we maintain a set of blocks that have been allocated and not freed
+   since last sync (ie which need to be written), and a set of page
+   refs that have been allocated since last sync and freed without
+   being synced (ie which don't need to go to store at all) *)
 
+(* FIXME worth checking no alloc/free misuse? *)
+
+
+module Recycling_filestore = struct
   type page_ref = Filestore.page_ref [@@deriving yojson]
   type page = Filestore.page
-  let page_size = Defaults.page_size
-  
+  let page_size = Defaults.page_size  
   module Cache = Map.Make(
     struct 
       type t = page_ref
       let compare: t -> t -> int = Pervasives.compare
     end)
-
   module Set_r = Btree_util.Set_int
-
-  (* we maintain a set of blocks that have been allocated and not
-     freed since last sync (ie which need to be written), and a set of
-     page refs that have been allocated since last sync and freed
-     without being synced (ie which don't need to go to store at
-     all) *)
-
-  (* FIXME worth checking no alloc/free misuse? *)
-
   type store = { 
     fs: Filestore.store; 
     cache: page Cache.t;  (* a cache of pages which need to be written *)
     freed_not_synced: Set_r.t   
     (* could be a list - we don't free something that has already been freed *)
   }
-
   open Btree_api
-
   type 'a m = ('a,store) Sem.m
+
+  let existing_file_to_new_store: string -> store = (fun fn ->
+      Filestore.existing_file_to_new_store fn |> (fun fs ->
+          {fs; cache=Cache.empty; freed_not_synced=Set_r.empty} ))
 
   (* FIXME following should use the monad from filestore *)
   let alloc : page -> page_ref m = (
@@ -262,13 +265,11 @@ module Recycling_filestore = struct
       )
   )
 
-
   let free : page_ref list -> unit m = (
     fun ps -> (fun s -> 
         {s with freed_not_synced=(
              Set_r.union s.freed_not_synced (Set_r.of_list ps)) },
         Ok()))
-
 
   let page_ref_to_page: page_ref -> page m = (
     fun r -> (fun s -> 

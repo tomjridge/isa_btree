@@ -11,7 +11,7 @@ let value_size = 4  (* 32 bit ints *)
 (* instantiate Btree.Simple.Make() ----------------------------------------- *)
 
 module Make = functor (ST:Btree_api.Simple.STORE) -> struct
-
+  module ST = ST
   module Simple = Btree_simple.Make(
     struct 
 

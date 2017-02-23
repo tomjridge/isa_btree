@@ -7,6 +7,7 @@ end
 
 module Set_int = Set.Make(Int)
 module Map_int = Map.Make(Int)
+module Map_string = Map.Make(String)
 
 
 let dest_Ok x = Our.Util.(

@@ -187,10 +187,10 @@ end
 
 (* simple interface ---------------------------------------- *)
 
+(* see Btree_simple *)
+
 module Pickle_params = struct
-
   open Pickle
-
   type ('k,'v) t = {
     p_k: 'k -> P.m;
     u_k: 'k U.m;
@@ -199,7 +199,6 @@ module Pickle_params = struct
     u_v: 'v U.m;
     v_len: int      
   }
-
 end  
 
 

@@ -6,7 +6,8 @@
 
 { "name": "tii.f", "params": [ [ "Range", [ 1, 1000 ] ] ], "with_asserts": true },
 
-{ "name": "tii.c", "params": [ [ "Range", [ 1, 10000 ] ] ], "with_asserts": true }
+{ "name": "tii.c", "params": [ [ "Range", [ 1, 10000 ] ] ], "with_asserts": true },
+{ "name": "tis", "params": [ ], "with_asserts": true }
 
 ]
 
