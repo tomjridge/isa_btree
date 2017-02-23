@@ -120,12 +120,16 @@ open Btree_util
 module Map = Map_string
 
 let test () = 
+  Printf.printf "%s:" __MODULE__;
+  flush_all();
   let xs = ref strings in
   let c = ref 1 in
   let m = ref Map.empty in
   let _ = 
     while (!xs <> []) do
       let (k,v) = (List.hd !xs, !c) in
+      Test.log __LOC__;
+      Test.log (Printf.sprintf "insert: %s %s" k (v|>string_of_int));
       ops.insert k v;
       m:=(Map.add k v !m);
       c:=!c+1;

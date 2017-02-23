@@ -160,12 +160,17 @@ module Main = struct
 
       let check_state s = (
         last_state:=Some(s);
+        Test.log __LOC__;
+        Test.log (s.tree |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
         Test.test (fun _ -> 
           assert (Find.wellformed_find_state s.store s.tree s.fs));            
       )
 
       let check_trans s s' = (
         last_trans:=Some(s,s');
+        Test.log __LOC__;
+        Test.log (s.tree |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
+        Test.log (s'.tree |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
         check_state s;
         check_state s'
       )
@@ -245,12 +250,18 @@ module Main = struct
 
       let check_state s = (
         last_state:=Some(s);
+        Test.log __LOC__;
+        Test.log (s.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
+        Test.log (s.is |> Insert.i_state_t_to_yojson |> Yojson.Safe.to_string);
         Test.test (fun _ ->
             assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is))
       )
       
       let check_trans x y = (
         last_trans:=Some(x,y);
+        (* Test.log __LOC__;
+        Test.log (x.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
+        Test.log (y.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string); *)
         check_state x;
         check_state y
       )
@@ -317,12 +328,17 @@ module Main = struct
 
       let check_state s = (
         last_state:=Some(s);
+        Test.log __LOC__;
+        Test.log (s.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
         Test.test (fun _ -> 
             assert (true))  (* FIXME *)
       )
 
       let check_trans x y = (
         last_trans:=Some(x,y);
+        Test.log __LOC__;
+        Test.log (x.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
+        Test.log (y.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
         check_state x;
         check_state y
       )
@@ -387,12 +403,17 @@ module Main = struct
 
       let check_state s = (
         last_state:=Some(s);
+        Test.log __LOC__;
+        Test.log (s.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
         Test.test (fun _ -> 
           assert (Delete.wellformed_delete_state s.t s.k s.store s.ds))
       )
 
       let check_trans x y = (
         last_trans:=Some(x,y);
+        Test.log __LOC__;
+        Test.log (x.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
+        Test.log (y.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
         check_state x;
         check_state y
       )
@@ -574,7 +595,9 @@ module Main = struct
               module MWE_ = Map_with_exceptions
 
               let empty: unit -> ops_t  = (fun () -> 
-                  let r = ref (MWE_.empty (!S.store) |> snd) in
+                  let (s',r) = MWE_.empty !S.store in
+                  let r = ref r in
+                  let _ = S.store:=s' in
                   let lift = (fun f x ->  
                       (* lift f x = ... type check problems *)
                       f x |> S_m.run (!S.store,!r)

@@ -6,7 +6,6 @@ open Int_int_filestore
 
 let default_filename = "/tmp/store"
 
-let (s,r) = Int_int_filestore.existing_file_to_new_store default_filename
 
 module Btree = Int_int_store.Btree_simple.Btree
 
@@ -15,12 +14,13 @@ module Sem = Btree_api.Sem
 
 let run = Btree_api.State_monad.run
 
-let ((s',r'),_) = MWE.insert 1 2 |> run (s,r)
+(* let ((s',r'),_) = MWE.insert 1 2 |> run (s,r) *)
 
 let test_int_int_filestore range = 
   Printf.printf "%s, test_int_int_filestore, int map backed by recycling filestore, %d elts: " 
     __MODULE__ (List.length range);
   flush_all();
+  let (s,r) = Int_int_filestore.existing_file_to_new_store default_filename in
   let (s,r) = (ref s,ref r) in
   let xs = ref range in
   while (!xs <> []) do
@@ -32,6 +32,7 @@ let test_int_int_filestore range =
   print_newline ();
   (* FIXME check res? *)
   Ext_int_int_store.ST.sync |> Sem.run !s |> (fun (s',res) -> ());
+  Unix.close ((!s).fs.fd);
   ()
 
 (* using int_int_cached ---------------------------------------- *)
@@ -40,15 +41,19 @@ let test_int_int_cached range =
   Printf.printf "%s, test_int_int_cached, int map backed by recycling filestore and api cache, %d elts: " 
     __MODULE__ (List.length range);
   flush_all();
+  let (s,r) = Int_int_filestore.existing_file_to_new_store default_filename in
   let s0 = ref (r,s,Map_int.empty) in
   let xs = ref range in
   while (!xs <> []) do
+    print_string ".";
     let x = List.hd !xs in
     let s0' = Int_int_cached.Insert.insert x (2*x) !s0 in
     s0:=s0';xs:=List.tl !xs
   done;
+  print_newline ();
   (* FIXME should we check res in following? *)
   (Int_int_cached.sync |> Sem.run !s0 |> (fun (s',res) -> s0:=s'));
+  Unix.close ((!s0) |> (fun (x,y,z) -> y.fs.fd));
   ()
 
 

@@ -243,7 +243,11 @@ let rec check_keys
       in
     let a =
       (match kr with None -> true
-        | Some kra -> Set.ball ks (fun k -> key_lt k kra))
+        | Some kra -> 
+          let k2 k = k |> Key_value_types.key_to_yojson |> Yojson.Safe.to_string in
+          let s : string = kra |> k2 in
+          let ss : string list = match ks with Gen_isa.Set.Set ks -> List.map (fun k -> k |> k2) ks in
+          Set.ball ks (fun k -> key_lt k kra))
       in
     b1 && a;;
 

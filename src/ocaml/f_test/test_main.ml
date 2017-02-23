@@ -67,7 +67,7 @@ let run_test t = (
   test t.params ()
 )
 
-let _ = (
+let _ = try (
   match Array.to_list Sys.argv |> List.tl with
   (* run tests based on json config file *)
   | [n] -> (
@@ -75,4 +75,7 @@ let _ = (
       let Ok tests = s|>Yojson.Safe.from_string|>tests_of_yojson in
       List.iter (fun t -> run_test t) tests
     )
-)
+) with e -> (
+    Test.print_logs ();
+    e|>Printexc.to_string|>print_endline;
+  )
