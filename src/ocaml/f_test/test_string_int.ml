@@ -104,13 +104,13 @@ smart-panther-36
 lazy-termite-3
 helpless-snake-32 |} |> Tjr_string.split_on_all ~sub:"\n"
 
-module MSI = Map_string_int.Make(Ext_block_device.Recycling_filestore)
+module FS = Ext_block_device.Filestore
+
+module MSI = Map_string_int.Make(FS)
 
 module IM = MSI.Simple.Btree.Imperative_map.Make(
   struct 
-    let store = ref (
-        Ext_block_device.Recycling_filestore.existing_file_to_new_store 
-        default_filename)
+    let store = ref (FS.existing_file_to_new_store default_filename)
   end)
 
 let ops = IM.empty ()

@@ -251,8 +251,10 @@ module Main = struct
       let check_state s = (
         last_state:=Some(s);
         Test.log __LOC__;
-        Test.log (s.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string);
-        Test.log (s.is |> Insert.i_state_t_to_yojson |> Yojson.Safe.to_string);
+        Test.log ("s.t" ^ (s.t |> Tree.tree_to_yojson |> Yojson.Safe.to_string));
+        Test.log ("s.k" ^ (s.k |> KV_.key_to_yojson |> Yojson.Safe.to_string));
+        Test.log ("s.v" ^ (s.v |> KV_.value_t_to_yojson |> Yojson.Safe.to_string));
+        Test.log ("s.is" ^ (s.is |> Insert.i_state_t_to_yojson |> Yojson.Safe.to_string));
         Test.test (fun _ ->
             assert (Insert.wellformed_insert_state s.t s.k s.v s.store s.is))
       )

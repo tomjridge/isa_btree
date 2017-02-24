@@ -817,7 +817,7 @@ let rec wf_u
              Tree_stack.tree_to_stack k t0 (List.size_list stk) in
            let ms =
              (match stk with [] -> Some Constants.Small_root_node_or_leaf
-               | _ :: _ -> Some Constants.Small_leaf)
+               | _ :: _ -> Some Constants.Small_node)
              in
            let t = Tree.Node (ks, Util.rev_apply rs (List.map r_to_t)) in
            List.equal_lista
@@ -838,7 +838,7 @@ let rec wf_u
              Tree_stack.tree_to_stack k t0 (List.size_list stk) in
            let ms =
              (match stk with [] -> Some Constants.Small_root_node_or_leaf
-               | _ :: _ -> Some Constants.Small_leaf)
+               | _ :: _ -> None)
              in
            let t = Util.rev_apply r r_to_t in
            List.equal_lista

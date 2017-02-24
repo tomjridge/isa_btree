@@ -263,7 +263,7 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> store \<Rightarrow> u \
   | D_small_node (ks,rs) \<Rightarrow> (
     (* FIXME don't we need some wf on Node(ks,rs)? *)
     let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
-    let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_leaf) in
+    let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_node) in
     let t = Node(ks,rs|>List.map r_to_t) in
     (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
     (wellformed_tree ms t) &
@@ -271,7 +271,7 @@ definition wf_u :: "tree \<Rightarrow> key \<Rightarrow> store \<Rightarrow> u \
   )
   | D_updated_subtree(r) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
-    let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_leaf) in
+    let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> None) in
     let t = r|>r_to_t in
     (t_stk|>no_focus = stk|>stack_map r_to_t|>no_focus) &
     (wellformed_tree ms t) &

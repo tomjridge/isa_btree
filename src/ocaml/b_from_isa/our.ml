@@ -243,11 +243,7 @@ let rec check_keys
       in
     let a =
       (match kr with None -> true
-        | Some kra -> 
-          let k2 k = k |> Key_value_types.key_to_yojson |> Yojson.Safe.to_string in
-          let s : string = kra |> k2 in
-          let ss : string list = match ks with Gen_isa.Set.Set ks -> List.map (fun k -> k |> k2) ks in
-          Set.ball ks (fun k -> key_lt k kra))
+        | Some kra -> Set.ball ks (fun k -> key_lt k kra))
       in
     b1 && a;;
 
@@ -850,7 +846,7 @@ let rec wf_u
              Tree_stack.tree_to_stack k t0 (List.size_list stk) in
            let ms =
              (match stk with [] -> Some Constants.Small_root_node_or_leaf
-               | _ :: _ -> Some Constants.Small_leaf)
+               | _ :: _ -> Some Constants.Small_node)
              in
            let t = Tree.Node (ks, Util.rev_apply rs (List.map r_to_t)) in
            List.equal_lista
@@ -871,7 +867,7 @@ let rec wf_u
              Tree_stack.tree_to_stack k t0 (List.size_list stk) in
            let ms =
              (match stk with [] -> Some Constants.Small_root_node_or_leaf
-               | _ :: _ -> Some Constants.Small_leaf)
+               | _ :: _ -> None)
              in
            let t = Util.rev_apply r r_to_t in
            List.equal_lista
