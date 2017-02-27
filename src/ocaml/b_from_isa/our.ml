@@ -689,7 +689,17 @@ let rec r_frame_to_t_frame s = Tree_stack.frame_map (r_to_t s);;
 end;;
 
 module Find : sig
-  type find_state [@@deriving yojson]
+  type find_state = 
+  F_down of
+    (Store.page_ref *
+      (Key_value_types.key *
+        (Store.page_ref * (Store.page_ref, unit) Tree_stack.frame_ext list)))
+  | F_finished of
+      (Store.page_ref *
+        (Key_value_types.key *
+          (Store.page_ref *
+            ((Key_value_types.key * Key_value_types.value_t) list *
+              (Store.page_ref, unit) Tree_stack.frame_ext list)))) [@@deriving yojson];;
   val find_step : find_state -> (find_state, Store.store) Monad.m_t
   val empty_btree : unit -> (Store.page_ref, Store.store) Monad.m_t
   val mk_find_state : Key_value_types.key -> Store.page_ref -> find_state

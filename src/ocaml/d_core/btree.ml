@@ -481,7 +481,6 @@ module Main = struct
     end)
 
 
-
     module Raw_map (* : RAW_MAP *) = struct
       open Our_
       open Btree_api
@@ -630,6 +629,42 @@ module Main = struct
           end)  (* functor *)
       ) (* Make *)
     end (* Imperative_map *)
+
+
+    module Leaf_stream (* : LEAF_STREAM *) = struct
+      module RM = Raw_map
+      module ST = RM.ST
+      module KV = RM.KV
+      module Tree_stack = Our_.Tree_stack
+      open Btree_api
+      open ST
+      open KV
+
+      type frame_list = (page_ref, unit) Tree_stack.frame_ext list
+
+      (* leaf_ref contains part of f_finished_t *)
+      type leaf_ref = (key * value) list * frame_list
+      type 'a m = ('a,ST.store) Sem.m
+
+      open Tree_stack
+      let first_leaf: RM.ref_t -> leaf_ref m = (
+        failwith ""
+      )
+      let next_leaf: leaf_ref -> leaf_ref option m = (
+        fun (kvs,fs) -> fun s ->
+          match fs with
+          | [] -> (s,Ok None) (* at root, which is only leaf *)
+          | f::fs' -> (
+              let ((ks1,rs1),(r,(ks2,rs2))) = f|>dest_frame in
+              (* last ks1 <= r < hd ks2 *)
+              (* shift if we can, otherwise 
+              failwith ""
+            )
+      )
+      let kvs: leaf_ref -> (key*value) list m = failwith ""
+      
+    end
+
 
   end)  (* Make *)
 

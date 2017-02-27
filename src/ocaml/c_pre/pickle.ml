@@ -29,6 +29,15 @@ module Basic_marshalling = struct
       done;
       !i)
 
+  let _ = Test.test (fun _ ->
+      let f i = (
+        assert (i |> int32_to_bytes |> bytes_to_int32 = i);
+        let j = i |> int32_to_bytes in
+        assert (j |> bytes_to_int32 |> int32_to_bytes = j);
+        ())
+      in
+      List.iter f [Int32.of_int 0;Int32.of_int 1;Int32.of_int (-1);Int32.max_int;Int32.min_int])
+
 
 
 
@@ -252,6 +261,8 @@ end
 *)
 
 (* example for btree.simple ---------------------------------------- *)
+
+(* FIXME move elsewhere *)
 
 module String_int = struct
 

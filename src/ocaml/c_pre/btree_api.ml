@@ -147,6 +147,22 @@ module type RAW_MAP = sig
   val insert_many: key -> value -> (key*value) list -> unit m
   val find: key -> value option m
   val delete: key -> unit m
+
+end
+
+(* this is a useful operation to support, but not needed always *)
+module type LEAF_STREAM = sig
+  module RM : RAW_MAP
+  module ST = RM.ST
+  module KV = RM.KV
+
+  type leaf_ref  (* pointer to leaf *)
+  type 'a m = ('a,ST.store) State_error_monad.m
+
+  val first_leaf: RM.ref_t -> leaf_ref m
+  val next_leaf: leaf_ref -> leaf_ref option m
+  open KV
+  val kvs: leaf_ref -> (key*value) list m
 end
 
 
@@ -183,6 +199,17 @@ module type IMPERATIVE_MAP = sig
   val empty: unit -> ops_t
 end
 
+module type IMPERATIVE_LEAF_STREAM = sig
+  module KV : KEY_VALUE
+  open KV
+
+  type btree_ref  (* = RM.ref_t *)    
+  type ops_t = {
+    get_next_leaf: unit -> (key * value) list option;
+  }
+
+  val create_ll : btree_ref -> ops_t
+end
 
 
 (* simple interface ---------------------------------------- *)

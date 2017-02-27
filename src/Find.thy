@@ -19,6 +19,7 @@ definition empty_btree :: "unit \<Rightarrow> r SM_t" where
 
 type_synonym stk = "r stk"
 
+
 datatype find_state = 
   F_down "r*k*r*stk"  (* root, search key, lower and upper bound for r *) 
   | F_finished "r*k*r*kvs*stk"

@@ -1,5 +1,5 @@
 theory Export_code
-imports Find Insert Delete Insert_many Code_Numeral "~~/src/HOL/Library/Code_Target_Numeral"
+imports Find Insert Delete Insert_many Leaf_stream Code_Numeral "~~/src/HOL/Library/Code_Target_Numeral"
 "~~/src/HOL/Library/Code_Char"
 begin
 
@@ -64,6 +64,9 @@ dest_d_finished
 D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
 Delete.delete_step
 wellformed_delete_state
+
+(* leaf_stream *)
+mk_ls_state lss_is_finished dest_LS_leaf lss_step
 
 
 in OCaml file "generated/gen_btree.ml"
