@@ -542,6 +542,69 @@ module Main = struct
     let _ = (module Raw_map : Btree_api.RAW_MAP)
 
 
+    module Leaf_stream = (struct (* ---------------------------------------- *)
+      open Btree_api
+      open Btree_util
+      open Our_
+      module KV = Raw_map.KV
+      module ST = Raw_map.ST
+      open KV
+      open Leaf_stream
+
+      type t = Leaf_stream.ls_state
+      type 'a m = ('a,ST.store) State_error_monad.m
+
+      let rresult_to_result = Btree_util.rresult_to_result
+
+      (* repeatedly step till we get to the next leaf *)
+      let step_till_leaf_or_finished: t -> t option m = (
+        let open Our.Monad in
+        fun lss -> 
+        fun s ->
+          let rec loop lss = (
+            lss_step lss|> bind 
+              (fun lss' -> 
+                 match lss_is_finished lss' with
+                 | true -> (return None)
+                 | false -> (
+                     let kvs = dest_LS_leaf lss' in
+                     match kvs with
+                     | None -> loop lss'
+                     | Some kvs -> return (Some lss'))))
+          in
+          loop lss |> Our.Monad.dest_M |> (fun run -> run s) 
+          |> (fun (s',res) -> (s',res|>rresult_to_result)))
+
+      let mk: ST.page_ref -> t m = (
+        fun r ->
+          mk_ls_state r 
+          |> step_till_leaf_or_finished 
+          |> Sem.fmap (fun x -> 
+              match x with 
+              (* from an initial ref, should always get to leaf via
+                 step_till_leaf_or_finished *)
+              | None -> (impossible __LOC__)
+              | Some x -> x)
+      )
+
+      let step: t -> t option m = step_till_leaf_or_finished
+
+      let get_kvs: t -> (key*value) list = (
+        fun t -> 
+          t |> dest_LS_leaf 
+          |> (fun kvs -> 
+              match kvs with
+              (* step_till_leaf_or_finished guarantees that we are
+                 always at a state where dest_LS_leaf is Some *)
+              | None -> (impossible __LOC__)
+              | Some kvs -> kvs)
+      )
+
+    end)  (* Leaf_stream *)
+
+    let _ = (module Leaf_stream : Btree_api.LEAF_STREAM)
+
+
     module Map_with_exceptions (* : MAP_WITH_EXCEPTIONS *) = struct
       module KV = Raw_map.KV
       module ST = Raw_map.ST
@@ -631,39 +694,6 @@ module Main = struct
     end (* Imperative_map *)
 
 
-    module Leaf_stream (* : LEAF_STREAM *) = struct
-      module RM = Raw_map
-      module ST = RM.ST
-      module KV = RM.KV
-      module Tree_stack = Our_.Tree_stack
-      open Btree_api
-      open ST
-      open KV
-
-      type frame_list = (page_ref, unit) Tree_stack.frame_ext list
-
-      (* leaf_ref contains part of f_finished_t *)
-      type leaf_ref = (key * value) list * frame_list
-      type 'a m = ('a,ST.store) Sem.m
-
-      open Tree_stack
-      let first_leaf: RM.ref_t -> leaf_ref m = (
-        failwith ""
-      )
-      let next_leaf: leaf_ref -> leaf_ref option m = (
-        fun (kvs,fs) -> fun s ->
-          match fs with
-          | [] -> (s,Ok None) (* at root, which is only leaf *)
-          | f::fs' -> (
-              let ((ks1,rs1),(r,(ks2,rs2))) = f|>dest_frame in
-              (* last ks1 <= r < hd ks2 *)
-              (* shift if we can, otherwise 
-              failwith ""
-            )
-      )
-      let kvs: leaf_ref -> (key*value) list m = failwith ""
-      
-    end
 
 
   end)  (* Make *)

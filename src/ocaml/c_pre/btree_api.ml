@@ -30,6 +30,7 @@ module State_error_monad : sig
   type ('a,'s) m = 's -> ('s * ('a,string) result)
   val return: 'a -> ('a,'s) m
   val bind: ('a -> ('b,'s) m) -> ('a,'s) m -> ('b,'s) m
+  val fmap: ('a -> 'b) -> ('a,'s) m -> ('b,'s) m
   val run: 's -> ('a,'s) m -> 's * ('a,string) result
   val get: ('s,'s) m 
   val run_list: 's -> (unit,'s) m list -> 's * (unit,string) result
@@ -43,6 +44,14 @@ end = struct
           | (s',Error e) -> (s',Error e)
           | (s',Ok y) -> (f y s')
       ))
+  let fmap: ('a -> 'b) -> ('a,'s) m -> ('b,'s) m = (
+    fun f -> fun m -> fun s ->
+      m s |> 
+      (fun (s',r) -> (s',
+                      match r with
+                      | Ok x-> Ok (f x)
+                      | Error e -> Error e)))
+      
   let run: 's -> ('a,'s) m -> 's * ('a,string) result = (
     fun s f -> f s)
   let get: ('s,'s)m = (fun s -> (s,Ok s)) 
@@ -152,17 +161,16 @@ end
 
 (* this is a useful operation to support, but not needed always *)
 module type LEAF_STREAM = sig
-  module RM : RAW_MAP
-  module ST = RM.ST
-  module KV = RM.KV
+  module ST : STORE
+  module KV : KEY_VALUE
+  open KV
 
-  type leaf_ref  (* pointer to leaf *)
+  type t  (* pointer to somewhere in btree *)
   type 'a m = ('a,ST.store) State_error_monad.m
 
-  val first_leaf: RM.ref_t -> leaf_ref m
-  val next_leaf: leaf_ref -> leaf_ref option m
-  open KV
-  val kvs: leaf_ref -> (key*value) list m
+  val mk: ST.page_ref -> t m
+  val step: t -> t option m
+  val get_kvs: t -> (key*value) list
 end
 
 
@@ -208,7 +216,7 @@ module type IMPERATIVE_LEAF_STREAM = sig
     get_next_leaf: unit -> (key * value) list option;
   }
 
-  val create_ll : btree_ref -> ops_t
+  val mk : btree_ref -> ops_t
 end
 
 

@@ -149,6 +149,7 @@ module List : sig
   val insert : 'a HOL.equal -> 'a -> 'a list -> 'a list
   val butlast : 'a list -> 'a list
   val hd : 'a list -> 'a
+  val tl : 'a list -> 'a list
   val map : ('a -> 'b) -> 'a list -> 'b list
   val pred_list : ('a -> bool) -> 'a list -> bool
   val removeAll : 'a HOL.equal -> 'a -> 'a list -> 'a list
@@ -222,6 +223,9 @@ let rec butlast
     | x :: xs -> (if null xs then [] else x :: butlast xs);;
 
 let rec hd (x21 :: x22) = x21;;
+
+let rec tl = function [] -> []
+             | x21 :: x22 -> x22;;
 
 let rec map
   f x1 = match f, x1 with f, [] -> []

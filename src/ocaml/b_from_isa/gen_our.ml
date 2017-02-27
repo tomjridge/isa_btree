@@ -490,7 +490,10 @@ let rec wellformed_tree
 end;;
 
 module Tree_stack : sig
-  type ('a, 'b) frame_ext
+  type ('a, 'b) frame_ext =
+    Frame_ext of
+      Key_value_types.key list * 'a list * 'a * Key_value_types.key list *
+        'a list * 'b
   val equal_frame_ext :
     'a HOL.equal -> 'b HOL.equal -> ('a, 'b) frame_ext HOL.equal
   val no_focus :
@@ -1592,5 +1595,72 @@ let rec dest_i_finished
         | I_finished (r, kvs) -> Some (r, kvs));;
 
 let rec mk_insert_state k v kvs r = I_down (Find.mk_find_state k r, (v, kvs));;
+
+end;;
+
+module Leaf_stream : sig
+  type ls_state
+  val lss_step : ls_state -> (ls_state, Store.store) Monad.m_t
+  val mk_ls_state : Store.page_ref -> ls_state
+  val dest_LS_leaf :
+    ls_state -> ((Key_value_types.key * Key_value_types.value_t) list) option
+  val lss_is_finished : ls_state -> bool
+end = struct
+
+type ls_state =
+  LS_down of (Store.page_ref * (Store.page_ref, unit) Tree_stack.frame_ext list)
+  | LS_leaf of
+      ((Key_value_types.key * Key_value_types.value_t) list *
+        (Store.page_ref, unit) Tree_stack.frame_ext list)
+  | LS_up of (Store.page_ref, unit) Tree_stack.frame_ext list;;
+
+let rec step_up
+  fs = let _ = Util.assert_true () (not (List.null fs)) in
+       (match fs with [] -> Util.failwitha "impossible: Leaf_stream.step_up"
+         | f :: fsa ->
+           let a = Util.rev_apply f Tree_stack.dest_frame in
+           let (aa, b) = a in
+           let (ks1, rs1) = aa in
+           (fun ab ->
+             (match ab with (_, (_, [])) -> LS_up fsa
+               | (r, (ks2, ra :: rs)) ->
+                 let fa =
+                   Tree_stack.Frame_ext
+                     (ks1 @ [List.hd ks2], rs1 @ [r], ra, List.tl ks2, rs, ())
+                   in
+                 LS_down (ra, fa :: fsa)))
+             b);;
+
+let rec step_leaf r = let a = r in
+                      let (_, aa) = a in
+                      LS_up aa;;
+
+let rec step_down
+  rfs = let (r, fs) = rfs in
+        Util.rev_apply (Frame.page_ref_to_frame r)
+          (Monad.fmap
+            (fun a ->
+              (match a
+                with Frame_types.Node_frame (ks, rs) ->
+                  let ra = List.hd rs in
+                  let rsa = List.tl rs in
+                  let frm = Tree_stack.Frame_ext ([], [], ra, ks, rsa, ()) in
+                  LS_down (ra, frm :: fs)
+                | Frame_types.Leaf_frame kvs -> LS_leaf (kvs, fs))));;
+
+let rec lss_step
+  lss = (match lss with LS_down a -> step_down a
+          | LS_leaf x -> Monad.return (step_leaf x)
+          | LS_up x -> Monad.return (step_up x));;
+
+let rec mk_ls_state r = LS_down (r, []);;
+
+let rec dest_LS_leaf
+  x = (match x with LS_down _ -> None | LS_leaf (kvs, _) -> Some kvs
+        | LS_up _ -> None);;
+
+let rec lss_is_finished
+  lss = (match lss with LS_down _ -> false | LS_leaf _ -> false
+          | LS_up [] -> true | LS_up (_ :: _) -> false);;
 
 end;;

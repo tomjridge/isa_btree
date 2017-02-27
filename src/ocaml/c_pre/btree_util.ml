@@ -20,3 +20,5 @@ let rresult_to_result = Our.Util.(fun x ->
     | Ok y -> Pervasives.Ok y
     | Error (String_error x) -> Pervasives.Error x)
 
+
+let impossible (x:string) = failwith ("impossible: "^x)
