@@ -591,7 +591,8 @@ module Main = struct
 
       let get_kvs: t -> (key*value) list = (
         fun t -> 
-          t |> dest_LS_leaf 
+          t 
+          |> dest_LS_leaf 
           |> (fun kvs -> 
               match kvs with
               (* step_till_leaf_or_finished guarantees that we are
@@ -603,6 +604,59 @@ module Main = struct
     end)  (* Leaf_stream *)
 
     let _ = (module Leaf_stream : Btree_api.LEAF_STREAM)
+
+
+    module Imperative_leaf_stream = (struct
+      module ST = Raw_map.ST
+      module KV = Raw_map.KV
+      open KV
+          
+      type ops_t = {
+        step: unit -> bool;
+        get_kvs: unit -> (key * value) list;
+      }
+
+      module LS_ = Leaf_stream
+      open Btree_api 
+      let mk: ST.store -> ST.page_ref -> ops_t = (
+        fun s r ->
+          let t = LS_.mk r |> Sem.run s 
+                  |> (fun (s',res) -> 
+                      match res with 
+                      | Ok t -> t
+                      | Error e -> (failwith (__LOC__ ^ e)))
+          in
+          let s = ref s in
+          let t = ref t in
+          let step () = (
+            LS_.step !t |> Sem.run !s
+            |> (fun (s',res) -> 
+                s:=s';
+                match res with
+                | Ok res -> (
+                    match res with
+                    | None -> false
+                    | Some t' -> (t:=t'; true)
+                  )
+                | Error e -> (failwith (__LOC__ ^ e))
+              ))
+          in
+          let get_kvs () = (LS_.get_kvs !t) in
+          { step; get_kvs })
+
+      (* for debugging *)
+      let all_kvs: ops_t -> (key * value) list = (
+        fun ops -> 
+          let x = ref (ops.get_kvs()) in
+          while(ops.step()) do
+            x:=!x @ (ops.get_kvs());
+          done;
+          !x)
+
+
+    end)
+
+    let _ = (module Imperative_leaf_stream : Btree_api.IMPERATIVE_LEAF_STREAM)
 
 
     module Map_with_exceptions (* : MAP_WITH_EXCEPTIONS *) = struct

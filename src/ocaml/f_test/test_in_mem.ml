@@ -1,8 +1,6 @@
 (* exhaustive in-mem testing ---------------------------------------- *)
 
 
-let failwith x = failwith ("test_in_mem: "^x)
-
 (* we concentrate on relatively small parameters *)
 
 (* example int int btree ---------------------------------------- *)
@@ -109,7 +107,7 @@ let test range = TS.(
         fun ((s',r'),res) -> 
           match res with
           | Ok () -> {t=Btree.Our_.Frame.r_to_t s' r'; s=s'; r=r' }
-          | Error e -> (failwith e))
+          | Error e -> (failwith (__LOC__^e)))
       |> TSS.of_list
     in
     let _ = 
@@ -150,7 +148,7 @@ let test_insert range = (
       let ((s0',r0'),res) = 
         Raw_map.insert x (2*x) |>Sem.run (!s0,!r0) in
       match res with
-      | Error e -> (failwith e)
+      | Error e -> (failwith (__LOC__ ^e))
       | Ok () -> 
         s0:=s0';r0:=r0';xs:=List.tl !xs; ()
     done;
@@ -162,3 +160,40 @@ let test_insert range = (
       ()
     )
 )
+
+
+(* testing leaf_stream ---------------------------------------- *)
+
+open Extlib.ExtList.List
+
+let test_leaf_stream range = (
+  Printf.printf "%s: test_leaf_stream, %d inserts, check wf etc:" 
+    __MODULE__ 
+    (List.length range);
+  flush_all();
+  let r0 = ref init_r in
+  let s0 = ref init_store in
+  try (
+    (* insert into an empty btree *)
+    let xs = ref range in
+    while (!xs <> []) do
+      let x = List.hd !xs in
+      let ((s0',r0'),res) = 
+        Raw_map.insert x (2*x) |>Sem.run (!s0,!r0) in
+      match res with
+      | Error e -> (failwith (__LOC__ ^e))
+      | Ok () -> 
+        s0:=s0';r0:=r0';xs:=List.tl !xs; ()
+    done;
+    (* check that leaf stream is what it should be *)
+    let ops = Imperative_leaf_stream.mk !s0 !r0 in
+    assert (List.sort Pervasives.compare range = (Imperative_leaf_stream.all_kvs ops |> List.map fst));
+    print_newline ();
+  ) with _ -> (
+      print_endline "Failure...";
+      !s0|>ST.store_to_'|>ST.store'_to_yojson
+      |>Yojson.Safe.to_string|>print_endline; 
+      ()
+    )
+)
+

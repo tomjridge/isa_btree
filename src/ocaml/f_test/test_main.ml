@@ -37,6 +37,9 @@ let tests = [
   ("tim.i", fun ps -> 
       let (l,h) = get_range ps in
       Test_in_mem.(fun () -> test_insert Batteries.(l -- h |> List.of_enum)));
+  ("tim.ls", fun ps -> 
+      let (l,h) = get_range ps in
+      Test_in_mem.(fun () -> test_leaf_stream Batteries.(l -- h |> List.of_enum)));
   ("tii.f", fun ps ->
       let (l,h) = get_range ps in
       Test_ii.(fun () -> 

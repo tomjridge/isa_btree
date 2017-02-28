@@ -142,6 +142,9 @@ module type STORE = sig
   val page_ref_to_page: page_ref -> page m
 end
 
+
+(* map-like interfaces ---------------------------------------- *)
+
 (* like a map, but pointers are explicit *)
 module type RAW_MAP = sig
   module KV : KEY_VALUE
@@ -157,20 +160,6 @@ module type RAW_MAP = sig
   val find: key -> value option m
   val delete: key -> unit m
 
-end
-
-(* this is a useful operation to support, but not needed always *)
-module type LEAF_STREAM = sig
-  module ST : STORE
-  module KV : KEY_VALUE
-  open KV
-
-  type t  (* pointer to somewhere in btree *)
-  type 'a m = ('a,ST.store) State_error_monad.m
-
-  val mk: ST.page_ref -> t m
-  val step: t -> t option m
-  val get_kvs: t -> (key*value) list
 end
 
 
@@ -207,16 +196,33 @@ module type IMPERATIVE_MAP = sig
   val empty: unit -> ops_t
 end
 
-module type IMPERATIVE_LEAF_STREAM = sig
+(* leaf stream ---------------------------------------- *)
+
+(* this is a useful operation to support, but not needed always *)
+module type LEAF_STREAM = sig
+  module ST : STORE
   module KV : KEY_VALUE
   open KV
 
-  type btree_ref  (* = RM.ref_t *)    
+  type t  (* pointer to somewhere in btree *)
+  type 'a m = ('a,ST.store) State_error_monad.m
+
+  val mk: ST.page_ref -> t m
+  val step: t -> t option m
+  val get_kvs: t -> (key*value) list
+end
+
+module type IMPERATIVE_LEAF_STREAM = sig
+  module ST : STORE
+  module KV : KEY_VALUE
+  open KV
+
   type ops_t = {
-    get_next_leaf: unit -> (key * value) list option;
+    step: unit -> bool;
+    get_kvs: unit -> (key * value) list;
   }
 
-  val mk : btree_ref -> ops_t
+  val mk : ST.store -> ST.page_ref -> ops_t
 end
 
 

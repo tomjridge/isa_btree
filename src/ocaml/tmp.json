@@ -1,4 +1,4 @@
 [
-{ "name": "tis", "params": [ ], "with_asserts": true }
+{ "name": "tim.ls", "params": [ [ "Range", [ 1, 1000 ] ] ], "with_asserts": true }
 ]
 
