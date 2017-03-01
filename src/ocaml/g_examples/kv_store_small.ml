@@ -88,24 +88,37 @@ let mk initialize fn = (
 
 (* FIXME above is horrible *)
 let main args = (
+  (* turn off wf checking *)
+  Test.disable ();
   match args with
-  | [fn; "init"] -> (mk true fn |> (fun ops -> ops.sync()))
-  | [fn; "insert";k;v] -> (
+  | ["init"; fn] -> (
+      mk true fn 
+      |> (fun ops -> 
+          ops.sync();
+          print_endline "init ok"
+        ))
+  | ["insert";fn;k;v] -> (
       mk false fn 
       |> (fun ops -> 
           ops.insert (SS.from_string k) (SS.from_string v);
-          ops.sync())
+          ops.sync();
+          print_endline "insert ok";
+        )
     )
-  | [fn; "list"] -> (
+  | ["list";fn] -> (
       mk false fn 
       |> (fun ops -> 
-          ops.mk_leaf_stream () |> all_kvs 
-          |> List.iter (fun (k,v) -> 
-              Printf.printf "%s -> %s\n" (SS.to_string k) (SS.to_string v)))
+          ops.mk_leaf_stream () 
+          |> all_kvs 
+          |> 
+          List.iter (fun (k,v) -> 
+              Printf.printf "%s -> %s\n" (SS.to_string k) (SS.to_string v));
+          print_endline "list ok")
     )
   | _ -> (failwith ("Unrecognized args: "^
                    (Tjr_string.concat_strings " " args)^
                     __LOC__))
 )
+
 
 

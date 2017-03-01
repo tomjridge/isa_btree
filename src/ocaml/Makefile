@@ -31,10 +31,10 @@ mlis:
 
 #	$$ocamlopt -g -linkpkg -o a.out $$mls # FIXME
 
-%.native: %.ml btree.cmxa
+%.native: %.ml btree.cmxa FORCE
 	$$ocamlopt -g -linkpkg -o $*.native btree.cmxa $*.ml
 
-%.byte: %.ml btree.cma
+%.byte: %.ml btree.cma FORCE
 	$$ocamlc -g -linkpkg -o $*.byte btree.cma $*.ml
 
 clean:
