@@ -95,14 +95,14 @@ let main args = (
       mk true fn 
       |> (fun ops -> 
           ops.sync();
-          print_endline "init ok"
+          (* print_endline "init ok" *)
         ))
   | ["insert";fn;k;v] -> (
       mk false fn 
       |> (fun ops -> 
           ops.insert (SS.from_string k) (SS.from_string v);
           ops.sync();
-          print_endline "insert ok";
+          (* print_endline "insert ok"; *)
         )
     )
   | ["list";fn] -> (

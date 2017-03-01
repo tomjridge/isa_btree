@@ -4,7 +4,7 @@ set +x
 
 # execute various commands on a store
 
-FN=/tmp/store
+FN=/mnt/sdb1/tom/scratch/btree.store
 MAIN=main.native
 
 rm -f /tmp/store
@@ -14,9 +14,9 @@ echo
 echo
 ./$MAIN kv list $FN
 echo
-./$MAIN kv insert k2 v2 $FN
+./$MAIN kv insert $FN k2 v2 
 echo
-./$MAIN kv insert k3 v3 $FN
+./$MAIN kv insert $FN k3 v3 
 echo
 ./$MAIN kv list $FN
 
