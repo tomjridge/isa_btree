@@ -22,3 +22,5 @@ let rresult_to_result = Our.Util.(fun x ->
 
 
 let impossible (x:string) = failwith ("impossible: "^x)
+
+let dest_Some x = match x with | Some x -> x | _ -> failwith "dest_Some"

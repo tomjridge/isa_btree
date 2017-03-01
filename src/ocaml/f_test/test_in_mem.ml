@@ -186,8 +186,8 @@ let test_leaf_stream range = (
         s0:=s0';r0:=r0';xs:=List.tl !xs; ()
     done;
     (* check that leaf stream is what it should be *)
-    let ops = Imperative_leaf_stream.mk !s0 !r0 in
-    assert (List.sort Pervasives.compare range = (Imperative_leaf_stream.all_kvs ops |> List.map fst));
+    let (_,ops) = Imperative_leaf_stream.mk !s0 !r0 in
+    assert (List.sort Pervasives.compare range = (all_kvs ops |> List.map fst));
     print_newline ();
   ) with _ -> (
       print_endline "Failure...";

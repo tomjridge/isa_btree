@@ -22,24 +22,29 @@ end = struct
     x)
 end
 
+module SS = Small_string
+
+module KV = struct
+  open Small_string
+  (* open Small_string *)
+  type key = t  [@@deriving yojson] 
+  type value = t  [@@deriving yojson]
+  let key_ord x y = String.compare (to_string x) (to_string y)
+  let equal_value x y = (to_string x = to_string y)
+end (* KV *)
+
+let _ = (module KV : Btree.KEY_VALUE_TYPES)
+
 (* instantiate Btree.Simple.Make() ----------------------------------------- *)
 
 module Make = functor (ST:Btree_api.Simple.STORE) -> struct
   module ST = ST
   module Simple = Btree_simple.Make(
     struct 
-      open Small_string
-      module KV = struct
-        type key = t  [@@deriving yojson] 
-        type value = t  [@@deriving yojson]
-        let key_ord x y = String.compare (to_string x) (to_string y)
-        let equal_value x y = (to_string x = to_string y)
-      end (* KV *)
-
-      let _ = (module KV : Btree.KEY_VALUE_TYPES)
-
+      module KV = KV
       module ST=ST
       open KV
+      open Small_string
       let pp: (key,value) Btree_api.Pickle_params.t = Pickle.(
           let p_k = (fun k -> Examples.p_string_w_len (to_string k)) in
           let u_k = (Examples.u_string_w_len |> U.map from_string) in

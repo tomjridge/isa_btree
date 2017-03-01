@@ -46,15 +46,17 @@ btree.ml \
 btree_simple.ml \
 ext_in_mem.ml ext_block_device.ml \
 ext_int_int_store.ml ext_bytestore.ml \
-map_digest_int.ml map_digest_to_string_int.ml map_string_int.ml map_string_string.ml \
-test_bytestore.ml test_in_mem.ml test_ii.ml test_string_int.ml"
+map_digest_int.ml map_digest_to_string_int.ml map_string_int.ml map_string_string_small.ml \
+test_bytestore.ml test_in_mem.ml test_ii.ml test_string_int.ml \
+kv_store_small.ml
+"
 
 # test_in_mem.ml  test_ii.ml
 
 cmos="${mls//.ml/.cmo}"
 cmxs="${mls//.ml/.cmx}"
 
-natives="test_main.native"
+natives="test_main.native main.native"
 
 bytes="test_main.byte"
 
@@ -65,7 +67,7 @@ bytes="test_main.byte"
 # links ----------------------------------------
 
 function init() {
-    link_files=`ls b_from_isa/*.ml c_pre/*.ml d_core/*.ml e_post/*.ml f_test/*.ml`
+    link_files=`ls b_from_isa/*.ml c_pre/*.ml d_core/*.ml e_post/*.ml f_test/*.ml g_examples/*.ml`
 }
 
 function mk_links() {

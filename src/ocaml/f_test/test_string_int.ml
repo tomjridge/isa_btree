@@ -108,12 +108,15 @@ module FS = Ext_block_device.Filestore
 
 module MSI = Map_string_int.Make(FS)
 
-module IM = MSI.Simple.Btree.Imperative_map.Make(
-  struct 
-    let store = ref (FS.existing_file_to_new_store default_filename)
-  end)
+module IM = MSI.Simple.Btree.Imperative_map
 
-let ops = IM.empty ()
+let store = ref (FS.existing_file_to_new_store default_filename)
+
+let page_ref = 
+  MSI.Simple.Btree.Raw_map.empty !store 
+  |> (fun (s',Ok r) -> (store:=s'; ref r))
+               
+let ops = IM.mk store page_ref
 
 open Btree_util
 

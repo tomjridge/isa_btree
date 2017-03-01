@@ -4,8 +4,6 @@
 
 (* FIXME make a config modules, which contains basic config params - default blocksize; how many bytes to store an int etc *)
 
-let failwith x = failwith ("block_device: "^x)
-
 open Sexplib.Std (* for ppx_assert *)
 
 
@@ -26,8 +24,6 @@ module Defaults = struct
   let empty () = String.make page_size (Char.chr 0) 
 
 end
-
-
 
 (* a block device backed by a file ---------------------------------------- *)
 
@@ -150,7 +146,16 @@ module Filestore (* : Our.Store_t *) = struct
   type 'a m = ('a,store) Btree_api.State_error_monad.m
 
   open Btree_api
-   
+
+  let mk_fd_to_empty_store: fd -> store = (fun fd -> {fd;free_ref=0})
+
+  let mk_fd_to_nonempty_store: fd -> store = (
+    fun fd -> 
+      let len = Unix.(lseek fd 0 SEEK_END) in     
+      assert (len mod page_size = 0);
+      let free_ref = len / page_size in
+      {fd;free_ref})
+
   let existing_file_to_new_store: string -> store = (fun s ->
       let fd = Blkdev_on_fd.open_file s in
       (* now need to write the initial frame *)
@@ -159,8 +164,8 @@ module Filestore (* : Our.Store_t *) = struct
    
   (* alloc without write; free block can then be used to write data
      outside the btree *)
-  let alloc_block : page_ref m = (
-    fun s -> 
+  let alloc_block : unit -> page_ref m = (
+    fun () s -> 
       let r = s.free_ref in
       ({s with free_ref=r+1},Ok(r))
   )
@@ -234,9 +239,24 @@ module Recycling_filestore = struct
   open Btree_api
   type 'a m = ('a,store) Sem.m
 
+  let filestore_to_recycling_filestore = 
+    fun fs -> {fs; cache=Cache.empty;freed_not_synced=Set_r.empty}
+
+  let with_filestore fs s = {s with fs=(fs s.fs) }
+
+  (*
   let existing_file_to_new_store: string -> store = (fun fn ->
       Filestore.existing_file_to_new_store fn |> (fun fs ->
           {fs; cache=Cache.empty; freed_not_synced=Set_r.empty} ))
+*)
+    
+  let lift: 'a Filestore.m -> 'a m = (
+    fun m1 -> fun s ->
+      m1 |> Sem.run s.fs 
+      |> (fun (s',res) -> ({s with fs=s'},res)))
+
+  let alloc_block: unit -> page_ref m = 
+    fun () -> Filestore.alloc_block () |> lift
 
   (* FIXME following should use the monad from filestore *)
   let alloc : page -> page_ref m = (

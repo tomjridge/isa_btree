@@ -143,7 +143,9 @@ module type STORE = sig
 end
 
 
-(* map-like interfaces ---------------------------------------- *)
+(* map-like interfaces ======================================== *)
+
+(* raw map ---------------------------------------- *)
 
 (* like a map, but pointers are explicit *)
 module type RAW_MAP = sig
@@ -181,19 +183,22 @@ module type MAP_WITH_EXCEPTIONS = sig
 end
 
 
+(* imperative map ---------------------------------------- *)
+
+type ('key,'value) imperative_map_t = { 
+  insert: 'key -> 'value -> unit;
+  insert_many: 'key -> 'value -> ('key*'value) list -> unit;
+  find: 'key -> 'value option;
+  delete: 'key -> unit;
+}
+
 (* as MAP_WITH_EXCEPTIONS, but with mutable state, and btree_ref is
    encapsulated in an object *)
 module type IMPERATIVE_MAP = sig
+  module ST : STORE
   module KV : KEY_VALUE
-  (* module ST : STORE *)
   open KV
-  type ops_t = { 
-    insert: key -> value -> unit;
-    insert_many: key -> value -> (key*value) list -> unit;
-    find: key -> value option;
-    delete: key -> unit
-  }
-  val empty: unit -> ops_t
+  val mk: ST.store ref -> ST.page_ref ref -> (key,value) imperative_map_t
 end
 
 (* leaf stream ---------------------------------------- *)
@@ -212,17 +217,30 @@ module type LEAF_STREAM = sig
   val get_kvs: t -> (key*value) list
 end
 
+(* imperative leaf stream ---------------------------------------- *)
+
+
+type ('key,'value) imperative_leaf_stream_t = {
+  step: unit -> bool;
+  get_kvs: unit -> ('key * 'value) list;
+}
+
+(* for debugging FIXME move *)
+let all_kvs: ('key,'value) imperative_leaf_stream_t -> ('key*'value) list = (
+  fun ops -> 
+    let x = ref (ops.get_kvs()) in
+    while(ops.step()) do
+      x:=!x @ (ops.get_kvs());
+    done;
+    !x)
+
 module type IMPERATIVE_LEAF_STREAM = sig
   module ST : STORE
   module KV : KEY_VALUE
+  module LS : LEAF_STREAM
   open KV
-
-  type ops_t = {
-    step: unit -> bool;
-    get_kvs: unit -> (key * value) list;
-  }
-
-  val mk : ST.store -> ST.page_ref -> ops_t
+  val mk:ST.store -> ST.page_ref -> 
+    (ST.store * LS.t) ref * (key,value) imperative_leaf_stream_t
 end
 
 
