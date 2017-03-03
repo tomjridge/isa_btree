@@ -6,8 +6,6 @@
 
 open Sexplib.Std  (* for ppx_assert *)
 
-let failwith x = failwith ("int_int_store: "^x)
-
 open Btree_util
 
 (* assumptions ---------------------------------------- *)

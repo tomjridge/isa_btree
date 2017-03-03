@@ -110,9 +110,8 @@ let main args = (
       |> (fun ops -> 
           ops.mk_leaf_stream () 
           |> all_kvs 
-          |> 
-          List.iter (fun (k,v) -> 
-              Printf.printf "%s -> %s\n" (SS.to_string k) (SS.to_string v));
+          |> (List.iter (fun (k,v) -> 
+              Printf.printf "%s -> %s\n" (SS.to_string k) (SS.to_string v)));
           print_endline "list ok")
     )
   | _ -> (failwith ("Unrecognized args: "^
