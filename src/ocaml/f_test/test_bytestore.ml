@@ -107,8 +107,7 @@ module Btree' (* : Ext_bytestore.Btree_t *) = struct
   open Int_int_store.Btree_simple.Btree
 
   let empty_btree: unit -> ref_t m = (
-    fun () -> fun s ->
-      Raw_map.empty s
+    fun () -> Raw_map.empty ()
   )
 
   let insert: blk_index (* k *) -> blk_id (* v *) -> ref_t -> ref_t m = (

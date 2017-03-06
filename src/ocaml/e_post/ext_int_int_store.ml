@@ -62,29 +62,26 @@ module Int_int_filestore = struct
   open Ext_block_device
 
   module Int_int_store = Make(ST)
+  module IIS_ = Int_int_store
 
-  let existing_file_to_new_store = (
-    let open Int_int_store.Btree_simple.Btree.S.FT in
+  let from_file ~fn ~create ~init = (
+    let open IIS_.Btree_simple.Btree.S.FT in
     let open ST in
-    let f : string -> store * page_ref = (
-      fun s ->
-        let fd = Blkdev_on_fd.open_file s in
-        (* now need to write the initial frame *)
-        let frm = Leaf_frame [] in
-        let p = frm|>frame_to_page in
-        let r = 0 in
-        let () = (
-          match Blkdev_on_fd.(write r p |> Sem.run fd) with
-          | (_,Error e) -> failwith (__LOC__ ^ e)
-          | _ -> ())
-        in
-        ST.(
-          {fs = Filestore.{fd=fd;free_ref=r+1} ;
-           cache=ST.Cache.empty;
-           freed_not_synced=Set_int.empty;
-          },r))
+    let fd = Blkdev_on_fd.from_file fn create init in
+    (* now need to write the initial frame *)
+    let frm = Leaf_frame [] in
+    let p = frm|>frame_to_page in
+    let r = 0 in
+    let () = (
+      match Blkdev_on_fd.(write r p |> Sem.run fd) with
+      | (_,Error e) -> failwith (__LOC__ ^ e)
+      | _ -> ())
     in
-    f)
+    ST.(
+      {fs = Filestore.{fd=fd;free_ref=r+1} ;
+       cache=Cache.empty;
+       freed_not_synced=Set_int.empty;
+      },r))
 
 end
 
@@ -96,7 +93,7 @@ end
 (* we cache at the map level *)
 
 module Int_int_cached (* : Btree.S *) = struct
-
+  open Btree_api
   open Int_int_filestore
 
   type kvs = (KV.key * KV.value) list
@@ -105,23 +102,24 @@ module Int_int_cached (* : Btree.S *) = struct
 
   type t = ST.page_ref * ST.store * pending_inserts
 
+  type 'a m = ('a,t) Sem.m
+
   module Insert = struct
 
     (* just add to cache *)
-    let insert : KV.key -> KV.value -> t -> t = (
+    let insert : KV.key -> KV.value -> unit m = (
       fun k v t -> 
         let (r,s,ps) = t in
         let ps' = Map_int.add k v ps in
-        (r,s,ps'))
+        ((r,s,ps'),Ok()))
 
   end
 
   open Btree_api
-  type 'a m = ('a,t) State_error_monad.m
 
   (* FIXME monads a bit of a hassle :( *)
-  let sync : unit m = (
-    fun t -> Sem.(
+  let sync : unit -> unit m = (
+    fun () t -> Sem.(
       let (r,s,kvs) = t in
       (* insert all that are in the cache, using insert_many.cache *)
       let kvs = Map_int.bindings kvs in

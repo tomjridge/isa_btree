@@ -82,11 +82,12 @@ module Blkdev_on_fd (* : BLOCK_DEVICE *) = struct
   let sync : unit -> unit m = ExtUnixSpecific.(fun () -> 
       safely __LOC__ (
         get_fd () |> bind (fun fd -> ExtUnixSpecific.fsync fd; return ())))
-      
-(*
-  let open_file: string -> fd = Unix.(
-      fun s -> openfile s [O_RDWR] 0o640 )
-*)
+
+  let from_file ~fn ~create ~init = Unix.(
+      let flgs = [O_RDWR] @ (if create then [O_CREAT] else []) in
+      openfile fn flgs 0o640 |> 
+      (fun fd -> (if init then ftruncate fd 0 else ()) |> (fun _ -> fd))
+    )
 
 end
 
@@ -114,7 +115,17 @@ module Filestore = struct
 
   type 'a m = ('a,store) Sem.m
 
-  let fd_to_empty_store: fd -> store = (fun fd -> {fd;free_ref=0})
+  let from_fd ~fd ~init = Unix.(
+      let free_ref = (
+        match init with
+        | true -> 0
+        | false -> (
+            ignore (lseek fd 0 SEEK_SET);
+            let len = lseek fd 0 SEEK_END in     
+            assert (len mod page_size = 0);
+            len / page_size))
+      in
+      {fd;free_ref})
 
   let return = Sem.return
 
@@ -194,11 +205,14 @@ module Recycling_filestore = struct
   type page = Filestore.page
   let page_size = Filestore.page_size  
 
+  type cache_t = page Cache.t
+  type fns_t = Set_r.t
   type store = { 
     fs: Filestore.store; 
-    cache: page Cache.t;  (* a cache of pages which need to be written *)
-    freed_not_synced: Set_r.t  (* really this is "don't write to store on sync" *)
+    cache: cache_t;  (* a cache of pages which need to be written *)
+    freed_not_synced: fns_t  (* really this is "don't write to store on sync" *)
     (* could be a list - we don't free something that has already been freed *)
+      (* FIXME don't we also need to know which were allocated since last sync? *)
   }
 
   type 'a m = ('a,store) Sem.m
@@ -209,48 +223,37 @@ module Recycling_filestore = struct
 
   let lens = 
     Lens.({from=(fun s -> (s.fs,s)); to_=(fun (fs,s) -> {s with fs=fs})})
-(*
-  let lift: 'a Filestore.m -> 'a m = (
-    fun m1 -> fun s ->
-      m1 |> Sem.run s.fs 
-      |> (fun (s',res) -> ({s with fs=s'},res)))
-*)
 
-  let alloc_block: unit -> page_ref m = 
-    fun () -> Filestore.alloc_block () |> Sem.with_lens lens
+  let lift x = x |> Sem.with_lens lens
 
-  let get_freed_not_synced: store -> page_ref option = (
-    fun s -> 
-      match (Set_r.is_empty s.freed_not_synced) with
-      | true -> None
-      | false -> 
-        s.freed_not_synced 
-        |> Set_r.min_elt 
-        |> (fun r -> Some r))
+  let get_fns: unit -> fns_t m = (
+    fun () s -> (s,Ok s.freed_not_synced))
+
+  let get_1_fns: unit -> page_ref option m = Sem.(fun () -> 
+      get_fns () |> bind 
+        (fun fns -> 
+           match (Set_r.is_empty fns) with
+           | true -> return None
+           | false -> 
+             fns
+             |> Set_r.min_elt 
+             |> (fun r -> return (Some r))))
+
+  let fns_remove: page_ref -> unit m = (
+    fun r s -> 
+      ({s with freed_not_synced=(Set_r.remove r s.freed_not_synced)},Ok()))
+
+  let get_cache: unit -> cache_t m = (
+    fun () s -> (s,Ok s.cache))
+
+  let clear_cache: unit -> unit m = (
+    fun () s -> ({s with cache=Cache.empty},Ok()))
   
-  (* FIXME following should use the monad from filestore *)
-  let alloc : page -> page_ref m = (
-    fun p -> 
-    fun s -> 
-      match get_freed_not_synced s with
-      | None -> Filestore.(
-          let free_ref = s.fs.free_ref in
-          let s' = { 
-            s with
-            fs={s.fs with free_ref = free_ref+1};
-            cache=Cache.add free_ref p s.cache }
-          in
-          (s',Ok free_ref))
-      | Some r -> (
-          (* just return a ref we allocated previously *)
-          let s' = {
-            s with 
-            freed_not_synced=(Set_r.remove r s.freed_not_synced);
-            cache=(Cache.add r p s.cache) } 
-          in
-          (s',Ok r)))
+  let cache_add: page_ref -> page -> unit m = (
+    fun r p -> fun s -> ({s with cache=Cache.add r p s.cache},Ok ()))
 
-  let free : page_ref list -> unit m = (
+
+  let free: page_ref list -> unit m = (
     fun ps -> 
     fun s -> 
       let s' = {
@@ -260,40 +263,50 @@ module Recycling_filestore = struct
       in
       (s', Ok()))
 
-  let page_ref_to_page: page_ref -> page m = (
-    fun r -> 
-    fun s -> 
-      (* consult cache first *)
-      (try Some(Cache.find r s.cache) with Not_found -> None) 
-      |> (function
-          | Some p -> (s,Ok p)
-          | None -> (
-              (Filestore.page_ref_to_page r) 
-              |> Sem.with_lens lens
-              |> Sem.run s)))
+  let alloc_block: unit -> page_ref m = 
+    fun () -> Filestore.alloc_block () |> lift
 
+  
+  (* FIXME following should use the monad from filestore *)
+  let alloc : page -> page_ref m = Sem.(
+      fun p -> 
+        get_1_fns () |> bind
+          (fun r -> 
+             match r with 
+             | None -> (
+                 (Filestore.alloc_block () |> lift) |> bind
+                   (fun r ->            
+                      cache_add r p |> bind
+                        (fun () -> return r)))
+             | Some r -> (
+                 (* just return a ref we allocated previously *)
+                 fns_remove r |> bind
+                   (fun () -> 
+                      cache_add r p |> bind
+                        (fun () -> return r)))))
+
+  let page_ref_to_page: page_ref -> page m = Sem.(
+      fun r -> 
+        get_cache() |> bind
+          (fun cache -> 
+             (* consult cache first *)
+             (try Some(Cache.find r cache) with Not_found -> None) 
+             |> (function
+                 | Some p -> (return p)
+                 | None -> (
+                     (Filestore.page_ref_to_page r) |> lift))))
 
   let dest_Store : store -> page_ref -> page = (
     fun s r -> 
       try (Cache.find r s.cache) with Not_found -> Filestore.dest_Store s.fs r)
 
-  (* FIXME at the moment this doesn't write anything to store - that
-     happens on a sync, when the cache is written out *)
-
-  let get_freed_not_synced: unit -> Set_r.t m = (fun () s -> (s,Ok s.freed_not_synced))
-
-  let get_cache_bindings: unit -> (page_ref * page) list m = (
-    fun () s -> (s,Ok (Cache.bindings s.cache)))
-
-  let clear_cache: unit -> unit m = (
-    fun () s -> ({s with cache=Cache.empty},Ok()))
-
-  (* FIXME this should also flush the store cache of course using its
-     sync *)
+  (* FIXME on a sync, freed_not_synced needs to be updated? at least,
+     it isn't quite right at the moment *)
   let rec sync: unit -> unit m = (fun () ->
-      get_cache_bindings () |> Sem.bind
-        (fun es -> 
-           get_freed_not_synced () |> Sem.bind
+      get_cache () |> Sem.bind
+        (fun cache -> 
+           let es = Cache.bindings cache in
+           get_fns () |> Sem.bind
              (fun f_not_s -> 
                 let rec loop es = (
                   match es with 
@@ -302,13 +315,13 @@ module Recycling_filestore = struct
                       match (Set_r.mem r f_not_s) with 
                       | true -> loop es (* don't sync if freed *)
                       | false -> (
-                          (Filestore.(write r p) |> Sem.with_lens lens)
+                          (Filestore.(write r p) |> lift)
                           |> Sem.bind (fun () -> loop es))))
                 in
                 loop es |> Sem.bind 
                   (fun () -> clear_cache ()) |> Sem.bind
                   (* make sure we sync these writes to disk *)
-                  (fun () -> Filestore.(sync ()) |> Sem.with_lens lens)
+                  (fun () -> Filestore.(sync ()) |> lift)
              )))
 
 end

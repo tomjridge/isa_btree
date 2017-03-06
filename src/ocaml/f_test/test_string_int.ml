@@ -104,19 +104,28 @@ smart-panther-36
 lazy-termite-3
 helpless-snake-32 |} |> Tjr_string.split_on_all ~sub:"\n"
 
+open Btree_api
+open Ext_block_device
+
 module FS = Ext_block_device.Filestore
 
 module MSI = Map_string_int.Make(FS)
 
-module IM = MSI.Simple.Btree.Imperative_map
+module RM = MSI.Simple.Btree.Raw_map
 
-let store = ref (FS.existing_file_to_new_store default_filename)
+let store = ref (
+    let fn = default_filename in
+    let create = true in
+    let init = false in
+    let fd = Blkdev_on_fd.from_file ~fn ~create ~init in
+    let y = FS.from_fd ~fd ~init in
+    y) 
 
-let page_ref = 
-  MSI.Simple.Btree.Raw_map.empty !store 
-  |> (fun (s',Ok r) -> (store:=s'; ref r))
+let page_ref = Sem.unsafe_run store (RM.empty ())
                
-let ops = IM.mk store page_ref
+let sr = ref (!store,page_ref)
+
+let run x = Sem.unsafe_run sr x
 
 open Btree_util
 
@@ -133,7 +142,7 @@ let test () =
       let (k,v) = (List.hd !xs, !c) in
       Test.log __LOC__;
       Test.log (Printf.sprintf "insert: %s %s" k (v|>string_of_int));
-      ops.insert k v;
+      run (RM.insert k v);
       m:=(Map.add k v !m);
       c:=!c+1;
       xs:=(List.tl !xs);
@@ -142,7 +151,7 @@ let test () =
   in
   (* check the bindings match *)
   !m|>Map.bindings|>List.iter (fun (k,v) ->
-      assert (ops.find k = Some v);
-      ops.delete k;
+      assert (run (RM.find k) = Some v);
+      run (RM.delete k);
       ())
 

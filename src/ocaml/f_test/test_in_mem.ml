@@ -171,29 +171,25 @@ let test_leaf_stream range = (
     __MODULE__ 
     (List.length range);
   flush_all();
-  let r0 = ref init_r in
-  let s0 = ref init_store in
-  try (
-    (* insert into an empty btree *)
-    let xs = ref range in
-    while (!xs <> []) do
-      let x = List.hd !xs in
-      let ((s0',r0'),res) = 
-        Raw_map.insert x (2*x) |>Sem.run (!s0,!r0) in
-      match res with
-      | Error e -> (failwith (__LOC__ ^e))
-      | Ok () -> 
-        s0:=s0';r0:=r0';xs:=List.tl !xs; ()
-    done;
-    (* check that leaf stream is what it should be *)
-    let (_,ops) = Imperative_leaf_stream.mk !s0 !r0 in
-    assert (List.sort Pervasives.compare range = (all_kvs ops |> List.map fst));
-    print_newline ();
-  ) with _ -> (
-      print_endline "Failure...";
-      !s0|>ST.store_to_'|>ST.store'_to_yojson
-      |>Yojson.Safe.to_string|>print_endline; 
-      ()
-    )
+  let r0 = init_r in
+  let s0 = init_store in
+  let sr = ref (s0,r0) in
+  let run = Sem.unsafe_run sr in
+  (* insert into an empty btree *)
+  let xs = ref range in
+  while (!xs <> []) do
+    let x = List.hd !xs in
+    run (Raw_map.insert x (2*x));
+    xs:=tl !xs
+  done;
+  (* check that leaf stream is what it should be *)
+  let open Leaf_stream_ in
+  let (s0,r0) = !sr in
+  let s0 = ref s0 in
+  let ls = Sem.unsafe_run s0 (Leaf_stream_.mk r0) in
+  let run = Sem.unsafe_run (ref (!s0,ls)) in
+  assert (
+    List.sort Pervasives.compare range = (run (get_kvs ()) |> List.map fst));
+  print_newline ()
 )
 

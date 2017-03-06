@@ -9,8 +9,8 @@ export BASH_ENV
 all: _links
 	$$ocamlc -c $$mls
 	$$ocamlopt -c $$mls
-	$$mk_cma -g -a -o btree.cma $$cmos
-	$$mk_cmxa -g -a -o btree.cmxa $$cmxs
+	$$mk_cma -g -a -o $${libname}.cma $$cmos
+	$$mk_cmxa -g -a -o $${libname}.cmxa $$cmxs
 	$(MAKE) $$natives $$bytes
 
 
@@ -26,6 +26,18 @@ _generated: FORCE
 
 mlis: 
 	`mk_mlis`
+
+_install:
+	`mk_meta`
+	`install`
+
+_remove: 
+	`remove`
+
+_reinstall: 
+	`remove`
+	`install`
+
 
 # ----------------------------------------
 

@@ -1,5 +1,9 @@
 (* a small KV store; keys and values are <=256 bytes *)
 
+(* we store the btree generation in block 0 *)
+
+FIXME got here
+
 open Btree_api
 open Map_string_string_small
 open Ext_block_device
@@ -10,15 +14,61 @@ module MSS = Map_string_string_small.Make(RF)
 
 module KV = Map_string_string_small.KV
 
-(* module type IM' = IMPERATIVE_MAP with module KV=KV *)
-
-module IM = MSS.Simple.Btree.Imperative_map
-
-(* type t = RF.store *)
+module FS = Filestore
 
 open KV
 open Btree_api
 
+let from_file ~fn ~create ~init = (
+  let fd = Blkdev_on_fd.from_file ~fn ~create ~init in
+  let fs = Filestore.from_fd ~fd ~init in
+  let rf = RF.from_filestore fs in
+  rf)
+
+(* initialize *)
+let init ~rf = (
+)
+
+(* FIXME above is horrible *)
+let main args = (
+  (* turn off wf checking *)
+  Test.disable ();
+  match args with
+  | ["init"; fn] -> (
+      from_file ~fn ~create:true ~init:true fn 
+      |> (fun ops -> 
+          ops.sync();
+          (* print_endline "init ok" *)
+        ))
+  | ["insert";fn;k;v] -> (
+      mk false fn 
+      |> (fun ops -> 
+          ops.insert (SS.from_string k) (SS.from_string v);
+          ops.sync();
+          (* print_endline "insert ok"; *)
+        )
+    )
+  | ["list";fn] -> (
+      mk false fn 
+      |> (fun ops -> 
+          ops.mk_leaf_stream () 
+          |> all_kvs 
+          |> (List.iter (fun (k,v) -> 
+              Printf.printf "%s -> %s\n" (SS.to_string k) (SS.to_string v)));
+          print_endline "list ok")
+    )
+  | _ -> (failwith ("Unrecognized args: "^
+                   (Tjr_string.concat_strings " " args)^
+                    __LOC__))
+)
+
+
+
+
+
+
+
+(*
 type ops_t = { 
   insert: key -> value -> unit;
   insert_many: key -> value -> (key*value) list -> unit;
@@ -27,7 +77,9 @@ type ops_t = {
   sync: unit -> unit;
   mk_leaf_stream: unit -> (key,value) imperative_leaf_stream_t;
 }
+*)
 
+(*
 let mk: Filestore.store -> ops_t = (
   fun store ->
     let (store,page_ref) = (
@@ -85,39 +137,10 @@ let mk initialize fn = (
   |> Filestore.(
       if initialize then mk_fd_to_empty_store else mk_fd_to_nonempty_store)
   |> mk)
-
-(* FIXME above is horrible *)
-let main args = (
-  (* turn off wf checking *)
-  Test.disable ();
-  match args with
-  | ["init"; fn] -> (
-      mk true fn 
-      |> (fun ops -> 
-          ops.sync();
-          (* print_endline "init ok" *)
-        ))
-  | ["insert";fn;k;v] -> (
-      mk false fn 
-      |> (fun ops -> 
-          ops.insert (SS.from_string k) (SS.from_string v);
-          ops.sync();
-          (* print_endline "insert ok"; *)
-        )
-    )
-  | ["list";fn] -> (
-      mk false fn 
-      |> (fun ops -> 
-          ops.mk_leaf_stream () 
-          |> all_kvs 
-          |> (List.iter (fun (k,v) -> 
-              Printf.printf "%s -> %s\n" (SS.to_string k) (SS.to_string v)));
-          print_endline "list ok")
-    )
-  | _ -> (failwith ("Unrecognized args: "^
-                   (Tjr_string.concat_strings " " args)^
-                    __LOC__))
-)
+*)
 
 
+(* module type IM' = IMPERATIVE_MAP with module KV=KV *)
 
+
+(* type t = RF.store *)

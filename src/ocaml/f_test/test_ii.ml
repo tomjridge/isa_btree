@@ -9,29 +9,35 @@ let default_filename = "/tmp/store"
 
 module Btree = Int_int_store.Btree_simple.Btree
 
-module MWE = Btree.Map_with_exceptions
+module RM = Btree.Raw_map
 module Sem = Btree_api.Sem
 
 let run = Btree_api.State_monad.run
 
 (* let ((s',r'),_) = MWE.insert 1 2 |> run (s,r) *)
 
+module ST = Ext_int_int_store.ST
+module FS = Int_int_filestore
+
 let test_int_int_filestore range = 
   Printf.printf "%s, test_int_int_filestore, int map backed by recycling filestore, %d elts: " 
     __MODULE__ (List.length range);
   flush_all();
-  let (s,r) = Int_int_filestore.existing_file_to_new_store default_filename in
-  let (s,r) = (ref s,ref r) in
+  let (s,r) = FS.from_file default_filename true true in
+  let sr = ref (s,r) in
+  let run = Sem.unsafe_run sr in
   let xs = ref range in
   while (!xs <> []) do
     print_string ".";
     let x = List.hd !xs in
-    let ((s',r'),_) = MWE.insert x (2*x) |> run (!s,!r) in
-    s:=s';r:=r';xs:=List.tl !xs
+    run (RM.insert x (2*x));
+    xs:=List.tl !xs;
   done;
   print_newline ();
   (* FIXME check res? *)
-  Ext_int_int_store.ST.sync |> Sem.run !s |> (fun (s',res) -> ());
+  let (s,r) = !sr in
+  let s = ref s in
+  Sem.unsafe_run s (ST.sync ());
   Unix.close ((!s).fs.fd);
   ()
 
@@ -41,18 +47,19 @@ let test_int_int_cached range =
   Printf.printf "%s, test_int_int_cached, int map backed by recycling filestore and api cache, %d elts: " 
     __MODULE__ (List.length range);
   flush_all();
-  let (s,r) = Int_int_filestore.existing_file_to_new_store default_filename in
+  let (s,r) = FS.from_file default_filename true true in
   let s0 = ref (r,s,Map_int.empty) in
+  let run = Sem.unsafe_run s0 in
   let xs = ref range in
   while (!xs <> []) do
     print_string ".";
     let x = List.hd !xs in
-    let s0' = Int_int_cached.Insert.insert x (2*x) !s0 in
-    s0:=s0';xs:=List.tl !xs
+    run (Int_int_cached.Insert.insert x (2*x));
+    xs:=List.tl !xs
   done;
   print_newline ();
   (* FIXME should we check res in following? *)
-  (Int_int_cached.sync |> Sem.run !s0 |> (fun (s',res) -> s0:=s'));
+  run (Int_int_cached.sync ());
   Unix.close ((!s0) |> (fun (x,y,z) -> y.fs.fd));
   ()
 

@@ -7,6 +7,8 @@ function new_bak() {
     echo "$1.bak.$n"
 }
 
+libname=tjr-btree
+
 root=$(realpath $(dirname $BASH_SOURCE))/../..
 
  # if using nix, this may not be present
@@ -88,4 +90,33 @@ function rm_links() {
 
 function mk_mlis() {
     for f in $mls; do $ocamlc -i $f > tmp/${f/.ml/.mli}; done
+}
+
+
+
+# meta ----------------------------------------
+
+function mk_meta() {
+local gv=`git rev-parse HEAD`
+local d=`date`
+cat >META <<EOF
+name="$libname"
+description="Pure functional B-tree implementation"
+version="$d $gv"
+depends=""
+archive(byte)="$libname.cma"
+archive(native)="$libname.cmxa"
+EOF
+
+}
+
+
+# ocamlfind install, remove, reinstall
+
+function install() {
+	  ocamlfind install $libname META `find , -name "*.cmi" -o -name "*.cma" -o -name "*.cmxa" -o -name "*.a"`
+}
+
+function remove() {
+    ocamlfind remove $libname
 }
