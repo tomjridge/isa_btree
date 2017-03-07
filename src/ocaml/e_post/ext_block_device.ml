@@ -10,6 +10,7 @@ open Sexplib.Std (* for ppx_assert *)
 (* basic type for in-mem block, and on-disk block ref -------------------- *)
 
 (* FIXME move to config? *)
+(*
 module Defaults = struct
 
   (* page of block? at this level we prefer block; in mem we use page *)
@@ -24,32 +25,29 @@ module Defaults = struct
   let empty () = String.make page_size (Char.chr 0) 
 
 end
+*)
 
 (* a block device backed by a file ---------------------------------------- *)
 
 module Blkdev_on_fd (* : BLOCK_DEVICE *) = struct
   open Btree_api
-
+  module Block = Mk_block(struct let block_size=4096 end)
   type fd = Unix.file_descr
-
   type t = fd
-  type r = Defaults.block_ref
-  type blk = Defaults.block
+  type r = int
+  type blk = Block.blk
 
   type 'a m = ('a,t) Sem.m
-               
-  let block_size = Defaults.page_size
 
-  let string_to_blk: string -> (blk,string) result = (
-    fun x -> 
-      let l = String.length x in
-      let c = Pervasives.compare l block_size in
-      match c with
-      | 0 -> Ok x
-      | _ when c < 0 -> Ok (x^(String.make (block_size - l) (Char.chr 0)))
-      | _ -> Error (__LOC__ ^ "string too large: " ^ x)
-  )
+  (* FIXME we probably want this to be a dynamic value rather than
+     fixed in module *)
+  let block_size (t:t) = Block.sz
 
+
+(*
+  let string_to_blk = BP.string_to_blk
+*)
+      
   let safely = Sem.safely
   let return = Sem.return
   let bind = Sem.bind
@@ -61,10 +59,11 @@ module Blkdev_on_fd (* : BLOCK_DEVICE *) = struct
         safely __LOC__ (
           get_fd ()
           |> bind Unix.(fun fd ->
-              ignore (lseek fd (r * block_size) SEEK_SET);
-              let buf = Bytes.make block_size (Char.chr 0) in 
-              let n = read fd buf 0 block_size in
-              assert (n=block_size);
+              ignore (lseek fd (r * Block.sz) SEEK_SET);
+              let buf = Bytes.make Block.sz (Char.chr 0) in 
+              let n = read fd buf 0 Block.sz in
+              (* assert (n=Block.sz); we allow the file to expand automatically, so no reason to read any bytes *)
+              assert(n=0 || n=Block.sz);
               return buf)))
 
 
@@ -73,9 +72,9 @@ module Blkdev_on_fd (* : BLOCK_DEVICE *) = struct
       safely __LOC__ (
         get_fd ()
         |> bind Unix.(fun fd ->
-          ignore (lseek fd (r * block_size) SEEK_SET);
-          let n = single_write fd buf 0 block_size in
-          assert (n=block_size);
+          ignore (lseek fd (r * Block.sz) SEEK_SET);
+          let n = single_write fd buf 0 Block.sz in
+          assert (n=Block.sz);
           return ())))
 
 
@@ -109,7 +108,11 @@ module Filestore = struct
     free_ref: page_ref;
   }  
 
-  let page_size = Defaults.page_size
+  let lens = Lens.{from=(fun s -> (s.fd,s)); to_=(fun (fd,s) -> {s with fd=fd})}
+
+  let lift x = x |> Sem.with_lens lens
+
+  let page_size = Blkdev_on_fd.Block.sz
 
   open Blkdev_on_fd
 
@@ -134,12 +137,13 @@ module Filestore = struct
 
   let get_free: unit -> int m = (fun () s -> (s,Ok s.free_ref))
 
+  let set_free: int -> unit m = (
+    fun n s -> ({s with free_ref=n},Ok ()))
+
   (* alloc without write; free block can then be used to write data
      outside the btree *)
   let alloc_block: unit -> page_ref m = (fun () ->
     get_free () |> bind (fun r -> inc_free 1 |> bind (fun () -> return r)))
-
-  let lens = Lens.{from=(fun s -> (s.fd,s)); to_=(fun (fd,s) -> {s with fd=fd})}
 
   let alloc: page -> page_ref m = (
     fun p -> 
@@ -152,20 +156,21 @@ module Filestore = struct
   let free: page_ref list -> unit m = (fun ps -> Sem.return ())
 
   let page_ref_to_page: page_ref -> page m = (
-    fun r -> Sem.with_lens lens (Blkdev_on_fd.read r))
+    fun r -> Blkdev_on_fd.read r |> lift)
   
   let dest_Store : store -> page_ref -> page = (
     fun s -> 
-      let run = Sem.unsafe_run (ref s) in
+      let run = Sem.run_ref (ref s) in
       fun r -> run (page_ref_to_page r))
 
   let sync: unit -> unit m = (fun () -> 
-      Blkdev_on_fd.sync () 
-      |> Sem.with_lens lens)
+      Blkdev_on_fd.sync () |> lift)
 
   let write: r -> blk -> unit m = (fun r blk ->
-      Blkdev_on_fd.write r blk
-      |> Sem.with_lens lens)
+      Blkdev_on_fd.write r blk |> lift)
+
+  let read: r -> blk m = (fun r ->
+      Blkdev_on_fd.read r |> lift)
 
 end
 
@@ -217,12 +222,11 @@ module Recycling_filestore = struct
 
   type 'a m = ('a,store) Sem.m
 
+  let lens = 
+    Lens.({from=(fun s -> (s.fs,s)); to_=(fun (fs,s) -> {s with fs=fs})})
 
   let from_filestore = 
     fun fs -> {fs; cache=Cache.empty;freed_not_synced=Set_r.empty}
-
-  let lens = 
-    Lens.({from=(fun s -> (s.fs,s)); to_=(fun (fs,s) -> {s with fs=fs})})
 
   let lift x = x |> Sem.with_lens lens
 
@@ -323,6 +327,15 @@ module Recycling_filestore = struct
                   (* make sure we sync these writes to disk *)
                   (fun () -> Filestore.(sync ()) |> lift)
              )))
+
+  type r = page_ref
+  type blk = Filestore.page
+
+  let write: r -> blk -> unit m = (fun r blk ->
+      Filestore.write r blk |> lift)
+
+  let read: r -> blk m = (fun r ->
+      Filestore.read r |> lift)
 
 end
 

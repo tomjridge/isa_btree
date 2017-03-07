@@ -25,7 +25,7 @@ let test_int_int_filestore range =
   flush_all();
   let (s,r) = FS.from_file default_filename true true in
   let sr = ref (s,r) in
-  let run = Sem.unsafe_run sr in
+  let run = Sem.run_ref sr in
   let xs = ref range in
   while (!xs <> []) do
     print_string ".";
@@ -37,7 +37,7 @@ let test_int_int_filestore range =
   (* FIXME check res? *)
   let (s,r) = !sr in
   let s = ref s in
-  Sem.unsafe_run s (ST.sync ());
+  Sem.run_ref s (ST.sync ());
   Unix.close ((!s).fs.fd);
   ()
 
@@ -49,7 +49,7 @@ let test_int_int_cached range =
   flush_all();
   let (s,r) = FS.from_file default_filename true true in
   let s0 = ref (r,s,Map_int.empty) in
-  let run = Sem.unsafe_run s0 in
+  let run = Sem.run_ref s0 in
   let xs = ref range in
   while (!xs <> []) do
     print_string ".";

@@ -3,13 +3,30 @@
 (* store passing with error *)
 
 module Lens = struct
-
   (* 'a splits as (b,c) *)
   type ('l,'s,'r) t = {  (* large, small, rest *)
     from: 'l -> ('s * 'r);
     to_: ('s * 'r -> 'l)
   }
+  let app lens f x = x |> lens.from |> (fun (s,r) -> (f s,r)) |> lens.to_
+  let comp lens1 lens2 = {
+    from=(fun l -> 
+        let (l1,l2) = lens1.from l in
+        let (l11,l12) = lens2.from l1 in
+        (l11,(l12,l2)));
+    to_=(fun (l11,(l12,l2)) -> 
+        lens2.to_ (l11,l12) |> (fun l1 -> lens1.to_(l1,l2)))
+  }
+        
+end
 
+(* mutable references *)
+module Mut = struct
+  type 'a t = {
+    set: 'a -> unit;
+    get: unit -> 'a
+  }
+  let from_ref r = { set=(fun x -> r:=x); get=(fun () -> !r) }
 end
 
 module State_monad : sig
@@ -34,12 +51,14 @@ module State_error_monad : sig
   val bind: ('a -> ('b,'s) m) -> ('a,'s) m -> ('b,'s) m
   val fmap: ('a -> 'b) -> ('a,'s) m -> ('b,'s) m
   val run: 's -> ('a,'s) m -> 's * ('a,string) result
-  val unsafe_run: 's ref -> ('a,'s) m -> 'a (* mainly for testing *)
+  val unsafe_run: 's Mut.t -> ('a,'s) m -> 'a (* mainly for testing *)
+  val run_ref: 's ref -> ('a,'s) m -> 'a (* mainly for testing *)
   val with_lens: ('l,'s,'r) Lens.t -> ('a,'s) m -> ('a,'l) m
 (*  val get: ('s,'s) m  *)
   val run_list: 's -> (unit,'s) m list -> 's * (unit,string) result
   val err: string -> ('a,'s) m
   val safely: string -> ('a,'s) m -> ('a,'s) m
+  val assert_ok: ('s * ('a,string) result) -> unit
 end = struct
   type ('a,'s) m = 's -> ('s * ('a,string) result)
 
@@ -64,9 +83,11 @@ end = struct
                       | Error e -> Error e)))
       
   let run: 's -> ('a,'s) m -> 's * ('a,string) result = (fun s f -> f s)
+                                                        
+  let unsafe_run s m = Mut.(m |> run (s.get()) |> (fun (s',res) -> 
+      s.set(s'); match res with Ok x -> x | Error e -> failwith (__LOC__ ^ e)))
 
-  let unsafe_run s m = m |> run !s |> (fun (s',res) -> 
-      s:=s'; match res with Ok x -> x | Error e -> failwith (__LOC__ ^ e))
+  let run_ref s m = unsafe_run (Mut.from_ref s) m
 
   (* lifting to another state monad *)
   let with_lens: ('l,'s,'r) Lens.t -> ('a,'s) m -> ('a,'t) m = (fun l m ->
@@ -95,6 +116,11 @@ end = struct
       fun s -> 
         try m s 
         with e -> (s,Error (msg ^ (Printexc.to_string e))))
+
+  let assert_ok m = (
+    match m with
+    | (s,Ok x) -> ()
+    | _ -> failwith (__LOC__ ^ "result was not ok"))
 end
 
 (* short name *)
@@ -175,6 +201,70 @@ module type LEAF_STREAM = sig
 end
 
 
+(* block device ---------------------------------------- *)
+
+(*
+module type BLOCK_PARAMS = sig
+  type 'a m
+  type blk [@@deriving yojson]
+  val block_size: unit -> int m
+  val string_to_blk: string -> blk m
+  val empty: unit -> blk m
+end
+  
+module Default_block_params = struct
+  type blk = string [@@deriving yojson]
+  let block_size = fun () -> 4096
+  let string_to_blk: string -> (blk,string) result = (
+    fun x -> 
+      let l = String.length x in
+      let c = Pervasives.compare l (block_size()) in
+      match c with
+      | 0 -> Ok x
+      | _ when c < 0 -> Ok (x^(String.make (block_size() - l) (Char.chr 0)))
+      | _ -> Error (__LOC__ ^ "string too large: " ^ x)
+  )
+  let empty () = String.make (block_size ()) (Char.chr 0)
+end
+
+let _ = (module Default_block_params: BLOCK_PARAMS)
+*)
+
+
+module Mk_block = functor (S:sig val block_size: int end) -> struct
+  module S = S
+  type blk = string
+  let sz = S.block_size
+  let string_to_blk: string -> (blk,string) result = (
+    fun x -> 
+      let l = String.length x in
+      let c = Pervasives.compare l (S.block_size) in
+      match c with
+      | 0 -> Ok x
+      | _ when c < 0 -> Ok (x^(String.make (S.block_size - l) (Char.chr 0)))
+      | _ -> Error (__LOC__ ^ "string too large: " ^ x)
+  )
+  let empty: unit -> blk = fun () -> String.make S.block_size (Char.chr 0)
+
+end
+
+
+
+(* what is typically provided by the file system; used to provide the
+   store interface *)
+module type BLOCK_DEVICE = sig
+  type t (* type of block device *)
+  type r (* blk references *)
+  type blk
+  type 'a m = ('a,t) Sem.m
+
+  val block_size: t -> int
+  val read: r -> blk m
+  val write: r -> blk -> unit m
+  val sync: unit -> unit m  
+end
+
+
 (* simple interface ---------------------------------------- *)
 
 (* see Btree_simple *)
@@ -210,22 +300,6 @@ module Simple = struct
 end
 
 
-(* block device ---------------------------------------- *)
-
-(* what is typically provided by the file system; used to provide the
-   store interface *)
-module type BLOCK_DEVICE = sig
-  type t
-  type r
-  type blk
-  type 'a m = ('a,t) Sem.m
-
-  val block_size: int
-  val string_to_blk: string -> (blk,string) result
-  val read: r -> blk m
-  val write: r -> blk -> unit m
-  val sync: unit -> unit m  
-end
 
 
 

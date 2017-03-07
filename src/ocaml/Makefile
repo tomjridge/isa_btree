@@ -4,13 +4,18 @@ SHELL:=/bin/bash
 BASH_ENV=bash_env.sh
 export BASH_ENV
 
+# shouldn't shell builtin source bash_env anyway?
+libname:=$(shell source bash_env.sh && echo $${libname})#
+
+$(info libname is $(libname)!)
+
 # ----------------------------------------
 
 all: _links
 	$$ocamlc -c $$mls
 	$$ocamlopt -c $$mls
-	$$mk_cma -g -a -o $${libname}.cma $$cmos
-	$$mk_cmxa -g -a -o $${libname}.cmxa $$cmxs
+	$$mk_cma -g -a -o $(libname).cma $$cmos
+	$$mk_cmxa -g -a -o $(libname).cmxa $$cmxs
 	$(MAKE) $$natives $$bytes
 
 
@@ -18,8 +23,8 @@ _links:
 	`mk_links`
 	touch $@
 
-test:
-	OCAMLRUNPARAM=b ./test.sh
+_test:
+	OCAMLRUNPARAM=b ./test_main.native ./default_tests.json
 
 _generated: FORCE
 	$(MAKE) -C b_from_isa
@@ -43,11 +48,11 @@ _reinstall:
 
 #	$$ocamlopt -g -linkpkg -o a.out $$mls # FIXME
 
-%.native: %.ml btree.cmxa FORCE
-	$$ocamlopt -g -linkpkg -o $*.native btree.cmxa $*.ml
+%.native: %.ml $(libname) FORCE
+	$$ocamlopt -g -linkpkg -o $*.native $${libname}.cmxa $*.ml
 
-%.byte: %.ml btree.cma FORCE
-	$$ocamlc -g -linkpkg -o $*.byte btree.cma $*.ml
+%.byte: %.ml $(libname) FORCE
+	$$ocamlc -g -linkpkg -o $*.byte $${libname}.cma $*.ml
 
 clean:
 	rm -f *.{cmi,cmo,cmx,o} a.out *.cma *.cmxa *.a *.byte *.native 

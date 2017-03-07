@@ -121,11 +121,11 @@ let store = ref (
     let y = FS.from_fd ~fd ~init in
     y) 
 
-let page_ref = Sem.unsafe_run store (RM.empty ())
+let page_ref = Sem.run_ref store (RM.empty ())
                
 let sr = ref (!store,page_ref)
 
-let run x = Sem.unsafe_run sr x
+let run x = Sem.run_ref sr x
 
 open Btree_util
 

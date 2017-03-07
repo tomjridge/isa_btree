@@ -2,7 +2,6 @@
 
 (* we store the btree generation in block 0 *)
 
-FIXME got here
 
 open Btree_api
 open Map_string_string_small
@@ -11,7 +10,7 @@ open Ext_block_device
 module RF = Ext_block_device.Recycling_filestore
 
 module MSS = Map_string_string_small.Make(RF)
-
+module Btree_ = MSS.Simple.Btree
 module KV = Map_string_string_small.KV
 
 module FS = Filestore
@@ -19,15 +18,50 @@ module FS = Filestore
 open KV
 open Btree_api
 
-let from_file ~fn ~create ~init = (
-  let fd = Blkdev_on_fd.from_file ~fn ~create ~init in
-  let fs = Filestore.from_fd ~fd ~init in
-  let rf = RF.from_filestore fs in
-  rf)
+type t = {store: RF.store; page_ref:RF.page_ref}
+
+let lens = Lens.({ 
+    from=(fun t -> (t.store,t)); to_=(fun (s',t) -> {t with store=s'})})
+
+let sync t = (
+  (* we want to write page_ref into block 0 *)
+  let (blk,None) =  Pickle.(Examples.p_int t.page_ref |> P.run "") in
+  let Ok blk = Blkdev_on_fd.Block.string_to_blk blk in
+  let fd = t.store.RF.fs.fd in
+  Blkdev_on_fd.write 0 blk |> Sem.run fd 
+  |> function (_,Ok ()) -> 
+    RF.sync () |> Sem.run t.store 
+    |> function (store,Ok ()) -> {t with store=store}
+)
 
 (* initialize *)
-let init ~rf = (
-)
+let init' = RF.(
+    lift (FS.set_free 0) |> Sem.bind (fun () -> 
+        alloc_block () |> Sem.bind (fun r ->
+            assert (r=0);
+            Btree_.Raw_map.empty () 
+          )))
+
+let from_file ~fn ~create ~init = (
+  assert (not create || init); (* create --> init *)
+  let fd = Blkdev_on_fd.from_file ~fn ~create ~init in
+  let fs = Filestore.from_fd ~fd ~init in
+  let store = RF.from_filestore fs in
+  let t = (
+    match init with
+    | true -> (
+        init' |> Sem.run store 
+        |> function (store,Ok page_ref) -> {store;page_ref})
+    | false -> (
+        (* read from block 0 *)
+        RF.read 0 |> Sem.bind (fun blk -> 
+            Pickle.Examples.u_int |> Sem.run blk
+            |> (fun (_,Ok i) -> Sem.return i))
+        |> Sem.run store |> function (store,Ok page_ref) -> {store;page_ref})
+  )
+  in
+  t)
+
 
 (* FIXME above is horrible *)
 let main args = (
@@ -35,28 +69,32 @@ let main args = (
   Test.disable ();
   match args with
   | ["init"; fn] -> (
-      from_file ~fn ~create:true ~init:true fn 
-      |> (fun ops -> 
-          ops.sync();
-          (* print_endline "init ok" *)
+      from_file ~fn ~create:true ~init:true 
+      |> (fun t -> 
+          (sync t |> fun t -> ());
+          print_endline "init ok";
+          ()
         ))
   | ["insert";fn;k;v] -> (
-      mk false fn 
-      |> (fun ops -> 
-          ops.insert (SS.from_string k) (SS.from_string v);
-          ops.sync();
+      from_file ~fn ~create:false ~init:false
+      |> (fun t -> 
+          Btree_.Raw_map.insert (SS.from_string k) (SS.from_string v) 
+          |> Sem.run (t.store,t.page_ref) 
+          |> (function ((store,page_ref),Ok()) -> 
+              ignore (sync {store;page_ref}));
           (* print_endline "insert ok"; *)
         )
     )
   | ["list";fn] -> (
-      mk false fn 
-      |> (fun ops -> 
-          ops.mk_leaf_stream () 
-          |> all_kvs 
-          |> (List.iter (fun (k,v) -> 
-              Printf.printf "%s -> %s\n" (SS.to_string k) (SS.to_string v)));
-          print_endline "list ok")
-    )
+      from_file ~fn  ~create:false ~init:false 
+      |> (fun t -> 
+          Btree_.Leaf_stream_.mk t.page_ref |> Sem.run t.store
+          |> function (store,Ok ls) -> 
+            Btree_.Leaf_stream_.get_kvs () |> Sem.run (t.store,ls) 
+            |> function (_,Ok kvs) -> 
+              (List.iter (fun (k,v) -> 
+                   Printf.printf "%s -> %s\n" (SS.to_string k) (SS.to_string v)) kvs);
+              print_endline "list ok"))
   | _ -> (failwith ("Unrecognized args: "^
                    (Tjr_string.concat_strings " " args)^
                     __LOC__))

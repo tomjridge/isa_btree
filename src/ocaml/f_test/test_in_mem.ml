@@ -166,6 +166,8 @@ let test_insert range = (
 
 open Extlib.ExtList.List
 
+type t = int list [@@deriving yojson]
+
 let test_leaf_stream range = (
   Printf.printf "%s: test_leaf_stream, %d inserts, check wf etc:" 
     __MODULE__ 
@@ -174,7 +176,7 @@ let test_leaf_stream range = (
   let r0 = init_r in
   let s0 = init_store in
   let sr = ref (s0,r0) in
-  let run = Sem.unsafe_run sr in
+  let run = Sem.run_ref sr in
   (* insert into an empty btree *)
   let xs = ref range in
   while (!xs <> []) do
@@ -186,10 +188,12 @@ let test_leaf_stream range = (
   let open Leaf_stream_ in
   let (s0,r0) = !sr in
   let s0 = ref s0 in
-  let ls = Sem.unsafe_run s0 (Leaf_stream_.mk r0) in
-  let run = Sem.unsafe_run (ref (!s0,ls)) in
-  assert (
-    List.sort Pervasives.compare range = (run (get_kvs ()) |> List.map fst));
+  let ls = Sem.run_ref s0 (Leaf_stream_.mk r0) in
+  let run = Sem.run_ref (ref (!s0,ls)) in
+  let x = List.sort Pervasives.compare range in
+  let y = (run (all_kvs ()) |> List.map fst) in
+  Test.log (y|>to_yojson|>Yojson.Safe.to_string);
+  assert (x=y);
   print_newline ()
 )
 

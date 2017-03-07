@@ -616,6 +616,18 @@ module Main = struct
               | Some kvs -> ((s,t),Ok kvs))
       )
 
+      (* for debugging *)
+      let all_kvs: unit -> (key * value) list m = (
+        fun () ->
+          let rec loop kvs = (
+            get_kvs () |> Sem.bind (fun kvs' -> 
+                let kvs = kvs@kvs' in
+                step () |> Sem.bind (fun b ->
+                    if b then loop kvs else Sem.return kvs)))
+          in
+          loop [])
+
+
     end)  (* Leaf_stream_ *)
 
     let _ = (module Leaf_stream_ : Btree_api.LEAF_STREAM)
