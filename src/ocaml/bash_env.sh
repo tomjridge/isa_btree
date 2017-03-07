@@ -114,7 +114,7 @@ EOF
 # ocamlfind install, remove, reinstall
 
 function install() {
-	  ocamlfind install $libname META `find , -name "*.cmi" -o -name "*.cma" -o -name "*.cmxa" -o -name "*.a"`
+	  ocamlfind install $libname META `find . -name "*.cmi" -o -name "*.cma" -o -name "*.cmxa" -o -name "*.a"`
 }
 
 function remove() {

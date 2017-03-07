@@ -90,7 +90,7 @@ let main args = (
       |> (fun t -> 
           Btree_.Leaf_stream_.mk t.page_ref |> Sem.run t.store
           |> function (store,Ok ls) -> 
-            Btree_.Leaf_stream_.get_kvs () |> Sem.run (t.store,ls) 
+            Btree_.Leaf_stream_.all_kvs () |> Sem.run (t.store,ls) 
             |> function (_,Ok kvs) -> 
               (List.iter (fun (k,v) -> 
                    Printf.printf "%s -> %s\n" (SS.to_string k) (SS.to_string v)) kvs);

@@ -7,7 +7,7 @@ export BASH_ENV
 # shouldn't shell builtin source bash_env anyway?
 libname:=$(shell source bash_env.sh && echo $${libname})#
 
-$(info libname is $(libname)!)
+# $(info libname is $(libname)!)
 
 # ----------------------------------------
 
@@ -48,10 +48,10 @@ _reinstall:
 
 #	$$ocamlopt -g -linkpkg -o a.out $$mls # FIXME
 
-%.native: %.ml $(libname) FORCE
+%.native: %.ml $(libname.cmxa) FORCE
 	$$ocamlopt -g -linkpkg -o $*.native $${libname}.cmxa $*.ml
 
-%.byte: %.ml $(libname) FORCE
+%.byte: %.ml $(libname.cma) FORCE
 	$$ocamlc -g -linkpkg -o $*.byte $${libname}.cma $*.ml
 
 clean:

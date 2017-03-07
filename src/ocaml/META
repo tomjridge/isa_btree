@@ -1,0 +1,6 @@
+name="tjr-btree"
+description="Pure functional B-tree implementation"
+version="Tue  7 Mar 18:19:31 GMT 2017 477908a5db5048505c674c4ce1a6e70531409a26"
+depends=""
+archive(byte)="tjr-btree.cma"
+archive(native)="tjr-btree.cmxa"
