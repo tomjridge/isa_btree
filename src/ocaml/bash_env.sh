@@ -7,7 +7,7 @@ function new_bak() {
     echo "$1.bak.$n"
 }
 
-libname=tjr-btree
+libname=tjr_btree
 
 root=$(realpath $(dirname $BASH_SOURCE))/../..
 
@@ -40,16 +40,24 @@ mk_cmxa="$DISABLE_NTVE ocamlfind ocamlopt $FLGS"
 
 #btree.ml 
 
+# device.ml \
+
 mls=" \
 gen_isa.ml \
 our.ml \
 test.ml pickle.ml btree_api.ml btree_util.ml \
+\
 btree.ml \
 btree_simple.ml \
+\
 ext_in_mem.ml ext_block_device.ml \
 ext_int_int_store.ml ext_bytestore.ml \
 map_digest_int.ml map_digest_to_string_int.ml map_string_int.ml map_string_string_small.ml \
+\
+device.ml root.ml \
+\
 test_bytestore.ml test_in_mem.ml test_ii.ml test_string_int.ml \
+\
 kv_store_small.ml
 "
 
@@ -69,7 +77,7 @@ bytes="test_main.byte"
 # links ----------------------------------------
 
 function init() {
-    link_files=`ls b_from_isa/*.ml c_pre/*.ml d_core/*.ml e_post/*.ml f_test/*.ml g_examples/*.ml`
+    link_files=`ls b_from_isa/*.ml c_pre/*.ml d_core/*.ml e_post/*.ml e_user/*.ml f_test/*.ml g_examples/*.ml`
 }
 
 function mk_links() {
