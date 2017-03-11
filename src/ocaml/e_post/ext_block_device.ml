@@ -34,8 +34,8 @@ module Blkdev_on_fd (* : BLOCK_DEVICE *) = struct
   module Block = Mk_block(struct let block_size=4096 end)
   type fd = Unix.file_descr
   type t = fd
-  type r = int
-  type blk = Block.blk
+  type r = Block.id
+  type blk = Block.t
 
   type 'a m = ('a,t) Sem.m
 

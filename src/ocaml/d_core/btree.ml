@@ -489,14 +489,14 @@ module Main = struct
       open Btree_api
       module KV = S.KV
       module ST = S.ST           let _ = (module ST: Btree_api.STORE)
-      type ref_t = ST.page_ref
-      type 'a m = ('a,ST.store * ref_t) Sem.m
+      type bt_ptr = ST.page_ref
+      type 'a m = ('a,ST.store * bt_ptr) Sem.m
       
       open KV
 
       let rresult_to_result = Btree_util.rresult_to_result
 
-      let empty: unit -> (ref_t,ST.store) Sem.m = (
+      let empty: unit -> (bt_ptr,ST.store) Sem.m = (
         fun () s -> (
             let m = Find.empty_btree ()|>Our.Monad.dest_M in
             m s |> (fun (s,r) -> (s,r|>rresult_to_result))
@@ -692,10 +692,10 @@ end (* Main *)
     module Map_with_exceptions (* : MAP_WITH_EXCEPTIONS *) = struct
       module KV = Raw_map.KV
       module ST = Raw_map.ST
-      type ref_t = ST.page_ref
+      type bt_ptr = ST.page_ref
                      
       open Btree_api
-      type 'a m = ('a,ST.store * ref_t) State_monad.m
+      type 'a m = ('a,ST.store * bt_ptr) State_monad.m
 
       let conv: 'a Raw_map.m -> 'a m = (fun m -> fun s ->
         m s |> (fun (s',res) -> (
@@ -706,7 +706,7 @@ end (* Main *)
       open KV
       module RM_ = Raw_map
 
-      let empty: ST.store -> ST.store * ref_t = (fun s ->
+      let empty: ST.store -> ST.store * bt_ptr = (fun s ->
           RM_.empty |> Sem.run s |> (fun (s',res) ->
             match res with
             | Ok r' -> (s',r')

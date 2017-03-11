@@ -169,12 +169,12 @@ end
 module type RAW_MAP = sig
   module KV : KEY_VALUE
   module ST : STORE
-  type ref_t = ST.page_ref
+  type bt_ptr = ST.page_ref
 
-  type 'a m = ('a,ST.store * ref_t) Sem.m
+  type 'a m = ('a,ST.store * bt_ptr) Sem.m
 
   open KV
-  val empty: unit -> (ref_t,ST.store) Sem.m
+  val empty: unit -> (bt_ptr,ST.store) Sem.m
   val insert: key -> value -> unit m
   val insert_many: key -> value -> (key*value) list -> unit m
   val find: key -> value option m
@@ -230,12 +230,42 @@ end
 let _ = (module Default_block_params: BLOCK_PARAMS)
 *)
 
+module Types = struct
+  type blk = string
+  type blk_id = int
+end
+
+module type BUFFER = sig
+  type t
+  val of_string: string -> t
+  val to_string: t -> string
+end
+
+(* default implementation *)
+module Buffer = struct
+  type t = string
+  let of_string x = x
+  let to_string x = x
+end
+
+let _ = (module Buffer: BUFFER)
+
+
+module type BLOCK = (sig
+  type t = Types.blk
+  type id = Types.blk_id
+  val sz: int
+  val string_to_blk: string -> (t,string) result
+  val empty: unit -> t
+end)
+
 
 module Mk_block = functor (S:sig val block_size: int end) -> struct
   module S = S
-  type blk = string
+  type t = Types.blk
+  type id = Types.blk_id
   let sz = S.block_size
-  let string_to_blk: string -> (blk,string) result = (
+  let string_to_blk: string -> (t,string) result = (
     fun x -> 
       let l = String.length x in
       let c = Pervasives.compare l (S.block_size) in
@@ -244,18 +274,19 @@ module Mk_block = functor (S:sig val block_size: int end) -> struct
       | _ when c < 0 -> Ok (x^(String.make (S.block_size - l) (Char.chr 0)))
       | _ -> Error (__LOC__ ^ "string too large: " ^ x)
   )
-  let empty: unit -> blk = fun () -> String.make S.block_size (Char.chr 0)
-
+  let empty: unit -> t = fun () -> String.make S.block_size (Char.chr 0)
 end
 
+let _ = (module (Mk_block(struct let block_size=1024 end)) : BLOCK)
 
 
 (* what is typically provided by the file system; used to provide the
    store interface *)
 module type BLOCK_DEVICE = sig
+  module Block : BLOCK
   type t (* type of block device *)
-  type r (* blk references *)
-  type blk
+  type r = Block.id (* blk references *)
+  type blk = Block.t
   type 'a m = ('a,t) Sem.m
 
   val block_size: t -> int
