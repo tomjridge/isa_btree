@@ -51,7 +51,7 @@ module Make = functor (S:S) -> struct
   let test ops init = (
     let ts = ref (Some {todo=init; done_=STS.empty}) in
     while((!ts) <> None) do
-      ts:=step ops (!ts|>Tjr_prelude.dest_Some) 
+      ts:=step ops (!ts|>Btree_util.dest_Some) 
     done;
     ()
   )

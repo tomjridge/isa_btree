@@ -16,7 +16,9 @@ test -f $root/config.sh && source $root/config.sh
 
 # ,bos.setup  ppx_assert,ppx_assert.runtime-lib,sexplib,core,lru-cache,\ ,core_kernel
 
-PKGS="-package num,yojson,ppx_deriving_yojson,batteries,extunix -package tjr_lib"
+PKGS="-package num,yojson,ppx_deriving_yojson,batteries,extunix"
+
+# -package tjr_lib"
 
 SYNTAX="" # "-syntax camlp4o" # simplify: use for every file
 FLGS="-g -thread"
@@ -47,6 +49,7 @@ mls=" \
 gen_isa.ml \
 our.ml \
 \
+tjr_string.ml \
 test.ml pickle.ml btree_api.ml btree_util.ml cache.ml \
 \
 btree.ml 

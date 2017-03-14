@@ -78,7 +78,7 @@ let _ = try (
   match Array.to_list Sys.argv |> List.tl with
   (* run tests based on json config file *)
   | [n] -> (
-      let s = Tjr_prelude.read_file n in
+      let s = Btree_util.read_file n in
       let Ok tests = s|>Yojson.Safe.from_string|>tests_of_yojson in
       List.iter (fun t -> run_test t) tests
     )
