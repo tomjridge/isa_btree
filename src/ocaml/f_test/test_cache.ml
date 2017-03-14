@@ -1,5 +1,7 @@
 (* testing cache ---------------------------------------- *)
 
+(* in memory *)
+
 (* note that the use of time means that we need to normalize timings
    (and current time) in order to exhaust state space *)
 
@@ -148,6 +150,7 @@ module S = struct
    may have bene deleted; evicted elements may also have disappeared
    (?) this looks like we need to do some more work here
 
+   FIXME these are not currently checked
 *)
 
   let check_invariants t = ()  (* FIXME *)
@@ -172,7 +175,7 @@ let main () = (
   ()
 )
 
-let _ = main ()
+(* let _ = main () *)
 
 (* with range 1..5 takes a while:
 

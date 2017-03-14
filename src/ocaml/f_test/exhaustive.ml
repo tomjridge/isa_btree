@@ -15,6 +15,8 @@ module type S = sig
 end
 
 
+open Btree_util
+
 module Make = functor (S:S) -> struct
   module S = S
   open S
@@ -28,7 +30,7 @@ module Make = functor (S:S) -> struct
 
   let step ops ts = (
     reps:=!reps+1;
-    if (!reps) mod 1000 = 0 then (Printf.printf "."; flush_all ()) else ();
+    if (!reps) mod 1000 = 0 then (Printf.printf "."; flush_out ()) else ();
     if (!reps) mod 10000 = 0 then (
       Printf.printf "\ntodo: %d; done: %d " 
         (STS.cardinal ts.todo) (STS.cardinal ts.done_)) else ();

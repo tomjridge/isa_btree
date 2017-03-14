@@ -7,8 +7,8 @@
 
 module Example = struct 
   open Btree
-  open Ext_in_mem
-  include Ext_in_mem.Make(struct 
+  open In_mem_store
+  include In_mem_store.Make(struct 
       module C : CONSTANTS = struct
         let max_leaf_size = 5
         let max_node_keys = 5
@@ -82,11 +82,12 @@ type range_t = int list[@@deriving yojson]
 
 
 (* exhaustive testing ---------------------------------------- *)
+open Btree_util
 
 let test range = TS.(
     Printf.printf "%s: exhaustive test, %d elts: " 
       __MODULE__ (List.length range);
-    flush_all();
+    flush_out();
     let s = ref TSS.(singleton {t=Tree.Leaf[];s=init_store;r=init_r }) in
     let todo = ref (!s) in
     (* next states from a given tree *)
@@ -125,7 +126,7 @@ let test range = TS.(
         let new_ = TSS.diff next !s in
         s:=TSS.union !s new_;
         todo:=new_;
-        print_string "."; flush_all ();
+        print_string "."; flush_out ();
         ()
       done
     in
@@ -137,13 +138,13 @@ let test range = TS.(
 (* do n inserts; check wf *)
 let test_insert range = (
   Printf.printf "%s: test_insert, %d inserts, check wf etc:" __MODULE__ (List.length range);
-  flush_all();
+  flush_out();
   let r0 = ref init_r in
   let s0 = ref init_store in
   try (
     let xs = ref range in
     while (!xs <> []) do
-      print_string ".";
+      print_string "."; flush_out();
       let x = List.hd !xs in
       let ((s0',r0'),res) = 
         Raw_map.insert x (2*x) |>Sem.run (!s0,!r0) in
@@ -172,7 +173,7 @@ let test_leaf_stream range = (
   Printf.printf "%s: test_leaf_stream, %d inserts, check wf etc:" 
     __MODULE__ 
     (List.length range);
-  flush_all();
+  flush_out();
   let r0 = init_r in
   let s0 = init_store in
   let sr = ref (s0,r0) in
@@ -180,6 +181,7 @@ let test_leaf_stream range = (
   (* insert into an empty btree *)
   let xs = ref range in
   while (!xs <> []) do
+    print_string "."; flush_out();
     let x = List.hd !xs in
     run (Raw_map.insert x (2*x));
     xs:=tl !xs

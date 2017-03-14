@@ -13,7 +13,7 @@
 
 *)
 
-FIXME prefer btree_file?
+(* FIXME prefer btree_file? *)
 
 open Our.Util
 

@@ -1,36 +1,28 @@
-(* a map from int to int; Store.page=bytes --------------------------------- *)
-
-(* parameters are just ST; block.size is fixed *)
-
-(* FIXME error handlign *)
-
-FIXME rename to int_int_store
-
-open Sexplib.Std  (* for ppx_assert *)
+(* a map from int to int backed by file store ------------------------------- *)
 
 module KV = Map_int_int.KV
-
-module Make = Map_int_int.Make
 
 (* int-int store on recycling filestore ------------------------------------- *)
 
 (* from here we specialize to recycling_filestore *)
 
-module ST = Ext_block_device.Recycling_filestore
+module ST = File_store.Recycling_filestore
 
-module Int_int_filestore = struct
+module Uncached = struct
 
   open Btree_api
-  open Ext_block_device
+  open Block_device
 
-  module Int_int_store = Map_int_int.Make(ST)
-  module IIS_ = Int_int_store
+  module X_ = Map_int_int.Make(ST)
+  module Btree_simple_ = X_.Btree_simple
+  (* module IIS_ = Int_int_store *)
 
   let from_file ~fn ~create ~init = (
-    let open IIS_.Btree_simple.Btree.S.FT in
+    let open Btree_simple_.Btree.S.FT in
     let open ST in
     let fd = Blkdev_on_fd.from_file fn create init in
     (* now need to write the initial frame *)
+    (* FIXME this is duplicated elsewhere *)
     let frm = Leaf_frame [] in
     let p = frm|>frame_to_page in
     let r = 0 in
@@ -39,7 +31,7 @@ module Int_int_filestore = struct
       | (_,Error e) -> failwith (__LOC__ ^ e)
       | _ -> ())
     in
-    ST.(
+    File_store.(
       {fs = Filestore.{fd=fd;free_ref=r+1} ;
        cache=Cache.empty;
        freed_not_synced=Btree_util.Set_int.empty;
@@ -54,10 +46,10 @@ end
 
 (* we cache at the map level *)
 
-module Int_int_cached (* : Btree.S *) = struct
+module Cached (* : Btree.S *) = struct
   open Btree_api
   open Btree_util
-  open Int_int_filestore
+  open Uncached
 
   type kvs = (KV.key * KV.value) list
 
@@ -89,20 +81,11 @@ module Int_int_cached (* : Btree.S *) = struct
       match kvs with 
       | [] -> (t,Ok ())
       | (k,v)::kvs -> (
-          let open Int_int_filestore.Int_int_store.Btree_simple.Btree in
+          let open Uncached.Btree_simple_.Btree in
           Raw_map.insert_many k v kvs |> Sem.run (s,r) |> (fun ((s',r'),res) ->
               match res with
               | Ok () -> ((r',s',Map_int.empty),Ok())
               | Error e -> ((r',s',Map_int.empty),Error e)))))
-(*
-      Raw_map.insert_many k v kvs |> bind (fun kvs -> 
-                loop kvs)))
-      
-      loop kvs |> Sem.run (s,r) |> (fun ((s',r'),res) -> 
-          match res with 
-          | Ok () -> ((r',s',Map_int.empty),Ok ())
-          | Error e -> ((r',s',Map_int.empty),Error e))
-*)
 
 end
 

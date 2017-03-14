@@ -1,3 +1,5 @@
+open Btree_util
+
 type param = Range of (int * int) [@@deriving yojson]
 
 let dest_Range = function Range (l,h) -> (l,h)
@@ -31,6 +33,7 @@ end)
 
 let tests = [
   ("tb", fun ps -> Test_bytestore.(fun () -> main()));
+  ("tc", fun ps -> Test_cache.main);
   ("tim.t", fun ps -> 
       let (l,h) = get_range ps in
       Test_in_mem.(fun() -> test Batteries.(l -- h |> List.of_enum)));
@@ -40,15 +43,15 @@ let tests = [
   ("tim.ls", fun ps -> 
       let (l,h) = get_range ps in
       Test_in_mem.(fun () -> test_leaf_stream Batteries.(l -- h |> List.of_enum)));
-  ("tii.f", fun ps ->
+  ("tii.u", fun ps ->
       let (l,h) = get_range ps in
       Test_ii.(fun () -> 
-      test_int_int_filestore Batteries.(l -- h |> List.of_enum)));
+      test_uncached Batteries.(l -- h |> List.of_enum)));
   ("tii.c", fun ps -> 
       let (l,h) = get_range ps in
       Test_ii.(fun () -> 
-      test_int_int_cached Batteries.(l -- h |> List.of_enum)));
-  ("tis", fun ps -> Test_string_int.test);
+      test_cached Batteries.(l -- h |> List.of_enum)));
+  ("tsi", fun ps -> Test_string_int.test);
 ]
 
 (* FIXME also main2 *)
@@ -70,6 +73,7 @@ let run_test t = (
   test t.params ()
 )
 
+
 let _ = try (
   match Array.to_list Sys.argv |> List.tl with
   (* run tests based on json config file *)
@@ -82,5 +86,5 @@ let _ = try (
     Test.print_logs ();
     e|>Printexc.to_string|>print_endline;
     Printexc.get_backtrace () |>print_endline;
-    flush_all();
+    flush_out();
   )

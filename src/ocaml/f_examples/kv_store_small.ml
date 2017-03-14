@@ -5,9 +5,10 @@
 
 open Btree_api
 open Map_string_string_small
-open Ext_block_device
+open Block_device
+open File_store
 
-module RF = Ext_block_device.Recycling_filestore
+module RF = File_store.Recycling_filestore
 
 module MSS = Map_string_string_small.Make(RF)
 module Btree_ = MSS.Simple.Btree

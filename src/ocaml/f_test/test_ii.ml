@@ -1,68 +1,86 @@
-(* test int int map backed by a file *)
+(* test int int map backed by a file ---------------------------------------- *)
+
+(* common ---------------------------------------- *)
 
 open Btree_util
-open Ext_int_int_store
-open Int_int_filestore
 
 let default_filename = "/tmp/store"
 
+module Uncached_ = Int_int_filestore.Uncached
 
-module Btree = Int_int_store.Btree_simple.Btree
+module Btree = Uncached_.Btree_simple_.Btree
 
 module RM = Btree.Raw_map
 module Sem = Btree_api.Sem
 
 let run = Btree_api.State_monad.run
 
-(* let ((s',r'),_) = MWE.insert 1 2 |> run (s,r) *)
+module ST = Int_int_filestore.ST
+module FS = Uncached_
 
-module ST = Ext_int_int_store.ST
-module FS = Int_int_filestore
 
-let test_int_int_filestore range = 
-  Printf.printf "%s, test_int_int_filestore, int map backed by recycling filestore, %d elts: " 
-    __MODULE__ (List.length range);
-  flush_all();
-  let (s,r) = FS.from_file default_filename true true in
-  let sr = ref (s,r) in
-  let run = Sem.run_ref sr in
-  let xs = ref range in
-  while (!xs <> []) do
-    print_string ".";
-    let x = List.hd !xs in
-    run (RM.insert x (2*x));
-    xs:=List.tl !xs;
-  done;
-  print_newline ();
-  (* FIXME check res? *)
-  let (s,r) = !sr in
-  let s = ref s in
-  Sem.run_ref s (ST.sync ());
-  Unix.close ((!s).fs.fd);
-  ()
+(* test uncached ---------------------------------------- *)
 
-(* using int_int_cached ---------------------------------------- *)
+module Test_uncached = struct 
 
-let test_int_int_cached range = 
-  Printf.printf "%s, test_int_int_cached, int map backed by recycling filestore and api cache, %d elts: " 
-    __MODULE__ (List.length range);
-  flush_all();
-  let (s,r) = FS.from_file default_filename true true in
-  let s0 = ref (r,s,Map_int.empty) in
-  let run = Sem.run_ref s0 in
-  let xs = ref range in
-  while (!xs <> []) do
-    print_string ".";
-    let x = List.hd !xs in
-    run (Int_int_cached.Insert.insert x (2*x));
-    xs:=List.tl !xs
-  done;
-  print_newline ();
-  (* FIXME should we check res in following? *)
-  run (Int_int_cached.sync ());
-  Unix.close ((!s0) |> (fun (x,y,z) -> y.fs.fd));
-  ()
+  let test_uncached range = 
+    Printf.printf "%s: test_uncached, int map on rec. fstore, %d elts: " 
+      __MODULE__ 
+      (List.length range);
+    flush_out();
+    let (s,r) = FS.from_file default_filename true true in
+    let sr = ref (s,r) in
+    let run = Sem.run_ref sr in
+    let xs = ref range in
+    while (!xs <> []) do
+      print_string "."; flush_out();
+      let x = List.hd !xs in
+      run (RM.insert x (2*x));
+      xs:=List.tl !xs;
+    done;
+    print_newline ();
+    (* FIXME check res? *)
+    let (s,r) = !sr in
+    let s = ref s in
+    Sem.run_ref s (ST.sync ());
+    Unix.close ((!s).fs.fd);
+    ()
 
+end
+
+include Test_uncached
+
+(* test cached ------------------------------------------------------------ *)
+
+module Test_cached = struct
+
+  module Cached_ = Int_int_filestore.Cached
+
+  let test_cached range = 
+    Printf.printf 
+      "%s: test_cached, int map on rec.fstore w api cache, %d elts: " 
+      __MODULE__ 
+      (List.length range);
+    flush_out();
+    let (s,r) = FS.from_file default_filename true true in
+    let s0 = ref (r,s,Map_int.empty) in
+    let run = Sem.run_ref s0 in
+    let xs = ref range in
+    while (!xs <> []) do
+      print_string "."; flush_out ();
+      let x = List.hd !xs in
+      run (Cached_.Insert.insert x (2*x));
+      xs:=List.tl !xs
+    done;
+    print_newline ();
+    (* FIXME should we check res in following? *)
+    run (Cached_.sync ());
+    Unix.close ((!s0) |> (fun (x,y,z) -> y.fs.fd));
+    ()
+
+end
+
+include Test_cached
 
 
 (* 

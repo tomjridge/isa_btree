@@ -29,7 +29,7 @@ _test:
 _generated: FORCE
 	$(MAKE) -C b_from_isa
 
-mlis: 
+_mlis: 
 	`mk_mlis`
 
 _install:

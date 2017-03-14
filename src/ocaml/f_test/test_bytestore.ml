@@ -2,7 +2,7 @@
 
 (* backing store is in memory;  *)
 
-open Ext_bytestore
+open Bytestore
 open Btree_util
 
 module Params = struct
@@ -100,7 +100,7 @@ module Btree' (* : Ext_bytestore.Btree_t *) = struct
   module Disk = Disk
   type ref_t = int
 
-  module Int_int_store = Ext_int_int_store.Make(Disk)
+  module Int_int_store = Map_int_int.Make(Disk)
   
 
   open Disk
@@ -131,12 +131,12 @@ module Btree' (* : Ext_bytestore.Btree_t *) = struct
 end
 
 
-let _ = (module Btree': Ext_bytestore.Btree_t)
+let _ = (module Btree': Bytestore.Btree_t)
 
 
 (* instantiate Bytestore ---------------------------------------- *)
 
-module Bytestore' = Ext_bytestore.Make(struct
+module Bytestore' = Bytestore.Make(struct
     module Buff=Buff
     module Disk=Disk
     module Btree=Btree'

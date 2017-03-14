@@ -105,9 +105,9 @@ lazy-termite-3
 helpless-snake-32 |} |> Tjr_string.split_on_all ~sub:"\n"
 
 open Btree_api
-open Ext_block_device
+open Block_device
 
-module FS = Ext_block_device.Filestore
+module FS = File_store.Filestore
 
 module MSI = Map_string_int.Make(FS)
 
@@ -116,10 +116,10 @@ module RM = MSI.Simple.Btree.Raw_map
 let store = ref (
     let fn = default_filename in
     let create = true in
-    let init = false in
+    let init = true in
     let fd = Blkdev_on_fd.from_file ~fn ~create ~init in
     let y = FS.from_fd ~fd ~init in
-    y) 
+    y)
 
 let page_ref = Sem.run_ref store (RM.empty ())
                
@@ -132,13 +132,14 @@ open Btree_util
 module Map = Map_string
 
 let test () = 
-  Printf.printf "%s:" __MODULE__;
-  flush_all();
+  Printf.printf "%s: " __MODULE__;
+  flush_out();
   let xs = ref strings in
   let c = ref 1 in
   let m = ref Map.empty in
   let _ = 
     while (!xs <> []) do
+      print_string "."; flush_out();
       let (k,v) = (List.hd !xs, !c) in
       Test.log __LOC__;
       Test.log (Printf.sprintf "insert: %s %s" k (v|>string_of_int));
@@ -153,5 +154,7 @@ let test () =
   !m|>Map.bindings|>List.iter (fun (k,v) ->
       assert (run (RM.find k) = Some v);
       run (RM.delete k);
-      ())
+      ());
+  Unix.close (!store).fd;
+  ()
 
