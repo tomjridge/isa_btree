@@ -4,7 +4,7 @@
 
 (* FIXME make a config modules, which contains basic config params - default blocksize; how many bytes to store an int etc *)
 
-open Sexplib.Std (* for ppx_assert *)
+(* open Sexplib.Std (* for ppx_assert *) *)
 
 
 (* basic type for in-mem block, and on-disk block ref -------------------- *)

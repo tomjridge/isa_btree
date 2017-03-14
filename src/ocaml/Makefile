@@ -26,7 +26,7 @@ _links:
 _test:
 	OCAMLRUNPARAM=b ./test_main.native ./default_tests.json
 
-_generated: FORCE
+_generated: 
 	$(MAKE) -C b_from_isa
 
 _mlis: 
@@ -42,6 +42,9 @@ _remove:
 _reinstall: 
 	`remove`
 	`install`
+
+README.html: README.adoc
+	asciidoctor $<
 
 
 # ----------------------------------------

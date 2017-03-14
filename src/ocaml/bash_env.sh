@@ -14,8 +14,9 @@ root=$(realpath $(dirname $BASH_SOURCE))/../..
  # if using nix, this may not be present
 test -f $root/config.sh && source $root/config.sh
 
-PKGS="-package num,yojson,ppx_deriving_yojson,batteries,bos.setup \
-  -package ppx_assert,ppx_assert.runtime-lib,sexplib,core,lru-cache,tjr_lib,extunix,core_kernel"
+# ,bos.setup  ppx_assert,ppx_assert.runtime-lib,sexplib,core,lru-cache,\ ,core_kernel
+
+PKGS="-package num,yojson,ppx_deriving_yojson,batteries,extunix -package tjr_lib"
 
 SYNTAX="" # "-syntax camlp4o" # simplify: use for every file
 FLGS="-g -thread"

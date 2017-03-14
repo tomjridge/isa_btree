@@ -207,33 +207,6 @@ end
 
 (* block device ---------------------------------------- *)
 
-(*
-module type BLOCK_PARAMS = sig
-  type 'a m
-  type blk [@@deriving yojson]
-  val block_size: unit -> int m
-  val string_to_blk: string -> blk m
-  val empty: unit -> blk m
-end
-  
-module Default_block_params = struct
-  type blk = string [@@deriving yojson]
-  let block_size = fun () -> 4096
-  let string_to_blk: string -> (blk,string) result = (
-    fun x -> 
-      let l = String.length x in
-      let c = Pervasives.compare l (block_size()) in
-      match c with
-      | 0 -> Ok x
-      | _ when c < 0 -> Ok (x^(String.make (block_size() - l) (Char.chr 0)))
-      | _ -> Error (__LOC__ ^ "string too large: " ^ x)
-  )
-  let empty () = String.make (block_size ()) (Char.chr 0)
-end
-
-let _ = (module Default_block_params: BLOCK_PARAMS)
-*)
-
 module Types = struct
   type blk = string
   type blk_id = int
@@ -468,3 +441,31 @@ module type RUNNABLE = sig
 qend
 *)
 
+
+
+(*
+module type BLOCK_PARAMS = sig
+  type 'a m
+  type blk [@@deriving yojson]
+  val block_size: unit -> int m
+  val string_to_blk: string -> blk m
+  val empty: unit -> blk m
+end
+  
+module Default_block_params = struct
+  type blk = string [@@deriving yojson]
+  let block_size = fun () -> 4096
+  let string_to_blk: string -> (blk,string) result = (
+    fun x -> 
+      let l = String.length x in
+      let c = Pervasives.compare l (block_size()) in
+      match c with
+      | 0 -> Ok x
+      | _ when c < 0 -> Ok (x^(String.make (block_size() - l) (Char.chr 0)))
+      | _ -> Error (__LOC__ ^ "string too large: " ^ x)
+  )
+  let empty () = String.make (block_size ()) (Char.chr 0)
+end
+
+let _ = (module Default_block_params: BLOCK_PARAMS)
+*)
