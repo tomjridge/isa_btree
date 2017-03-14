@@ -59,8 +59,10 @@ module State_error_monad : sig
   val err: string -> ('a,'s) m
   val safely: string -> ('a,'s) m -> ('a,'s) m
   val assert_ok: ('s * ('a,string) result) -> unit
+  val assert_: string->bool -> (unit,'s) m
 end = struct
   type ('a,'s) m = 's -> ('s * ('a,string) result)
+
 
   let return: 'a -> ('a,'s) m = (fun x -> (fun s -> (s,Ok x)))
 
@@ -73,6 +75,8 @@ end = struct
 
   let err e = (fun s -> (s,Error e))
 
+  let assert_ s b = (
+    if b then return () else err s)
 
   let fmap: ('a -> 'b) -> ('a,'s) m -> ('b,'s) m = (
     fun f -> fun m -> fun s ->
@@ -239,6 +243,7 @@ module type BUFFER = sig
   type t
   val of_string: string -> t
   val to_string: t -> string
+  val length: t -> int
 end
 
 (* default implementation *)
@@ -246,6 +251,7 @@ module Buffer = struct
   type t = string
   let of_string x = x
   let to_string x = x
+  let length x = String.length x
 end
 
 let _ = (module Buffer: BUFFER)
@@ -289,7 +295,7 @@ module type BLOCK_DEVICE = sig
   type blk = Block.t
   type 'a m = ('a,t) Sem.m
 
-  val block_size: t -> int
+  (* val block_size: t -> int *)
   val read: r -> blk m
   val write: r -> blk -> unit m
   val sync: unit -> unit m  

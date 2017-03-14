@@ -1,6 +1,6 @@
 (* map from string (<=256 bytes) to int *)
 
-open Ext_block_device
+(* open Ext_block_device *)
 
 (* assumptions ---------------------------------------- *)
 

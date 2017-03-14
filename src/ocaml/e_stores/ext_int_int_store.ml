@@ -4,51 +4,13 @@
 
 (* FIXME error handlign *)
 
+FIXME rename to int_int_store
+
 open Sexplib.Std  (* for ppx_assert *)
 
-open Btree_util
+module KV = Map_int_int.KV
 
-(* assumptions ---------------------------------------- *)
-
-let int_size = 4  (* bytes *)
-
-
-(* KV, C, STORE, FT --------------------------------------- *)
-
-(* for ints *)
-module KV = struct
-  type key = int[@@deriving yojson]
-  type value = int[@@deriving yojson]
-  let key_ord (x:int) y = Pervasives.compare x y
-  let equal_value : value -> value -> bool = (=)
-end
-
-let _ = (module KV : Btree_api.KEY_VALUE)
-
-
-(* NB page=string *)
-module type STORE = Btree_api.Simple.STORE
-
-
-module Make = functor (ST:STORE) -> struct
-  module ST = ST
-  module Btree_simple = Btree_simple.Make(struct
-    module KV=KV
-    module ST=ST
-    open KV
-    open Btree_api.Pickle_params
-    let pp = Pickle.Examples.{
-        p_k = p_int;
-        u_k = u_int;
-        k_len = 4;
-        p_v = p_int;
-        u_v = u_int;
-        v_len = 4;
-      }
-  end)
-  let _ = (module Btree_simple.Btree.Raw_map : Btree_api.RAW_MAP)
-end
-
+module Make = Map_int_int.Make
 
 (* int-int store on recycling filestore ------------------------------------- *)
 
@@ -61,7 +23,7 @@ module Int_int_filestore = struct
   open Btree_api
   open Ext_block_device
 
-  module Int_int_store = Make(ST)
+  module Int_int_store = Map_int_int.Make(ST)
   module IIS_ = Int_int_store
 
   let from_file ~fn ~create ~init = (
@@ -80,7 +42,7 @@ module Int_int_filestore = struct
     ST.(
       {fs = Filestore.{fd=fd;free_ref=r+1} ;
        cache=Cache.empty;
-       freed_not_synced=Set_int.empty;
+       freed_not_synced=Btree_util.Set_int.empty;
       },r))
 
 end
@@ -94,6 +56,7 @@ end
 
 module Int_int_cached (* : Btree.S *) = struct
   open Btree_api
+  open Btree_util
   open Int_int_filestore
 
   type kvs = (KV.key * KV.value) list

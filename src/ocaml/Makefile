@@ -48,10 +48,10 @@ _reinstall:
 
 #	$$ocamlopt -g -linkpkg -o a.out $$mls # FIXME
 
-%.native: %.ml $(libname.cmxa) FORCE
+%.native: %.ml $(libname).cmxa FORCE
 	$$ocamlopt -g -linkpkg -o $*.native $${libname}.cmxa $*.ml
 
-%.byte: %.ml $(libname.cma) FORCE
+%.byte: %.ml $(libname).cma FORCE
 	$$ocamlc -g -linkpkg -o $*.byte $${libname}.cma $*.ml
 
 clean:
