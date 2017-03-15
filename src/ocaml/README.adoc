@@ -41,9 +41,11 @@ ImpFS is a project to build an advanced high-performance filesystem.
 
 == Installation
 
-Type `make && make _install` to make the library and install it using
+Type `make && make install` to make the library and install it using
 `ocamlfind`. You need various libraries from opam (see `bash_env.sh`
 for details).
+
+To build with nix, type `cd .nix/tjr_btree; nix-build`. The result is in `./result`.
 
 == Quickstart
 

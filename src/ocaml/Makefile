@@ -32,7 +32,7 @@ _generated:
 _mlis: 
 	`mk_mlis`
 
-_install:
+install:
 	`mk_meta`
 	`install`
 
