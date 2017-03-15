@@ -6,6 +6,7 @@
 #
 #  $ nix-build -A editors
 #  $ docker load < result
+#  sudo docker run --privileged -t -i editors /bin/bash
 
 { }:
 let 
