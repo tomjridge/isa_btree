@@ -74,6 +74,8 @@ lemma [simp]: "(Error x |> rresult_to_option = None) & ((Ok x) |> rresult_to_opt
   apply(force simp: rresult_to_option_def rev_apply_def)
   done
 
+type_synonym 'a res = "('a,e) rresult"  (* FIXME replace rresult with this *) 
+  
 definition is_Ok :: "('a,'b) rresult \<Rightarrow> bool" where
 "is_Ok x == x |> rresult_to_option |> is_Some"
 
