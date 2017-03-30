@@ -23,12 +23,12 @@ definition dest_Leaf_frame :: "('k,'v) t \<Rightarrow> ('k*'v) list" where
 
 (* FIXME aren't this aux funs shared with its? *)
 definition split_leaf :: "nat \<Rightarrow> nat \<Rightarrow> ('k*'v)list \<Rightarrow> (('k*'v)list * 'k * ('k*'v) list)" where
-"split_leaf min_leaf_size max_leaf_size kvs = (
+"split_leaf minls maxls kvs = (
   (* FIXME what is the best choice? min is probably too small; could split in two, but what if order is not dense? we may never insert any more keys at this point *)
   (* FIXME following assumes leaf has size max_leaf_size+1, not anything more? *)
-  let cut_point = (max_leaf_size+1 - min_leaf_size) in  
+  let cut_point = (maxls+1 - minls) in  
   let (l,r) = split_at cut_point kvs in 
-  let _ = assert_true' (List.length l \<ge> min_leaf_size & List.length r \<ge> min_leaf_size) in
+  let _ = assert_true' (List.length l \<ge> minls & List.length r \<ge> minls) in
   let k = (case r of (k,_)#_ \<Rightarrow> k | _ \<Rightarrow> impossible1 (STR ''key_value, split_leaf'')) in
   (l,k,r)
 )"
@@ -43,11 +43,11 @@ max+1 size; obviously we need to be more careful otherwise FIXME for bulk insert
 
 definition split_node :: 
   "nat \<Rightarrow> nat \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'k * ('k list * 'a list)" where
-"split_node min_node_keys max_node_keys n = (
+"split_node minnks maxnks n = (
   let (ks,rs) = n in
-  let cut_point = (max_node_keys-min_node_keys) in  (* FIXME see above *)
+  let cut_point = (maxnks-minnks) in  (* FIXME see above *)
   let (ks1,k,ks2) = split_at_3 cut_point ks in
-  let _ = assert_true' (List.length ks2 \<ge> min_node_keys) in
+  let _ = assert_true' (List.length ks2 \<ge> minnks) in
   let (rs1,rs2) = split_at (cut_point+1) rs in
   ((ks1,rs1),k,(ks2,rs2))
 )"

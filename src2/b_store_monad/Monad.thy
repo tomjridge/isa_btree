@@ -1,5 +1,5 @@
 theory Monad
-imports Util (* doesn't depend on a lot of stuff from ts *)
+imports "$SRC/a_pre/Util" (* doesn't depend on a lot of stuff from ts *)
 begin
 
 

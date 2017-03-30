@@ -1,5 +1,5 @@
 theory Store
-imports Frame Monad
+imports "$SRC/a_pre/Frame" Monad
 begin
 
 

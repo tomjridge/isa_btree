@@ -5,6 +5,26 @@ begin
 definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 "from_to x y = upt x (Suc y)"
 
+
+(* constants --------------------------------------------- *)
+
+record constants = 
+  min_leaf_size :: nat
+  max_leaf_size :: nat
+  min_node_keys :: nat
+  max_node_keys :: nat
+
+
+(* small node or leaf ------------------------------------- *)
+
+(* whether nodes and leaves are small or not *)
+datatype min_size_t = 
+  Small_root_node_or_leaf
+  | Small_node
+  | Small_leaf
+
+type_synonym ms_t = "min_size_t option"
+
  
 (* transition systems -------------------------------- *)
 
