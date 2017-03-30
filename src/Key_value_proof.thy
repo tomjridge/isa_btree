@@ -1,19 +1,16 @@
-theory Key_lt_order
-imports  "~/workspace/isa_btree/src/Insert_tree_stack"
+theory Key_value_proof
+imports  "Key_value" 
 begin
 
-definition total_order_key_lte :: " bool" where
-"total_order_key_lte == (\<forall> a b c. 
-   (key_le a b \<and> key_le b a \<longrightarrow> key_eq a b) \<and>
-   (key_le a b \<and> key_le b c \<longrightarrow> key_le a c) \<and>
-   (key_le a b \<or> key_le b a)
-\<and> (a = b \<longrightarrow> (key_le a b)))"
+(* FIXME most of these lemmas should be unnecessary - they are all solvable with 1st order proof *)
+
 
 lemma neg_key_lt: "! a b. total_order_key_lte \<longrightarrow> (~ key_lt a b) = (key_le b a)"
 apply rule+
 apply (unfold total_order_key_lte_def)
 apply (force simp add: key_eq_def key_le_def)+
 done
+
 
 lemma key_lt_not_key_le: "! a b. total_order_key_lte \<longrightarrow> (key_lt a b) = (~ key_le b a)"
 apply (simp add: neg_key_lt)

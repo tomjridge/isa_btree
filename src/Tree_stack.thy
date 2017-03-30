@@ -1,98 +1,114 @@
-(* [[file:~/workspace/agenda/myTasks.org::tree_stack_src][tree_stack_src]] *)
-theory Tree_stack
-imports Tree
+theory Tree_stack 
+imports Tree 
 begin
+(* FIXME rename to stack? *)
 
-(*begin focus definition*)
-datatype 'f focus_t = Focus 'f
-(*end focus definition*)
+(* treestack frame ------------------------------- *)
 
-(*begin context definition*)
-type_synonym left_bound = "key option"
-
-type_synonym right_bound = "key option"
-
-type_synonym context_t =
- "(left_bound * (node_t * nat) * right_bound) list"
-(*end context definition*)
-
-definition ctx_to_map :: "context_t => (key,value_t) map" where
-"ctx_to_map ctx == (
-let leaves = List.map (% (_,(n,_),_). List.concat(tree_to_leaves (Node(n)))) ctx in
-map_of(List.concat leaves))"
-
-
-(*begin treestack definition*)
-datatype 'f tree_stack = Tree_stack "'f focus_t * context_t"
-(*end treestack definition*)
-
-(*begin wfcontext definition*)
-definition subtree_indexes :: "node_t => nat set" where
-"subtree_indexes n == (
-  case n of (l,_) =>  { 0 .. (length l)})"
-
-definition is_subnode 
- :: "node_t => (node_t * nat) => bool"
-where
-"is_subnode n pi == (
-  let ((ks,rs),i) = pi in
-  Node n = (rs!i))"
-
-fun linked_context 
- :: "(left_bound * (node_t * nat) * right_bound) => context_t => bool"
-where
-"linked_context ni [] = True" |
-"linked_context (lb,(n,i),rb) ((plb,pi,prb)#pis) = (
-  is_subnode n pi & linked_context (plb,pi,prb) pis)"
-
-definition get_lower_upper_keys_for_node_t
- :: "key list => left_bound => nat => right_bound => (key option * key option)"
-where
-"get_lower_upper_keys_for_node_t ls lb i rb == (
-let l = if (i = 0) then lb else Some(ls ! (i - 1))     in
-let u = if (i = (length ls)) then rb else Some(ls ! i) in
-(l,u)
+record 'a frame =
+  f_ks1 :: "key list"
+  f_ts1 :: "'a list"
+  f_t :: 'a
+  f_ks2 :: "key list"
+  f_ts2 :: "'a list"
+  
+definition dest_frame :: "'a frame \<Rightarrow> (ks * 'a list) * 'a * (ks * 'a list)" where
+"dest_frame f = (
+  (f|>f_ks1,f|>f_ts1),
+  f|>f_t,
+  (f|>f_ks2, f|>f_ts2)
 )"
 
-definition wellformed_context_1
- :: "ms_t => (left_bound * (node_t * nat) * right_bound) => bool "
-where
-"wellformed_context_1 ms lbnirb == (
-let (lb,((ls,cs),i),rb) = lbnirb in
-let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
-let node = (Node(ls,cs)) in
-wellformed_tree ms node
-& i : (subtree_indexes (ls,cs))
-& check_keys lb (keys (cs!i)) rb)"
+definition frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a frame \<Rightarrow> 'b frame" where
+"frame_map g f = (
+  \<lparr>
+    f_ks1=(f|>f_ks1),
+    f_ts1=(f|>f_ts1|>List.map g),
+    f_t=(f|>f_t|>g),
+    f_ks2=(f|>f_ks2),
+    f_ts2=(f|>f_ts2|>List.map g)
+  \<rparr>
+)"
 
-fun wellformed_context :: "context_t => bool" where
-"wellformed_context Nil = True" |
-"wellformed_context ((lb,((ls,rs),i),rb) # Nil) =
-(
-let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
-(if i = 0 then lb = None else lb = l)
-&
-(if i = length ls then rb = None else rb = u)
-&
-wellformed_context_1 (Some Small_root_node_or_leaf) (lb,((ls,rs),i),rb))" |
-"wellformed_context (x1 # (x2 # rest)) = (
-let (lb,((ls,_),i),rb) = x1 in
-let (lb',_,rb') = x2 in
-wellformed_context_1 None x1
-& 
-(let (l,u) = get_lower_upper_keys_for_node_t ls lb i rb  in
- (if i = 0 then lb = lb' else lb = l)
- & (if i = (length ls) then rb = rb' else rb = u)
-)
-& linked_context x1 (x2#rest)
-& wellformed_context (x2#rest)
+definition with_t :: "'a \<Rightarrow> 'a frame \<Rightarrow> 'a frame" where
+"with_t x f = f \<lparr> f_t:=x  \<rparr>"
+
+
+(* stack types ------------------------------------------------------------------- *)
+
+type_synonym 'a stack = "'a frame list"  
+
+type_synonym 'a stk = "'a stack" 
+
+
+definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a stk \<Rightarrow> 'b stk" where
+"stack_map f stk = (
+  stk |> List.map (frame_map f)
 )
 "
-(*end wfcontext definition*)
+
+(* get bounds --------------------------------------------------- *)
+
+primrec stack_to_lu_of_child :: "'a stack \<Rightarrow> key option * key option" where
+"stack_to_lu_of_child [] = (None,None)"
+| "stack_to_lu_of_child (x#stk') = (
+    let (l',u') = stack_to_lu_of_child stk' in
+    let (ks1,ks2) = (x|>f_ks1,x|>f_ks2) in    
+    let l = (if ks1 \<noteq> [] then Some(ks1|>List.last) else l') in
+    let u = (if ks2 \<noteq> [] then Some(ks2|>List.hd) else u') in
+    (l,u)
+  )"
 
 
-definition dest_ts :: "'f tree_stack => 'f * context_t" where
-"dest_ts ts == (case ts of Tree_stack((Focus f),c) => (f,c))"
+
+(* convert to/from tree from/to tree stack ----------------------------------- *)
+
+(* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
+primrec tree_to_stack :: "key \<Rightarrow> tree \<Rightarrow> nat \<Rightarrow> (tree * tree stack)" where
+"tree_to_stack k t 0 = (t,[])"
+| "tree_to_stack k t (Suc n) = (
+    let (fo,stk) = tree_to_stack k t n in
+    case fo of 
+    Leaf kvs \<Rightarrow> (failwith (STR ''tree_to_stack''))
+    | Node(ks,ts) \<Rightarrow> (
+      let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs k (ks,ts) in
+      let frm = \<lparr>f_ks1=ks1,f_ts1=ts1,f_t=t',f_ks2=ks2,f_ts2=ts2\<rparr> in
+      (t',frm#stk)
+    )
+  )"
+
+(* we may provide a new focus *)
+fun stack_to_tree :: "tree \<Rightarrow> tree stack \<Rightarrow> tree" where
+"stack_to_tree fo ts = (
+  case ts of 
+  [] \<Rightarrow> fo
+  | x#ts' \<Rightarrow> (
+    let (ks1,ts1,_,ks2,ts2) = (x|>f_ks1,x|>f_ts1,(),x|>f_ks2,x|>f_ts2) in
+    let fo' = Node(ks1@ks2,ts1@[fo]@ts2) in
+    stack_to_tree fo' ts' 
+  )
+)"
+
+(* remove "focus" *)
+definition no_focus :: "tree stack \<Rightarrow> tree stack" where
+"no_focus stk = (
+  case stk of [] \<Rightarrow> [] | frm#stk' \<Rightarrow> (frm\<lparr>f_t:=(Leaf[]) \<rparr>)#stk'
+)"
+
+(* add new stk frame -------------------------------------------- *)
+
+definition add_new_stk_frame :: "key \<Rightarrow> (ks * 'a list) \<Rightarrow> 'a stk \<Rightarrow> ('a stk * 'a)" where
+"add_new_stk_frame k ks_rs stk = (
+  let (ks,rs) = ks_rs in
+  let ((ks1,rs1),r',(ks2,rs2)) = split_ks_rs k (ks,rs) in
+  let (l,u) = stack_to_lu_of_child stk in
+  let frm' = \<lparr>f_ks1=ks1,f_ts1=rs1,f_t=r', f_ks2=ks2,f_ts2=rs2 \<rparr> in
+  (frm'#stk,r')
+)"
+
+
+
+
+
 
 end
-(* tree_stack_src ends here *)

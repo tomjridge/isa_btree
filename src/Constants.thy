@@ -1,35 +1,55 @@
 theory Constants 
-imports Main
+imports Main String Prelude
 begin
 
-(*begin constants*)
-consts min_leaf_size :: nat
-consts max_leaf_size :: nat
-consts min_node_keys :: nat
-consts max_node_keys :: nat
-(*end constants*)
+definition min_leaf_size :: nat where "min_leaf_size = (failwith (STR ''FIXME''))"
+definition max_leaf_size :: nat where "max_leaf_size = (failwith (STR ''FIXME''))"
+definition min_node_keys :: nat where "min_node_keys = (failwith (STR ''FIXME''))"
+definition max_node_keys :: nat where "max_node_keys = (failwith (STR ''FIXME''))"
 
 
-(*begin wf constants*)
+(* FIXME tr: check these are the right restrictions - where are they used in proof?  
+
+Some minimal constraints: 
+
+min_node_keys = 1; min_leaf_keys = 1
+
+when we merge min and (min-1), we must not be larger than max or smaller than min
+
+so min_leaf_keys = 2
+
+merging nodes: ks1 ks2 -> |ks1+ks2-1|
+
+so min_node_keys = 2 (except at root of course)
+
+also, we need that min < max, otherwise we can't steal
+
+---
+
+max constraints: floor((max+1)/2) >= min
+
+---
+
+from debugging 2016-11-15, when splitting node:
+
+max_node_keys - min_node_keys >= min_node_keys
+max_leaf_keys - min_leaf_keys >= min_leaf_keys
+
+
+*)
+
 definition wellformed_constants :: "bool" where
-"wellformed_constants == (
-let wf_node_constants =
-(1 <= min_node_keys 
-&
-(max_node_keys = 2 * min_node_keys
-| max_node_keys = Suc (2 * min_node_keys))
-)
-in
-let (wf_leaf_constants) =
-(1 <= min_leaf_size
-& 
-(max_leaf_size = 2 * min_leaf_size 
-| max_leaf_size = Suc (2 * min_leaf_size))
-)
-in
-wf_node_constants & wf_leaf_constants
+"wellformed_constants = (
+  let wf_node_constants = (
+    1 <= min_node_keys &
+    (max_node_keys = 2 * min_node_keys | max_node_keys = Suc (2 * min_node_keys)))
+  in
+  let (wf_leaf_constants) = (
+    1 <= min_leaf_size & 
+    (max_leaf_size = 2 * min_leaf_size | max_leaf_size = Suc (2 * min_leaf_size)))
+  in
+  wf_node_constants & wf_leaf_constants
 )"
-(*end wf constants*)
 
 (*
 occasionally we need to allow the root to be small, or perhaps

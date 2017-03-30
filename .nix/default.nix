@@ -1,34 +1,30 @@
 { }:
+
 let
     pkgs = import <nixpkgs> {};
     stdenv = pkgs.stdenv;
-    perl = pkgs.perl;
-    
+    perl = pkgs.perl;    
+
     isabelle = import ./isabelle {
-    inherit (pkgs) stdenv fetchurl nettools perl polyml;
-    inherit (pkgs.emacs24Packages) proofgeneral;
-    java = if stdenv.isLinux then pkgs.jre else pkgs.jdk;
+      inherit (pkgs) stdenv fetchurl perl nettools polyml;
+      java = if stdenv.isLinux then pkgs.jre else pkgs.jdk;
     };
-in stdenv.mkDerivation {
+
+in 
+stdenv.mkDerivation {
+
     name = "isaenv";
-
-
 
     buildInputs = [ perl isabelle ];
 
     configurePhase = "true"; 	# Skip configure
 
-    buildPhase = ''
+    buildPhase = "true"; # and build
 
-      '';
-
-# eval "${!curPhase:-$curPhase}" from nix-shell
+    # eval "${!curPhase:-$curPhase}" from nix-shell, for testing
 
     installPhase = "true"; # don't want to install
 
-
-shellHook = ''
-    curPhase=buildPhase
-  '';
+    shellHook = "curPhase=buildPhase";
 
 }

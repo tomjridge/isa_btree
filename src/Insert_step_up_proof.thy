@@ -1,7 +1,8 @@
 theory Insert_step_up_proof
-imports Insert_tree_stack Key_lt_order
+imports Insert_tree_stack Key_value_proof
 begin
 
+(* FIXME rename Insert_proof? *)
 
 (*begin insert invariant definition*)
 definition invariant_wf_ts :: "bool" where

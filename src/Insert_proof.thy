@@ -1,6 +1,8 @@
-theory Andrea_proof
-imports Insert_tree_stack Key_lt_order Find_tree_stack  Find_proof Insert_step_up_proof
+theory Insert_proof
+imports Insert_tree_stack Key_value_proof Find_tree_stack  Find_proof Insert_step_up_proof
 begin
+
+(* FIXME rename Insert_proof? *)
 
 (*begin insert invariant*)
 definition wf_its_state :: "its_state => bool" where
@@ -158,7 +160,7 @@ apply (case_tac its)
         apply simp
         apply (subgoal_tac "key_lt key k")
         prefer 2
-         (*I am readjusting stuff to reuse Key_lt_order lemma*)
+         (*I am readjusting stuff to reuse Key_value_proof lemma*)
          apply (subgoal_tac "l_ks ~= []") prefer 2 apply force
          apply (subgoal_tac "key_lt ((last l_ks)) k")
          prefer 2

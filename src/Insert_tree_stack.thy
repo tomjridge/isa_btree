@@ -1,279 +1,215 @@
-(* [[file:~/workspace/agenda/myTasks.org::*=ts_to_map=][=ts_to_map=:1]] *)
 theory Insert_tree_stack
 imports Find_tree_stack "~~/src/HOL/Library/Code_Target_Nat"
 begin
 
-(*begin ins focus definition*)
-datatype its_focus_t = 
-Inserting_one "Tree"
-| Inserting_two "Tree * key * Tree"
-(*end ins focus definition*)
-
 type_synonym inserting_two_t =  "Tree * key * Tree"
 
-(*begin its_tree_stack definition*)
-type_synonym its_tree_stack = "its_focus_t tree_stack"
-(*end its_tree_stack definition*)
+datatype its_t = 
+  Inserting_one "Tree"
+  | Inserting_two "Tree * key * Tree"
 
-(*begin step its_state definition *)
-datatype its_state =
-Its_down "(f_tree_stack * value_t)"
-| Its_up "its_tree_stack"
-(*end step its_state definition *)
+type_synonym its_focus_t = "its_t core_t"
 
-definition its_f_to_map
- :: "its_focus_t => (key,value_t) map"
-where
-"its_f_to_map f = (
-(case f of
-(*note that the focus map must be after the ++ in order to consider the new entry in case of an update*)
-Inserting_one t => (tree_to_map t)
-| Inserting_two (tl_,_,tr_) => (tree_to_map tl_)++(tree_to_map tr_) )
+datatype its_state_t =
+  Its_down "fts_state_t * value_t"
+  | Its_up "its_focus_t * tree_stack_t"
+(* Its_finished Tree? *)
+
+type_synonym its_down_t = "fts_state_t * value_t"
+  
+type_synonym its_up_t = "its_focus_t * tree_stack_t"
+
+definition its_to_tss :: "its_t \<Rightarrow> tss_t" where
+"its_to_tss its = (
+  case its of
+  Inserting_one t \<Rightarrow> [[t]]
+  | Inserting_two (t1,_,t2) \<Rightarrow> [[t1,t2]]
 )"
 
-(*begin split node definition *)
-definition split_node :: "node_t => inserting_two_t" where
-"split_node n == (
-let (l,cs) = n in
-let n0 = min_node_keys in
-let left_ks = take n0 l in
-let (k,right_ks) = (case drop n0 l of (k#ks) => (k,ks)) in
-let left_rs = take (1+n0) cs in
-let right_rs = drop (1+n0) cs in
-(Node(left_ks,left_rs),k,Node(right_ks,right_rs))
-)"
-(*end split node definition *)
+definition its_to_keys :: "its_t \<Rightarrow> key set" where
+"its_to_keys its = (its |> its_to_tss |> tss_to_keys)"
 
-(* tr: want to split a too-large leaf *)
-(*begin split leaf definition*)
-definition split_leaf_kvs
- :: "(key * value_t) list => ((key * value_t) list * key * (key * value_t) list)"
-where
-"split_leaf_kvs kvs == (
-let n0 = min_leaf_size in
-let left = take n0 kvs in
-let right = drop n0 kvs in
-let k = fst( hd right) in
-(left,k,right)
-)"
-(*end split leaf definition*)
 
-(*begin step up definition*)
-definition update_focus_at_position
- :: "node_t => nat => its_focus_t => its_focus_t"
-where
-"update_focus_at_position n i f == (
-let (ks,rs) = n in
-case f of
-Inserting_one t => (
-let rs2 = dest_Some(list_replace_1_at_n rs i t) in
-Inserting_one(Node(ks,rs2)))
-| Inserting_two (tl_,k,tr) => (
-let ks2 = list_insert_at_n ks i [k] in
-let rs2 = list_replace_at_n rs i [tl_,tr] |> dest_Some in
-case (length ks2 <= max_node_keys) of
-True => Inserting_one(Node(ks2,rs2))
-| False => (
-Inserting_two(split_node(ks2,rs2))
-)
-)
-)"
+(* its height ------------------------- *)
 
-definition its_to_map1 
- :: "its_tree_stack => (key,value_t) map"
-where
-"its_to_map1 ts = (
-let (f,ctx) = dest_ts ts in
-ctx_to_map ctx ++
-(case f of
-Inserting_one t => tree_to_map t
-| Inserting_two (t1,_,t2) => tree_to_map t1 ++ tree_to_map t2)
-)"
-
-function its_to_tree
- :: "its_tree_stack => Tree"
-where
-"its_to_tree (Tree_stack(Focus f, [])) = (
-case f of
-Inserting_one t => t
-| Inserting_two (tl_,k,tr_) => Node([k],[tl_,tr_])
-)" |
-"its_to_tree (Tree_stack(Focus f, (_,((ks,rs),i),_)#t)) = (
-its_to_tree (Tree_stack((Focus (update_focus_at_position (ks,rs) i f)),t))
-)"
-by pat_completeness auto
-termination its_to_tree
-apply (relation "measure (\<lambda>ts. case ts of (Tree_stack(Focus _,ctx)) => length ctx)")
-apply auto
-done
-
-definition its_to_map
- :: "its_tree_stack => (key,value_t) map"
-where
-"its_to_map its = (
-its |> its_to_tree |> tree_to_map
+definition its_to_h :: "its_t \<Rightarrow> nat" where
+"its_to_h its = (
+  case its of 
+  Inserting_one t \<Rightarrow> (height t)
+  | Inserting_two (t1,_,t2) \<Rightarrow> (height t1)  (* wf implies h t1 = h t2 *)
 )"
 
 
-definition step_up
- :: "its_tree_stack => (its_tree_stack) option"
-where
-"step_up ts == (
-let (f,stk) = dest_ts ts in
-case stk of 
-Nil => None
-| ((lb,(n,i),rb)#xs) => (
-let f2 = update_focus_at_position n i f in
-Some(Tree_stack((Focus f2),xs))
-)
-)
+(* wellformedness ---------------------------------------- *)
+
+definition wellformed_its :: " bool \<Rightarrow> its_t \<Rightarrow> bool" where
+"wellformed_its stack_empty its = assert_true (stack_empty,its) (
+  case its of
+  Inserting_one t => (
+    let ms = case stack_empty of  (* FIXME define its_to_ms *) 
+      True => (Some Small_root_node_or_leaf)
+      | _ => None
+    in
+    wellformed_tree ms t)
+  | Inserting_two (t1,k,t2) => (
+    (height t2 = height t1) & 
+    wellformed_tree None t1 & 
+    wellformed_tree None t2 & 
+    check_keys None (t1|>tree_to_keys) (Some k) & 
+    check_keys (Some k) (t2|>tree_to_keys) None)
+)"
+
+(* FIXME do we just want to use k from its rather than pass in a k0? this gives much the same; or perhaps we should pass in the k and the v? this gives even
+stronger guarantees and allows to check the functional invariants FIXME FIXME do this *)
+definition wellformed_its_focus :: "bool \<Rightarrow> its_focus_t => bool" where
+"wellformed_its_focus stack_empty f = assert_true (stack_empty,f) (
+  let its = f|>f_t in
+  wf_core (its|>its_to_keys) f &
+  wellformed_its stack_empty its 
+)"
+
+
+definition wellformed_iup_1 :: "its_up_t => bool" where
+"wellformed_iup_1 iu = assert_true iu (
+  let (f,stk) = iu in
+  case stk of
+  Nil \<Rightarrow> True
+  | p#xs \<Rightarrow> (
+    (f|>without_t = (mk_child p|>without_t)) &
+    (f|>f_t|>its_to_h = (p|>mk_child|>f_t|>height))
+  )
+)"
+
+definition wellformed_iup :: "its_up_t => bool" where
+"wellformed_iup iu = assert_true iu (
+  let (f,stk) = iu in
+  wellformed_its_focus (stk=[]) f &
+  wellformed_ts stk &   (* FIXME wf_stk *)
+  wellformed_iup_1 iu )"
+
+definition wellformed_its_state :: "its_state_t \<Rightarrow> bool" where
+"wellformed_its_state its = assert_true its (
+  case its of
+  Its_down(fts,v) \<Rightarrow> (wellformed_fts fts)
+  | Its_up(f,stk) \<Rightarrow> (wellformed_iup (f,stk)) 
+)"
+  
+  
+(* step_up ---------------------------------------- *)
+
+(* step focus, given parent frame *)
+definition step_focus :: "nf_t => its_focus_t => its_focus_t" where
+"step_focus p f = (
+  let k = p|>f_k in
+  let (ks,rs) = p|>f_t in
+  let (_,ts1,ks1,_,ks2,ts2)= nf_to_aux k p in
+  let t' = (
+    case f|>f_t of
+    Inserting_one t => (
+      Inserting_one(Node(ks,ts1@[t]@ts2)))
+    | Inserting_two (tl_,k,tr) => (
+      let ks' = ks1@[k]@ks2 in
+      let ts' = ts1@[tl_,tr]@ts2 in
+      case (length ks' <= max_node_keys) of
+        True => Inserting_one(Node(ks',ts'))
+        | False => (
+          let (ks_ts1,k,ks_ts2) = split_node(ks',ts') in 
+          Inserting_two(Node(ks_ts1),k,Node(ks_ts2))) ))
+  in
+  p|>with_t (% _. t'))"
+
+definition step_up :: "its_up_t => its_up_t option" where
+"step_up iu = (
+  let (f,stk) = iu in
+  case stk of 
+    Nil => (
+      case f|>f_t of
+      Inserting_two (t1,k,t2) \<Rightarrow> Some(f|>with_t (% _. Inserting_one(Node([k],[t1,t2]))),stk)
+      | Inserting_one _ \<Rightarrow> None)  (* exit ensures Inserting_one *)
+    | x#xs => Some(step_focus x f,xs))"
+
+
+
+(* step_bottom ---------------------------------------- *)
+
+
+definition step_bottom :: "its_down_t => its_up_t option" where
+"step_bottom down = (
+  let (fts,v0) = down in
+  let (f,stk) = fts|>dest_fts_state in
+  let k = f|>f_k in
+  case f|>f_t of
+  Leaf kvs => (
+    (*tr:need to check whether the leaf is small enough to insert directly*)
+    let kvs2 = kvs_insert k v0 kvs in
+    let its = (
+      case (length kvs2 \<le> max_leaf_size) of
+      True \<Rightarrow> (Inserting_one(Leaf kvs2))
+      | False \<Rightarrow> (
+        (*tr:we need to split*)
+        let (left,k,right) = split_leaf kvs2 in
+        Inserting_two(Leaf left, k,Leaf right)))
+    in
+    Some(f|>with_t (% _. its),stk))
+  | _ => (failwith ''step_bottom: impossible, find returns leaf'')
+)"
+
+
+(* step_its ---------------------------------------- *)
+
+
+definition mk_its_state :: "key \<Rightarrow> value_t \<Rightarrow> Tree \<Rightarrow> its_state_t" where
+"mk_its_state k v t = (
+  let fts = mk_fts_state k t in
+  Its_down(fts,v)
+)"
+
+definition step_its :: "its_state_t => its_state_t option" where
+"step_its its = (
+  case its of
+  Its_down (fts,v0) => (
+    case (step_fts fts) of 
+    None \<Rightarrow> (
+      step_bottom (fts,v0) |> map_option (% iu. Its_up(iu)))
+    | Some fts => Some(Its_down(fts,v0)))
+  | Its_up iu => (
+    step_up iu |> map_option (% x. Its_up(x)))) 
 "
-(*end step up definition*)
 
-(*// we have located the right node
-              // switch to up phase
-              //
-              // at the end of the down phase, we have a context, and
-              // a leaf frame (and a k,v)
-              //
-              // then we need to move to the up phase; but what state
-              // to initialize with? in Insert.scala, there is similar
-              // code in step across and step up; this is because we
-              // need to distinguish whether the updated leaf is too
-              // big or not; would be nice to combine these cases, but
-              // this seems somewhat difficult*)
-(*begin step bottom definition*)
-definition step_bottom
- :: "f_tree_stack => value_t => (its_tree_stack) option"
-where
-"step_bottom fts v0 == (
-let (k0,lf,stk) = dest_f_tree_stack fts in
-(case lf of
-Leaf kvs =>
-(*tr:need to check whether the leaf is small enough to insert directly*)
-let entry_in_kvs =
- (List.find (%x. key_eq k0 (fst x)) kvs) ~= None
-in
-let cond =
- (entry_in_kvs | length kvs < max_leaf_size )
-in
-if (cond) then
-let kvs2 =
- list_ordered_insert (%x. key_lt (fst x) k0) (k0,v0) kvs entry_in_kvs
-in
-let focus = (Inserting_one(Leaf kvs2)) in
-Some(Tree_stack(Focus focus,stk))
-else
-(*tr:we need to split*)
-let kvs2 =
- list_ordered_insert (%x. key_lt (fst x) k0) (k0,v0) kvs entry_in_kvs
-in 
-let (left,k,right) = split_leaf_kvs kvs2 in
-let focus = Inserting_two(Leaf left, k,Leaf right)in
-Some(Tree_stack(Focus focus,stk))
-| _ => None (* impossible: find returns leaf *))
-)
-"
-(*end step bottom definition*)
-
-(*begin insert step *)
-definition its_step_tree_stack
- :: "its_state => (its_state) option"
-where
-"its_step_tree_stack ist == (
-case ist of
-Its_down (fts,v0) =>
-let fts1 = step_fts fts in
-(case fts1 of
-None => Option.bind (step_bottom fts v0) (% x . Some (Its_up x))
-| Some x => Some(Its_down(x,v0)))
-| Its_up ts => Option.bind (step_up ts) (% x . Some (Its_up x)))
-"
-(*end insert step*)
-
-declare [[code abort: key_lt min_node_keys max_node_keys min_leaf_size max_leaf_size]]
-export_code its_step_tree_stack in Scala module_name Insert_tree_stack file "/tmp/Insert_tree_stack.scala"
-
-(*begin wffocus definition*)
-definition wellformed_focus :: "its_focus_t => bool => bool" where
-"wellformed_focus f stack_empty == (
-case f of
-Inserting_one t =>
-let ms = case stack_empty of 
- True => (Some Small_root_node_or_leaf)
- | _ => None
-in
-(wellformed_tree ms t)
-| Inserting_two (tl_,k0,tr) => (
-wellformed_tree None tl_ 
-& wellformed_tree None tr
-& check_keys None (keys (tl_)) (Some k0)
-& check_keys (Some k0) (keys tr) None)
+definition dest_its_state :: "its_state_t \<Rightarrow> Tree option" where
+"dest_its_state its = (
+  case its of 
+  Its_down _ \<Rightarrow> None
+  | Its_up(f,stk) \<Rightarrow> (
+    case stk of 
+    Nil \<Rightarrow> (
+      let its = f|>f_t in
+      case its of
+      Inserting_one t \<Rightarrow> Some(t)
+      | Inserting_two _ \<Rightarrow> (failwith ''dest_its_state: impossible''))
+    | _ \<Rightarrow> None
+  )
 )"
-(*end wffocus definition*)
 
-(*begin wfts1 definition*)
-definition wellformed_ts_1 :: "its_tree_stack => bool" where
-"wellformed_ts_1 ts == (
-let (f,stk) = dest_ts ts in
-(case stk of 
+(* testing --------------------------------------- *)
 
-Nil => (True) (* Nil - focus is wf *)
+definition focus_to_leaves :: "its_focus_t \<Rightarrow> leaves_t" where
+"focus_to_leaves f = (
+  let (k,tss1,l,its,u,tss2) = f|>dest_core in
+  (tss1@(its|>its_to_tss)@tss2)|>tss_to_leaves
+)"
 
-| ((lb,((l,cs),i),rb)#nis) => (
-let (kl,kr) = get_lower_upper_keys_for_node_t l lb i rb in
-case f of
-Inserting_one t => (
-(* size not checked; we assume focus is wf *)
-let b1 = True in
-(* ksrs fine *)
-let b2 = True in
-let b3 = (height (cs!i) = height t) in
-let b4 = (check_keys kl (keys t) kr)
-in
-(* keys ordered *)
-let b5 = True in
-let wf = b1&b2&b3&b4&b5 in
-wf
-)  (* Inserting_one *)
+definition wf_its_trans :: "its_state_t \<Rightarrow> its_state_t \<Rightarrow> bool" where
+"wf_its_trans s1 s2 = assert_true (s1,s2) (
+  case (s1,s2) of
+  (Its_down (fts,v), Its_down (fts',v')) \<Rightarrow> (wf_fts_trans fts fts' & (v'=v))
+  | (Its_down (fts,v), Its_up (f,stk)) \<Rightarrow> True (* leaves may change according to the insert *)
+  | (Its_up (f,stk), Its_up(f',stk')) \<Rightarrow> (focus_to_leaves f' = focus_to_leaves f)
 
-| Inserting_two (tl_,k0,tr) => (
-let b1 = True in
-let b2 = True in
-let b3 = (
-  let h = height (cs!i) in
-  (height tl_ = h) & (height tr = h)
-)
-in
-(* keys consistent *)
-let b4 = (
-  check_keys kl (keys tl_) (Some k0)
-  & check_keys (Some k0) (keys tr) kr
-)
-in
-(* keys ordered *)
-let b5 = (
-check_keys kl [k0] kr
-)
-in
-let wf = b1&b2&b3&b4&b5 in
-wf
-)
+)"
 
-)
+(* to map ---------------------------------------- *)
 
-
-))"
-(*end wfts1 definition*)
-
-(*begin wftreestack definition*)
-definition wellformed_ts :: "its_tree_stack => bool" where
-"wellformed_ts ts == (
-let (f,stk) = dest_ts ts in
-wellformed_focus f (stk=[])
-& wellformed_context stk
-& wellformed_ts_1 ts)"
-(*end wftreestack definition*)
+(* FIXME use core_to_map *)
 
 end
-(* =ts_to_map=:1 ends here *)
