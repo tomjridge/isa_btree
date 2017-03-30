@@ -1,4 +1,4 @@
-cd ../src
+cd ../src2
 export SRC=/tmp/l/git/github/isa_btree/src2
 isabelle jedit Tmp.thy
 
