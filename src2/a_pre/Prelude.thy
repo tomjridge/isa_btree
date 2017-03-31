@@ -15,6 +15,13 @@ record constants =
   max_node_keys :: nat
 
 
+(* store pointers -------------------------------------------- *)
+
+(* need this early for Frame *)
+type_synonym store_ptr = nat
+type_synonym r = store_ptr
+type_synonym rs = "r list"
+
 (* small node or leaf ------------------------------------- *)
 
 (* whether nodes and leaves are small or not *)

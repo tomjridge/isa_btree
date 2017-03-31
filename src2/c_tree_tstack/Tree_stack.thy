@@ -36,19 +36,21 @@ definition with_t :: "'a \<Rightarrow> ('k,'a) frame \<Rightarrow> ('k,'a) frame
 
 (* stack types ------------------------------------------------------------------- *)
 
-type_synonym ('k,'a) stack = "('k,'a) frame list"  
+type_synonym ('k,'a) stack' = "('k,'a) frame list"  
 
-type_synonym ('k,'v) stk = "('k,('k,'v) tree) stack" 
+type_synonym 'k rstk = "('k,r) stack'"
+
+type_synonym ('k,'v) tstk = "('k,('k,'v) tree) stack'" 
 
 
-definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) stack \<Rightarrow> ('k,'b) stack" where
+definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) stack' \<Rightarrow> ('k,'b) stack'" where
 "stack_map f stk = (
   stk |> List.map (frame_map f)
 )"
 
 (* get bounds --------------------------------------------------- *)
 
-primrec stack_to_lu_of_child :: "('k,'a) stack \<Rightarrow> 'k option * 'k option" where
+primrec stack_to_lu_of_child :: "('k,'a) stack' \<Rightarrow> 'k option * 'k option" where
 "stack_to_lu_of_child [] = (None,None)"
 | "stack_to_lu_of_child (x#stk') = (
     let (l',u') = stack_to_lu_of_child stk' in
@@ -63,7 +65,7 @@ primrec stack_to_lu_of_child :: "('k,'a) stack \<Rightarrow> 'k option * 'k opti
 (* convert to/from tree from/to tree stack ----------------------------------- *)
 
 (* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
-primrec tree_to_stack :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k,'v) tree \<Rightarrow> nat \<Rightarrow> (('k,'v)tree * ('k,'v) stk)" where
+primrec tree_to_stack :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k,'v) tree \<Rightarrow> nat \<Rightarrow> (('k,'v)tree * ('k,'v) tstk)" where
 "tree_to_stack cmp k t 0 = (t,[])"
 | "tree_to_stack cmp k t (Suc n) = (
     let (fo,stk) = tree_to_stack cmp k t n in
@@ -77,7 +79,7 @@ primrec tree_to_stack :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k,'v) tree \<R
   )"
 
 (* we may provide a new focus *)
-fun stack_to_tree :: "('k,'v) tree \<Rightarrow> ('k,('k,'v)tree) stack \<Rightarrow> ('k,'v)tree" where
+fun stack_to_tree :: "('k,'v) tree \<Rightarrow> ('k,'v) tstk \<Rightarrow> ('k,'v)tree" where
 "stack_to_tree fo ts = (
   case ts of 
   [] \<Rightarrow> fo
@@ -89,15 +91,16 @@ fun stack_to_tree :: "('k,'v) tree \<Rightarrow> ('k,('k,'v)tree) stack \<Righta
 )"
 
 (* remove "focus" *)
-definition no_focus :: "('k,'v) stk \<Rightarrow> ('k,'v) stk" where
+definition no_focus :: "('k,'a) stack' \<Rightarrow> ('k,'a option) stack'" where
 "no_focus stk = (
-  case stk of [] \<Rightarrow> [] | frm#stk' \<Rightarrow> (frm\<lparr>f_t:=(Leaf[]) \<rparr>)#stk'
+  stk |> stack_map Some |> (% stk. 
+  case stk of [] \<Rightarrow> [] | frm#stk' \<Rightarrow> (frm\<lparr>f_t:=None \<rparr>)#stk')
 )"
 
 (* add new stk frame -------------------------------------------- *)
 
 definition add_new_stk_frame :: 
-  "'k ord => 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k,'a) stack \<Rightarrow> (('k,'a) stack * 'a)" where
+  "'k ord => 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k,'a) stack' \<Rightarrow> (('k,'a) stack' * 'a)" where
 "add_new_stk_frame cmp k ks_rs stk = (
   let (ks,rs) = ks_rs in
   let ((ks1,rs1),r',(ks2,rs2)) = split_ks_rs cmp k (ks,rs) in
@@ -106,5 +109,8 @@ definition add_new_stk_frame ::
   (frm'#stk,r')
 )"
 
+
+definition r_stk_to_rs :: "('k) rstk \<Rightarrow> r list" where 
+"r_stk_to_rs xs = (xs|>List.map f_t)"
 
 end

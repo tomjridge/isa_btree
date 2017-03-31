@@ -4,7 +4,7 @@ begin
 
 (* find ------------------------------------------------------------------------- *)
 
-type_synonym 'k stk = "('k,Frame.r) stack"
+type_synonym 'k stk = "'k rstk"
 
 
 datatype ('k,'v) find_state = 
@@ -29,21 +29,17 @@ definition dest_f_finished :: "('k,'v) fs \<Rightarrow> ('k,'v) f_finished optio
 definition mk_find_state :: "'k \<Rightarrow> r \<Rightarrow> ('k,'v) find_state" where
 "mk_find_state k r = F_down(r,k,r,[])"
 
-record ('k,'v) ctxt = 
-  dot_s :: "('k,'v) store"
-  dot_ord :: "'k ord"
-
 (* FIXME maybe want to store ks,rs as a list of (k,r), with the invariant that the last k is +inf *)
 
-definition find_step :: "('k,'v) ctxt \<Rightarrow> ('k,'v) fs \<Rightarrow> ('k,'v) fs MM" where
-"find_step ctxt fs = (
+definition find_step :: "('k,'v) store \<Rightarrow> ('k,'v) fs \<Rightarrow> ('k,'v) fs MM" where
+"find_step s fs = (
   case fs of 
   F_finished _ \<Rightarrow> (return fs)  (* FIXME impossible, or return none? or have a finished error? or stutter? *)
   | F_down(r0,k,r,stk) \<Rightarrow> (
-    store_read (ctxt|>dot_s) r |>fmap
+    store_read s r |>fmap
     (% f. case f of 
       Node_frame (ks,rs) \<Rightarrow> (
-        let (stk',r') = add_new_stk_frame (ctxt|>dot_ord) k (ks,rs) stk in
+        let (stk',r') = add_new_stk_frame (s|>s2ord) k (ks,rs) stk in
         F_down(r0,k,r',stk')
       )
       | Leaf_frame kvs \<Rightarrow> (F_finished(r0,k,r,kvs,stk))))
@@ -83,64 +79,62 @@ ie a refinement proof? probably it is
 
 (* mapping a block ref to a tree ----------------  *)
 
-type_synonym ('k,'v) r2t = "(Frame.r \<Rightarrow> ('k,'v) Frame.t)"
+(* slightly complicated by the fact that the tree in the store may be infinite; as an alternative we
+just check whether a store is consistent with a tree *)
 
-fun r_to_t' :: "('k,'v) r2t \<Rightarrow> nat \<Rightarrow> Frame.r \<Rightarrow> ('k,'v) tree option" where
-"r_to_t' s n r = (
+
+
+(* like to have this in a "programmatic" style; so convert a store into a map from r * nat to 
+tree option, then check the r with a t , given t height *)
+
+type_synonym ('k,'v) r2t = "(r \<Rightarrow> ('k,'v) tree option)"
+
+fun frame_store_to_tree_store :: "('k,'v) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v) r2t" where
+"frame_store_to_tree_store s n r = (
   case n of 
   0 \<Rightarrow> None
   | Suc n \<Rightarrow> (
-    (s r) |> (% frm. 
+    case s r of
+    None \<Rightarrow> None
+    | Some frm \<Rightarrow> (
       case frm of
-      Node_frame(ks,rs) \<Rightarrow> (
-        let ts = List.map (r_to_t' s n) rs in
-        case (! t. (t : set ts \<longrightarrow> (t \<noteq> None))) of
-        True \<Rightarrow> Some(Node(ks,ts|>List.map dest_Some))
-        | False \<Rightarrow> None)
-      | Leaf_frame(kvs) \<Rightarrow> Some(Leaf(kvs)))))"
+      Leaf_frame kvs \<Rightarrow> Some(Leaf(kvs))
+      | Node_frame(ks,rs) \<Rightarrow> (
+        let ts = List.map (frame_store_to_tree_store s n) rs in
+        case (? t. t : set ts & (t = None)) of
+        False \<Rightarrow> None
+        | True \<Rightarrow> Some(Node(ks,ts|>List.map dest_Some))
+      )
+    )
+  )
+)"
 
-(*
-definition r_to_t :: "('k,'v)r2t \<Rightarrow> Frame.r \<Rightarrow> ('k,'v)tree option" where 
-"r_to_t s r = r_to_t' s 1000 r" (* FIXME only for proof *)
-*)
-
-definition r_stk_to_rs :: "r stk \<Rightarrow> r list" where 
-"r_stk_to_rs xs = (xs|>List.map f_t)"
-
-(* not used? 
-definition r_frame_to_t_frame :: "('k,'v)r2t \<Rightarrow> ('k,'v) Frame.t \<Rightarrow> ('k,'v)tree Frame.t" where
-"r_frame_to_t_frame s = frame_map (r_to_t s)"
-*)
-
+definition wf_store_tree :: "('k,'v) r2f \<Rightarrow> r \<Rightarrow> ('k,'v) tree \<Rightarrow> bool" where
+"wf_store_tree s r t = (
+  let s' = frame_store_to_tree_store s (height t) in
+  s' r = Some t
+)"
 
 
 (* t0 is the tree we expect *)
-(* FIXME this is a bit horrible because of the option type *)
-definition wellformed_find_state :: "'k ord \<Rightarrow> ('k,'v)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> ('k,'v)find_state \<Rightarrow> bool" where
-"wellformed_find_state ord s t0 fs = assert_true' (
-  let r_to_t :: Frame.r \<Rightarrow> ('k,'v) tree option = r_to_t' s (height t0) in
-  let rstk2tstk = (% rstk. rstk |> stack_map r_to_t) in
+definition wellformed_find_state :: "('k,'v) store \<Rightarrow> world \<Rightarrow> ('k,'v)tree \<Rightarrow> ('k,'v)find_state \<Rightarrow> bool" where
+"wellformed_find_state str w t0 fs = assert_true' (
+  let ord = str|>s2ord in
+  let s = store_to_r2f str w in
+  let n = height t0 in
+  (* need to check the stack and the focus *)
+  let check_focus = % t r. wf_store_tree s r t in
+  let f = % r. frame_store_to_tree_store s n r in
+  let check_stack = % rstk tstk. (tstk |> stack_map Some = rstk |> stack_map f) in 
   case fs of 
   F_finished (r0,k,r,kvs,stk) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack ord k t0 (List.length stk) in
-    let b1 = (t_fo = Leaf(kvs)) in
-    (* we want t_stk to correspond to the r_stk *)
-    let b2 = (
-      let ts1 = t_stk |> stack_map Some in
-      let ts2 = rstk2tstk stk in
-      ts1 = ts2
-    )
-    in
-    b1&b2)
+    check_focus t_fo r &
+    check_stack stk t_stk)
   | F_down (r0,k,r,stk) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack ord k t0 (List.length stk) in
-    let b1 = (Some t_fo = r_to_t r) in
-    let b2 = (
-      let ts1 = t_stk |> stack_map Some in
-      let ts2 = rstk2tstk stk in
-      ts1 = ts2)
-    in
-    b1 & b2
+    check_focus t_fo r &
+    check_stack stk t_stk
   )
 )"
 

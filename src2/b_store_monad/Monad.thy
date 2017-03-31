@@ -9,6 +9,7 @@ begin
 
 typedecl world
 
+(* FIXME this is really 'k,'v,'a MM *)
 datatype 'a MM = MM "(world \<Rightarrow> world * 'a res)" 
 
 definition dest_MM :: "'a MM \<Rightarrow> (world \<Rightarrow> world * 'a res)" where
