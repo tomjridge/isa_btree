@@ -2,6 +2,8 @@ theory Frame
 imports Key_value
 begin
 
+keep this general so ew don't have to mess about with it
+
 (* blocks on disk correspond to frames, which are like tree nodes, but with pointers rather than
 children *)
 

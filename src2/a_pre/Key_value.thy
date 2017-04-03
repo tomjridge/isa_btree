@@ -2,6 +2,9 @@ theory Key_value
 imports Prelude
 begin
 
+
+FIXME fix this as some particular k v ord
+
 (* want to have uniform definitions for the rest of the code; but everything is parametric on the 
 key order and kv types; so we assume a universal key and value type *)
 

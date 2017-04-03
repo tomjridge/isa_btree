@@ -6,6 +6,8 @@ type_synonym r = Prelude.r
 
 (* store api -------------------------------------------------- *)
 
+FIXME remove tyvars, and s2ord (since kv is now parameter)
+
 datatype ('k,'v) store = Store "nat" (* page_ref \<Rightarrow> page" (* s *) *)
 
 (*
