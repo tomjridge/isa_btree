@@ -1,5 +1,0 @@
-* todo
-
-  - indentation of isa code
-  - FIXMEs
-
