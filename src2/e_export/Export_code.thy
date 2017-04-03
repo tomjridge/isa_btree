@@ -1,41 +1,56 @@
 theory Export_code
-imports Find Insert Delete Insert_many Leaf_stream Code_Numeral "~~/src/HOL/Library/Code_Target_Numeral"
+imports 
+"$SRC/d_find_ins_del/Find"
+"$SRC/d_find_ins_del/Delete"
+"$SRC/d_find_ins_del/Insert"
+"$SRC/d_find_ins_del/Insert_many"
+"$SRC/d_find_ins_del/Leaf_stream"
+Code_Numeral 
+"~~/src/HOL/Library/Code_Target_Numeral"
 "~~/src/HOL/Library/Code_Char"
 begin
 
 
 export_code "Code_Numeral.nat_of_integer" "Code_Numeral.int_of_integer" 
 
-(* these initial exports are to force the order of exported code mods; unfortunately isabelle can reorder when there are no dependencies *)
-Constants.min_leaf_size 
-Prelude.from_to
-Key_value_types.key_ord
+Util.from_to
+
 Key_value.key_lt
-Tree.dest_Node
-Tree_stack.dest_frame
-Tree_stack.stack_to_lu_of_child
-Store.Page_ref
-Frame_types.Node_frame
 
-
-
-(* key_value_types*)
-key_ord
-
-tree_to_leaves wellformed_tree
-
-(* monad *)
-Monad.M Monad.dest_M fmap  bind
-
-(* store *)
-Store.Page_ref Store.Page Store.Store 
-Store.page_ref_to_page Store.alloc
 
 (* frame_types *)
-Frame_types.Node_frame Frame_types.page_to_frame Frame_types.frame_to_page
+Frame.Node_frame
 
 
-Frame.r_frame_to_t_frame
+
+(* params *)
+Params.ord0
+Params.keq
+Params.cs0
+(*
+Params.store
+Params.page_ref
+Params.k
+Params.v
+*)
+
+(* monad *)
+Monad.MM Monad.dest_MM fmap  bind
+
+(* store *) 
+store_read
+store_alloc
+store_free
+mk_r2f
+
+
+(* tree *)
+Tree.dest_Node
+Tree_stack.dest_ts_frame
+Tree_stack.stack_to_lu_of_child
+tree_to_leaves 
+wellformed_tree
+
 
 (* find *)
 empty_btree
@@ -69,7 +84,7 @@ wellformed_delete_state
 mk_ls_state lss_is_finished dest_LS_leaf lss_step
 
 
-in OCaml file "generated/gen_btree.ml"
+in OCaml file "/tmp/gen_btree.ml"
 
 
 (*

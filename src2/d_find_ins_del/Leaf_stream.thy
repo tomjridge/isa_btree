@@ -4,18 +4,18 @@ begin
 
 (* working with a F_finished find state, enumerate the leaves *)
 
-type_synonym leaf_ref = "kvs*stk"
+type_synonym leaf_ref = "kvs*rstk"
 
-datatype ls_state = LS_down "r*stk" | LS_leaf "leaf_ref" | LS_up "stk"
+datatype ls_state = LS_down "r*rstk" | LS_leaf "leaf_ref" | LS_up "rstk"
 type_synonym lss = ls_state
 
 definition mk_ls_state :: "r \<Rightarrow> ls_state" where
 "mk_ls_state r = LS_down (r,[])"
 
-definition step_down :: "r*stk \<Rightarrow> lss SM_t" where
+definition step_down :: "r*rstk \<Rightarrow> lss MM" where
 "step_down rfs = (
   let (r,fs) = rfs in
-  page_ref_to_frame r |> fmap 
+  store_read r |> fmap 
   (% f. case f of 
     Node_frame (ks,rs) \<Rightarrow> (
       let r' = List.hd rs in
@@ -33,13 +33,13 @@ definition step_leaf :: "leaf_ref \<Rightarrow> lss" where
 )"
 
 (* assumes fs <> [] *)
-definition step_up :: "stk \<Rightarrow> lss" where
+definition step_up :: "rstk \<Rightarrow> lss" where
 "step_up fs = (
   let _ = assert_true () (fs \<noteq> []) in
   case fs of 
   [] \<Rightarrow> (failwith (STR ''impossible: Leaf_stream.step_up''))
   | f#fs' \<Rightarrow> (
-    let ((ks1,rs1),r,(ks2,rs2)) = f|>dest_frame in
+    let ((ks1,rs1),r,(ks2,rs2)) = f|>dest_ts_frame in
     case rs2 of
     [] \<Rightarrow> (LS_up fs')
     | r'#rs' \<Rightarrow> (
@@ -70,7 +70,7 @@ definition dest_LS_leaf :: "lss \<Rightarrow> kvs option" where
   | _ \<Rightarrow> None
 )"
   
-definition lss_step :: "lss \<Rightarrow> lss SM_t" where
+definition lss_step :: "lss \<Rightarrow> lss MM" where
 "lss_step lss = (
   case lss of 
   LS_down x \<Rightarrow> (step_down x)

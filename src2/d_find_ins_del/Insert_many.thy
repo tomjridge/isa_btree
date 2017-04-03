@@ -12,7 +12,7 @@ type_synonym fo = focus_t
 type_synonym down_state = "fs * (v * kvs)"
 type_synonym d = down_state
 
-type_synonym up_state = "fo*stk"
+type_synonym up_state = "fo*rstk"
 type_synonym u = up_state
 
 datatype i_state_t = 
@@ -20,18 +20,18 @@ datatype i_state_t =
   | I_up u
   | I_finished "r * kvs"
 
-type_synonym is_t = i_state_t  
+type_synonym ist = i_state_t  
 
-definition mk_insert_state :: "key \<Rightarrow> value_t \<Rightarrow> kv list \<Rightarrow> r \<Rightarrow> i_state_t" where
+definition mk_insert_state :: "k \<Rightarrow> v \<Rightarrow> kv list \<Rightarrow> r \<Rightarrow> i_state_t" where
 "mk_insert_state k v kvs r = (I_down (mk_find_state k r,(v,kvs)))"
 
 
-definition dest_i_finished :: "is_t \<Rightarrow> (r * kvs) option" where
+definition dest_i_finished :: "ist \<Rightarrow> (r * kvs) option" where
 "dest_i_finished s = (case s of I_finished (r,kvs) \<Rightarrow> Some (r,kvs) | _ \<Rightarrow> None)"
 
 (* defns ------------------------------------ *)
 
-definition step_down :: "d \<Rightarrow> d SM_t" where
+definition step_down :: "d \<Rightarrow> d MM" where
 "step_down d = (
   let (fs,v) = d in
   find_step fs |> fmap (% d'. (d',v))
@@ -44,14 +44,14 @@ definition kvs_insert_2 :: "k option \<Rightarrow> (k*v) \<Rightarrow> kvs \<Rig
 "kvs_insert_2 u kv new existing = (
   let step = (% s. 
     let (acc,new') = s in
-    case (length acc \<ge> 2 * max_leaf_size) of
+    case (length acc \<ge> 2 * cs0|>max_leaf_size) of
     True \<Rightarrow> None
     | False \<Rightarrow> (
       case new' of
       [] \<Rightarrow> None
       | (k,v)#new'' \<Rightarrow> (
-        case (check_keys None {k} u) of 
-        True \<Rightarrow> (Some(kvs_insert (k,v) acc,new''))
+        case (check_keys ord0 None {k} u) of 
+        True \<Rightarrow> (Some(kvs_insert ord0 (k,v) acc,new''))
         | False \<Rightarrow> (None))))
   in
   iter_step step (existing,new)
@@ -75,10 +75,10 @@ definition split_leaf :: "kvs \<Rightarrow> kvs * k * kvs" where
   let n = List.length kvs in
   let n1 = n in
   let n2 = 0 in
-  let delta = min_leaf_size in
+  let delta = cs0|>min_leaf_size in
   let n1 = n1 - delta in
   let n2 = n2 + delta in
-  let delta = (n1 - max_leaf_size) in
+  let delta = (n1 - cs0|>max_leaf_size) in
   let n1 = n1 - delta in
   let n2 = n2 + delta in
   let (l,r) = split_at n1 kvs in
@@ -87,53 +87,53 @@ definition split_leaf :: "kvs \<Rightarrow> kvs * k * kvs" where
 )"
 
 
-definition step_bottom :: "d \<Rightarrow> u SM_t" where
+definition step_bottom :: "d \<Rightarrow> u MM" where
 "step_bottom d = (
   let (fs,(v,kvs0)) = d in
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
   | Some(r0,k,r,kvs,stk) \<Rightarrow> (
-    free (r0#(r_stk_to_rs stk)) |> bind 
+    store_free (r0#(r_stk_to_rs stk)) |> bind 
     (% _.
     let (l,u) = stack_to_lu_of_child stk in
     let (kvs',kvs0') = kvs_insert_2 u (k,v) kvs0 kvs in
     let fo = (
-      case (length kvs' \<le> max_leaf_size) of
-      True \<Rightarrow> (Leaf_frame kvs' |> frame_to_page |> alloc |> fmap (% r'. I1(r',kvs0')))
+      case (length kvs' \<le> cs0|>max_leaf_size) of
+      True \<Rightarrow> (Leaf_frame kvs' |> store_alloc |> fmap (% r'. I1(r',kvs0')))
       | False \<Rightarrow> (
         let (kvs1,k',kvs2) = split_leaf kvs' in
-        Leaf_frame kvs1 |> frame_to_page |> alloc |> bind
-        (% r1. Leaf_frame kvs2 |> frame_to_page |> alloc |> fmap (% r2. I2((r1,k',r2),kvs0')))) )
+        Leaf_frame kvs1 |> store_alloc |> bind
+        (% r1. Leaf_frame kvs2 |> store_alloc |> fmap (% r2. I2((r1,k',r2),kvs0')))) )
     in
     fo |> fmap (% fo. (fo,stk))))
 )"
 
-definition step_up :: "u \<Rightarrow> u SM_t" where
+definition step_up :: "u \<Rightarrow> u MM" where
 "step_up u = (
   let (fo,stk) = u in
   case stk of 
   [] \<Rightarrow> impossible1 (STR ''insert, step_up'') (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
   | x#stk' \<Rightarrow> (
-    let ((ks1,rs1),_,(ks2,rs2)) = dest_frame x in
+    let ((ks1,rs1),_,(ks2,rs2)) = dest_ts_frame x in
     case fo of
     I1 (r,kvs0) \<Rightarrow> (
-      Node_frame(ks1@ks2,rs1@[r]@rs2) |> frame_to_page |> alloc |> fmap (% r. (I1 (r,kvs0),stk')))
+      Node_frame(ks1@ks2,rs1@[r]@rs2) |> store_alloc |> fmap (% r. (I1 (r,kvs0),stk')))
     | I2 ((r1,k,r2),kvs0) \<Rightarrow> (
       let ks' = ks1@[k]@ks2 in
       let rs' = rs1@[r1,r2]@rs2 in
-      case (List.length ks' \<le> max_node_keys) of
+      case (List.length ks' \<le> cs0|>max_node_keys) of
       True \<Rightarrow> (
-        Node_frame(ks',rs') |> frame_to_page |> alloc |> fmap (% r. (I1 (r,kvs0),stk')))
+        Node_frame(ks',rs') |> store_alloc |> fmap (% r. (I1 (r,kvs0),stk')))
       | False \<Rightarrow> (
-        let (ks_rs1,k,ks_rs2) = split_node (ks',rs') in  (* FIXME move split_node et al to this file *)
-        Node_frame(ks_rs1) |> frame_to_page |> alloc |> bind
-        (% r1. Node_frame (ks_rs2) |> frame_to_page |> alloc |> fmap 
+        let (ks_rs1,k,ks_rs2) = split_node cs0 (ks',rs') in  (* FIXME move split_node et al to this file *)
+        Node_frame(ks_rs1) |> store_alloc |> bind
+        (% r1. Node_frame (ks_rs2) |> store_alloc |> fmap 
         (% r2. (I2((r1,k,r2),kvs0),stk'))))
     )
   )
 )"
 
-definition insert_step :: "is_t \<Rightarrow> is_t SM_t" where
+definition insert_step :: "ist \<Rightarrow> ist MM" where
 "insert_step s = (
   case s of 
   I_down d \<Rightarrow> (
@@ -149,7 +149,7 @@ definition insert_step :: "is_t \<Rightarrow> is_t SM_t" where
       I1 (r,kvs0) \<Rightarrow> return (I_finished (r,kvs0))
       | I2((r1,k,r2),kvs0) \<Rightarrow> (
         (* create a new frame *)
-        (Node_frame([k],[r1,r2]) |> frame_to_page |> alloc |> fmap (% r. I_finished (r,kvs0)))))
+        (Node_frame([k],[r1,r2]) |> store_alloc |> fmap (% r. I_finished (r,kvs0)))))
     | _ \<Rightarrow> (step_up u |> fmap (% u. I_up u)))
   | I_finished f \<Rightarrow> (return s)  (* stutter *)
 )"
@@ -194,7 +194,7 @@ definition wf_f :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> s
   ( (t0|>tree_to_kvs|>kvs_insert (k,v)) = (t'|>tree_to_kvs))
 )"
 
-definition wellformed_insert_state :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> is_t \<Rightarrow> bool" where
+definition wellformed_insert_state :: "tree \<Rightarrow> key \<Rightarrow> value_t \<Rightarrow> store \<Rightarrow> ist \<Rightarrow> bool" where
 "wellformed_insert_state t0 k v s is =  assert_true' (
   case is of 
   I_down d \<Rightarrow> (wf_d t0 s d)

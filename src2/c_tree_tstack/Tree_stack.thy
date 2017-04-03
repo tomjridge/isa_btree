@@ -5,24 +5,24 @@ begin
 (* some of these defns could be parametric, but polytypes were getting a bit clunky, and the
 defns aren't exposed to the user so we don't need polymorphism *)
 
-(* treestack frame ------------------------------- *)
+(* treestack ts_frame ------------------------------- *)
 
-record ('k,'a) frame =
+record ('k,'a) ts_frame =
   f_ks1 :: "'k list"
   f_ts1 :: "'a list"
   f_t :: 'a
   f_ks2 :: "'k list"
   f_ts2 :: "'a list"
   
-definition dest_frame :: "('k,'a) frame \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
-"dest_frame f = (
+definition dest_ts_frame :: "('k,'a) ts_frame \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
+"dest_ts_frame f = (
   (f|>f_ks1,f|>f_ts1),
   f|>f_t,
   (f|>f_ks2, f|>f_ts2)
 )"
 
-definition frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) frame \<Rightarrow> ('k,'b) frame" where
-"frame_map g f = (
+definition ts_frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'b) ts_frame" where
+"ts_frame_map g f = (
   \<lparr>
     f_ks1=(f|>f_ks1),
     f_ts1=(f|>f_ts1|>List.map g),
@@ -32,14 +32,14 @@ definition frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) frame \<Rig
   \<rparr>
 )"
 
-definition with_t :: "'a \<Rightarrow> ('k,'a) frame \<Rightarrow> ('k,'a) frame" where
+definition with_t :: "'a \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'a) ts_frame" where
 "with_t x f = f \<lparr> f_t:=x  \<rparr>"
 
 
 (* stack types ------------------------------------------------------------------- *)
 
 (* FIXME rename to stack *)
-type_synonym ('k,'a) stack' = "('k,'a) frame list"  
+type_synonym ('k,'a) stack' = "('k,'a) ts_frame list"  
 
 type_synonym rstk = "(k,r) stack'"
 
@@ -47,7 +47,7 @@ type_synonym tstk = "(k,kv_tree) stack'"
 
 definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) stack' \<Rightarrow> ('k,'b) stack'" where
 "stack_map f stk = (
-  stk |> List.map (frame_map f)
+  stk |> List.map (ts_frame_map f)
 )"
 
 (* get bounds --------------------------------------------------- *)
@@ -99,11 +99,11 @@ definition no_focus :: "('k,'a) stack' \<Rightarrow> ('k,'a option) stack'" wher
   case stk of [] \<Rightarrow> [] | frm#stk' \<Rightarrow> (frm\<lparr>f_t:=None \<rparr>)#stk')
 )"
 
-(* add new stk frame -------------------------------------------- *)
+(* add new stk ts_frame -------------------------------------------- *)
 
-definition add_new_stk_frame :: 
+definition add_new_stack_frame :: 
   "'k ord => 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k,'a) stack' \<Rightarrow> (('k,'a) stack' * 'a)" where
-"add_new_stk_frame cmp k ks_rs stk = (
+"add_new_stack_frame cmp k ks_rs stk = (
   let (ks,rs) = ks_rs in
   let ((ks1,rs1),r',(ks2,rs2)) = split_ks_rs cmp k (ks,rs) in
   let (l,u) = stack_to_lu_of_child stk in

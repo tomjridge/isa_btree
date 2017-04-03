@@ -19,7 +19,7 @@ definition empty_btree :: "unit \<Rightarrow> btree MM" where
 
 
 datatype find_state = 
-  F_down "r * k * r * rstk"  (* root, search key, lower and upper bound for r *) 
+  F_down "r * k * r * rstk"  (* root, search key, current pointer, stack *) 
   | F_finished "r * k * r * kvs * rstk"
 
 type_synonym f_down = "r * k * r * rstk"
@@ -50,7 +50,7 @@ definition find_step :: "fs \<Rightarrow> fs MM" where
     store_read r |>fmap
     (% f. case f of 
       Node_frame (ks,rs) \<Rightarrow> (
-        let (stk',r') = add_new_stk_frame ord0 k (ks,rs) stk in
+        let (stk',r') = add_new_stack_frame ord0 k (ks,rs) stk in
         F_down(r0,k,r',stk')
       )
       | Leaf_frame kvs \<Rightarrow> (F_finished(r0,k,r,kvs,stk))))
@@ -76,7 +76,7 @@ fun mk_r2t :: "r2f \<Rightarrow> nat \<Rightarrow> r2t" where
       Leaf_frame kvs \<Rightarrow> Some(Leaf(kvs))
       | Node_frame(ks,rs) \<Rightarrow> (
         let ts = List.map (mk_r2t s n) rs in
-        case (? t. t : set ts & (t = None)) of
+        case (None : set ts) of
         False \<Rightarrow> None
         | True \<Rightarrow> Some(Node(ks,ts|>List.map dest_Some))
       )
