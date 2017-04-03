@@ -215,7 +215,7 @@ definition delete_step :: "delete_state \<Rightarrow> delete_state MM" where
       case k : set (kvs|>List.map fst) of
       True \<Rightarrow> (
         (* something to delete *)
-        let kvs' = kvs|>List.filter (% x. ~ (keq (fst x) k)) in
+        let kvs' = kvs|>List.filter (% x. ~ (key_eq (fst x) k)) in
         case (List.length kvs' < cs0|>min_leaf_size) of
         True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
         | False \<Rightarrow> (
@@ -260,7 +260,7 @@ definition wf_u :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> u 
   let (fo,stk) = u in
   let check_stack = % rstk tstk. ((rstk|>stack_map r2t|>no_focus) = (tstk|>stack_map Some|>no_focus)) in
   let check_wf = % ms t. (wellformed_tree cs0 ms ord0 t) in
-  let check_focus = % fo kvs. fo|> tree_to_kvs |> kvs_delete k = kvs in
+  let check_focus = % fo kvs. fo|> tree_to_kvs |> kvs_delete ord0 k = kvs in
   case fo of
   D_small_leaf kvs \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
@@ -295,7 +295,7 @@ definition wf_f :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> r 
   let r2t = mk_r2t r2f n in
   let t' = r2t r |> dest_Some in  (* check dest_Some *)
   wellformed_tree cs0 (Some(Small_root_node_or_leaf)) ord0 t' &
-  ( (t0|>tree_to_kvs|>kvs_delete k) = (t'|>tree_to_kvs))
+  ( (t0|>tree_to_kvs|>kvs_delete ord0 k) = (t'|>tree_to_kvs))
 )"
 
 definition wellformed_delete_state :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> delete_state \<Rightarrow> bool" where

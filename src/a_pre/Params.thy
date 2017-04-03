@@ -10,7 +10,8 @@ type_synonym rs = "r list"
 
 (* fix a particular k v *)
 datatype k = K nat
-datatype v = V nat
+datatype v = K nat
+
 
 type_synonym ks = "k list"
 type_synonym kv = "k*v"
@@ -19,11 +20,11 @@ type_synonym vs = "v list"
 
 
 (* fix order *)
-definition ord0 :: "k key_order" where
-"ord0 k1 k2 = failwith (STR ''FIXME'')"
 
-definition keq :: "k \<Rightarrow> k \<Rightarrow> bool" where
-"keq k1 k2 = failwith (STR ''FIXME'')"
+definition ord0 :: "k key_order" where
+"ord0 = \<lparr> lt=(% k1 k2. failwith (STR ''FIXME'')) \<rparr>"
+
+
 
 (* fix constants *)
 definition cs0 :: constants where

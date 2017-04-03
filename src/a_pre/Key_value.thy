@@ -3,32 +3,44 @@ imports Prelude
 begin
 
 (* polymorphic just so that easier to deal with when supplying from ocaml side *)
-type_synonym 'k key_order = "'k \<Rightarrow> 'k \<Rightarrow> int"
+(*
+datatype tri = LT | EQ | GT
+*)
+
+(* equality is just hol equality *)
+record 'k key_order = 
+  lt :: "'k \<Rightarrow> 'k \<Rightarrow> bool"
+
 type_synonym 'k ord = "'k key_order"
+  
 
 (* generic defns --------------------------------------------------- *)
 
 (* FIXME assume EQ is equality *)
+
 definition wf_key_ord :: "'k ord \<Rightarrow> bool" where
-"wf_key_ord cmp = (
- strict_linear_order { (x,y). cmp x y < 0 }
- & (! k1 k2. (cmp k1 k2 = 0) = (k2 = k1)) 
+"wf_key_ord ord = (
+ strict_linear_order { (x,y). (ord|>lt) x y }
+ & (! k1 k2. ( (ord|>lt) k1 k2 \<longrightarrow>  (k2 ~= k1))) 
 )"
 
+definition key_eq :: "'k \<Rightarrow> 'k \<Rightarrow> bool" where
+"key_eq k1 k2 = (k1 = k2)"
+
 definition key_lt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
-"key_lt cmp k1 k2 = (cmp k1 k2 < 0)"
+"key_lt ord k1 k2 = ((ord|>lt) k1 k2)"
 
 definition key_le :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
-"key_le cmp k1 k2 = (cmp k1 k2 \<le> 0)"
+"key_le ord k1 k2 = ((k1=k2) | (key_lt ord k1 k2))"
 
 (* very minor defn *)
 definition kv_lt :: "'k ord \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v) \<Rightarrow> bool" where
   "kv_lt ord kv1 kv2 = (key_lt ord (fst kv1) (fst kv2))"
 
 definition ordered_key_list :: "'k ord \<Rightarrow> 'k list \<Rightarrow> bool" where
-"ordered_key_list cmp ks = (
+"ordered_key_list ord ks = (
   (List.length ks < 2) |  
-  (! i : set(from_to 0 (length ks -2)). key_lt cmp (ks!i) (ks!(i+1)))
+  (! i : set(from_to 0 (length ks -2)). key_lt ord (ks!i) (ks!(i+1)))
 )"
 
 (*begin check keys definition*)
@@ -55,14 +67,13 @@ primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Ri
 | "kvs_insert cmp kv (kv'#kvs') = (
   let (k,v) = kv in
   let (k',v') = kv' in
-  let i = cmp k' k in
-  if i < 0 then (k',v')#(kvs_insert cmp kv kvs')
-  else if i=0 then (k,v)#kvs' else
+  if key_lt cmp k' k then (k',v')#(kvs_insert cmp kv kvs')
+  else if (k=k') then (k,v)#kvs' else
   (k,v)#(k',v')#kvs'
 )"
 
-definition kvs_delete :: "'k \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
-"kvs_delete k kvs = List.filter (% kv. fst kv \<noteq> k) kvs"
+definition kvs_delete :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
+"kvs_delete ord k kvs = List.filter (% kv. (fst kv) = k) kvs"
   
 (* search_key_to_index ------------- *)
 

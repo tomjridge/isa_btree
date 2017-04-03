@@ -14,6 +14,7 @@ begin
 export_code "Code_Numeral.nat_of_integer" "Code_Numeral.int_of_integer" 
 
 Util.from_to
+Util.String_error
 
 Key_value.key_lt
 
@@ -25,7 +26,6 @@ Frame.Node_frame
 
 (* params *)
 Params.ord0
-Params.keq
 Params.cs0
 (*
 Params.store

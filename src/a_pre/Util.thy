@@ -28,12 +28,12 @@ definition arb :: "'a" where
 
 (* a single error type, for all proof-relevant errors ------------------------------------ *)
 
-datatype error_t = String_error "String.literal"
+datatype error = String_error "String.literal"
 
-definition mk_err :: "String.literal \<Rightarrow> error_t" where
+definition mk_err :: "String.literal \<Rightarrow> error" where
 "mk_err s = String_error s"
 
-type_synonym e = error_t
+type_synonym e = error
 
 (* misc ------------------------------------------ *)  
   
@@ -60,27 +60,37 @@ definition assert_true' :: "bool \<Rightarrow> bool" where
 "assert_true' b = assert_true () b"
 
 
-(* rresult -------------------------------------- *)  
+(* res -------------------------------------- *)  
   
-datatype ('a,'b) rresult = Ok 'a | Error 'b 
+datatype 'a res = Ok 'a | Error e 
 
+(*
 definition rbind :: " ('a => ('c,'b) rresult) => ('a,'b) rresult => ('c,'b) rresult" (* infixl "rr_bind" 100 *) where
   "rbind f v = (case v of Error x \<Rightarrow> Error x | Ok y \<Rightarrow> f y)"
+*)
 
+(*
 definition rresult_to_option :: "('a,'b) rresult => 'a option" where
   "rresult_to_option x = (case x of Ok x => Some x | _ => None)"
+*)
 
+(*
 lemma [simp]: "(Error x |> rresult_to_option = None) & ((Ok x) |> rresult_to_option = Some x)"
   apply(force simp: rresult_to_option_def rev_apply_def)
   done
+*)
 
+(*
 type_synonym 'a res = "('a,e) rresult"  (* FIXME replace rresult with this *) 
-  
-definition is_Ok :: "('a,'b) rresult \<Rightarrow> bool" where
-"is_Ok x == x |> rresult_to_option |> is_Some"
+*)
 
-definition dest_Ok :: "('a,'b) rresult \<Rightarrow> 'a" where
-"dest_Ok x == x |> rresult_to_option |> dest_Some"
+definition is_Ok :: "'a res \<Rightarrow> bool" where
+"is_Ok x = (case x of Ok _ \<Rightarrow> True | _ \<Rightarrow> False)"
+
+definition dest_Ok :: "'a res \<Rightarrow> 'a" where
+"dest_Ok x = (case x of Ok x \<Rightarrow> x | _ \<Rightarrow> failwith (STR ''dest_Ok''))"
+
+
 
 definition dest_list :: "'a list \<Rightarrow> ('a * 'a list)" where
 "dest_list xs = (case xs of x#xs \<Rightarrow> (x,xs) | _ \<Rightarrow> failwith (STR ''dest_list''))"

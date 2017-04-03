@@ -76,9 +76,9 @@ fun mk_r2t :: "r2f \<Rightarrow> nat \<Rightarrow> r2t" where
       Leaf_frame kvs \<Rightarrow> Some(Leaf(kvs))
       | Node_frame(ks,rs) \<Rightarrow> (
         let ts = List.map (mk_r2t s n) rs in
-        case (None : set ts) of
-        False \<Rightarrow> None
-        | True \<Rightarrow> Some(Node(ks,ts|>List.map dest_Some))
+        case (List.filter is_None ts) of
+        [] \<Rightarrow> Some(Node(ks,ts|>List.map dest_Some))
+        | _ \<Rightarrow> None
       )
     )
   )
