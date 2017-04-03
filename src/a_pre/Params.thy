@@ -38,6 +38,9 @@ max_node_keys=0
 (* store frame *)
 type_synonym frame = "(k,v,r) Frame.t"
 
+(* to force Frame early *)
+definition dest_Node_frame :: "frame \<Rightarrow> ks * rs" where "dest_Node_frame = Frame.dest_Node_frame"
+
 (* store type ----------------------- *)
 
 typedecl store

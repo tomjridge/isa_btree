@@ -50,7 +50,7 @@ function height :: "('k,'v)tree => nat" where
 "height t0 = (
   case t0 of
   Leaf _ => (1::nat)
-  | Node(_,cs) => (1 + Max(set(List.map height cs)))
+  | Node(_,cs) => (1 + max_of_list(List.map height cs))
 )"
 (*end height definition*)
 by auto

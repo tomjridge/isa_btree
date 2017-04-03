@@ -179,4 +179,9 @@ apply (force)+ done
 termination iter_step
  by (force intro:FIXME)
 
+  
+definition max_of_list :: "nat list \<Rightarrow> nat" where
+  "max_of_list xs == foldr max xs 0"
+
+ 
 end
