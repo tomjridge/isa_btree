@@ -4,7 +4,6 @@ begin
 
 (* monad -------------------------------------------------- *)
 
-datatype 'a MM = MM "(store \<Rightarrow> store * 'a res)" 
 
 definition dest_MM :: "'a MM \<Rightarrow> (store \<Rightarrow> store * 'a res)" where
 "dest_MM x = (case x of MM f \<Rightarrow> f)"

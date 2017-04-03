@@ -96,7 +96,7 @@ definition get_min_size :: "constants \<Rightarrow> (min_size_t * ('k,'v) tree) 
     | (Small_root_node_or_leaf,Leaf _) => 0  (* NB this is smaller than just Small_leaf *)
     | (Small_node, Node _) => min_node_keys-1
     | (Small_leaf,Leaf _) => min_leaf_size-1
-    | (_,_) => undefined  (* FIXME failwith *) )"
+    | (_,_) => failwith (STR ''get_min_size'') )"
 
 (* wf size ---------------------------------------- *)
 

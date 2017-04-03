@@ -39,11 +39,23 @@ max_node_keys=0
 type_synonym frame = "(k,v,r) Frame.t"
 
 (* to force Frame early *)
-definition dest_Node_frame :: "frame \<Rightarrow> ks * rs" where "dest_Node_frame = Frame.dest_Node_frame"
+(* definition dest_Node_frame :: "frame \<Rightarrow> ks * rs" where "dest_Node_frame = Frame.dest_Node_frame" *)
 
 (* store type ----------------------- *)
 
 typedecl store
 
+datatype 'a MM = MM "(store \<Rightarrow> store * 'a res)" 
+
+(* store api -------------------------------------------------- *)
+
+definition "store_read" :: "r \<Rightarrow> frame MM" where
+"store_read r = failwith (STR ''FIXME'')"
+
+definition "store_alloc" :: "frame \<Rightarrow> r MM" where
+"store_alloc frm = failwith (STR ''FIXME'')"
+
+definition "store_free" :: "r list \<Rightarrow> unit MM" where
+"store_free rs = failwith (STR ''FIXME'')" 
 
 end

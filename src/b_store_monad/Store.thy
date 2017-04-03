@@ -2,17 +2,6 @@ theory Store
 imports Monad
 begin
 
-(* store api -------------------------------------------------- *)
-
-definition "store_read" :: "r \<Rightarrow> frame MM" where
-"store_read r = failwith (STR ''FIXME'')"
-
-definition "store_alloc" :: "frame \<Rightarrow> r MM" where
-"store_alloc frm = failwith (STR ''FIXME'')"
-
-definition "store_free" :: "r list \<Rightarrow> unit MM" where
-"store_free rs = failwith (STR ''FIXME'')" 
-
 
 (* for testing ------------------------------------------------- *)
 
