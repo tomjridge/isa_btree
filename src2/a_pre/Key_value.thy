@@ -2,31 +2,11 @@ theory Key_value
 imports Prelude
 begin
 
+(* polymorphic just so that easier to deal with when supplying from ocaml side *)
+type_synonym 'k key_order = "'k \<Rightarrow> 'k \<Rightarrow> int"
+type_synonym 'k ord = "'k key_order"
 
-FIXME fix this as some particular k v ord
-
-(* want to have uniform definitions for the rest of the code; but everything is parametric on the 
-key order and kv types; so we assume a universal key and value type *)
-
-(*
-typedecl univ_key
-type_synonym key = univ_key
-type_synonym k = key
-type_synonym ks = "k list"
-
-typedecl univ_value
-type_synonym value_t = univ_value
-type_synonym v = value_t
-
-type_synonym kv = "k*v"
-type_synonym kvs = "kv list" 
-
-consts k2u :: "'k \<Rightarrow> univ_key"
-consts v2u :: "'v \<Rightarrow> univ_value"
-*)
-
-(* o is "equal", -ve is lt, +ve is gt *)
-type_synonym 'k ord = "'k \<Rightarrow> 'k \<Rightarrow> int"
+(* generic defns --------------------------------------------------- *)
 
 (* FIXME assume EQ is equality *)
 definition wf_key_ord :: "'k ord \<Rightarrow> bool" where

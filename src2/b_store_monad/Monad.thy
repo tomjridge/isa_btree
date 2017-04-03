@@ -1,18 +1,12 @@
 theory Monad
-imports "$SRC/a_pre/Util" (* doesn't depend on a lot of stuff from ts *)
+imports "$SRC/a_pre/Params" 
 begin
-
 
 (* monad -------------------------------------------------- *)
 
-(* the generic monad *)
+datatype 'a MM = MM "(store \<Rightarrow> store * 'a res)" 
 
-typedecl world
-
-(* FIXME this is really 'k,'v,'a MM *)
-datatype 'a MM = MM "(world \<Rightarrow> world * 'a res)" 
-
-definition dest_MM :: "'a MM \<Rightarrow> (world \<Rightarrow> world * 'a res)" where
+definition dest_MM :: "'a MM \<Rightarrow> (store \<Rightarrow> store * 'a res)" where
 "dest_MM x = (case x of MM f \<Rightarrow> f)"
 
 definition fmap :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a MM \<Rightarrow> 'b MM" where
@@ -29,8 +23,5 @@ definition bind :: "('a \<Rightarrow> 'b MM) \<Rightarrow> 'a MM \<Rightarrow> '
   
 definition return :: "'a \<Rightarrow> 'a MM" where
 "return x = MM (% s. (s,Ok(x)))"
-
-
-
 
 end

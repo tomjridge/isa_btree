@@ -2,10 +2,6 @@ theory Prelude
 imports Main Util   
 begin
 
-definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
-"from_to x y = upt x (Suc y)"
-
-
 (* constants --------------------------------------------- *)
 
 record constants = 
@@ -14,13 +10,6 @@ record constants =
   min_node_keys :: nat
   max_node_keys :: nat
 
-
-(* store pointers -------------------------------------------- *)
-
-(* need this early for Frame *)
-type_synonym store_ptr = nat
-type_synonym r = store_ptr
-type_synonym rs = "r list"
 
 (* small node or leaf ------------------------------------- *)
 

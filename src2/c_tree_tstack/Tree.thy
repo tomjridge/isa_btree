@@ -1,5 +1,5 @@
 theory Tree
-imports "$SRC/a_pre/Util" "$SRC/a_pre/Key_value"
+imports "$SRC/a_pre/Params" 
 begin
 
 datatype ('k,'v) tree = Node "('k list * ('k,'v) tree list)" | Leaf "('k*'v)list"
@@ -8,7 +8,6 @@ type_synonym ('k,'v) t = "('k,'v) tree"
 
 type_synonym ('k,'v) node = "('k list * ('k,'v) tree list)"
 type_synonym ('k,'v) leaf = "('k*'v)list"
-
 
 fun dest_Node :: "('k,'v) tree \<Rightarrow> ('k list * ('k,'v) tree list)" where
 "dest_Node (Node(ks,rs)) = (ks,rs)" | 
@@ -218,6 +217,8 @@ definition trees_to_keys :: "('k,'v) tree list \<Rightarrow> 'k set" where
 
 definition tree_to_map :: "('k,'v)tree \<Rightarrow> ('k,'v) map" where
 "tree_to_map t = (t|>tree_to_kvs|>map_of)"
+
+type_synonym kv_tree = "(k,v) tree"
 
 
 end

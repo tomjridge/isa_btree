@@ -147,6 +147,9 @@ else left@e#right)"
 (*end ordered insert definition*)
 
 
+definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
+"from_to x y = upt x (Suc y)"
+
 
 
 (* iteration ---------------------------------------------------- *)

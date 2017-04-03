@@ -2,6 +2,8 @@ theory Tree_stack
 imports Tree 
 begin
 
+(* some of these defns could be parametric, but polytypes were getting a bit clunky, and the
+defns aren't exposed to the user so we don't need polymorphism *)
 
 (* treestack frame ------------------------------- *)
 
@@ -36,12 +38,12 @@ definition with_t :: "'a \<Rightarrow> ('k,'a) frame \<Rightarrow> ('k,'a) frame
 
 (* stack types ------------------------------------------------------------------- *)
 
+(* FIXME rename to stack *)
 type_synonym ('k,'a) stack' = "('k,'a) frame list"  
 
-type_synonym 'k rstk = "('k,r) stack'"
+type_synonym rstk = "(k,r) stack'"
 
-type_synonym ('k,'v) tstk = "('k,('k,'v) tree) stack'" 
-
+type_synonym tstk = "(k,kv_tree) stack'" 
 
 definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) stack' \<Rightarrow> ('k,'b) stack'" where
 "stack_map f stk = (
@@ -65,21 +67,21 @@ primrec stack_to_lu_of_child :: "('k,'a) stack' \<Rightarrow> 'k option * 'k opt
 (* convert to/from tree from/to tree stack ----------------------------------- *)
 
 (* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
-primrec tree_to_stack :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k,'v) tree \<Rightarrow> nat \<Rightarrow> (('k,'v)tree * ('k,'v) tstk)" where
-"tree_to_stack cmp k t 0 = (t,[])"
-| "tree_to_stack cmp k t (Suc n) = (
-    let (fo,stk) = tree_to_stack cmp k t n in
+primrec tree_to_stack :: "k \<Rightarrow> kv_tree \<Rightarrow> nat \<Rightarrow> (kv_tree * tstk)" where
+"tree_to_stack k t 0 = (t,[])"
+| "tree_to_stack k t (Suc n) = (
+    let (fo,stk) = tree_to_stack k t n in
     case fo of 
     Leaf kvs \<Rightarrow> (failwith (STR ''tree_to_stack''))
     | Node(ks,ts) \<Rightarrow> (
-      let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs cmp k (ks,ts) in
+      let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs ord0 k (ks,ts) in
       let frm = \<lparr>f_ks1=ks1,f_ts1=ts1,f_t=t',f_ks2=ks2,f_ts2=ts2\<rparr> in
       (t',frm#stk)
     )
   )"
 
 (* we may provide a new focus *)
-fun stack_to_tree :: "('k,'v) tree \<Rightarrow> ('k,'v) tstk \<Rightarrow> ('k,'v)tree" where
+fun stack_to_tree :: "kv_tree \<Rightarrow> tstk \<Rightarrow> kv_tree" where
 "stack_to_tree fo ts = (
   case ts of 
   [] \<Rightarrow> fo
@@ -110,7 +112,7 @@ definition add_new_stk_frame ::
 )"
 
 
-definition r_stk_to_rs :: "('k) rstk \<Rightarrow> r list" where 
+definition r_stk_to_rs :: "rstk \<Rightarrow> r list" where 
 "r_stk_to_rs xs = (xs|>List.map f_t)"
 
 end
