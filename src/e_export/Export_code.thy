@@ -24,8 +24,8 @@ Frame.Node_frame
 
 
 (* params *)
-Params.ord0
-Params.cs0
+Params.compare_k
+Params.constants
 Params.MM
 store_read
 store_alloc
@@ -79,7 +79,7 @@ wellformed_delete_state
 mk_ls_state lss_is_finished dest_LS_leaf lss_step
 
 
-in OCaml file "/tmp/gen_btree.ml"
+in OCaml file "/tmp/isa_export.ml"
 
 
 (*

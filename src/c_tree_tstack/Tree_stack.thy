@@ -6,13 +6,7 @@ begin
 defns aren't exposed to the user so we don't need polymorphism *)
 
 (* treestack ts_frame ------------------------------- *)
-
-record ('k,'a) ts_frame =
-  f_ks1 :: "'k list"
-  f_ts1 :: "'a list"
-  f_t :: 'a
-  f_ks2 :: "'k list"
-  f_ts2 :: "'a list"
+type_synonym rstk = "(k,r) ts_frame list"
   
 definition dest_ts_frame :: "('k,'a) ts_frame \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
 "dest_ts_frame f = (
@@ -41,7 +35,6 @@ definition with_t :: "'a \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'a) ts
 (* FIXME rename to stack *)
 type_synonym ('k,'a) stack' = "('k,'a) ts_frame list"  
 
-type_synonym rstk = "(k,r) stack'"
 
 type_synonym tstk = "(k,kv_tree) stack'" 
 
@@ -74,7 +67,7 @@ primrec tree_to_stack :: "k \<Rightarrow> kv_tree \<Rightarrow> nat \<Rightarrow
     case fo of 
     Leaf kvs \<Rightarrow> (failwith (STR ''tree_to_stack''))
     | Node(ks,ts) \<Rightarrow> (
-      let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs ord0 k (ks,ts) in
+      let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs compare_k k (ks,ts) in
       let frm = \<lparr>f_ks1=ks1,f_ts1=ts1,f_t=t',f_ks2=ks2,f_ts2=ts2\<rparr> in
       (t',frm#stk)
     )
@@ -112,7 +105,7 @@ definition add_new_stack_frame ::
 )"
 
 
-definition r_stk_to_rs :: "rstk \<Rightarrow> r list" where 
+definition r_stk_to_rs :: "(k,r) ts_frame list \<Rightarrow> r list" where 
 "r_stk_to_rs xs = (xs|>List.map f_t)"
 
 end

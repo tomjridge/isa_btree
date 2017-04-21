@@ -61,7 +61,7 @@ definition steal_or_merge ::
     True \<Rightarrow> (let ((k,ks),(t,ts)) = (dest_list s_ks,dest_list s_ts) in ((k,t),(ks,ts)))
     | False \<Rightarrow> (let ((ks,k),(ts,t)) = (dest_list' s_ks,dest_list' s_ts) in ((k,t),(ks,ts))))
   in
-  case (1+List.length(fst s_1) > (if leaf then cs0|>min_leaf_size else cs0|>min_node_keys)) of
+  case (1+List.length(fst s_1) > (if leaf then constants|>min_leaf_size else constants|>min_node_keys)) of
   True \<Rightarrow> (
     (* steal *)
     let c' =
@@ -105,7 +105,7 @@ definition post_steal_or_merge :: "rstk \<Rightarrow> (k,r) ts_frame \<Rightarro
             let _ = assert_true (stk'=[]) in
             return (D_updated_subtree(c')))
           | False \<Rightarrow> (
-            case (p_sz < cs0|>min_node_keys) of 
+            case (p_sz < constants|>min_node_keys) of 
             True \<Rightarrow> (return (D_small_node(p'|>dest_Node_frame)))
             | False \<Rightarrow> (
               (* write the frame at this point *)
@@ -117,7 +117,7 @@ definition post_steal_or_merge :: "rstk \<Rightarrow> (k,r) ts_frame \<Rightarro
         let p_sz = p'|>dest_Node_frame|>fst|>List.length in
         let f' = (
           (* we may be at the root, in which case f' may be small *)
-          case (p_sz < cs0|>min_node_keys) of
+          case (p_sz < constants|>min_node_keys) of
           True \<Rightarrow> (
             let _ = assert_true (stk'=[]) in
             return (D_small_node(p'|>dest_Node_frame))
@@ -216,7 +216,7 @@ definition delete_step :: "delete_state \<Rightarrow> delete_state MM" where
       True \<Rightarrow> (
         (* something to delete *)
         let kvs' = kvs|>List.filter (% x. ~ (key_eq (fst x) k)) in
-        case (List.length kvs' < cs0|>min_leaf_size) of
+        case (List.length kvs' < constants|>min_leaf_size) of
         True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
         | False \<Rightarrow> (
           Leaf_frame(kvs') |> store_alloc |> fmap
@@ -259,8 +259,8 @@ definition wf_u :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> u 
   let r2t = mk_r2t r2f n in
   let (fo,stk) = u in
   let check_stack = % rstk tstk. ((rstk|>stack_map r2t|>no_focus) = (tstk|>stack_map Some|>no_focus)) in
-  let check_wf = % ms t. (wellformed_tree cs0 ms ord0 t) in
-  let check_focus = % fo kvs. fo|> tree_to_kvs |> kvs_delete ord0 k = kvs in
+  let check_wf = % ms t. (wellformed_tree constants ms compare_k t) in
+  let check_focus = % fo kvs. fo|> tree_to_kvs |> kvs_delete compare_k k = kvs in
   case fo of
   D_small_leaf kvs \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
@@ -294,8 +294,8 @@ definition wf_f :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> r 
   let r2f = mk_r2f str in
   let r2t = mk_r2t r2f n in
   let t' = r2t r |> dest_Some in  (* check dest_Some *)
-  wellformed_tree cs0 (Some(Small_root_node_or_leaf)) ord0 t' &
-  ( (t0|>tree_to_kvs|>kvs_delete ord0 k) = (t'|>tree_to_kvs))
+  wellformed_tree constants (Some(Small_root_node_or_leaf)) compare_k t' &
+  ( (t0|>tree_to_kvs|>kvs_delete compare_k k) = (t'|>tree_to_kvs))
 )"
 
 definition wellformed_delete_state :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> delete_state \<Rightarrow> bool" where

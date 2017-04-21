@@ -37,14 +37,14 @@ definition step_down :: "d \<Rightarrow> d MM" where
 
 definition step_bottom :: "d \<Rightarrow> u MM" where
 "step_bottom d = (
-  let c = cs0 in
+  let c = constants in
   let (fs,v) = d in
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
   | Some(r0,k,r,kvs,stk) \<Rightarrow> (
     store_free (r0#(r_stk_to_rs stk)) |> bind 
     (% _.
-    let kvs' = kvs |> kvs_insert ord0 (k,v) in
+    let kvs' = kvs |> kvs_insert compare_k (k,v) in
     let fo = (
       case (length kvs' \<le> (c|>max_leaf_size)) of
       True \<Rightarrow> (Leaf_frame kvs' |> store_alloc |> fmap (% r'. I1(r')))
@@ -58,7 +58,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
 
 definition step_up :: "u \<Rightarrow> u MM" where
 "step_up u = (
-  let c = cs0 in
+  let c = constants in
   let (fo,stk) = u in
   case stk of 
   [] \<Rightarrow> impossible1 (STR ''insert, step_up'') (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
@@ -115,7 +115,7 @@ definition wf_d :: "store \<Rightarrow> kv_tree \<Rightarrow> d \<Rightarrow> bo
 definition wf_u :: "store \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v \<Rightarrow> u \<Rightarrow> bool" where
 "wf_u str t0 k v u =  assert_true' (
   let n = height t0 in
-  let ord = ord0 in
+  let ord = compare_k in
   let r2f = mk_r2f str in
   let r2t = mk_r2t r2f n in
   (* need to check the stack and the focus *)
@@ -150,13 +150,13 @@ definition wf_u :: "store \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v 
 definition wf_f :: " store \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v \<Rightarrow> r \<Rightarrow> bool" where
 "wf_f str t0 k v r =  assert_true' (
   let n = height t0 in
-  let ord = ord0 in
+  let ord = compare_k in
   let r2f = mk_r2f str in
   let r2t = mk_r2t r2f n in
   case r2t r of
   None \<Rightarrow> False
   | Some t' \<Rightarrow> (
-    wellformed_tree cs0 (Some(Small_root_node_or_leaf)) ord t' &
+    wellformed_tree constants (Some(Small_root_node_or_leaf)) ord t' &
     ( (t0|>tree_to_kvs|>kvs_insert ord (k,v)) = (t'|>tree_to_kvs))
   )
 )"

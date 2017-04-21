@@ -1,5 +1,5 @@
 theory Find 
-imports "$SRC/b_store_monad/Store" "$SRC/c_tree_tstack/Tree_stack"
+imports "$SRC/b_store_monad/Monad" "$SRC/c_tree_tstack/Tree_stack"
 begin
 
 (* btree create ------------------------------------------- *)
@@ -50,7 +50,7 @@ definition find_step :: "fs \<Rightarrow> fs MM" where
     store_read r |>fmap
     (% f. case f of 
       Node_frame (ks,rs) \<Rightarrow> (
-        let (stk',r') = add_new_stack_frame ord0 k (ks,rs) stk in
+        let (stk',r') = add_new_stack_frame compare_k k (ks,rs) stk in
         F_down(r0,k,r',stk')
       )
       | Leaf_frame kvs \<Rightarrow> (F_finished(r0,k,r,kvs,stk))))

@@ -44,14 +44,14 @@ definition kvs_insert_2 :: "k option \<Rightarrow> (k*v) \<Rightarrow> kvs \<Rig
 "kvs_insert_2 u kv new existing = (
   let step = (% s. 
     let (acc,new') = s in
-    case (length acc \<ge> 2 * cs0|>max_leaf_size) of
+    case (length acc \<ge> 2 * constants|>max_leaf_size) of
     True \<Rightarrow> None
     | False \<Rightarrow> (
       case new' of
       [] \<Rightarrow> None
       | (k,v)#new'' \<Rightarrow> (
-        case (check_keys ord0 None {k} u) of 
-        True \<Rightarrow> (Some(kvs_insert ord0 (k,v) acc,new''))
+        case (check_keys compare_k None {k} u) of 
+        True \<Rightarrow> (Some(kvs_insert compare_k (k,v) acc,new''))
         | False \<Rightarrow> (None))))
   in
   iter_step step (existing,new)
@@ -75,10 +75,10 @@ definition split_leaf :: "kvs \<Rightarrow> kvs * k * kvs" where
   let n = List.length kvs in
   let n1 = n in
   let n2 = 0 in
-  let delta = cs0|>min_leaf_size in
+  let delta = constants|>min_leaf_size in
   let n1 = n1 - delta in
   let n2 = n2 + delta in
-  let delta = (n1 - cs0|>max_leaf_size) in
+  let delta = (n1 - constants|>max_leaf_size) in
   let n1 = n1 - delta in
   let n2 = n2 + delta in
   let (l,r) = split_at n1 kvs in
@@ -98,7 +98,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
     let (l,u) = stack_to_lu_of_child stk in
     let (kvs',kvs0') = kvs_insert_2 u (k,v) kvs0 kvs in
     let fo = (
-      case (length kvs' \<le> cs0|>max_leaf_size) of
+      case (length kvs' \<le> constants|>max_leaf_size) of
       True \<Rightarrow> (Leaf_frame kvs' |> store_alloc |> fmap (% r'. I1(r',kvs0')))
       | False \<Rightarrow> (
         let (kvs1,k',kvs2) = split_leaf kvs' in
@@ -121,11 +121,11 @@ definition step_up :: "u \<Rightarrow> u MM" where
     | I2 ((r1,k,r2),kvs0) \<Rightarrow> (
       let ks' = ks1@[k]@ks2 in
       let rs' = rs1@[r1,r2]@rs2 in
-      case (List.length ks' \<le> cs0|>max_node_keys) of
+      case (List.length ks' \<le> constants|>max_node_keys) of
       True \<Rightarrow> (
         Node_frame(ks',rs') |> store_alloc |> fmap (% r. (I1 (r,kvs0),stk')))
       | False \<Rightarrow> (
-        let (ks_rs1,k,ks_rs2) = split_node cs0 (ks',rs') in  (* FIXME move split_node et al to this file *)
+        let (ks_rs1,k,ks_rs2) = split_node constants (ks',rs') in  (* FIXME move split_node et al to this file *)
         Node_frame(ks_rs1) |> store_alloc |> bind
         (% r1. Node_frame (ks_rs2) |> store_alloc |> fmap 
         (% r2. (I2((r1,k,r2),kvs0),stk'))))

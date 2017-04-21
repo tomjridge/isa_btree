@@ -3,10 +3,12 @@ imports Find
 begin
 
 (* working with a F_finished find state, enumerate the leaves *)
+type_synonym rstk = "(k,r) ts_frame list"
 
 type_synonym leaf_ref = "kvs*rstk"
 
-datatype ls_state = LS_down "r*rstk" | LS_leaf "leaf_ref" | LS_up "rstk"
+type_synonym ls_state = "(k,v,r) ls_state" 
+
 type_synonym lss = ls_state
 
 definition mk_ls_state :: "r \<Rightarrow> ls_state" where

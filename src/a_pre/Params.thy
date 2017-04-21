@@ -1,5 +1,5 @@
 theory Params
-imports Key_value Frame
+imports Pre_params
 begin
 
 (* a store is a map from page_ref to frame *)
@@ -21,14 +21,14 @@ type_synonym vs = "v list"
 
 (* fix order *)
 
-definition ord0 :: "k key_order" where
-"ord0 = \<lparr> lt=(% k1 k2. failwith (STR ''FIXME'')) \<rparr>"
+definition compare_k :: "k key_order" where
+"compare_k = \<lparr> lt=(% k1 k2. failwith (STR ''FIXME'')) \<rparr>"
 
 
 
 (* fix constants *)
-definition cs0 :: constants where
-"cs0 = \<lparr>
+definition constants :: constants where
+"constants = \<lparr>
 min_leaf_size=0,
 max_leaf_size=0,
 min_node_keys=0,
@@ -45,6 +45,15 @@ type_synonym frame = "(k,v,r) Frame.t"
 
 typedecl store
 
+(* for testing *)
+
+type_synonym r2f = "r \<Rightarrow> frame option"
+
+(* debugging/proof *)
+definition "mk_r2f" :: "store \<Rightarrow> r2f" where
+"mk_r2f s = failwith (STR ''FIXME'')"
+
+(* monad *)
 datatype 'a MM = MM "(store \<Rightarrow> store * 'a res)" 
 
 (* store api -------------------------------------------------- *)
@@ -57,5 +66,7 @@ definition "store_alloc" :: "frame \<Rightarrow> r MM" where
 
 definition "store_free" :: "r list \<Rightarrow> unit MM" where
 "store_free rs = failwith (STR ''FIXME'')" 
+
+
 
 end
