@@ -1,5 +1,5 @@
 theory Find 
-imports "$SRC/b_store_monad/Monad" "$SRC/c_tree_tstack/Tree_stack"
+imports "$SRC/b_store_monad/Monad"
 begin
 
 (* btree create ------------------------------------------- *)
@@ -103,11 +103,11 @@ definition wellformed_find_state :: "store \<Rightarrow> kv_tree \<Rightarrow> f
   let check_stack = % rstk tstk. (tstk |> stack_map Some = rstk |> stack_map r2t) in 
   case fs of 
   F_finished (r0,k,r,kvs,stk) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
     check_focus r t_fo &
     check_stack stk t_stk)
   | F_down (r0,k,r,stk) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
     check_focus r t_fo &
     check_stack stk t_stk
   )

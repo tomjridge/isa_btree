@@ -6,8 +6,15 @@ begin
 defns aren't exposed to the user so we don't need polymorphism *)
 
 (* treestack ts_frame ------------------------------- *)
-type_synonym rstk = "(k,r) ts_frame list"
+
+record ('k,'a) ts_frame =
+  f_ks1 :: "'k list"
+  f_ts1 :: "'a list"
+  f_t :: 'a
+  f_ks2 :: "'k list"
+  f_ts2 :: "'a list"
   
+
 definition dest_ts_frame :: "('k,'a) ts_frame \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
 "dest_ts_frame f = (
   (f|>f_ks1,f|>f_ts1),
@@ -33,19 +40,16 @@ definition with_t :: "'a \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'a) ts
 (* stack types ------------------------------------------------------------------- *)
 
 (* FIXME rename to stack *)
-type_synonym ('k,'a) stack' = "('k,'a) ts_frame list"  
+type_synonym ('k,'a) ts_frames = "('k,'a) ts_frame list"   
 
-
-type_synonym tstk = "(k,kv_tree) stack'" 
-
-definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) stack' \<Rightarrow> ('k,'b) stack'" where
+definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame list \<Rightarrow> ('k,'b) ts_frame list" where
 "stack_map f stk = (
   stk |> List.map (ts_frame_map f)
 )"
 
 (* get bounds --------------------------------------------------- *)
 
-primrec stack_to_lu_of_child :: "('k,'a) stack' \<Rightarrow> 'k option * 'k option" where
+primrec stack_to_lu_of_child :: "('k,'a) ts_frames \<Rightarrow> 'k option * 'k option" where
 "stack_to_lu_of_child [] = (None,None)"
 | "stack_to_lu_of_child (x#stk') = (
     let (l',u') = stack_to_lu_of_child stk' in
@@ -59,11 +63,13 @@ primrec stack_to_lu_of_child :: "('k,'a) stack' \<Rightarrow> 'k option * 'k opt
 
 (* convert to/from tree from/to tree stack ----------------------------------- *)
 
+type_synonym ('k,'v) tree_stack = "('k,('k,'v)tree) ts_frames"
+
 (* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
-primrec tree_to_stack :: "k \<Rightarrow> kv_tree \<Rightarrow> nat \<Rightarrow> (kv_tree * tstk)" where
-"tree_to_stack k t 0 = (t,[])"
-| "tree_to_stack k t (Suc n) = (
-    let (fo,stk) = tree_to_stack k t n in
+primrec tree_to_stack :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k,'v)tree \<Rightarrow> nat \<Rightarrow> (('k,'v)tree * ('k,'v)tree_stack)" where
+"tree_to_stack compare_k k t 0 = (t,[])"
+| "tree_to_stack compare_k k t (Suc n) = (
+    let (fo,stk) = tree_to_stack compare_k k t n in
     case fo of 
     Leaf kvs \<Rightarrow> (failwith (STR ''tree_to_stack''))
     | Node(ks,ts) \<Rightarrow> (
@@ -74,7 +80,7 @@ primrec tree_to_stack :: "k \<Rightarrow> kv_tree \<Rightarrow> nat \<Rightarrow
   )"
 
 (* we may provide a new focus *)
-fun stack_to_tree :: "kv_tree \<Rightarrow> tstk \<Rightarrow> kv_tree" where
+fun stack_to_tree :: "('k,'v)tree \<Rightarrow> ('k,'v)tree_stack \<Rightarrow> ('k,'v)tree" where
 "stack_to_tree fo ts = (
   case ts of 
   [] \<Rightarrow> fo
@@ -86,7 +92,7 @@ fun stack_to_tree :: "kv_tree \<Rightarrow> tstk \<Rightarrow> kv_tree" where
 )"
 
 (* remove "focus" *)
-definition no_focus :: "('k,'a) stack' \<Rightarrow> ('k,'a option) stack'" where
+definition no_focus :: "('k,'a) ts_frames \<Rightarrow> ('k,'a option) ts_frames" where
 "no_focus stk = (
   stk |> stack_map Some |> (% stk. 
   case stk of [] \<Rightarrow> [] | frm#stk' \<Rightarrow> (frm\<lparr>f_t:=None \<rparr>)#stk')
@@ -95,7 +101,7 @@ definition no_focus :: "('k,'a) stack' \<Rightarrow> ('k,'a option) stack'" wher
 (* add new stk ts_frame -------------------------------------------- *)
 
 definition add_new_stack_frame :: 
-  "'k ord => 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k,'a) stack' \<Rightarrow> (('k,'a) stack' * 'a)" where
+  "'k ord => 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k,'a) ts_frames \<Rightarrow> (('k,'a) ts_frames * 'a)" where
 "add_new_stack_frame cmp k ks_rs stk = (
   let (ks,rs) = ks_rs in
   let ((ks1,rs1),r',(ks2,rs2)) = split_ks_rs cmp k (ks,rs) in
@@ -105,7 +111,7 @@ definition add_new_stack_frame ::
 )"
 
 
-definition r_stk_to_rs :: "(k,r) ts_frame list \<Rightarrow> r list" where 
+definition r_stk_to_rs :: "('k,'r) ts_frame list \<Rightarrow> 'r list" where 
 "r_stk_to_rs xs = (xs|>List.map f_t)"
 
 end

@@ -24,7 +24,7 @@ type_synonym vs = "v list"
 definition compare_k :: "k key_order" where
 "compare_k = \<lparr> lt=(% k1 k2. failwith (STR ''FIXME'')) \<rparr>"
 
-
+type_synonym kv_tree = "(k,v) tree"
 
 (* fix constants *)
 definition constants :: constants where
@@ -34,6 +34,8 @@ max_leaf_size=0,
 min_node_keys=0,
 max_node_keys=0
 \<rparr>"
+
+
 
 (* store frame *)
 type_synonym frame = "(k,v,r) Frame.t"
@@ -69,4 +71,8 @@ definition "store_free" :: "r list \<Rightarrow> unit MM" where
 
 
 
+type_synonym rstk = "(k,r) ts_frame list"
+  
+
+type_synonym tstk = "(k,kv_tree) tree_stack" (* FIXME replace with tree_stack *)
 end

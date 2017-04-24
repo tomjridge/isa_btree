@@ -1,5 +1,5 @@
 theory Monad
-imports "$SRC/a_pre/Params" 
+imports "$SRC/b_params/Params" 
 begin
 
 (* monad -------------------------------------------------- *)

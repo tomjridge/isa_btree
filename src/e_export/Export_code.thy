@@ -21,6 +21,12 @@ Key_value.key_lt
 (* frame_types *)
 Frame.Node_frame
 
+(* tree *)
+Tree.dest_Node
+Tree_stack.dest_ts_frame
+Tree_stack.stack_to_lu_of_child
+tree_to_leaves 
+wellformed_tree
 
 
 (* params *)
@@ -37,14 +43,6 @@ Monad.dest_MM fmap  bind
 
 (* store *) 
 mk_r2f
-
-
-(* tree *)
-Tree.dest_Node
-Tree_stack.dest_ts_frame
-Tree_stack.stack_to_lu_of_child
-tree_to_leaves 
-wellformed_tree
 
 
 (* find *)

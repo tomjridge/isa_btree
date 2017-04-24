@@ -124,7 +124,7 @@ definition wf_u :: "store \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v 
   let (fo,stk) = u in
   case fo of
   I1 r \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
     check_stack stk t_stk &
     (* FIXME need wf_tree r , and below *)
     (case (r2t r) of 
@@ -133,7 +133,7 @@ definition wf_u :: "store \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v 
       t' |> tree_to_kvs = 
       t_fo|>tree_to_kvs|>kvs_insert ord (k,v))))
   | I2 (r1,k',r2) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
     check_stack stk t_stk &
     ( let (l,u) = stack_to_lu_of_child t_stk in
       case (r2t r1, r2t r2) of

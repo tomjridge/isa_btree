@@ -263,7 +263,7 @@ definition wf_u :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> u 
   let check_focus = % fo kvs. fo|> tree_to_kvs |> kvs_delete compare_k k = kvs in
   case fo of
   D_small_leaf kvs \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_leaf) in
     check_stack stk t_stk & 
     check_wf ms (Leaf kvs) &
@@ -271,7 +271,7 @@ definition wf_u :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> u 
   )
   | D_small_node (ks,rs) \<Rightarrow> (
     (* FIXME don't we need some wf on Node(ks,rs)? *)
-    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_node) in
     let t = Node(ks,rs|>List.map r2t |> List.map dest_Some) in  (* FIXME check we can dest_Some *)
     check_stack stk t_stk &
@@ -279,7 +279,7 @@ definition wf_u :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> u 
     check_focus t_fo (t|>tree_to_kvs)   
   )
   | D_updated_subtree(r) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> None) in
     let t = r|>r2t|>dest_Some in  (* FIXME check dest *)
     check_stack stk t_stk &
