@@ -2,6 +2,9 @@ theory Params
 imports Pre_params
 begin
 
+(* for export order *)
+definition dummy :: "unit" where "dummy = Pre_params.dummy"
+
 (* a store is a map from page_ref to frame *)
 typedecl page_ref
 type_synonym r = page_ref

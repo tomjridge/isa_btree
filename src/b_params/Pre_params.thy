@@ -2,6 +2,8 @@ theory Pre_params
 imports  "$SRC/a_tree/Tree_stack"
 begin
 
+definition dummy :: "unit" where "dummy=()"
+
 (* leaf stream types ----------------------------------------- *)
 
 (* we need these exposed outside functor body in ML *)

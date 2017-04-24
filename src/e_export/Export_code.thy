@@ -28,11 +28,14 @@ Tree_stack.stack_to_lu_of_child
 tree_to_leaves 
 wellformed_tree
 
+(* pre_params *)
+Pre_params.dummy
 
 (* params *)
 Params.compare_k
 Params.constants
 Params.MM
+Params.dummy
 store_read
 store_alloc
 store_free
