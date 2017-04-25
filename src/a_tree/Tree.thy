@@ -21,6 +21,9 @@ fun is_Leaf :: "('k,'v)tree \<Rightarrow> bool" where
 "is_Leaf (Leaf l) = True" |
 "is_Leaf (Node _) = False"
 
+(* patch this in generated ocaml - just use ocaml equality; in isa, this defn suppresses the HOL.equal dictionary passing *)
+definition tree_equal :: "('k,'v) tree \<Rightarrow> ('k,'v) tree \<Rightarrow> bool" where
+"tree_equal t1 t2 = failwith (STR ''FIXME patch'')"
 
 (* util ---------------------------------------- *)
 

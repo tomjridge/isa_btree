@@ -31,17 +31,17 @@ definition dest_i_finished :: "ist \<Rightarrow> (r * kvs) option" where
 
 (* defns ------------------------------------ *)
 
-definition step_down :: "d \<Rightarrow> d MM" where
-"step_down d = (
+definition step_down :: "k_ord \<Rightarrow> d \<Rightarrow> d MM" where
+"step_down k_ord d = (
   let (fs,v) = d in
-  find_step fs |> fmap (% d'. (d',v))
+  find_step k_ord fs |> fmap (% d'. (d',v))
 )"
 
 (* insert kv, and as many from new as possible subject to lu bound and max size of 2*max_leaf_size; 
 kv<new, and new are sorted in order; return the remaining new that were not inserted
 *)
-definition kvs_insert_2 :: "k option \<Rightarrow> (k*v) \<Rightarrow> kvs \<Rightarrow> kvs \<Rightarrow> kvs * kvs" where
-"kvs_insert_2 u kv new existing = (
+definition kvs_insert_2 :: "k ord \<Rightarrow> k option \<Rightarrow> (k*v) \<Rightarrow> kvs \<Rightarrow> kvs \<Rightarrow> kvs * kvs" where
+"kvs_insert_2 k_ord u kv new existing = (
   let step = (% s. 
     let (acc,new') = s in
     case (length acc \<ge> 2 * constants|>max_leaf_size) of
@@ -50,8 +50,12 @@ definition kvs_insert_2 :: "k option \<Rightarrow> (k*v) \<Rightarrow> kvs \<Rig
       case new' of
       [] \<Rightarrow> None
       | (k,v)#new'' \<Rightarrow> (
-        case (check_keys compare_k None {k} u) of 
-        True \<Rightarrow> (Some(kvs_insert compare_k (k,v) acc,new''))
+        let test = % k u.
+          (* (check_keys (Params.the_kv_ops|>compare_k) None {k} u) *) (* FIXME equality on keys in generated code :( *)
+          case u of None \<Rightarrow> True | Some u \<Rightarrow> key_lt k_ord k u
+        in
+        case test k u of  
+        True \<Rightarrow> (Some(kvs_insert k_ord (k,v) acc,new''))
         | False \<Rightarrow> (None))))
   in
   iter_step step (existing,new)
@@ -87,8 +91,8 @@ definition split_leaf :: "kvs \<Rightarrow> kvs * k * kvs" where
 )"
 
 
-definition step_bottom :: "d \<Rightarrow> u MM" where
-"step_bottom d = (
+definition step_bottom :: "k_ord \<Rightarrow> d \<Rightarrow> u MM" where
+"step_bottom k_ord d = (
   let (fs,(v,kvs0)) = d in
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
@@ -96,7 +100,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
     store_free (r0#(r_stk_to_rs stk)) |> bind 
     (% _.
     let (l,u) = stack_to_lu_of_child stk in
-    let (kvs',kvs0') = kvs_insert_2 u (k,v) kvs0 kvs in
+    let (kvs',kvs0') = kvs_insert_2 k_ord u (k,v) kvs0 kvs in
     let fo = (
       case (length kvs' \<le> constants|>max_leaf_size) of
       True \<Rightarrow> (Leaf_frame kvs' |> store_alloc |> fmap (% r'. I1(r',kvs0')))
@@ -133,14 +137,14 @@ definition step_up :: "u \<Rightarrow> u MM" where
   )
 )"
 
-definition insert_step :: "ist \<Rightarrow> ist MM" where
-"insert_step s = (
+definition insert_step :: "k_ord \<Rightarrow> ist \<Rightarrow> ist MM" where
+"insert_step k_ord s = (
   case s of 
   I_down d \<Rightarrow> (
     let (fs,(v,kvs0)) = d in
     case (dest_f_finished fs) of 
-    None \<Rightarrow> (step_down d |> fmap (% d. I_down d))
-    | Some _ \<Rightarrow> step_bottom d |> fmap (% u. I_up u))
+    None \<Rightarrow> (step_down k_ord d |> fmap (% d. I_down d))
+    | Some _ \<Rightarrow> step_bottom k_ord d |> fmap (% u. I_up u))
   | I_up u \<Rightarrow> (
     let (fo,stk) = u in
     case stk of

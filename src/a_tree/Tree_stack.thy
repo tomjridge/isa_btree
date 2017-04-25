@@ -36,6 +36,9 @@ definition ts_frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame
 definition with_t :: "'a \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'a) ts_frame" where
 "with_t x f = f \<lparr> f_t:=x  \<rparr>"
 
+definition ts_frame_equal:: "('k,'a) ts_frame \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> bool" where
+"ts_frame_equal f1 f2 = failwith (STR ''FIXME patch'')"
+
 
 (* stack types ------------------------------------------------------------------- *)
 
@@ -46,6 +49,9 @@ definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame li
 "stack_map f stk = (
   stk |> List.map (ts_frame_map f)
 )"
+
+definition stack_equal :: "('k,'a) ts_frames \<Rightarrow> ('k,'a) ts_frames \<Rightarrow> bool" where
+"stack_equal s1 s2 = failwith (STR ''FIXME patch'')"
 
 (* get bounds --------------------------------------------------- *)
 
@@ -67,13 +73,13 @@ type_synonym ('k,'v) tree_stack = "('k,('k,'v)tree) ts_frames"
 
 (* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
 primrec tree_to_stack :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k,'v)tree \<Rightarrow> nat \<Rightarrow> (('k,'v)tree * ('k,'v)tree_stack)" where
-"tree_to_stack compare_k k t 0 = (t,[])"
-| "tree_to_stack compare_k k t (Suc n) = (
-    let (fo,stk) = tree_to_stack compare_k k t n in
+"tree_to_stack ord k t 0 = (t,[])"
+| "tree_to_stack ord k t (Suc n) = (
+    let (fo,stk) = tree_to_stack ord k t n in
     case fo of 
     Leaf kvs \<Rightarrow> (failwith (STR ''tree_to_stack''))
     | Node(ks,ts) \<Rightarrow> (
-      let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs compare_k k (ks,ts) in
+      let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs ord k (ks,ts) in
       let frm = \<lparr>f_ks1=ks1,f_ts1=ts1,f_t=t',f_ks2=ks2,f_ts2=ts2\<rparr> in
       (t',frm#stk)
     )

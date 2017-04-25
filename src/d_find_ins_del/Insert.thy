@@ -29,14 +29,14 @@ definition dest_i_finished :: " ist \<Rightarrow> r option" where
 
 (* defns ------------------------------------ *)
 
-definition step_down :: "d \<Rightarrow> d MM" where
-"step_down d = (
+definition step_down :: "k_ord \<Rightarrow> d \<Rightarrow> d MM" where
+"step_down k_ord d = (
   let (fs,v) = d in
-  find_step fs |> fmap (% d'. (d',v))
+  find_step k_ord fs |> fmap (% d'. (d',v))
 )"
 
-definition step_bottom :: "d \<Rightarrow> u MM" where
-"step_bottom d = (
+definition step_bottom :: "k_ord \<Rightarrow> d \<Rightarrow> u MM" where
+"step_bottom k_ord d = (
   let c = constants in
   let (fs,v) = d in
   case dest_f_finished fs of 
@@ -44,7 +44,7 @@ definition step_bottom :: "d \<Rightarrow> u MM" where
   | Some(r0,k,r,kvs,stk) \<Rightarrow> (
     store_free (r0#(r_stk_to_rs stk)) |> bind 
     (% _.
-    let kvs' = kvs |> kvs_insert compare_k (k,v) in
+    let kvs' = kvs |> kvs_insert k_ord (k,v) in
     let fo = (
       case (length kvs' \<le> (c|>max_leaf_size)) of
       True \<Rightarrow> (Leaf_frame kvs' |> store_alloc |> fmap (% r'. I1(r')))
@@ -82,14 +82,14 @@ definition step_up :: "u \<Rightarrow> u MM" where
   )
 )"
 
-definition insert_step :: "ist \<Rightarrow>  ist MM" where
-"insert_step s = (
+definition insert_step :: "k_ord \<Rightarrow> ist \<Rightarrow>  ist MM" where
+"insert_step k_ord s = (
   case s of 
   I_down d \<Rightarrow> (
     let (fs,v) = d in
     case (dest_f_finished fs) of 
-    None \<Rightarrow> (step_down d |> fmap (% d. I_down d))
-    | Some _ \<Rightarrow> step_bottom d |> fmap (% u. I_up u))
+    None \<Rightarrow> (step_down k_ord d |> fmap (% d. I_down d))
+    | Some _ \<Rightarrow> step_bottom k_ord d |> fmap (% u. I_up u))
   | I_up u \<Rightarrow> (
     let (fo,stk) = u in
     case stk of
@@ -106,67 +106,62 @@ definition insert_step :: "ist \<Rightarrow>  ist MM" where
 
 (* wellformedness ------------------------------------------------------------ *)
 
-definition wf_d :: "store \<Rightarrow> kv_tree \<Rightarrow> d \<Rightarrow> bool" where
-"wf_d str t0 d =  assert_true' (
+definition wf_d :: "r2f \<Rightarrow> k_ord \<Rightarrow> kv_tree \<Rightarrow> d \<Rightarrow> bool" where
+"wf_d r2f k_ord t0 d =  assert_true' (
   let (fs,v) = d in
-  wellformed_find_state str t0 fs  
+  wellformed_find_state r2f k_ord t0 fs  
 )"
 
-definition wf_u :: "store \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v \<Rightarrow> u \<Rightarrow> bool" where
-"wf_u str t0 k v u =  assert_true' (
+definition wf_u :: "r2f \<Rightarrow> k_ord \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v \<Rightarrow> u \<Rightarrow> bool" where
+"wf_u r2f k_ord t0 k v u =  assert_true' (
   let n = height t0 in
-  let ord = compare_k in
-  let r2f = mk_r2f str in
   let r2t = mk_r2t r2f n in
   (* need to check the stack and the focus *)
-  let check_focus = % r t. wf_store_tree str r t in
-  let check_stack = % rstk tstk. ((rstk|>stack_map r2t|>no_focus) = (tstk|>stack_map Some|>no_focus)) in   
+  let check_focus = % r t. wf_store_tree r2f r t in
+  let check_stack = % rstk tstk. stack_equal (rstk|>stack_map r2t|>no_focus) (tstk|>stack_map Some|>no_focus) in   
   let (fo,stk) = u in
   case fo of
   I1 r \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     check_stack stk t_stk &
     (* FIXME need wf_tree r , and below *)
     (case (r2t r) of 
     None \<Rightarrow> False
     | Some t' \<Rightarrow> (
-      t' |> tree_to_kvs = 
-      t_fo|>tree_to_kvs|>kvs_insert ord (k,v))))
+      kvs_equal (t' |> tree_to_kvs) (t_fo|>tree_to_kvs|>kvs_insert k_ord (k,v)))))
   | I2 (r1,k',r2) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     check_stack stk t_stk &
     ( let (l,u) = stack_to_lu_of_child t_stk in
       case (r2t r1, r2t r2) of
       (Some t1, Some t2) \<Rightarrow> (
         let (ks1,ks2) = (t1|>tree_to_keys,t2|>tree_to_keys) in
-        check_keys ord l ks1 (Some k') &
-        check_keys ord (Some k') ks2 u &
-        ((t_fo|>tree_to_kvs|>kvs_insert ord (k,v)) = (t1|>tree_to_kvs @ (t2|>tree_to_kvs))))
+        check_keys k_ord l ks1 (Some k') &
+        check_keys k_ord (Some k') ks2 u &
+        kvs_equal (t_fo|>tree_to_kvs|>kvs_insert k_ord (k,v)) (t1|>tree_to_kvs @ (t2|>tree_to_kvs)))
       |(_,_) \<Rightarrow> False
     )
   )
 )"
 
-definition wf_f :: " store \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v \<Rightarrow> r \<Rightarrow> bool" where
-"wf_f str t0 k v r =  assert_true' (
+definition wf_f :: "r2f \<Rightarrow> k_ord \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v \<Rightarrow> r \<Rightarrow> bool" where
+"wf_f r2f k_ord t0 k v r =  assert_true' (
   let n = height t0 in
-  let ord = compare_k in
-  let r2f = mk_r2f str in
   let r2t = mk_r2t r2f n in
   case r2t r of
   None \<Rightarrow> False
   | Some t' \<Rightarrow> (
-    wellformed_tree constants (Some(Small_root_node_or_leaf)) ord t' &
-    ( (t0|>tree_to_kvs|>kvs_insert ord (k,v)) = (t'|>tree_to_kvs))
+    wellformed_tree constants (Some(Small_root_node_or_leaf)) k_ord t' &
+    kvs_equal ( (t0|>tree_to_kvs|>kvs_insert k_ord (k,v))) (t'|>tree_to_kvs)
   )
 )"
 
-definition wellformed_insert_state :: "store \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v \<Rightarrow> ist \<Rightarrow> bool" where
-"wellformed_insert_state str t0 k v is =  assert_true' (
+definition wellformed_insert_state :: "r2f \<Rightarrow> k_ord \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> v \<Rightarrow> ist \<Rightarrow> bool" where
+"wellformed_insert_state r2f k_ord t0 k v is =  assert_true' (
   case is of 
-  I_down d \<Rightarrow> (wf_d str t0 d)
-  | I_up u \<Rightarrow> (wf_u str t0 k v u)
-  | I_finished r \<Rightarrow> (wf_f str t0 k v r) 
+  I_down d \<Rightarrow> (wf_d r2f k_ord t0 d)
+  | I_up u \<Rightarrow> (wf_u r2f k_ord t0 k v u)
+  | I_finished r \<Rightarrow> (wf_f r2f k_ord t0 k v r) 
 )
 "
 

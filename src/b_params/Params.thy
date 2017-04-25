@@ -22,10 +22,15 @@ type_synonym kvs = "kv list"
 type_synonym vs = "v list"
 
 
-(* fix order *)
+(* fix kv_ops *)
 
-definition compare_k :: "k key_order" where
-"compare_k = \<lparr> lt=(% k1 k2. failwith (STR ''FIXME'')) \<rparr>"
+(*
+definition the_kv_ops :: "(k,v) kv_ops" where
+"the_kv_ops = \<lparr> 
+  compare_k=(% k1 k2. failwith (STR ''FIXME''))
+ \<rparr>"
+*)
+type_synonym k_ord = "k ord"
 
 type_synonym kv_tree = "(k,v) tree"
 
@@ -52,11 +57,14 @@ typedecl store
 
 (* for testing *)
 
-type_synonym r2f = "r \<Rightarrow> frame option"
+type_synonym r2f = "(k,v,r) r2f"
+type_synonym r2t = "(k,v,r) r2t"
 
 (* debugging/proof *)
+(*
 definition "mk_r2f" :: "store \<Rightarrow> r2f" where
 "mk_r2f s = failwith (STR ''FIXME'')"
+*)
 
 (* monad *)
 datatype 'a MM = MM "(store \<Rightarrow> store * 'a res)" 

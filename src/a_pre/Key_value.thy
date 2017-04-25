@@ -7,31 +7,50 @@ begin
 datatype tri = LT | EQ | GT
 *)
 
-(* equality is just hol equality *)
-record 'k key_order = 
-  lt :: "'k \<Rightarrow> 'k \<Rightarrow> bool"
+(* equality is just hol equality, so we use this rather than a compare function *)
 
-type_synonym 'k ord = "'k key_order"
+type_synonym 'k ord = "'k \<Rightarrow> 'k \<Rightarrow> int"
   
+
+record ('k,'v) kv_ops =
+  compare_k :: "'k ord"
+  
+definition kvs_equal :: "('k*'v) list \<Rightarrow> ('k*'v) list \<Rightarrow> bool" where
+"kvs_equal = failwith (STR ''FIXME patch'')"
+
+(* NB 'v is only compared for equality in wf checks; we assume these are only tested for simple 'v 
+for which ocaml's = is satisfactory; in fact, in the isa code we only compare trees for equality,
+so we can drop this altogether *)
+(*
+definition v_equal :: "'v \<Rightarrow> 'v \<Rightarrow> bool" where
+"v_equal = failwith (STR ''FIXME patch'')"
+*)
 
 (* generic defns --------------------------------------------------- *)
 
-(* FIXME assume EQ is equality *)
+definition key_lt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
+"key_lt ord k1 k2 = ( ord k1 k2 < 0)"
+
+definition key_eq :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
+"key_eq ord k1 k2 = ( ord k1 k2 = 0)"
+
+definition key_le :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
+"key_le ord k1 k2 = ( ord k1 k2 <= 0)"
+
+(* simple abbrev - no need to mention in axioms *)
+definition key_gt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
+"key_gt ord k1 k2 = (~ ( key_le ord k1 k2))"
+
 
 definition wf_key_ord :: "'k ord \<Rightarrow> bool" where
 "wf_key_ord ord = (
- strict_linear_order { (x,y). (ord|>lt) x y }
- & (! k1 k2. ( (ord|>lt) k1 k2 \<longrightarrow>  (k2 ~= k1))) 
+  let le = key_le ord in
+  (! k1 k2. le k1 k2 = (key_lt ord k1 k2 | key_eq ord k1 k2)) &  (* true by defn *)
+  (! k1. le k1 k1) &
+  (! k1 k2 k3. le k1 k2 & le k2 k3 \<longrightarrow> le k1 k3) &
+  (! k1 k2. le k1 k2 | le k2 k1) &
+  (! k1 k2. key_eq ord k1 k2 \<longrightarrow> (k1=k2))  (* FIXME may need this? *)
 )"
-
-definition key_eq :: "'k \<Rightarrow> 'k \<Rightarrow> bool" where
-"key_eq k1 k2 = (k1 = k2)"
-
-definition key_lt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
-"key_lt ord k1 k2 = ((ord|>lt) k1 k2)"
-
-definition key_le :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
-"key_le ord k1 k2 = ((k1=k2) | (key_lt ord k1 k2))"
 
 (* very minor defn *)
 definition kv_lt :: "'k ord \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v) \<Rightarrow> bool" where
@@ -68,12 +87,12 @@ primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Ri
   let (k,v) = kv in
   let (k',v') = kv' in
   if key_lt cmp k' k then (k',v')#(kvs_insert cmp kv kvs')
-  else if (k=k') then (k,v)#kvs' else
+  else if (key_eq cmp k k') then (k,v)#kvs' else
   (k,v)#(k',v')#kvs'
 )"
 
 definition kvs_delete :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
-"kvs_delete ord k kvs = List.filter (% kv. (fst kv) = k) kvs"
+"kvs_delete ord k kvs = List.filter (% kv. key_eq ord (fst kv) k) kvs"
   
 (* search_key_to_index ------------- *)
 
@@ -131,5 +150,7 @@ definition split_node ::
   let (rs1,rs2) = split_at (cut_point+1) rs in
   ((ks1,rs1),k,(ks2,rs2))
 )"
+
+  
 
 end

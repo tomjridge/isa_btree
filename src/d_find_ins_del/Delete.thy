@@ -202,20 +202,20 @@ definition step_up :: "u \<Rightarrow> u MM" where
   )
 )"
 
-definition delete_step :: "delete_state \<Rightarrow> delete_state MM" where
-"delete_step s = (
+definition delete_step :: "k_ord \<Rightarrow> delete_state \<Rightarrow> delete_state MM" where
+"delete_step k_ord s = (
   case s of 
   D_down(f,r0) \<Rightarrow> (
     case (dest_f_finished f) of
-    None \<Rightarrow> (find_step f |> fmap (% f'. D_down(f',r0)))
+    None \<Rightarrow> (find_step k_ord f |> fmap (% f'. D_down(f',r0)))
     | Some x \<Rightarrow> (
       let (r0,k,r,kvs,stk) = x in
       store_free (r0#(r_stk_to_rs stk)) |> bind 
       (% _.
-      case k : set (kvs|>List.map fst) of
+      case (? x : set (kvs|>List.map fst). key_eq k_ord x k) of
       True \<Rightarrow> (
         (* something to delete *)
-        let kvs' = kvs|>List.filter (% x. ~ (key_eq (fst x) k)) in
+        let kvs' = kvs|>List.filter (% x. ~ (key_eq k_ord (fst x) k)) in
         case (List.length kvs' < constants|>min_leaf_size) of
         True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
         | False \<Rightarrow> (
@@ -246,24 +246,23 @@ definition delete_step :: "delete_state \<Rightarrow> delete_state MM" where
 
 (* wellformedness ------------------------------------------------- *)
 
-definition wf_d :: "kv_tree \<Rightarrow> store \<Rightarrow> d \<Rightarrow> bool" where
-"wf_d t0 s d =  assert_true' (
+definition wf_d :: "r2f \<Rightarrow> k_ord \<Rightarrow> kv_tree \<Rightarrow> d \<Rightarrow> bool" where
+"wf_d r2f k_ord t0  d =  assert_true' (
   let (fs,r) = d in
-  wellformed_find_state s t0 fs  
+  wellformed_find_state r2f k_ord t0 fs  
 )"
 
-definition wf_u :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> u \<Rightarrow> bool" where
-"wf_u t0 k str u =  assert_true' (
+definition wf_u :: "r2f \<Rightarrow> k_ord \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> u \<Rightarrow> bool" where
+"wf_u r2f k_ord t0 k u =  assert_true' (
   let n = height t0 in
-  let r2f = mk_r2f str in
   let r2t = mk_r2t r2f n in
   let (fo,stk) = u in
-  let check_stack = % rstk tstk. ((rstk|>stack_map r2t|>no_focus) = (tstk|>stack_map Some|>no_focus)) in
-  let check_wf = % ms t. (wellformed_tree constants ms compare_k t) in
-  let check_focus = % fo kvs. fo|> tree_to_kvs |> kvs_delete compare_k k = kvs in
+  let check_stack = % rstk tstk. (stack_equal (rstk|>stack_map r2t|>no_focus) (tstk|>stack_map Some|>no_focus)) in
+  let check_wf = % ms t. (wellformed_tree constants ms k_ord t) in
+  let check_focus = % fo kvs. kvs_equal (fo|> tree_to_kvs |> kvs_delete k_ord k) kvs in
   case fo of
   D_small_leaf kvs \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_leaf) in
     check_stack stk t_stk & 
     check_wf ms (Leaf kvs) &
@@ -271,7 +270,7 @@ definition wf_u :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> u 
   )
   | D_small_node (ks,rs) \<Rightarrow> (
     (* FIXME don't we need some wf on Node(ks,rs)? *)
-    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_node) in
     let t = Node(ks,rs|>List.map r2t |> List.map dest_Some) in  (* FIXME check we can dest_Some *)
     check_stack stk t_stk &
@@ -279,7 +278,7 @@ definition wf_u :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> u 
     check_focus t_fo (t|>tree_to_kvs)   
   )
   | D_updated_subtree(r) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> None) in
     let t = r|>r2t|>dest_Some in  (* FIXME check dest *)
     check_stack stk t_stk &
@@ -288,25 +287,23 @@ definition wf_u :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> u 
   )
 )"
 
-definition wf_f :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> r \<Rightarrow> bool" where
-"wf_f t0 k str r =  assert_true' (
+definition wf_f :: "r2f \<Rightarrow> k_ord \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> r \<Rightarrow> bool" where
+"wf_f r2f k_ord t0 k r =  assert_true' (
   let n = height t0 in
-  let r2f = mk_r2f str in
   let r2t = mk_r2t r2f n in
   let t' = r2t r |> dest_Some in  (* check dest_Some *)
-  wellformed_tree constants (Some(Small_root_node_or_leaf)) compare_k t' &
-  ( (t0|>tree_to_kvs|>kvs_delete compare_k k) = (t'|>tree_to_kvs))
+  wellformed_tree constants (Some(Small_root_node_or_leaf)) k_ord t' &
+  kvs_equal ( (t0|>tree_to_kvs|>kvs_delete k_ord k)) (t'|>tree_to_kvs)
 )"
 
-definition wellformed_delete_state :: "kv_tree \<Rightarrow> k \<Rightarrow> store \<Rightarrow> delete_state \<Rightarrow> bool" where
-"wellformed_delete_state t0 k str ds =  assert_true' (
+definition wellformed_delete_state :: "r2f \<Rightarrow> k_ord \<Rightarrow> kv_tree \<Rightarrow> k \<Rightarrow> delete_state \<Rightarrow> bool" where
+"wellformed_delete_state r2f k_ord t0 k ds =  assert_true' (
   let n = height t0 in
-  let r2f = mk_r2f str in
   let r2t = mk_r2t r2f n in
   case ds of 
-  D_down d \<Rightarrow> (wf_d t0 str d)
-  | D_up (fo,stk,r) \<Rightarrow> (wf_u t0 k str (fo,stk) & (r2t r = Some t0))
-  | D_finished r \<Rightarrow> (wf_f t0 k str r) 
+  D_down d \<Rightarrow> (wf_d r2f k_ord t0 d)
+  | D_up (fo,stk,r) \<Rightarrow> (wf_u r2f k_ord t0 k (fo,stk) & (case r2t r of None \<Rightarrow> False | Some t \<Rightarrow> tree_equal t t0))
+  | D_finished r \<Rightarrow> (wf_f r2f k_ord t0 k r) 
 )
 "
 

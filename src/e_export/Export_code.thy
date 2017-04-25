@@ -32,7 +32,6 @@ wellformed_tree
 Pre_params.dummy
 
 (* params *)
-Params.compare_k
 Params.constants
 Params.MM
 Params.dummy
@@ -42,11 +41,9 @@ store_free
 
 
 (* monad *)
-Monad.dest_MM fmap  bind
+(* Monad.dest_MM *) fmap  bind
 
 (* store *) 
-mk_r2f
-
 
 (* find *)
 empty_btree

@@ -42,15 +42,15 @@ definition mk_find_state :: "k \<Rightarrow> r \<Rightarrow> find_state" where
 
 (* FIXME maybe want to store ks,rs as a list of (k,r), with the invariant that the last k is +inf *)
 
-definition find_step :: "fs \<Rightarrow> fs MM" where
-"find_step fs = (
+definition find_step :: "k_ord \<Rightarrow> fs \<Rightarrow> fs MM" where
+"find_step k_ord fs = (
   case fs of 
   F_finished _ \<Rightarrow> (return fs)  (* FIXME impossible, or return none? or have a finished error? or stutter? *)
   | F_down(r0,k,r,stk) \<Rightarrow> (
     store_read r |>fmap
     (% f. case f of 
       Node_frame (ks,rs) \<Rightarrow> (
-        let (stk',r') = add_new_stack_frame compare_k k (ks,rs) stk in
+        let (stk',r') = add_new_stack_frame k_ord k (ks,rs) stk in
         F_down(r0,k,r',stk')
       )
       | Leaf_frame kvs \<Rightarrow> (F_finished(r0,k,r,kvs,stk))))
@@ -62,52 +62,32 @@ definition find_step :: "fs \<Rightarrow> fs MM" where
 (* like to have this in a "programmatic" style; so convert a store into a map from r * nat to 
 tree option, then check the r with a t , given t height *)
 
-type_synonym r2t = "(r \<Rightarrow> kv_tree option)"
 
-fun mk_r2t :: "r2f \<Rightarrow> nat \<Rightarrow> r2t" where
-"mk_r2t s n r = (
-  case n of 
-  0 \<Rightarrow> None
-  | Suc n \<Rightarrow> (
-    case s r of
-    None \<Rightarrow> None
-    | Some frm \<Rightarrow> (
-      case frm of
-      Leaf_frame kvs \<Rightarrow> Some(Leaf(kvs))
-      | Node_frame(ks,rs) \<Rightarrow> (
-        let ts = List.map (mk_r2t s n) rs in
-        case (List.filter is_None ts) of
-        [] \<Rightarrow> Some(Node(ks,ts|>List.map dest_Some))
-        | _ \<Rightarrow> None
-      )
-    )
-  )
-)"
 
-definition wf_store_tree :: "store \<Rightarrow> r \<Rightarrow> kv_tree \<Rightarrow> bool" where
-"wf_store_tree s r t = (
-  let r2f = mk_r2f s in
+definition wf_store_tree :: "r2f \<Rightarrow> r \<Rightarrow> kv_tree \<Rightarrow> bool" where
+"wf_store_tree r2f r t = (
   let s' = mk_r2t r2f (height t) in
-  s' r = Some t
+  case s' r of
+  None \<Rightarrow> False
+  | Some t' \<Rightarrow> (tree_equal t t')
 )"
 
 
 (* t0 is the tree we expect *)
-definition wellformed_find_state :: "store \<Rightarrow> kv_tree \<Rightarrow> find_state \<Rightarrow> bool" where
-"wellformed_find_state s0 t0 fs = assert_true' (
+definition wellformed_find_state :: "r2f \<Rightarrow> k_ord \<Rightarrow> kv_tree \<Rightarrow> find_state \<Rightarrow> bool" where
+"wellformed_find_state r2f k_ord t0 fs = assert_true' (
   let n = height t0 in
-  let r2f = mk_r2f s0 in
   let r2t = mk_r2t r2f n in
   (* need to check the stack and the focus *)
-  let check_focus = % r t. wf_store_tree s0 r t in
-  let check_stack = % rstk tstk. (tstk |> stack_map Some = rstk |> stack_map r2t) in 
+  let check_focus = % r t. wf_store_tree r2f r t in
+  let check_stack = % rstk tstk. stack_equal (tstk |> stack_map Some) (rstk |> stack_map r2t) in 
   case fs of 
   F_finished (r0,k,r,kvs,stk) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     check_focus r t_fo &
     check_stack stk t_stk)
   | F_down (r0,k,r,stk) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack compare_k k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     check_focus r t_fo &
     check_stack stk t_stk
   )
