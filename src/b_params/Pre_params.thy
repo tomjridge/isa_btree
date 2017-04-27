@@ -5,7 +5,7 @@ begin
 definition dummy :: "unit" where "dummy=()"
 
 
-type_synonym ('k,'v,'r) r2f = "('r \<Rightarrow> ('k,'v,'r) Frame.t option)"
+type_synonym ('k,'v,'r) r2f = "('r \<Rightarrow> ('k,'v,'r) frame option)"
 
 type_synonym ('k,'v,'r) r2t = "('r \<Rightarrow> ('k,'v) tree option)"
 

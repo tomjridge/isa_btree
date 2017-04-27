@@ -16,6 +16,8 @@ export_code "Code_Numeral.nat_of_integer" "Code_Numeral.int_of_integer"
 Util.from_to
 Util.String_error
 
+Prelude.constants_ext
+
 Key_value.key_lt
 
 (* frame_types *)

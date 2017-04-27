@@ -24,7 +24,7 @@ definition dest_i_finished :: "('k,'v,'r) ist \<Rightarrow> ('r * ('k*'v)s) opti
 
 (* defns ------------------------------------ *)
 
-definition step_down :: "('k,'v,'r) ps1 \<Rightarrow> ('k,'v,'r)d \<Rightarrow> ('k,'v,'r) d MM" where
+definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r)d \<Rightarrow> (('k,'v,'r) d,'t) MM" where
 "step_down ps1 d = (
   let (fs,v) = d in
   find_step ps1 fs |> fmap (% d'. (d',v))
@@ -85,7 +85,7 @@ definition split_leaf :: "constants \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)
 )"
 
 
-definition step_bottom :: "('k,'v,'r) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> ('k,'v,'r) u MM" where
+definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_bottom ps1 d = (
   let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
   let (fs,(v,kvs0)) = d in
@@ -107,7 +107,7 @@ definition step_bottom :: "('k,'v,'r) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarro
     fo |> fmap (% fo. (fo,stk))))
 )"
 
-definition step_up :: "('k,'v,'r) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow> ('k,'v,'r) u MM" where
+definition step_up :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_up ps1 u = (
   let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
   let (fo,stk) = u in
@@ -133,7 +133,7 @@ definition step_up :: "('k,'v,'r) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow> (
   )
 )"
 
-definition insert_step :: "('k,'v,'r)ps1 \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> ('k,'v,'r) ist MM" where
+definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> (('k,'v,'r) ist,'t) MM" where
 "insert_step ps1 s = (
   let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
   case s of 

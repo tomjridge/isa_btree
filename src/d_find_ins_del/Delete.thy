@@ -94,8 +94,8 @@ definition steal_or_merge :: "
 (* when called on a node (D_...) which is a root resulting from a delete op,
 we may have the situation that the root contains no keys, or is small *)
 
-definition post_steal_or_merge :: 
-  "('k,'v,'r) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) ts_frame \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'r) d12_t => ('k,'v,'r) u MM" 
+definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) ts_frame \<Rightarrow> 
+  ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'r) d12_t => (('k,'v,'r) u,'t) MM" 
 where
 "post_steal_or_merge ps1 stk' p_unused p_1 p_2 x = (
       let m = frac_mult in
@@ -156,7 +156,7 @@ where
         ))
 "
 
-definition step_up :: "('k,'v,'r)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> ('k,'v,'r)u MM" where
+definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (('k,'v,'r)u,'t) MM" where
 "step_up ps1 du = (
   let (f,stk) = du in
   case stk of
@@ -173,8 +173,8 @@ definition step_up :: "('k,'v,'r)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> ('k,
       let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_ts_frame in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = (ps1|>store_read) r in
-      let d12 :: ('k,('k,'v,'r) Frame.t) d12_t MM = frm |> fmap (% frm. steal_or_merge (ps1|>cs) right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Leaf_frame|>unzip)) in
-      let d12' :: ('k,'r) d12_t MM = d12 |> bind
+      let d12 :: (('k,('k,'v,'r) frame) d12_t,'t) MM = frm |> fmap (% frm. steal_or_merge (ps1|>cs) right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Leaf_frame|>unzip)) in
+      let d12' :: (('k,'r) d12_t,'t) MM = d12 |> bind
       (% x. case x of
         D1 frm \<Rightarrow> frm |> (ps1|>store_alloc) |> fmap (% r. D1 r)
         | D2(frm1,p_k,frm2) \<Rightarrow> (
@@ -194,8 +194,8 @@ definition step_up :: "('k,'v,'r)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> ('k,
       let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_ts_frame in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = (ps1|>store_read) r in
-      let d12 :: ('k,('k,'v,'r)Frame.t) d12_t MM = frm |> fmap (% frm. steal_or_merge (ps1|>cs) right leaf mk_c (ks,rs) p_k (frm|>dest_Node_frame)) in
-      let d12' :: ('k,'r) d12_t MM = d12 |> bind
+      let d12 = frm |> fmap (% frm. steal_or_merge (ps1|>cs) right leaf mk_c (ks,rs) p_k (frm|>dest_Node_frame)) in
+      let d12' = d12 |> bind
       (% x. case x of
         D1 frm \<Rightarrow> frm |> (ps1|>store_alloc) |> fmap(% r. D1 r)
         | D2(frm1,p_k,frm2) \<Rightarrow> (
@@ -208,7 +208,7 @@ definition step_up :: "('k,'v,'r)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> ('k,
   )
 )"
 
-definition delete_step :: "('k,'v,'r)ps1 \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> ('k,'v,'r)delete_state MM" where
+definition delete_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> (('k,'v,'r)delete_state,'t) MM" where
 "delete_step ps1 s = (
   case s of 
   D_down(f,r0) \<Rightarrow> (

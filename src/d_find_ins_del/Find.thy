@@ -28,7 +28,7 @@ definition dest_f_finished :: "('k,'v,'r)fs \<Rightarrow> ('k,'v,'r)f_finished o
 definition mk_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)fs" where
 "mk_find_state k r = F_down(r,k,r,[])"
 
-definition find_step :: "('k,'v,'r)ps1 \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> ('k,'v,'r)fs MM" where
+definition find_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> (('k,'v,'r)fs,'t) MM" where
 "find_step ps1 fs = (
   case fs of 
   F_finished _ \<Rightarrow> (return fs)  (* FIXME impossible, or return none? or have a finished error? or stutter? *)
@@ -84,7 +84,7 @@ definition wellformed_find_state :: "'k ord \<Rightarrow> ('k,'v,'r)r2f \<Righta
 (* really wf_trans is trivial, but for testing we check some obvious properties *)
 
 (* FIXME probably not worth doing *)
-definition wf_trans :: "world * ('k,'v,'r)fs \<Rightarrow> world * ('k,'v,'r)fs \<Rightarrow> bool" where
+definition wf_trans :: "'t * ('k,'v,'r)fs \<Rightarrow> 't * ('k,'v,'r)fs \<Rightarrow> bool" where
 "wf_trans s1 s2 = assert_true' (
   let (s1,fs1) = s1 in
   let (s2,fs2) = s2 in
