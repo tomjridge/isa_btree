@@ -32,13 +32,8 @@ wellformed_tree
 Pre_params.dummy
 
 (* params *)
-Params.constants
-Params.MM
 Params.dummy
-store_read
-store_alloc
-store_free
-
+Params.Ps1
 
 (* monad *)
 (* Monad.dest_MM *) fmap  bind
@@ -46,7 +41,6 @@ store_free
 (* store *) 
 
 (* find *)
-empty_btree
 mk_find_state
 dest_f_finished
 find_step

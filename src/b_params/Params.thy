@@ -5,85 +5,57 @@ begin
 (* for export order *)
 definition dummy :: "unit" where "dummy = Pre_params.dummy"
 
-(* a store is a map from page_ref to frame *)
-typedecl page_ref
-type_synonym r = page_ref
-type_synonym rs = "r list"
+(* fix types ---------------------------------------------------------- *)
 
-
+(*typedecl page_ref*)
 (* fix a particular k v *)
+(*
 datatype k = K nat
 datatype v = K nat
-
-
-type_synonym ks = "k list"
-type_synonym kv = "k*v"
-type_synonym kvs = "kv list" 
-type_synonym vs = "v list"
-
-
-(* fix kv_ops *)
-
-(*
-definition the_kv_ops :: "(k,v) kv_ops" where
-"the_kv_ops = \<lparr> 
-  compare_k=(% k1 k2. failwith (STR ''FIXME''))
- \<rparr>"
 *)
-type_synonym k_ord = "k ord"
-
-type_synonym kv_tree = "(k,v) tree"
-
-(* fix constants *)
-definition constants :: constants where
-"constants = \<lparr>
-min_leaf_size=0,
-max_leaf_size=0,
-min_node_keys=0,
-max_node_keys=0
-\<rparr>"
+typedecl world
 
 
+(* params ------------------------------------------------------- *)
 
-(* store frame *)
-type_synonym frame = "(k,v,r) Frame.t"
+type_synonym 'a MM = "world \<Rightarrow> (world * 'a res)"
 
-(* to force Frame early *)
-(* definition dest_Node_frame :: "frame \<Rightarrow> ks * rs" where "dest_Node_frame = Frame.dest_Node_frame" *)
+datatype 'k ps0 = Ps0 "'k ord * constants"
+definition dest_ps0 :: "'k ps0 \<Rightarrow> 'k ord * constants" where
+"dest_ps0 ps0 = (case ps0 of Ps0 (a,b) \<Rightarrow> (a,b))"
 
-(* store type ----------------------- *)
+definition cmp_k':: "'k ps0 \<Rightarrow> 'k ord" where "cmp_k' ps0 = (ps0|>dest_ps0|>fst)"
+definition cs' :: "'k ps0 \<Rightarrow> constants" where "cs' ps0 = (ps0|>dest_ps0|>snd)"
 
-typedecl store
+(* prefer pairs to records in isa_export *)
+datatype ('k,'v,'r) ps1 = Ps1 "('k ps0) * 
+  (* store_read *) ('r \<Rightarrow> ('k,'v,'r) Frame.t MM) * 
+  (* store_alloc *) (('k,'v,'r) Frame.t \<Rightarrow> 'r MM) *
+  (* store_free *) ('r list \<Rightarrow> unit MM)"
 
-(* for testing *)
+definition dest_ps1 :: "('k,'v,'r) ps1 \<Rightarrow> ('k ps0) * 
+  (* store_read *) ('r \<Rightarrow> ('k,'v,'r) Frame.t MM) * 
+  (* store_alloc *) (('k,'v,'r) Frame.t \<Rightarrow> 'r MM) *
+  (* store_free *) ('r list \<Rightarrow> unit MM)" where
+"dest_ps1 ps1 = (case ps1 of Ps1 ps1 \<Rightarrow> ps1)"
 
-type_synonym r2f = "(k,v,r) r2f"
-type_synonym r2t = "(k,v,r) r2t"
+definition ps0' :: "('k,'v,'r) ps1 \<Rightarrow> 'k ps0" where
+"ps0' ps1 = (let (p,r,a,f) = dest_ps1 ps1 in p)"
 
-(* debugging/proof *)
-(*
-definition "mk_r2f" :: "store \<Rightarrow> r2f" where
-"mk_r2f s = failwith (STR ''FIXME'')"
-*)
+definition store_read :: "('k,'v,'r) ps1 \<Rightarrow> ('r \<Rightarrow> ('k,'v,'r) Frame.t MM)" where
+"store_read ps1 = (let (p,r,a,f) = dest_ps1 ps1 in r)"
 
-(* monad *)
-datatype 'a MM = MM "(store \<Rightarrow> store * 'a res)" 
+definition store_alloc :: "('k,'v,'r) ps1 \<Rightarrow> (('k,'v,'r) Frame.t \<Rightarrow> 'r MM)" where
+"store_alloc ps1 = (let (p,r,a,f) = dest_ps1 ps1 in a)"
 
-(* store api -------------------------------------------------- *)
+definition store_free :: "('k,'v,'r) ps1 \<Rightarrow> ('r list \<Rightarrow> unit MM)" where
+"store_free ps1 = (let (p,r,a,f) = dest_ps1 ps1 in f)"
 
-definition "store_read" :: "r \<Rightarrow> frame MM" where
-"store_read r = failwith (STR ''FIXME'')"
+definition cs :: "('k,'v,'r) ps1 \<Rightarrow> constants" where
+"cs ps1 = ps1 |> ps0' |> cs'"
 
-definition "store_alloc" :: "frame \<Rightarrow> r MM" where
-"store_alloc frm = failwith (STR ''FIXME'')"
+definition cmp_k :: "('k,'v,'r) ps1 \<Rightarrow> 'k ord" where
+"cmp_k ps1 = ps1 |> ps0' |> cmp_k'"
 
-definition "store_free" :: "r list \<Rightarrow> unit MM" where
-"store_free rs = failwith (STR ''FIXME'')" 
-
-
-
-type_synonym rstk = "(k,r) ts_frame list"
-  
-
-type_synonym tstk = "(k,kv_tree) tree_stack" (* FIXME replace with tree_stack *)
 end
+
