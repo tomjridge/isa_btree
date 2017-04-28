@@ -50,23 +50,21 @@ tree option, then check the r with a t , given t height *)
 
 
 
-definition wf_store_tree :: "('k,'v,'r)r2f \<Rightarrow> 'r \<Rightarrow> ('k,'v)tree \<Rightarrow> bool" where
-"wf_store_tree r2f r t = (
-  let s' = mk_r2t r2f (height t) in
-  case s' r of
+definition wf_store_tree :: "('k,'v,'r,'t)r2t \<Rightarrow> 't \<Rightarrow> 'r \<Rightarrow> ('k,'v)tree \<Rightarrow> bool" where
+"wf_store_tree r2t s r t = (
+  case r2t s r of
   None \<Rightarrow> False
   | Some t' \<Rightarrow> (tree_equal t t')
 )"
 
 
 (* t0 is the tree we expect *)
-definition wellformed_find_state :: "'k ord \<Rightarrow> ('k,'v,'r)r2f \<Rightarrow> ('k,'v)tree \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> bool" where
-"wellformed_find_state k_ord r2f t0 fs = assert_true' (
+definition wellformed_find_state :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> bool" where
+"wellformed_find_state k_ord r2t t0 s fs = assert_true' (
   let n = height t0 in
-  let r2t = mk_r2t r2f n in
   (* need to check the stack and the focus *)
-  let check_focus = % r t. wf_store_tree r2f r t in
-  let check_stack = % rstk tstk. stack_equal (tstk |> stack_map Some) (rstk |> stack_map r2t) in 
+  let check_focus = % r t. wf_store_tree r2t s r t in
+  let check_stack = % rstk tstk. stack_equal (tstk |> stack_map Some) (rstk |> stack_map (r2t s)) in 
   case fs of 
   F_finished (r0,k,r,kvs,stk) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in

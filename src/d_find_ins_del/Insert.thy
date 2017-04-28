@@ -103,26 +103,24 @@ definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Right
 
 (* wellformedness ------------------------------------------------------------ *)
 
-definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r) r2f \<Rightarrow> ('k,'v)tree \<Rightarrow> ('k,'v,'r)d \<Rightarrow> bool" where
-"wf_d k_ord r2f t0 d =  assert_true' (
+definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r,'t) r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r)d \<Rightarrow> bool" where
+"wf_d k_ord r2t t0 s d =  assert_true' (
   let (fs,v) = d in
-  wellformed_find_state k_ord r2f t0 fs  
+  wellformed_find_state k_ord r2t t0 s fs  
 )"
 
-definition wf_u :: "('k,'v,'r) r2f \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)tree \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r)u \<Rightarrow> bool" where
-"wf_u r2f k_ord t0 k v u =  assert_true' (
-  let n = height t0 in
-  let r2t = mk_r2t r2f n in
+definition wf_u :: "('k,'v,'r,'t) r2t \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r)u \<Rightarrow> bool" where
+"wf_u r2t k_ord t0 s k v u =  assert_true' (
   (* need to check the stack and the focus *)
-  let check_focus = % r t. wf_store_tree r2f r t in
-  let check_stack = % rstk tstk. stack_equal (rstk|>stack_map r2t|>no_focus) (tstk|>stack_map Some|>no_focus) in   
+  let check_focus = % r t. wf_store_tree r2t s r t in
+  let check_stack = % rstk tstk. stack_equal (rstk|>stack_map (r2t s)|>no_focus) (tstk|>stack_map Some|>no_focus) in   
   let (fo,stk) = u in
   case fo of
   I1 r \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     check_stack stk t_stk &
     (* FIXME need wf_tree r , and below *)
-    (case (r2t r) of 
+    (case (r2t s r) of 
     None \<Rightarrow> False
     | Some t' \<Rightarrow> (
       kvs_equal (t' |> tree_to_kvs) (t_fo|>tree_to_kvs|>kvs_insert k_ord (k,v)))))
@@ -130,7 +128,7 @@ definition wf_u :: "('k,'v,'r) r2f \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)tre
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     check_stack stk t_stk &
     ( let (l,u) = stack_to_lu_of_child t_stk in
-      case (r2t r1, r2t r2) of
+      case (r2t s r1, r2t s r2) of
       (Some t1, Some t2) \<Rightarrow> (
         let (ks1,ks2) = (t1|>tree_to_keys,t2|>tree_to_keys) in
         check_keys k_ord l ks1 (Some k') &
@@ -141,12 +139,10 @@ definition wf_u :: "('k,'v,'r) r2f \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)tre
   )
 )"
 
-definition wf_f :: "'k ps0 \<Rightarrow> ('k,'v,'r)r2f \<Rightarrow> ('k,'v)tree \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> 'r \<Rightarrow> bool" where
-"wf_f ps0 r2f t0 k v r =  assert_true' (
+definition wf_f :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> 'r \<Rightarrow> bool" where
+"wf_f ps0 r2t t0 s k v r =  assert_true' (
   let (cs,k_ord) = (ps0|>cs',ps0|>cmp_k') in
-  let n = height t0 in
-  let r2t = mk_r2t r2f n in
-  case r2t r of
+  case r2t s r of
   None \<Rightarrow> False
   | Some t' \<Rightarrow> (
     wellformed_tree cs (Some(Small_root_node_or_leaf)) k_ord t' &
@@ -155,14 +151,14 @@ definition wf_f :: "'k ps0 \<Rightarrow> ('k,'v,'r)r2f \<Rightarrow> ('k,'v)tree
 )"
 
 definition wellformed_insert_state :: 
-  "'k ps0 \<Rightarrow> ('k,'v,'r)r2f \<Rightarrow> ('k,'v)tree \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r)ist \<Rightarrow> bool" 
+  "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r)ist \<Rightarrow> bool" 
 where
-"wellformed_insert_state ps0 r2f t0 k v is =  assert_true' (
+"wellformed_insert_state ps0 r2t t0 s k v is =  assert_true' (
   let k_ord = (ps0|>cmp_k') in
   case is of 
-  I_down d \<Rightarrow> (wf_d k_ord r2f t0 d)
-  | I_up u \<Rightarrow> (wf_u r2f k_ord t0 k v u)
-  | I_finished r \<Rightarrow> (wf_f ps0 r2f t0 k v r) 
+  I_down d \<Rightarrow> (wf_d k_ord r2t t0 s d)
+  | I_up u \<Rightarrow> (wf_u r2t k_ord t0 s k v u)
+  | I_finished r \<Rightarrow> (wf_f ps0 r2t t0 s k v r) 
 )
 "
 

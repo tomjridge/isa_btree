@@ -5,22 +5,22 @@ begin
 definition dummy :: "unit" where "dummy=()"
 
 
-type_synonym ('k,'v,'r) r2f = "('r \<Rightarrow> ('k,'v,'r) frame option)"
+type_synonym ('k,'v,'r,'t) r2f = "('t \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r) frame option)"
 
-type_synonym ('k,'v,'r) r2t = "('r \<Rightarrow> ('k,'v) tree option)"
+type_synonym ('k,'v,'r,'t) r2t = "('t \<Rightarrow> 'r \<Rightarrow> ('k,'v) tree option)"
 
-fun mk_r2t' :: "('k,'v,'r) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v,'r) r2t" where
-"mk_r2t' s n r = (
+fun mk_r2t' :: "('k,'v,'r,'t) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v,'r,'t) r2t" where
+"mk_r2t' r2f n t r = (
   case n of 
   0 \<Rightarrow> None
   | Suc n \<Rightarrow> (
-    case s r of
+    case r2f t r of
     None \<Rightarrow> None
     | Some frm \<Rightarrow> (
       case frm of
       Leaf_frame kvs \<Rightarrow> Some(Leaf(kvs))
       | Node_frame(ks,rs) \<Rightarrow> (
-        let ts = List.map (mk_r2t' s n) rs in
+        let ts = List.map (mk_r2t' r2f n t) rs in
         case (List.filter is_None ts) of
         [] \<Rightarrow> Some(Node(ks,ts|>List.map dest_Some))
         | _ \<Rightarrow> None
@@ -29,7 +29,7 @@ fun mk_r2t' :: "('k,'v,'r) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v,'r) r2t" w
   )
 )"
 
-definition mk_r2t :: "('k,'v,'r) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v,'r) r2t" where
+definition mk_r2t :: "('k,'v,'r,'t) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v,'r,'t) r2t" where
 "mk_r2t = mk_r2t'"
 
 
