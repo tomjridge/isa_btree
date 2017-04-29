@@ -35,7 +35,7 @@ kv<new, and new are sorted in order; return the remaining new that were not inse
 *)
 definition kvs_insert_2 :: "'k ps0 \<Rightarrow> 'k option \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s * ('k*'v)s" where
 "kvs_insert_2 ps0 u kv new existing = (
-  let (cs,k_ord) = (ps0|>cs',ps0|>cmp_k') in
+  let (cs,k_ord) = (ps0|>ps0_cs,ps0|>ps0_cmp_k) in
   let step = (% s. 
     let (acc,new') = s in
     case (length acc \<ge> 2 * cs|>max_leaf_size) of
@@ -88,21 +88,22 @@ definition split_leaf :: "constants \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)
 definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_bottom ps1 d = (
   let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
+  let store_ops = ps1|>ps1_store_ops in
   let (fs,(v,kvs0)) = d in
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
   | Some(r0,k,r,kvs,stk) \<Rightarrow> (
-    (ps1|>store_free) (r0#(r_stk_to_rs stk)) |> bind 
+    (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind 
     (% _.
     let (l,u) = stack_to_lu_of_child stk in
-    let (kvs',kvs0') = kvs_insert_2 (ps1|>ps0') u (k,v) kvs0 kvs in
+    let (kvs',kvs0') = kvs_insert_2 (ps1|>ps1_ps0) u (k,v) kvs0 kvs in
     let fo = (
       case (length kvs' \<le> cs|>max_leaf_size) of
-      True \<Rightarrow> (Leaf_frame kvs' |> (ps1|>store_alloc) |> fmap (% r'. I1(r',kvs0')))
+      True \<Rightarrow> (Leaf_frame kvs' |> (store_ops|>store_alloc) |> fmap (% r'. I1(r',kvs0')))
       | False \<Rightarrow> (
         let (kvs1,k',kvs2) = split_leaf cs kvs' in
-        Leaf_frame kvs1 |> (ps1|>store_alloc) |> bind
-        (% r1. Leaf_frame kvs2 |> (ps1|>store_alloc) |> fmap (% r2. I2((r1,k',r2),kvs0')))) )
+        Leaf_frame kvs1 |> (store_ops|>store_alloc) |> bind
+        (% r1. Leaf_frame kvs2 |> (store_ops|>store_alloc) |> fmap (% r2. I2((r1,k',r2),kvs0')))) )
     in
     fo |> fmap (% fo. (fo,stk))))
 )"
@@ -110,6 +111,7 @@ definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Righta
 definition step_up :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_up ps1 u = (
   let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
+  let store_ops = ps1|>ps1_store_ops in
   let (fo,stk) = u in
   case stk of 
   [] \<Rightarrow> impossible1 (STR ''insert, step_up'') (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
@@ -117,17 +119,17 @@ definition step_up :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow
     let ((ks1,rs1),_,(ks2,rs2)) = dest_ts_frame x in
     case fo of
     I1 (r,kvs0) \<Rightarrow> (
-      Node_frame(ks1@ks2,rs1@[r]@rs2) |> (ps1|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))
+      Node_frame(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))
     | I2 ((r1,k,r2),kvs0) \<Rightarrow> (
       let ks' = ks1@[k]@ks2 in
       let rs' = rs1@[r1,r2]@rs2 in
       case (List.length ks' \<le> cs|>max_node_keys) of
       True \<Rightarrow> (
-        Node_frame(ks',rs') |> (ps1|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))
+        Node_frame(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))
       | False \<Rightarrow> (
         let (ks_rs1,k,ks_rs2) = split_node cs (ks',rs') in  (* FIXME move split_node et al to this file *)
-        Node_frame(ks_rs1) |> (ps1|>store_alloc) |> bind
-        (% r1. Node_frame (ks_rs2) |> (ps1|>store_alloc) |> fmap 
+        Node_frame(ks_rs1) |> (store_ops|>store_alloc) |> bind
+        (% r1. Node_frame (ks_rs2) |> (store_ops|>store_alloc) |> fmap 
         (% r2. (I2((r1,k,r2),kvs0),stk'))))
     )
   )
@@ -136,6 +138,7 @@ definition step_up :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow
 definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> (('k,'v,'r) ist,'t) MM" where
 "insert_step ps1 s = (
   let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
+  let store_ops = ps1|>ps1_store_ops in
   case s of 
   I_down d \<Rightarrow> (
     let (fs,(v,kvs0)) = d in
@@ -150,7 +153,7 @@ definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Right
       I1 (r,kvs0) \<Rightarrow> return (I_finished (r,kvs0))
       | I2((r1,k,r2),kvs0) \<Rightarrow> (
         (* create a new frame *)
-        (Node_frame([k],[r1,r2]) |> (ps1|>store_alloc) |> fmap (% r. I_finished (r,kvs0)))))
+        (Node_frame([k],[r1,r2]) |> (store_ops|>store_alloc) |> fmap (% r. I_finished (r,kvs0)))))
     | _ \<Rightarrow> (step_up ps1 u |> fmap (% u. I_up u)))
   | I_finished f \<Rightarrow> (return s)  (* stutter *)
 )"

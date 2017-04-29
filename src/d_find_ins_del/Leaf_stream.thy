@@ -23,7 +23,8 @@ definition mk_ls_state :: "'r \<Rightarrow> ('k,'v,'r)ls_state" where
 definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> 'r*('k,'r)rstk \<Rightarrow> (('k,'v,'r)lss,'t) MM" where
 "step_down ps1 rfs = (
   let (r,fs) = rfs in
-  (ps1|>store_read) r |> fmap 
+  let store_ops = ps1|>ps1_store_ops in
+  (store_ops|>store_read) r |> fmap 
   (% f. case f of 
     Node_frame (ks,rs) \<Rightarrow> (
       let r' = List.hd rs in

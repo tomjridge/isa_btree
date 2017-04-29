@@ -30,10 +30,11 @@ definition mk_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)fs" whe
 
 definition find_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> (('k,'v,'r)fs,'t) MM" where
 "find_step ps1 fs = (
+  let store_ops = ps1 |> ps1_store_ops in
   case fs of 
   F_finished _ \<Rightarrow> (return fs)  (* FIXME impossible, or return none? or have a finished error? or stutter? *)
   | F_down(r0,k,r,stk) \<Rightarrow> (
-    (ps1|>store_read) r |>fmap
+    (store_ops|>store_read) r |>fmap
     (% f. case f of 
       Node_frame (ks,rs) \<Rightarrow> (
         let (stk',r') = add_new_stack_frame (ps1|>cmp_k) k (ks,rs) stk in

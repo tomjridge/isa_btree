@@ -98,6 +98,7 @@ definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \
   ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'r) d12_t => (('k,'v,'r) u,'t) MM" 
 where
 "post_steal_or_merge ps1 stk' p_unused p_1 p_2 x = (
+      let store_ops = ps1 |> ps1_store_ops in
       let m = frac_mult in
       case x of 
       D1 c' \<Rightarrow> (
@@ -113,7 +114,7 @@ where
             True \<Rightarrow> (return (D_small_node(p'|>dest_Node_frame)))
             | False \<Rightarrow> (
               (* write the frame at this point *)
-              p'|>(ps1|>store_alloc)|>fmap (% r. D_updated_subtree(r)))))
+              p'|>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r)))))
         in
         f' |> fmap (% f'. (f',stk')) )
       | D2(c1,k,c2) \<Rightarrow> (
@@ -127,7 +128,7 @@ where
             return (D_small_node(p'|>dest_Node_frame))
           )
           | False \<Rightarrow> (
-            p' |>(ps1|>store_alloc)|>fmap (% r. D_updated_subtree(r))))
+            p' |>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r))))
         in
         f' |> fmap (% f'. (f',stk')))       
 )"
@@ -159,27 +160,28 @@ where
 definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (('k,'v,'r)u,'t) MM" where
 "step_up ps1 du = (
   let (f,stk) = du in
+  let store_ops = ps1|>ps1_store_ops in
   case stk of
   [] \<Rightarrow> (impossible1 (STR ''delete, step_up''))
   | p#stk' \<Rightarrow> (
     case f of   
     D_updated_subtree r \<Rightarrow> (
       let ((ks1,rs1),_,(ks2,rs2)) = p|>dest_ts_frame in
-      Node_frame(ks1@ks2,rs1@[r]@rs2) |> (ps1|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk'))
+      Node_frame(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk'))
     )
     | D_small_leaf(kvs) \<Rightarrow> (
       let leaf = True in
       let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Leaf_frame(List.zip ks vs)) in
       let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_ts_frame in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
-      let frm = (ps1|>store_read) r in
+      let frm = (store_ops|>store_read) r in
       let d12 :: (('k,('k,'v,'r) frame) d12_t,'t) MM = frm |> fmap (% frm. steal_or_merge (ps1|>cs) right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Leaf_frame|>unzip)) in
       let d12' :: (('k,'r) d12_t,'t) MM = d12 |> bind
       (% x. case x of
-        D1 frm \<Rightarrow> frm |> (ps1|>store_alloc) |> fmap (% r. D1 r)
+        D1 frm \<Rightarrow> frm |> (store_ops|>store_alloc) |> fmap (% r. D1 r)
         | D2(frm1,p_k,frm2) \<Rightarrow> (
-          frm1 |> (ps1|>store_alloc) |> bind
-          (% r1. frm2 |> (ps1|>store_alloc) |> fmap 
+          frm1 |> (store_ops|>store_alloc) |> bind
+          (% r1. frm2 |> (store_ops|>store_alloc) |> fmap 
           (% r2. D2(r1,p_k,r2)))))
       in
       d12' |> bind (% x. post_steal_or_merge ps1 stk' p p_1 p_2 x) 
@@ -193,14 +195,14 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
       (* parent info is already read, but we must read the siblings from disk *)
       let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_ts_frame in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
-      let frm = (ps1|>store_read) r in
+      let frm = (store_ops|>store_read) r in
       let d12 = frm |> fmap (% frm. steal_or_merge (ps1|>cs) right leaf mk_c (ks,rs) p_k (frm|>dest_Node_frame)) in
       let d12' = d12 |> bind
       (% x. case x of
-        D1 frm \<Rightarrow> frm |> (ps1|>store_alloc) |> fmap(% r. D1 r)
+        D1 frm \<Rightarrow> frm |> (store_ops|>store_alloc) |> fmap(% r. D1 r)
         | D2(frm1,p_k,frm2) \<Rightarrow> (
-          frm1 |> (ps1|>store_alloc) |> bind
-          (% r1. frm2 |> (ps1|>store_alloc) |> fmap 
+          frm1 |> (store_ops|>store_alloc) |> bind
+          (% r1. frm2 |> (store_ops|>store_alloc) |> fmap 
           (% r2. D2(r1,p_k,r2)))))
       in
       d12' |> bind (% x. post_steal_or_merge ps1 stk' p p_1 p_2 x)
@@ -210,13 +212,14 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
 
 definition delete_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> (('k,'v,'r)delete_state,'t) MM" where
 "delete_step ps1 s = (
+  let store_ops = ps1|>ps1_store_ops in
   case s of 
   D_down(f,r0) \<Rightarrow> (
     case (dest_f_finished f) of
     None \<Rightarrow> (find_step ps1 f |> fmap (% f'. D_down(f',r0)))
     | Some x \<Rightarrow> (
       let (r0,k,r,kvs,stk) = x in
-      (ps1|>store_free) (r0#(r_stk_to_rs stk)) |> bind 
+      (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind 
       (% _.
       case (? x : set (kvs|>List.map fst). key_eq (ps1|>cmp_k) x k) of
       True \<Rightarrow> (
@@ -225,7 +228,7 @@ definition delete_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)delete_state
         case (List.length kvs' < ps1|>cs|>min_leaf_size) of
         True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
         | False \<Rightarrow> (
-          Leaf_frame(kvs') |> (ps1|>store_alloc) |> fmap
+          Leaf_frame(kvs') |> (store_ops|>store_alloc) |> fmap
           (% r. D_up(D_updated_subtree(r),stk,r0)))
       )
       | False \<Rightarrow> (
@@ -238,9 +241,9 @@ definition delete_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)delete_state
     case stk of
     [] \<Rightarrow> (
       case f of
-      D_small_leaf kvs \<Rightarrow> (Leaf_frame(kvs)|>(ps1|>store_alloc)|>fmap (% r. D_finished r)) 
+      D_small_leaf kvs \<Rightarrow> (Leaf_frame(kvs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r)) 
       | D_small_node (ks,rs) \<Rightarrow> (
-        Node_frame(ks,rs)|>(ps1|>store_alloc)|>fmap (% r. D_finished r)
+        Node_frame(ks,rs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r)
       )
       | D_updated_subtree(r) \<Rightarrow> (return (D_finished r))
     )
@@ -260,7 +263,7 @@ definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) 
 
 definition wf_u :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r)u \<Rightarrow> bool" where
 "wf_u ps0 r2t t0 s k u =  assert_true' (
-  let (constants,k_ord) = (ps0|>cs',ps0|>cmp_k') in
+  let (constants,k_ord) = (ps0|>ps0_cs,ps0|>ps0_cmp_k) in
   let (fo,stk) = u in
   let check_stack = % rstk tstk. (stack_equal (rstk|>stack_map (r2t s)|>no_focus) (tstk|>stack_map Some|>no_focus)) in
   let check_wf = % ms t. (wellformed_tree constants ms k_ord t) in
@@ -294,7 +297,7 @@ definition wf_u :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) 
 
 definition wf_f :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'r \<Rightarrow> bool" where
 "wf_f ps0 r2t t0 s k r =  assert_true' (
-  let (constants,k_ord) = (ps0|>cs',ps0|>cmp_k') in
+  let (constants,k_ord) = (ps0|>ps0_cs,ps0|>ps0_cmp_k) in
   let t' = r2t s r |> dest_Some in  (* check dest_Some *)
   wellformed_tree constants (Some(Small_root_node_or_leaf)) k_ord t' &
   kvs_equal ( (t0|>tree_to_kvs|>kvs_delete k_ord k)) (t'|>tree_to_kvs)
@@ -304,7 +307,7 @@ definition wellformed_delete_state ::
   "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> bool" 
 where
 "wellformed_delete_state ps0 r2t t0 s k ds =  assert_true' (
-  let (constants,k_ord) = (ps0|>cs',ps0|>cmp_k') in
+  let (constants,k_ord) = (ps0|>ps0_cs,ps0|>ps0_cmp_k) in
   case ds of 
   D_down d \<Rightarrow> (wf_d k_ord r2t t0 s d)
   | D_up (fo,stk,r) \<Rightarrow> (wf_u ps0 r2t t0 s k (fo,stk) & (case r2t s r of None \<Rightarrow> False | Some t \<Rightarrow> tree_equal t t0))

@@ -32,11 +32,13 @@ wellformed_tree
 
 (* pre_params *)
 Pre_params.dummy
+Pre_params.mk_r2t
 
 (* params *)
 Params.dummy
 Params.Ps0
 Params.Ps1
+Params.store_ops_ext
 
 (* monad *)
 (* Monad.dest_MM *) fmap  bind
