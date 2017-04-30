@@ -256,13 +256,13 @@ definition delete_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)delete_state
 (* wellformedness ------------------------------------------------- *)
 
 definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r) d \<Rightarrow> bool" where
-"wf_d k_ord r2f t0 s d =  assert_true' (
+"wf_d k_ord r2f t0 s d =  assert_true (
   let (fs,r) = d in
   wellformed_find_state k_ord r2f t0 s fs  
 )"
 
 definition wf_u :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r)u \<Rightarrow> bool" where
-"wf_u ps0 r2t t0 s k u =  assert_true' (
+"wf_u ps0 r2t t0 s k u =  assert_true (
   let (constants,k_ord) = (ps0|>ps0_cs,ps0|>ps0_cmp_k) in
   let (fo,stk) = u in
   let check_stack = % rstk tstk. (stack_equal (rstk|>stack_map (r2t s)|>no_focus) (tstk|>stack_map Some|>no_focus)) in
@@ -296,7 +296,7 @@ definition wf_u :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) 
 )"
 
 definition wf_f :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'r \<Rightarrow> bool" where
-"wf_f ps0 r2t t0 s k r =  assert_true' (
+"wf_f ps0 r2t t0 s k r =  assert_true (
   let (constants,k_ord) = (ps0|>ps0_cs,ps0|>ps0_cmp_k) in
   let t' = r2t s r |> dest_Some in  (* check dest_Some *)
   wellformed_tree constants (Some(Small_root_node_or_leaf)) k_ord t' &
@@ -306,7 +306,7 @@ definition wf_f :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)t
 definition wellformed_delete_state :: 
   "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> bool" 
 where
-"wellformed_delete_state ps0 r2t t0 s k ds =  assert_true' (
+"wellformed_delete_state ps0 r2t t0 s k ds =  assert_true (
   let (constants,k_ord) = (ps0|>ps0_cs,ps0|>ps0_cmp_k) in
   case ds of 
   D_down d \<Rightarrow> (wf_d k_ord r2t t0 s d)

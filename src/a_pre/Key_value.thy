@@ -127,7 +127,7 @@ definition split_leaf :: "constants \<Rightarrow> ('k*'v)list \<Rightarrow> (('k
   (* FIXME following assumes leaf has size max_leaf_size+1, not anything more? *)
   let cut_point = (c|>max_leaf_size+1 - c|>min_leaf_size) in  
   let (l,r) = split_at cut_point kvs in 
-  let _ = assert_true' (List.length l \<ge> c|>min_leaf_size & List.length r \<ge> c|>min_leaf_size) in
+  let _ = assert_true (List.length l \<ge> c|>min_leaf_size & List.length r \<ge> c|>min_leaf_size) in
   let k = (case r of (k,_)#_ \<Rightarrow> k | _ \<Rightarrow> impossible1 (STR ''key_value, split_leaf'')) in
   (l,k,r)
 )"
@@ -146,7 +146,7 @@ definition split_node ::
   let (ks,rs) = n in
   let cut_point = (c|>max_node_keys-c|>min_node_keys) in  (* FIXME see above *)
   let (ks1,k,ks2) = split_at_3 cut_point ks in
-  let _ = assert_true' (List.length ks2 \<ge> c|>min_node_keys) in
+  let _ = assert_true (List.length ks2 \<ge> c|>min_node_keys) in
   let (rs1,rs2) = split_at (cut_point+1) rs in
   ((ks1,rs1),k,(ks2,rs2))
 )"

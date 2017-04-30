@@ -61,7 +61,7 @@ definition wf_store_tree :: "('k,'v,'r,'t)r2t \<Rightarrow> 't \<Rightarrow> 'r 
 
 (* t0 is the tree we expect *)
 definition wellformed_find_state :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> bool" where
-"wellformed_find_state k_ord r2t t0 s fs = assert_true' (
+"wellformed_find_state k_ord r2t t0 s fs = assert_true (
   let n = height t0 in
   (* need to check the stack and the focus *)
   let check_focus = % r t. wf_store_tree r2t s r t in
@@ -84,7 +84,7 @@ definition wellformed_find_state :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rig
 
 (* FIXME probably not worth doing *)
 definition wf_trans :: "'t * ('k,'v,'r)fs \<Rightarrow> 't * ('k,'v,'r)fs \<Rightarrow> bool" where
-"wf_trans s1 s2 = assert_true' (
+"wf_trans s1 s2 = assert_true (
   let (s1,fs1) = s1 in
   let (s2,fs2) = s2 in
   (* FIXME dont want to force equality check of the store (s2=s1) & *)

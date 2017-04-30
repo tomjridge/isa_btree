@@ -85,7 +85,7 @@ definition balanced_1 :: "('k,'v)tree => bool" where
   (cs = []) | (List.list_all (% c. height c = height (cs!0)) cs)))"
 
 definition balanced :: "('k,'v)tree => bool" where
-"balanced t = assert_true t (forall_subtrees balanced_1 t)"
+"balanced t = assert_true (forall_subtrees balanced_1 t)"
 
 
 (* get min size ---------------------------------------- *)
@@ -116,7 +116,7 @@ definition wf_size_1 :: "constants \<Rightarrow> ('k,'v) tree => bool" where
 "
 
 definition wf_size :: "constants \<Rightarrow> ms_t => ('k,'v) tree => bool" where
-"wf_size c ms t0 = assert_true (ms,t0) (
+"wf_size c ms t0 = assert_true (
   case ms of
   None => (forall_subtrees (wf_size_1 c) t0)
   | Some m => (
@@ -139,7 +139,7 @@ definition wf_ks_rs_1 :: "('k,'v)tree => bool" where
   case t0 of Leaf _ => True | Node(l,cs) => ((1+ length l) = (length cs)))"
 
 definition wf_ks_rs :: "('k,'v)tree => bool" where
-"wf_ks_rs t0 = assert_true t0 (forall_subtrees wf_ks_rs_1 t0)"
+"wf_ks_rs t0 = assert_true (forall_subtrees wf_ks_rs_1 t0)"
 
 
 (* keys ---------------------------------------- *)
@@ -162,7 +162,7 @@ case t0 of Leaf(l) => True
 "
 
 definition keys_consistent :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
-"keys_consistent cmp t = assert_true t (forall_subtrees (keys_consistent_1 cmp) t)"
+"keys_consistent cmp t = assert_true (forall_subtrees (keys_consistent_1 cmp) t)"
 
 
 (* keys_ordered ---------------------------------------- *)
@@ -171,13 +171,13 @@ definition keys_ordered_1 :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 "keys_ordered_1 cmp t0 = (t0 |> keys_1 |> ordered_key_list cmp)"
 
 definition keys_ordered :: "'k ord \<Rightarrow> ('k,'v)tree => bool" where
-"keys_ordered cmp t = assert_true t (forall_subtrees (keys_ordered_1 cmp) t)"
+"keys_ordered cmp t = assert_true (forall_subtrees (keys_ordered_1 cmp) t)"
 
 
 (* wf_kv_tree ---------------------------------------- *)
 
 definition wellformed_tree :: "constants \<Rightarrow> ms_t \<Rightarrow> 'k ord => ('k,'v) tree => bool" where
-"wellformed_tree c ms cmp t0 = assert_true (ms,t0) (
+"wellformed_tree c ms cmp t0 = assert_true (
   let b1 = wf_size c ms t0 in
   let b2 = wf_ks_rs t0 in
   let b3 = balanced t0 in

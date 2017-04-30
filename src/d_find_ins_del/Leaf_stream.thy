@@ -44,7 +44,7 @@ definition step_leaf :: "('k,'v,'r) leaf_ref \<Rightarrow> ('k,'v,'r) lss" where
 (* assumes fs <> [] *)
 definition step_up :: "('k,'r) rstk \<Rightarrow> ('k,'v,'r) lss" where
 "step_up fs = (
-  let _ = assert_true () (fs \<noteq> []) in
+  let _ = assert_true (fs \<noteq> []) in
   case fs of 
   [] \<Rightarrow> (failwith (STR ''impossible: Leaf_stream.step_up''))
   | f#fs' \<Rightarrow> (

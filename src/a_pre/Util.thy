@@ -7,25 +7,23 @@ begin
 
 lemma FIXME: "P" sorry
 
+definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
+  "rev_apply x f = f x"
+
+
 (* various undefinedness constants ----------------------------- *)
 
-
+(* patch following in generated ocaml *)
 definition failwith :: "String.literal \<Rightarrow> 'b" where
-"failwith x = undefined"
+"failwith x = (STR ''FIXME patch'') |> (% _. undefined)"
 
 definition impossible1 :: "String.literal \<Rightarrow> 'a" where
-  "impossible1 x = failwith (STR '''')"  
+  "impossible1 x = failwith x"  
+
+(* for debugging ocaml code; otherwise remove; FIXME don't need extra arg *)
+definition assert_true :: "bool \<Rightarrow> bool" where
+"assert_true b = (if b then b else failwith (STR ''assert_true''))"
   
-(*
-definition FIXME :: "'a" where
-"FIXME == undefined"
-
-definition arb :: "'a" where
-  "arb == undefined"  
-
-
-*)
-
 (* a single error type, for all proof-relevant errors ------------------------------------ *)
 
 datatype error = String_error "String.literal"
@@ -38,9 +36,6 @@ type_synonym e = error
 (* misc ------------------------------------------ *)  
   
 
-definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
-  "rev_apply x f = f x"
-
 (* Quickcheck_Examples/Completeness.thy - should be in Main? simpler defn here*)
 definition is_Some :: "'a option => bool" where
   "is_Some x == x ~= None"
@@ -52,13 +47,6 @@ primrec dest_Some (* :: "'a option => 'a" *) where
 definition is_None :: "'a option \<Rightarrow> bool" where 
 "is_None x == x = None"
   
-(* for debugging ocaml code; otherwise remove; FIXME don't need extra arg *)
-definition assert_true :: "'a \<Rightarrow> bool \<Rightarrow> bool" where
-"assert_true arg b = b"
-
-definition assert_true' :: "bool \<Rightarrow> bool" where
-"assert_true' b = assert_true () b"
-
 
 (* res -------------------------------------- *)  
   
