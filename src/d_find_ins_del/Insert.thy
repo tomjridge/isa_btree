@@ -121,22 +121,22 @@ definition wf_u :: "('k,'v,'r,'t) r2t \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)
   case fo of
   I1 r \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
-    check_stack stk t_stk &
+    assert_true (check_stack stk t_stk) &
     (* FIXME need wf_tree r , and below *)
     (case (r2t s r) of 
-    None \<Rightarrow> False
-    | Some t' \<Rightarrow> (
+    None \<Rightarrow> assert_true (False)
+    | Some t' \<Rightarrow> assert_true (
       kvs_equal (t' |> tree_to_kvs) (t_fo|>tree_to_kvs|>kvs_insert k_ord (k,v)))))
   | I2 (r1,k',r2) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
-    check_stack stk t_stk &
+    assert_true (check_stack stk t_stk) &
     ( let (l,u) = stack_to_lu_of_child t_stk in
       case (r2t s r1, r2t s r2) of
       (Some t1, Some t2) \<Rightarrow> (
         let (ks1,ks2) = (t1|>tree_to_keys,t2|>tree_to_keys) in
-        check_keys k_ord l ks1 (Some k') &
-        check_keys k_ord (Some k') ks2 u &
-        kvs_equal (t_fo|>tree_to_kvs|>kvs_insert k_ord (k,v)) (t1|>tree_to_kvs @ (t2|>tree_to_kvs)))
+        assert_true (check_keys k_ord l ks1 (Some k')) &
+        assert_true (check_keys k_ord (Some k') ks2 u) &
+        assert_true (kvs_equal (t_fo|>tree_to_kvs|>kvs_insert k_ord (k,v)) (t1|>tree_to_kvs @ (t2|>tree_to_kvs))))
       |(_,_) \<Rightarrow> False
     )
   )

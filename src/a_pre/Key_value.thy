@@ -92,7 +92,7 @@ primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Ri
 )"
 
 definition kvs_delete :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
-"kvs_delete ord k kvs = List.filter (% kv. key_eq ord (fst kv) k) kvs"
+"kvs_delete ord k kvs = List.filter (% kv. ~ (key_eq ord (fst kv) k)) kvs"
   
 (* search_key_to_index ------------- *)
 

@@ -52,7 +52,7 @@ tree option, then check the r with a t , given t height *)
 
 
 definition wf_store_tree :: "('k,'v,'r,'t)r2t \<Rightarrow> 't \<Rightarrow> 'r \<Rightarrow> ('k,'v)tree \<Rightarrow> bool" where
-"wf_store_tree r2t s r t = (
+"wf_store_tree r2t s r t = assert_true (
   case r2t s r of
   None \<Rightarrow> False
   | Some t' \<Rightarrow> (tree_equal t t')
@@ -69,12 +69,12 @@ definition wellformed_find_state :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rig
   case fs of 
   F_finished (r0,k,r,kvs,stk) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
-    check_focus r t_fo &
-    check_stack stk t_stk)
+    assert_true (check_focus r t_fo) &
+    assert_true (check_stack stk t_stk))
   | F_down (r0,k,r,stk) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
-    check_focus r t_fo &
-    check_stack stk t_stk
+    assert_true (check_focus r t_fo) &
+    assert_true (check_stack stk t_stk)
   )
 )"
 

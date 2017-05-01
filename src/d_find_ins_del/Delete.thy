@@ -258,7 +258,7 @@ definition delete_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)delete_state
 definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r) d \<Rightarrow> bool" where
 "wf_d k_ord r2f t0 s d =  assert_true (
   let (fs,r) = d in
-  wellformed_find_state k_ord r2f t0 s fs  
+  assert_true (wellformed_find_state k_ord r2f t0 s fs)
 )"
 
 definition wf_u :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r)u \<Rightarrow> bool" where
@@ -272,26 +272,26 @@ definition wf_u :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) 
   D_small_leaf kvs \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_leaf) in
-    check_stack stk t_stk & 
-    check_wf ms (Leaf kvs) &
-    check_focus t_fo kvs
+    assert_true (check_stack stk t_stk) & 
+    assert_true (check_wf ms (Leaf kvs)) &
+    assert_true (check_focus t_fo kvs)
   )
   | D_small_node (ks,rs) \<Rightarrow> (
     (* FIXME don't we need some wf on Node(ks,rs)? *)
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_node) in
     let t = Node(ks,rs|>List.map (r2t s) |> List.map dest_Some) in  (* FIXME check we can dest_Some *)
-    check_stack stk t_stk &
-    check_wf ms t &
-    check_focus t_fo (t|>tree_to_kvs)   
+    assert_true (check_stack stk t_stk) &
+    assert_true (check_wf ms t) &
+    assert_true (check_focus t_fo (t|>tree_to_kvs))   
   )
   | D_updated_subtree(r) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> None) in
     let t = r|>r2t s|>dest_Some in  (* FIXME check dest *)
-    check_stack stk t_stk &
-    check_wf ms t &
-    check_focus t_fo (t|>tree_to_kvs)   
+    assert_true (check_stack stk t_stk) &
+    assert_true (check_wf ms t) &
+    assert_true (check_focus t_fo (t|>tree_to_kvs))   
   )
 )"
 
@@ -299,8 +299,8 @@ definition wf_f :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)t
 "wf_f ps0 r2t t0 s k r =  assert_true (
   let (constants,k_ord) = (ps0|>ps0_cs,ps0|>ps0_cmp_k) in
   let t' = r2t s r |> dest_Some in  (* check dest_Some *)
-  wellformed_tree constants (Some(Small_root_node_or_leaf)) k_ord t' &
-  kvs_equal ( (t0|>tree_to_kvs|>kvs_delete k_ord k)) (t'|>tree_to_kvs)
+  assert_true (wellformed_tree constants (Some(Small_root_node_or_leaf)) k_ord t') &
+  assert_true (kvs_equal ( (t0|>tree_to_kvs|>kvs_delete k_ord k)) (t'|>tree_to_kvs))
 )"
 
 definition wellformed_delete_state :: 
