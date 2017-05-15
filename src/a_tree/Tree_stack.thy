@@ -111,7 +111,7 @@ definition add_new_stack_frame ::
 "add_new_stack_frame cmp k ks_rs stk = (
   let (ks,rs) = ks_rs in
   let ((ks1,rs1),r',(ks2,rs2)) = split_ks_rs cmp k (ks,rs) in
-  let (l,u) = stack_to_lu_of_child stk in
+  (* let (l,u) = stack_to_lu_of_child stk in *)
   let frm' = \<lparr>f_ks1=ks1,f_ts1=rs1,f_t=r', f_ks2=ks2,f_ts2=rs2 \<rparr> in
   (frm'#stk,r')
 )"

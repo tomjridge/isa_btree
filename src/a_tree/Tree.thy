@@ -82,11 +82,14 @@ definition balanced_1 :: "('k,'v)tree => bool" where
 "balanced_1 t0 == (
   case t0 of Leaf(l) => True
   | Node(l,cs) => (
+  (* FIXME assert cs <> [] *)
   (cs = []) | (List.list_all (% c. height c = height (cs!0)) cs)))"
 
 definition balanced :: "('k,'v)tree => bool" where
 "balanced t = assert_true (forall_subtrees balanced_1 t)"
 
+
+(* FIXME height and balanced could be combined - might make proofs shorter? *)
 
 (* get min size ---------------------------------------- *)
 
@@ -115,6 +118,7 @@ definition wf_size_1 :: "constants \<Rightarrow> ('k,'v) tree => bool" where
 ))
 "
 
+(* NOTE this treats the root differently, depending on ms; wf_size_1 has no ms *)
 definition wf_size :: "constants \<Rightarrow> ms_t => ('k,'v) tree => bool" where
 "wf_size c ms t0 = assert_true (
   case ms of

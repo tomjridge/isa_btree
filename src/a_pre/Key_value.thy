@@ -121,6 +121,7 @@ definition split_ks_rs ::
 (* insert aux funs --------------------------------------------------------------- *)
 
 (* FIXME aren't this aux funs shared with its? *)
+(* FIXME for insert_many we want to parameterize split_leaf so that it results in a full left leaf*)
 definition split_leaf :: "constants \<Rightarrow> ('k*'v)list \<Rightarrow> (('k*'v)list * 'k * ('k*'v) list)" where
 "split_leaf c kvs = (
   (* FIXME what is the best choice? min is probably too small; could split in two, but what if order is not dense? we may never insert any more keys at this point *)
@@ -144,7 +145,7 @@ definition split_node ::
   "constants \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'k * ('k list * 'a list)" where
 "split_node c n = (
   let (ks,rs) = n in
-  let cut_point = (c|>max_node_keys-c|>min_node_keys) in  (* FIXME see above *)
+  let cut_point = (c|>max_node_keys-c|>min_node_keys) in  (* FIXME see above; FIXME prefer to split equally even in insert_many case? *)
   let (ks1,k,ks2) = split_at_3 cut_point ks in
   let _ = assert_true (List.length ks2 \<ge> c|>min_node_keys) in
   let (rs1,rs2) = split_at (cut_point+1) rs in
