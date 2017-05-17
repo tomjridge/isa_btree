@@ -165,6 +165,7 @@ case t0 of Leaf(l) => True
   check_keys cmp l (set (keys(rs!i))) u))
 "
 
+(* NOTE this is usually the most difficult part of wf to prove *)
 definition keys_consistent :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 "keys_consistent cmp t = assert_true (forall_subtrees (keys_consistent_1 cmp) t)"
 
