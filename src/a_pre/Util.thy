@@ -74,10 +74,14 @@ definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
 (* various list lemmas ---------------------------------- *)
 
 definition split_at :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a list" where
-"split_at n xs = (take n xs,drop n xs)"
+"split_at n xs = (
+  let _ = assert_true (n \<le> List.length xs) in
+  take n xs,drop n xs)"
 
 definition split_at_3 :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a * 'a list" where
-"split_at_3 n xs = (take n xs,xs!n,drop (n+1) xs)"
+"split_at_3 n xs = (
+  let _ = assert_true (n \<le> List.length xs -1) in
+  (take n xs,xs!n,drop (n+1) xs))"
 
 definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 "from_to x y = upt x (Suc y)"
