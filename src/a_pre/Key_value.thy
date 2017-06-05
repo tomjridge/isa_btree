@@ -111,11 +111,11 @@ definition split_ks_rs ::
   "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
 "split_ks_rs cmp k ks_rs = (
   let (ks,rs) = ks_rs in
-  let _ = assert_true (List.length rs = List.length ks + 1) in
+  let _ = check_true (% _. List.length rs = List.length ks + 1) in
   let i = search_key_to_index cmp ks k in
-  let _ = assert_true (i \<le> List.length ks) in
+  let _ = check_true (% _. i \<le> List.length ks) in
   let (ks1,ks2) = split_at i ks in
-  let _ = assert_true (i \<le> List.length rs - 1) in
+  let _ = check_true (% _. i \<le> List.length rs - 1) in
   let (rs1,r',rs2) = split_at_3 i rs in
   ((ks1,rs1),r',(ks2,rs2))
 )"
@@ -127,13 +127,13 @@ definition split_ks_rs ::
 (* FIXME for insert_many we want to parameterize split_leaf so that it results in a full left leaf*)
 definition split_leaf :: "constants \<Rightarrow> ('k*'v)list \<Rightarrow> (('k*'v)list * 'k * ('k*'v) list)" where
 "split_leaf c kvs = (
-  let _ = assert_true (List.length kvs \<ge> c|>max_leaf_size+1) in
+  let _ = check_true (% _. List.length kvs \<ge> c|>max_leaf_size+1) in
   (* FIXME what is the best choice? min is probably too small; could split in two, but what if order is not dense? we may never insert any more keys at this point *)
   (* FIXME following assumes leaf has size max_leaf_size+1, not anything more? *)
   let cut_point = (c|>max_leaf_size+1 - c|>min_leaf_size) in  
-  let _ = assert_true (cut_point \<le> List.length kvs) in
+  let _ = check_true (% _ . cut_point \<le> List.length kvs) in
   let (l,r) = split_at cut_point kvs in 
-  let _ = assert_true (List.length l \<ge> c|>min_leaf_size & List.length r \<ge> c|>min_leaf_size) in
+  let _ = check_true (% _. List.length l \<ge> c|>min_leaf_size & List.length r \<ge> c|>min_leaf_size) in
   let k = (case r of (k,_)#_ \<Rightarrow> k | _ \<Rightarrow> impossible1 (STR ''key_value, split_leaf'')) in
   (l,k,r)
 )"
@@ -152,7 +152,7 @@ definition split_node ::
   let (ks,rs) = n in
   let cut_point = (c|>max_node_keys-c|>min_node_keys) in  (* FIXME see above; FIXME prefer to split equally even in insert_many case? *)
   let (ks1,k,ks2) = split_at_3 cut_point ks in
-  let _ = assert_true (List.length ks2 \<ge> c|>min_node_keys) in
+  let _ = check_true (%_.List.length ks2 \<ge> c|>min_node_keys) in
   let (rs1,rs2) = split_at (cut_point+1) rs in
   ((ks1,rs1),k,(ks2,rs2))
 )"

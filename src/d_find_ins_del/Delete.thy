@@ -107,7 +107,7 @@ where
         let f' = ( (* we may be at root, having deleted the single key *)
           case (p_sz = 0) of
           True \<Rightarrow> (
-            let _ = assert_true (stk'=[]) in
+            let _ = check_true (%_. stk'=[]) in
             return (D_updated_subtree(c')))
           | False \<Rightarrow> (
             case (p_sz < ps1|>cs|>min_node_keys) of 
@@ -124,7 +124,7 @@ where
           (* we may be at the root, in which case f' may be small *)
           case (p_sz < ps1|>cs|>min_node_keys) of
           True \<Rightarrow> (
-            let _ = assert_true (stk'=[]) in
+            let _ = check_true (%_.stk'=[]) in
             return (D_small_node(p'|>dest_Node_frame))
           )
           | False \<Rightarrow> (

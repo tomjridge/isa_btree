@@ -11,7 +11,7 @@ definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
   "rev_apply x f = f x"
 
 
-(* various undefinedness constants ----------------------------- *)
+(* failwith ----------------------------- *)
 
 (* patch following in generated ocaml *)
 definition failwith :: "String.literal \<Rightarrow> 'b" where
@@ -20,10 +20,18 @@ definition failwith :: "String.literal \<Rightarrow> 'b" where
 definition impossible1 :: "String.literal \<Rightarrow> 'a" where
   "impossible1 x = failwith x"  
 
-(* for debugging ocaml code; otherwise remove; FIXME don't need extra arg *)
+(* debugging, asserts -------------------------------------------------------------- *)
+
+(* assert_true always evaluates argument; for debugging ocaml code *)
 definition assert_true :: "bool \<Rightarrow> bool" where
 "assert_true b = (if b then b else failwith (STR ''assert_true''))"
-  
+
+(* this may check evaluate its argument, but can be disabled by setting a flag; 
+used during debugging to check various conditions; should be disabled in production *)  
+definition check_true :: "(unit \<Rightarrow> bool) \<Rightarrow> bool" where
+"check_true f = (STR ''FIXME patch'') |> (% _. undefined)"
+
+
 (* a single error type, for all proof-relevant errors ------------------------------------ *)
 
 datatype error = String_error "String.literal"
@@ -75,12 +83,12 @@ definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
 
 definition split_at :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a list" where
 "split_at n xs = (
-  let _ = assert_true (n \<le> List.length xs) in
+  let _ = check_true (% _. n \<le> List.length xs) in
   take n xs,drop n xs)"
 
 definition split_at_3 :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a * 'a list" where
 "split_at_3 n xs = (
-  let _ = assert_true (n \<le> List.length xs -1) in
+  let _ = check_true (% _. n \<le> List.length xs -1) in
   (take n xs,xs!n,drop (n+1) xs))"
 
 definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
