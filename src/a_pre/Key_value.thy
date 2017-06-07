@@ -107,9 +107,10 @@ definition search_key_to_index :: "'k ord \<Rightarrow> 'k list => 'k => nat" wh
   let i' = (case i of None => num_keys | Some x => x) in
   i')"
 
-definition split_ks_rs :: 
+(* this version is high level but slow; prefer following defn which TODO should be equivalent (!) *)
+definition split_ks_rs' :: 
   "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
-"split_ks_rs cmp k ks_rs = (
+"split_ks_rs' cmp k ks_rs = (
   let (ks,rs) = ks_rs in
   let _ = check_true (% _. List.length rs = List.length ks + 1) in
   let i = search_key_to_index cmp ks k in
@@ -120,6 +121,36 @@ definition split_ks_rs ::
   ((ks1,rs1),r',(ks2,rs2))
 )"
   
+
+(* NB ks_rs1 stored in reverse *)
+function aux :: 
+  "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
+"aux cmp k0 ks_rs1 ks_rs2 = (
+  let (ks1,rs1) = ks_rs1 in
+  let (ks,rs) = ks_rs2 in
+  let (r,rs') = (List.hd rs,List.tl rs) in
+  case ks of 
+  [] \<Rightarrow> ( 
+    ( (List.rev ks1,List.rev rs1), r, (ks,rs')))
+  | k#ks' \<Rightarrow> (
+    if key_lt cmp k0 k then
+      (* reached the right place *)
+      ( (List.rev ks1,List.rev rs1), r, (ks,rs'))
+    else 
+      aux cmp k0  (k#ks1,r#rs1) (ks',rs'))
+)"
+apply (force)+ done
+termination aux
+ by (force intro:FIXME)
+
+
+(* search through a list, and stop when we reach a position where k1\<le>k<k2, or equivalently
+(given invariants) k < k2  *)
+definition split_ks_rs :: 
+  "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
+"split_ks_rs cmp k ks_rs = (
+  aux cmp k ([],[]) ks_rs
+)"
 
 (* insert aux funs --------------------------------------------------------------- *)
 

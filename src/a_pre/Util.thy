@@ -94,7 +94,8 @@ definition split_at_3 :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a *
 definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 "from_to x y = upt x (Suc y)"
 
-
+definition while_not_nil :: "('a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'a list \<Rightarrow> 'b" where
+"while_not_nil f init xs = (List.foldr f xs init)"
 
 (* iteration ---------------------------------------------------- *)
 
