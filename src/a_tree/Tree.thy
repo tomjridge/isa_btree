@@ -83,7 +83,7 @@ definition balanced_1 :: "('k,'v)tree => bool" where
   case t0 of Leaf(l) => True
   | Node(l,cs) => (
   (* FIXME assert cs <> [] *)
-  (cs = []) | (List.list_all (% c. height c = height (cs!0)) cs)))"
+  (cs <> []) & (List.list_all (% c. height c = height (cs!0)) cs)))"
 
 definition balanced :: "('k,'v)tree => bool" where
 "balanced t = assert_true (forall_subtrees balanced_1 t)"
