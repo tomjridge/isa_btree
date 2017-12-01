@@ -60,7 +60,26 @@
 # Main concepts, informally
 
 ## B-tree
+
+A B-tree is a balanced tree, with size constraints on the nodes and leaves. Each node etc.
+
+## Frames and stores 
+
+A store is a slightly abstracted view of a disk. The underlying model
+of a disk is a map from block id to block. A store is a map from block
+id to frame. A frame represents a single node (or leaf), with pointers
+(block ids) to child nodes.
+
+
 ## Tree stack
+
+A tree stack is a way to represent a "position in a tree". It consists
+of a sequence of frames, starting at the root of the tree, and ending
+in a subtree called the "focus". The frames represent "the rest of the
+tree" excluding the focus.
+
+Example
+
 
 
 # ----------------------------------------------------------------------

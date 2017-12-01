@@ -2,6 +2,8 @@ theory Tree
 imports "$SRC/a_pre/Pre" 
 begin
 
+(* tree algebraic datatype ------------------------- *)
+
 datatype ('k,'v) tree = Node "('k list * ('k,'v) tree list)" | Leaf "('k*'v)list"
 
 type_synonym ('k,'v) t = "('k,'v) tree"

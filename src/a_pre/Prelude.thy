@@ -19,8 +19,7 @@ record constants =
 (* small node or leaf ------------------------------------- *)
 
 (* `min_size_t` is a datatype which flags whether nodes and leaves
-are small or not; a small root can potentially have no children; a
-small leaf can have FIXME) *)
+are small or not; a small root can potentially have no children *)
 
 datatype min_size_t = 
   Small_root_node_or_leaf
@@ -32,6 +31,8 @@ type_synonym ms_t = "min_size_t option"
  
 (* transition systems -------------------------------- *)
 
+(* transition system basic definitions *)
+
 type_synonym 's trans_t = "('s * 's) set"
 
 definition trace_set :: "('s * 's) set \<Rightarrow> (nat \<Rightarrow> 's) set" where
@@ -41,8 +42,8 @@ definition invariant :: "('s * 's) set \<Rightarrow> ('s \<Rightarrow> bool) \<R
 "invariant trns P = (! s s'. (s,s') : trns \<longrightarrow> P s \<longrightarrow> P s')"
 
 (* the main lemma about invariants FIXME prove this *)  
-definition invariant_b :: "'s trans_t \<Rightarrow> bool" where
-"invariant_b trns = (! P f.
+definition invariant_thm :: "'s trans_t \<Rightarrow> bool" where
+"invariant_thm trns = (! P f.
   invariant trns P & 
   f : trace_set trns &
   P(f 0) \<longrightarrow> (! n. P (f n)) 
@@ -56,8 +57,8 @@ definition invariant_assuming :: "('s * 's) set \<Rightarrow> ('s \<Rightarrow> 
   invariant trns Q)
 "
 
-definition invariant_assuming_b :: "'s trans_t \<Rightarrow>  ('s \<Rightarrow> bool) \<Rightarrow> ('s \<Rightarrow> bool) \<Rightarrow> bool" where
-"invariant_assuming_b trns P Q = (
+definition invariant_assuming_thm :: "'s trans_t \<Rightarrow>  ('s \<Rightarrow> bool) \<Rightarrow> ('s \<Rightarrow> bool) \<Rightarrow> bool" where
+"invariant_assuming_thm trns P Q = (
   invariant trns P &
   invariant_assuming trns P Q 
   \<longrightarrow> invariant trns (% x. P x & Q x)

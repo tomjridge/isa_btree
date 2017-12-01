@@ -23,7 +23,8 @@ definition failwith :: "String.literal \<Rightarrow> 'b" where
 "failwith x = (STR ''FIXME patch'') |> (% _. undefined)"
 
 
-(* impossible1 marks cases that are impossible *)
+(* impossible1 marks cases that are impossible; the 1 suffix is needed because impossible is 
+reserved (FIXME in OCaml?) *)
 
 definition impossible1 :: "String.literal \<Rightarrow> 'a" where
   "impossible1 x = failwith x"  
@@ -50,7 +51,7 @@ definition check_true :: "(unit \<Rightarrow> bool) \<Rightarrow> bool" where
 
 (* a single error type, for all proof-relevant errors ------------------------------------ *)
 
-(* Errors are for cases that are expected, and which the code should
+(* errors are for cases that are expected, and which the code should
 handle; at the moment they are just strings *)
 
 datatype error = String_error "String.literal"

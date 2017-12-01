@@ -2,31 +2,34 @@ theory Key_value
 imports Prelude
 begin
 
-(* polymorphic just so that easier to deal with when supplying from ocaml side *)
-(*
-datatype tri = LT | EQ | GT
-*)
+(* NOTE definitions are polymorphic in the key type *)
 
-(* equality is just hol equality, so we use this rather than a compare function *)
+(* FIXME what does this mean? equality is just hol equality, so we use this rather than a compare function *)
 
+
+(* keys are ordered *)
 type_synonym 'k ord = "'k \<Rightarrow> 'k \<Rightarrow> int"
   
+(* NOTE variables of type 'k ord are typically called ord, or (better) cmp *)
 
+(* operations on keys and values (in fact, just a key comparison function *)
 record ('k,'v) kv_ops =
   compare_k :: "'k ord"
   
+(* check two lists of kv for equality; patched because values may have some non-standard equality *)
 definition kvs_equal :: "('k*'v) list \<Rightarrow> ('k*'v) list \<Rightarrow> bool" where
 "kvs_equal = failwith (STR ''FIXME patch'')"
 
-(* NB 'v is only compared for equality in wf checks; we assume these are only tested for simple 'v 
+(* NOTE 'v is only compared for equality in wf checks; we assume these are only tested for simple 'v 
 for which ocaml's = is satisfactory; in fact, in the isa code we only compare trees for equality,
 so we can drop this altogether *)
+
 (*
 definition v_equal :: "'v \<Rightarrow> 'v \<Rightarrow> bool" where
 "v_equal = failwith (STR ''FIXME patch'')"
 *)
 
-(* generic defns --------------------------------------------------- *)
+(* key ordering, generic defns --------------------------------------------------- *)
 
 definition key_lt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
 "key_lt ord k1 k2 = ( ord k1 k2 < 0)"
@@ -41,7 +44,7 @@ definition key_le :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> boo
 definition key_gt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
 "key_gt ord k1 k2 = (~ ( key_le ord k1 k2))"
 
-
+(* FIXME this is horrible - we require merely that it is a total order *)
 definition wf_key_ord :: "'k ord \<Rightarrow> bool" where
 "wf_key_ord ord = (
   let le = key_le ord in
@@ -52,25 +55,28 @@ definition wf_key_ord :: "'k ord \<Rightarrow> bool" where
   (! k1 k2. key_eq ord k1 k2 \<longrightarrow> (k1=k2))  (* FIXME may need this? *)
 )"
 
-(* very minor defn *)
+(* lt on kv pair is just lt on k components *)
 definition kv_lt :: "'k ord \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v) \<Rightarrow> bool" where
   "kv_lt ord kv1 kv2 = (key_lt ord (fst kv1) (fst kv2))"
 
+(* ordered key list, defined pointwise rather than inductively *)
 definition ordered_key_list :: "'k ord \<Rightarrow> 'k list \<Rightarrow> bool" where
 "ordered_key_list ord ks = (
   (List.length ks < 2) |  
   (! i : set(from_to 0 (length ks -2)). key_lt ord (ks!i) (ks!(i+1)))
 )"
 
-(*begin check keys definition*)
+
+(* check keys --------------------------------- *)
+
+(* check key set is bounded *)
 definition check_keys :: "'k ord \<Rightarrow> 'k option => 'k set => 'k option => bool" where
 "check_keys cmp kl ks kr = (
   let b1 = (case kl of None => True | Some kl => (! k : ks. key_le cmp kl k)) in
   let b2 = (case kr of None => True | Some kr => (! k : ks. key_lt cmp k kr)) in
   b1 & b2)"
-(*end check keys definition*)
 
-(* xs < l \<le> ks < u \<le> zs *)
+(* xs < l \<le> ks < u \<le> zs; an extended version of the above *)
 definition check_keys_2 :: "'k ord \<Rightarrow> 'k set \<Rightarrow> 'k option \<Rightarrow> 'k set \<Rightarrow> 'k option \<Rightarrow> 'k set \<Rightarrow> bool" where
 "check_keys_2 cmp xs l ks u zs = (
   (case l=None of True \<Rightarrow> xs={} | _ \<Rightarrow> True) &
@@ -80,7 +86,10 @@ definition check_keys_2 :: "'k ord \<Rightarrow> 'k set \<Rightarrow> 'k option 
   (check_keys cmp u zs None)
 )"
 
-(* for leaf *)
+
+(* insert and delete in list of kv --------------------------------- *)
+
+(* insert a new kv into a list of kvs; used to insert new binding into a leaf *)
 primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
 "kvs_insert cmp kv [] = [kv]"
 | "kvs_insert cmp kv (kv'#kvs') = (
@@ -91,9 +100,11 @@ primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Ri
   (k,v)#(k',v')#kvs'
 )"
 
+(* delete a pair with a particular key from a list of pairs *)
 definition kvs_delete :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
 "kvs_delete ord k kvs = List.filter (% kv. ~ (key_eq ord (fst kv) k)) kvs"
   
+
 (* search_key_to_index ------------- *)
 
 (* FIXME move *)
@@ -106,6 +117,12 @@ definition search_key_to_index :: "'k ord \<Rightarrow> 'k list => 'k => nat" wh
   let i = List.find (% x. key_lt cmp k (ks!x)) (upt 0 num_keys) in
   let i' = (case i of None => num_keys | Some x => x) in
   i')"
+
+
+(* split_ks_rs ------------------------------------------ *)
+
+(* when splitting leaves and nodes, we need to split based on a particular key; also used when 
+constructing frames *)
 
 (* this version is high level but slow; prefer following defn which TODO should be equivalent (!) *)
 definition split_ks_rs' :: 
@@ -152,7 +169,7 @@ definition split_ks_rs ::
   aux cmp k ([],[]) ks_rs
 )"
 
-(* insert aux funs --------------------------------------------------------------- *)
+(* insert aux funs: split_leaf and split_node ------------------------------------------------ *)
 
 (* FIXME aren't this aux funs shared with its? *)
 (* FIXME for insert_many we want to parameterize split_leaf so that it results in a full left leaf*)
