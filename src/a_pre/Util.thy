@@ -14,25 +14,44 @@ definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
 (* failwith ----------------------------- *)
 
 (* patch following in generated ocaml *)
+
+
+(* failwith is for errors that are not expected; such an error should
+never arise *)
+
 definition failwith :: "String.literal \<Rightarrow> 'b" where
 "failwith x = (STR ''FIXME patch'') |> (% _. undefined)"
+
+
+(* impossible1 marks cases that are impossible *)
 
 definition impossible1 :: "String.literal \<Rightarrow> 'a" where
   "impossible1 x = failwith x"  
 
+
+
 (* debugging, asserts -------------------------------------------------------------- *)
 
-(* assert_true always evaluates argument; for debugging ocaml code *)
+
+(* assert_true always evaluates argument; this is useful for debugging OCaml code *)
+
 definition assert_true :: "bool \<Rightarrow> bool" where
 "assert_true b = (if b then b else failwith (STR ''assert_true''))"
 
-(* this may check evaluate its argument, but can be disabled by setting a flag; 
-used during debugging to check various conditions; should be disabled in production *)  
+
+(* check_true is patched in OCaml; may evaluate its argument, but can
+be disabled by setting a flag; used during debugging to check various
+conditions; should be disabled in production *)
+
 definition check_true :: "(unit \<Rightarrow> bool) \<Rightarrow> bool" where
 "check_true f = (STR ''FIXME patch'') |> (% _. undefined)"
 
 
+
 (* a single error type, for all proof-relevant errors ------------------------------------ *)
+
+(* Errors are for cases that are expected, and which the code should
+handle; at the moment they are just strings *)
 
 datatype error = String_error "String.literal"
 
@@ -41,30 +60,25 @@ definition mk_err :: "String.literal \<Rightarrow> error" where
 
 type_synonym e = error
 
+
+
 (* misc ------------------------------------------ *)  
   
 
-(* Quickcheck_Examples/Completeness.thy - should be in Main? simpler defn here*)
+(* Quickcheck_Examples/Completeness.thy - should be in Main? simpler
+defn here*)
+
 definition is_Some :: "'a option => bool" where
   "is_Some x == x ~= None"
+
 
 primrec dest_Some (* :: "'a option => 'a" *) where 
   "dest_Some (Some x) = x"
   | "dest_Some None = undefined"
 
+
 definition is_None :: "'a option \<Rightarrow> bool" where 
 "is_None x == x = None"
-  
-
-(* res -------------------------------------- *)  
-  
-datatype 'a res = Ok 'a | Error e 
-
-definition is_Ok :: "'a res \<Rightarrow> bool" where
-"is_Ok x = (case x of Ok _ \<Rightarrow> True | _ \<Rightarrow> False)"
-
-definition dest_Ok :: "'a res \<Rightarrow> 'a" where
-"dest_Ok x = (case x of Ok x \<Rightarrow> x | _ \<Rightarrow> failwith (STR ''dest_Ok''))"
 
 
 
@@ -77,6 +91,21 @@ definition dest_list' :: "'a list \<Rightarrow> ('a list * 'a)" where
 
 definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
 "unzip xs = (xs|>List.map fst, xs|>List.map snd)"
+
+  
+
+(* res -------------------------------------- *)  
+  
+(* This is similar to the result type from OCaml *)
+
+datatype 'a res = Ok 'a | Error e 
+
+definition is_Ok :: "'a res \<Rightarrow> bool" where
+"is_Ok x = (case x of Ok _ \<Rightarrow> True | _ \<Rightarrow> False)"
+
+definition dest_Ok :: "'a res \<Rightarrow> 'a" where
+"dest_Ok x = (case x of Ok x \<Rightarrow> x | _ \<Rightarrow> failwith (STR ''dest_Ok''))"
+
 
 
 (* various list lemmas ---------------------------------- *)
@@ -97,8 +126,9 @@ definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 definition while_not_nil :: "('a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'a list \<Rightarrow> 'b" where
 "while_not_nil f init xs = (List.foldr f xs init)"
 
-(* iteration ---------------------------------------------------- *)
 
+
+(* iteration ---------------------------------------------------- *)
 
 (*no termination proof for the following*)
 (*begin iterator*)

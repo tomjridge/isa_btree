@@ -2,7 +2,12 @@ theory Prelude
 imports Main Util   
 begin
 
-(* constants --------------------------------------------- *)
+
+(* min/max size constants --------------------------------------------- *)
+
+
+(* `constants` record type, which is used to record min and max bounds
+for leaves and nodes *)
 
 record constants = 
   min_leaf_size :: nat
@@ -13,7 +18,10 @@ record constants =
 
 (* small node or leaf ------------------------------------- *)
 
-(* whether nodes and leaves are small or not *)
+(* `min_size_t` is a datatype which flags whether nodes and leaves
+are small or not; a small root can potentially have no children; a
+small leaf can have FIXME) *)
+
 datatype min_size_t = 
   Small_root_node_or_leaf
   | Small_node

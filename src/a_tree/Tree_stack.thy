@@ -2,6 +2,8 @@ theory Tree_stack
 imports Tree 
 begin
 
+(* FIXME needs more documentation *)
+
 (* some of these defns could be parametric, but polytypes were getting a bit clunky, and the
 defns aren't exposed to the user so we don't need polymorphism *)
 
