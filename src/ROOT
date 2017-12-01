@@ -1,0 +1,11 @@
+session "isa_btree" = "HOL" +
+  options [document = pdf, document_output = "output"]
+  theories [document = false]
+Code_Numeral 
+"~~/src/HOL/Library/Code_Target_Numeral"
+"~~/src/HOL/Library/Code_Char"
+  theories
+    (* NOTE need to export SRC before this *)
+    "e_export/Export_code"
+  document_files
+    "root.tex"
