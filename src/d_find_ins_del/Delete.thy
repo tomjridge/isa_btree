@@ -28,7 +28,7 @@ definition mk_delete_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)dst" 
 definition dest_d_finished :: "('k,'v,'r)dst \<Rightarrow> 'r option" where
 "dest_d_finished x = (case x of D_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
 
-(* steal or merge -------------------------------------------- *)
+(* steal or merge --------------------------------------------------- *)
 
 type_synonym ('k,'a) frac_t = "'k s * 'a s"
 
@@ -133,7 +133,7 @@ where
         f' |> fmap (% f'. (f',stk')))       
 )"
 
-(* delete --------------------------------------------------------  *)
+(* delete ----------------------------------------------------------  *)
 
 definition get_sibling :: 
   "( ('k s * 'r s) * ('k s * 'r s)) \<Rightarrow> bool (* right *) * (('k s*'r s) * ('k s*'r s)) * ('k*'r)" 
@@ -253,7 +253,7 @@ definition delete_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)delete_state
   
 )"
 
-(* wellformedness ------------------------------------------------- *)
+(* wellformedness --------------------------------------------------- *)
 
 definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r) d \<Rightarrow> bool" where
 "wf_d k_ord r2f t0 s d =  assert_true (

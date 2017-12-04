@@ -5,7 +5,7 @@ begin
 (* for export order *)
 definition dummy :: "unit" where "dummy = Pre_params.dummy"
 
-(* fix types ---------------------------------------------------------- *)
+(* fix types *)
 
 (*typedecl page_ref*)
 (* fix a particular k v *)
@@ -16,10 +16,18 @@ typedecl world
 *)
 
 
-
-(* params ------------------------------------------------------- *)
+(* ('a,'t) MM type_synonym ------------------------------------------ *)
 
 type_synonym ('a,'t) MM = "'t \<Rightarrow> ('t * 'a res)"
+
+
+
+(* params ----------------------------------------------------------- *)
+
+(* The B-tree functions are heavily parameterized; rather than pass
+round many parameters individually, we package them up as follows. *)
+
+(* FIXME ops and params are different kinds of things *)
 
 datatype 'k ps0 = Ps0 "constants * 'k ord"
 
@@ -55,4 +63,3 @@ definition cmp_k :: "('k,'v,'r,'t) ps1 \<Rightarrow> 'k ord" where
 "cmp_k ps1 = ps1 |> dest_ps1 |> fst |> ps0_cmp_k"
 
 end
-

@@ -3,7 +3,7 @@ imports Main
 begin
 
 
-(* FIXME move soem of this to prelude *)
+(* FIXME move some of this to prelude *)
 
 lemma FIXME: "P" sorry
 
@@ -11,7 +11,7 @@ definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
   "rev_apply x f = f x"
 
 
-(* failwith ----------------------------- *)
+(* failwith --------------------------------------------------------- *)
 
 (* patch following in generated ocaml *)
 
@@ -23,18 +23,19 @@ definition failwith :: "String.literal \<Rightarrow> 'b" where
 "failwith x = (STR ''FIXME patch'') |> (% _. undefined)"
 
 
-(* impossible1 marks cases that are impossible; the 1 suffix is needed because impossible is 
-reserved (FIXME in OCaml?) *)
+(* impossible1 marks cases that are impossible; the 1 suffix is needed
+because impossible is reserved (FIXME in OCaml?) *)
 
 definition impossible1 :: "String.literal \<Rightarrow> 'a" where
   "impossible1 x = failwith x"  
 
 
 
-(* debugging, asserts -------------------------------------------------------------- *)
+(* debugging, asserts ----------------------------------------------- *)
 
 
-(* assert_true always evaluates argument; this is useful for debugging OCaml code *)
+(* assert_true always evaluates argument; this is useful for debugging
+OCaml code; FIXME replaced with simple assert in OCaml? *)
 
 definition assert_true :: "bool \<Rightarrow> bool" where
 "assert_true b = (if b then b else failwith (STR ''assert_true''))"
@@ -49,7 +50,7 @@ definition check_true :: "(unit \<Rightarrow> bool) \<Rightarrow> bool" where
 
 
 
-(* a single error type, for all proof-relevant errors ------------------------------------ *)
+(* a single error type, for all proof-relevant errors --------------- *)
 
 (* errors are for cases that are expected, and which the code should
 handle; at the moment they are just strings *)
@@ -63,11 +64,11 @@ type_synonym e = error
 
 
 
-(* misc ------------------------------------------ *)  
+(* misc ----------------------------------------------------------- *)  
   
 
-(* Quickcheck_Examples/Completeness.thy - should be in Main? simpler
-defn here*)
+(* is_Some also in Quickcheck_Examples/Completeness.thy - should be in
+Main? simpler defn here*)
 
 definition is_Some :: "'a option => bool" where
   "is_Some x == x ~= None"
@@ -90,12 +91,14 @@ definition dest_list' :: "'a list \<Rightarrow> ('a list * 'a)" where
 "dest_list' xs = (case xs of [] \<Rightarrow> failwith (STR ''dest_list' '') | _ \<Rightarrow> (butlast xs,last xs))"
 
 
+(* FIXME inefficient *)
+
 definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
 "unzip xs = (xs|>List.map fst, xs|>List.map snd)"
 
   
 
-(* res -------------------------------------- *)  
+(* res ------------------------------------------------------------ *)  
   
 (* This is similar to the result type from OCaml *)
 
@@ -109,7 +112,7 @@ definition dest_Ok :: "'a res \<Rightarrow> 'a" where
 
 
 
-(* various list lemmas ---------------------------------- *)
+(* various list defs, split_at etc --------------------------- *)
 
 definition split_at :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a list" where
 "split_at n xs = (
@@ -128,8 +131,11 @@ definition while_not_nil :: "('a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow
 "while_not_nil f init xs = (List.foldr f xs init)"
 
 
+definition max_of_list :: "nat list \<Rightarrow> nat" where
+  "max_of_list xs == foldr max xs 0"
 
-(* iteration ---------------------------------------------------- *)
+
+(* iterate f:'a -> 'a option ------------------------------------ *)
 
 (*no termination proof for the following*)
 (*begin iterator*)
@@ -146,8 +152,5 @@ termination iter_step
  by (force intro:FIXME)
 
   
-definition max_of_list :: "nat list \<Rightarrow> nat" where
-  "max_of_list xs == foldr max xs 0"
-
  
 end

@@ -2,7 +2,11 @@ theory Tree
 imports "$SRC/a_pre/Pre" 
 begin
 
-(* tree algebraic datatype ------------------------- *)
+(* We need two models for trees: the algebraic datatype model, and the
+"blocks and pointers" model. This is the ADT model. *)
+
+
+(* tree algebraic datatype ------------------------------------------ *)
 
 datatype ('k,'v) tree = Node "('k list * ('k,'v) tree list)" | Leaf "('k*'v)list"
 
@@ -23,11 +27,16 @@ fun is_Leaf :: "('k,'v)tree \<Rightarrow> bool" where
 "is_Leaf (Leaf l) = True" |
 "is_Leaf (Node _) = False"
 
-(* patch this in generated ocaml - just use ocaml equality; in isa, this defn suppresses the HOL.equal dictionary passing *)
+(* patch this in generated ocaml - just use ocaml equality; in isa,
+this defn suppresses the HOL.equal dictionary passing in generated
+OCaml *)
+
 definition tree_equal :: "('k,'v) tree \<Rightarrow> ('k,'v) tree \<Rightarrow> bool" where
 "tree_equal t1 t2 = failwith (STR ''FIXME patch'')"
 
-(* util ---------------------------------------- *)
+
+
+(* util ------------------------------------------------------------- *)
 
 definition min_child_index  :: nat where "min_child_index = 0"
 
@@ -48,37 +57,37 @@ definition index_to_bound :: "'k list \<Rightarrow> nat \<Rightarrow> ('k option
   (l,u))"
 
 
-(* height ---------------------------------------- *)
+(* height ----------------------------------------------------------- *)
 
-(*begin height definition*)
 function height :: "('k,'v)tree => nat" where
 "height t0 = (
   case t0 of
   Leaf _ => (1::nat)
-  | Node(_,cs) => (1 + max_of_list(List.map height cs))
-)"
-(*end height definition*)
+  | Node(_,cs) => (1 + max_of_list(List.map height cs)))"
 by auto
 termination
   apply(force intro:FIXME)
   done
 
-(* tr: note that height is "special" because replacing a subtree that is wf_tree with another doesn't
-  preserve balanced property *)
+(* tr: note that height is "special" because replacing a subtree that
+  is wf_tree with another doesn't preserve balanced property *)
 
-(* to subtrees ---------------------------------------- *)
+
+
+(* to subtrees ------------------------------------------------------ *)
 
 fun tree_to_subtrees :: "('k,'v)tree => ('k,'v) tree list" where
 "tree_to_subtrees t0 = (
   case t0 of Leaf _ => [t0]
   | Node(l,cs) => (
-    t0#((List.map tree_to_subtrees cs) |> List.concat)))
-"
+    t0#((List.map tree_to_subtrees cs) |> List.concat)))"
 
 definition forall_subtrees :: "(('k,'v)tree => bool) => ('k,'v)tree => bool" where
 "forall_subtrees P t == (List.list_all P (t |> tree_to_subtrees))"
 
-(* balanced ---------------------------------------- *)
+
+
+(* balanced --------------------------------------------------------- *)
 
 definition balanced_1 :: "('k,'v)tree => bool" where
 "balanced_1 t0 == (
@@ -93,7 +102,9 @@ definition balanced :: "('k,'v)tree => bool" where
 
 (* FIXME height and balanced could be combined - might make proofs shorter? *)
 
-(* get min size ---------------------------------------- *)
+
+
+(* get min size ----------------------------------------------------- *)
 
 definition get_min_size :: "constants \<Rightarrow> (min_size_t * ('k,'v) tree) => nat" where
 "get_min_size c mt = (
@@ -106,7 +117,9 @@ definition get_min_size :: "constants \<Rightarrow> (min_size_t * ('k,'v) tree) 
     | (Small_leaf,Leaf _) => min_leaf_size-1
     | (_,_) => failwith (STR ''get_min_size'') )"
 
-(* wf size ---------------------------------------- *)
+
+
+(* wf size ---------------------------------------------------------- *)
 
 definition wf_size_1 :: "constants \<Rightarrow> ('k,'v) tree => bool" where
 "wf_size_1 c t1 = (
@@ -138,7 +151,8 @@ definition wf_size :: "constants \<Rightarrow> ms_t => ('k,'v) tree => bool" whe
 ))"
 
 
-(* wf_ks_rs ---------------------------------------- *)
+
+(* wf_ks_rs --------------------------------------------------------- *)
 
 definition wf_ks_rs_1 :: "('k,'v)tree => bool" where
 "wf_ks_rs_1 t0 == (
@@ -148,7 +162,9 @@ definition wf_ks_rs :: "('k,'v)tree => bool" where
 "wf_ks_rs t0 = assert_true (forall_subtrees wf_ks_rs_1 t0)"
 
 
-(* keys ---------------------------------------- *)
+
+
+(* keys ------------------------------------------------------------- *)
 
 definition keys_1 :: "('k,'v) tree => 'k list" where
 "keys_1 t0 = (case t0 of Leaf xs => (List.map fst xs) | Node (l,cs) => (l))"
@@ -156,7 +172,9 @@ definition keys_1 :: "('k,'v) tree => 'k list" where
 definition keys :: "('k,'v) tree => 'k list" where
 "keys t0 = (t0 |> tree_to_subtrees|> (List.map keys_1) |> List.concat)" 
 
-(* keys consistent ---------------------------------------- *)
+
+
+(* keys consistent -------------------------------------------------- *)
 
 definition keys_consistent_1 :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 "keys_consistent_1 cmp t0 = (
@@ -172,7 +190,9 @@ definition keys_consistent :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 "keys_consistent cmp t = assert_true (forall_subtrees (keys_consistent_1 cmp) t)"
 
 
-(* keys_ordered ---------------------------------------- *)
+
+
+(* keys_ordered ----------------------------------------------------- *)
 
 definition keys_ordered_1 :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 "keys_ordered_1 cmp t0 = (t0 |> keys_1 |> ordered_key_list cmp)"
@@ -181,7 +201,9 @@ definition keys_ordered :: "'k ord \<Rightarrow> ('k,'v)tree => bool" where
 "keys_ordered cmp t = assert_true (forall_subtrees (keys_ordered_1 cmp) t)"
 
 
-(* wf_kv_tree ---------------------------------------- *)
+
+
+(* wf_kv_tree ------------------------------------------------------- *)
 
 definition wellformed_tree :: "constants \<Rightarrow> ms_t \<Rightarrow> 'k ord => ('k,'v) tree => bool" where
 "wellformed_tree c ms cmp t0 = assert_true (
@@ -196,14 +218,13 @@ definition wellformed_tree :: "constants \<Rightarrow> ms_t \<Rightarrow> 'k ord
 
 
 
-(* tree_to... etc ---------------------------------------- *)
+(* tree_to_leaves etc ------------------------------------------- *)
 
 fun tree_to_leaves :: "('k,'v)tree => ('k,'v) leaf list" where
 "tree_to_leaves t0 = (
   case t0 of
   Node(l,cs) => ((List.map tree_to_leaves cs) |> List.concat)
-  | Leaf(l) => [l])
-"
+  | Leaf(l) => [l])"
   
   
 declare tree_to_leaves.simps[simp del]
@@ -222,6 +243,8 @@ definition tree_to_kvs :: "('k,'v) tree \<Rightarrow> ('k * 'v) list" where
 definition tree_to_keys :: "('k,'v)tree \<Rightarrow> 'k set" where
 "tree_to_keys t =  (t|>tree_to_kvs|>map fst|>set)"
 
+
+(* FIXME use tree_to_keys? *)
 definition trees_to_keys :: "('k,'v) tree list \<Rightarrow> 'k set" where
 "trees_to_keys ts = ts|>(map tree_to_kvs)|>concat|>map fst|>set"
 
@@ -230,4 +253,3 @@ definition tree_to_map :: "('k,'v)tree \<Rightarrow> ('k,'v) map" where
 
 
 end
-

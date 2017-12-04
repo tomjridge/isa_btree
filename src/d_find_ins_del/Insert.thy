@@ -24,7 +24,7 @@ definition mk_insert_state :: "'k \<Rightarrow> 'v \<Rightarrow> 'r \<Rightarrow
 definition dest_i_finished :: "('k,'v,'r) ist \<Rightarrow> 'r option" where
 "dest_i_finished s = (case s of I_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
 
-(* defns ------------------------------------ *)
+(* defns ------------------------------------------------------------ *)
 
 definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) d,'t) MM" where
 "step_down ps1 d = (
@@ -104,7 +104,7 @@ definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Right
 )"
 
 
-(* wellformedness ------------------------------------------------------------ *)
+(* wellformedness --------------------------------------------------- *)
 
 definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r,'t) r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r)d \<Rightarrow> bool" where
 "wf_d k_ord r2t t0 s d =  assert_true (

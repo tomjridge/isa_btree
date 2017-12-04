@@ -3,7 +3,7 @@ imports Main Util
 begin
 
 
-(* min/max size constants --------------------------------------------- *)
+(* min/max size constants ------------------------------------------- *)
 
 
 (* `constants` record type, which is used to record min and max bounds
@@ -16,7 +16,7 @@ record constants =
   max_node_keys :: nat
 
 
-(* small node or leaf ------------------------------------- *)
+(* small node or leaf ----------------------------------------------- *)
 
 (* `min_size_t` is a datatype which flags whether nodes and leaves
 are small or not; a small root can potentially have no children *)
@@ -29,7 +29,7 @@ datatype min_size_t =
 type_synonym ms_t = "min_size_t option"
 
  
-(* transition systems -------------------------------- *)
+(* transition systems ----------------------------------------------- *)
 
 (* transition system basic definitions *)
 

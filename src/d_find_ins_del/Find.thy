@@ -6,7 +6,8 @@ type_synonym ('k,'r) rstk = "('k,'r) ts_frame list"
 
 type_synonym 'a s = "'a list"
 
-(* find ------------------------------------------------------------------------- *)
+
+(* find ------------------------------------------------------------- *)
 
 datatype ('k,'v,'r) find_state = 
   F_down "'r * 'k * 'r * ('k,'r) rstk"  (* root, search key, current pointer, stack *) 
@@ -16,6 +17,7 @@ type_synonym ('k,'r) f_down = "'r * 'k * 'r * ('k,'r)rstk"
 type_synonym ('k,'v,'r) f_finished = "'r * 'k * 'r * ('k*'v)s * ('k,'r)rstk"
 type_synonym ('k,'v,'r) fs = "('k,'v,'r) find_state"
 type_synonym ('k,'r) fo = "'k*'r"  (* focus *)
+
   
   
 definition dest_f_finished :: "('k,'v,'r)fs \<Rightarrow> ('k,'v,'r)f_finished option" where
@@ -25,8 +27,12 @@ definition dest_f_finished :: "('k,'v,'r)fs \<Rightarrow> ('k,'v,'r)f_finished o
   | F_finished (r0,k,r,kvs,stk) \<Rightarrow> Some(r0,k,r,kvs,stk)  
 )"
 
+
+
 definition mk_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)fs" where
 "mk_find_state k r = F_down(r,k,r,[])"
+
+
 
 definition find_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> (('k,'v,'r)fs,'t) MM" where
 "find_step ps1 fs = (
@@ -40,14 +46,15 @@ definition find_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)fs \<Rightarro
         let (stk',r') = add_new_stack_frame (ps1|>cmp_k) k (ks,rs) stk in
         F_down(r0,k,r',stk')
       )
-      | Leaf_frame kvs \<Rightarrow> (F_finished(r0,k,r,kvs,stk))))
-)"
+      | Leaf_frame kvs \<Rightarrow> (F_finished(r0,k,r,kvs,stk)))) )"
 
 
-(* wellformedness --------------------------------------------------------- *)
 
-(* like to have this in a "programmatic" style; so convert a store into a map from r * nat to 
-tree option, then check the r with a t , given t height *)
+(* wellformedness --------------------------------------------------- *)
+
+(* like to have this in a "programmatic" style; so convert a store
+into a map from r * nat to tree option, then check the r with a t ,
+given t height *)
 
 
 
@@ -55,8 +62,8 @@ definition wf_store_tree :: "('k,'v,'r,'t)r2t \<Rightarrow> 't \<Rightarrow> 'r 
 "wf_store_tree r2t s r t = assert_true (
   case r2t s r of
   None \<Rightarrow> False
-  | Some t' \<Rightarrow> (tree_equal t t')
-)"
+  | Some t' \<Rightarrow> (tree_equal t t'))"
+
 
 
 (* t0 is the tree we expect *)
@@ -74,11 +81,11 @@ definition wellformed_find_state :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rig
   | F_down (r0,k,r,stk) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
     assert_true (check_focus r t_fo) &
-    assert_true (check_stack stk t_stk)
-  )
-)"
+    assert_true (check_stack stk t_stk) ))"
 
-(* testing ---------------------------------------- *)
+
+
+(* testing ---------------------------------------------------------- *)
 
 (* really wf_trans is trivial, but for testing we check some obvious properties *)
 
@@ -91,23 +98,30 @@ definition wf_trans :: "'t * ('k,'v,'r)fs \<Rightarrow> 't * ('k,'v,'r)fs \<Righ
   (case (fs1,fs2) of
   (F_down(r0,k,r,stk),F_down(r0',k',r',stk')) \<Rightarrow> (List.length stk' = 1+List.length stk)
   | (F_down(_),F_finished(_)) \<Rightarrow> True
-  | _ \<Rightarrow> False)
-)"
+  | _ \<Rightarrow> False) )"
 
 end
+
+
+
+
+
+
+
+
 
 
 (* old =========================================================
 
 
-(* find_trans ----------------------------------------- *)
+(* find_trans *)
 
 (*
 definition find_trans :: "(store * fs) trans_t" where
 "find_trans = { ((s,fs),(s',fs')). ( s|>(find_step fs|>dest_M) = (s',Ok fs')) }"
 *)
 
-(* lemmas ------------------------------------------- *)
+(* lemmas *)
 
 (* wf_fts is invariant *)
 (*

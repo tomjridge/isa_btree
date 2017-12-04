@@ -2,12 +2,17 @@ theory Pre_params
 imports  "$SRC/a_tree/Tree_stack"
 begin
 
+(* this to force dependency order? *)
 definition dummy :: "unit" where "dummy=()"
+
+
+(* mk_r2t ------------------------------ *)
 
 
 type_synonym ('k,'v,'r,'t) r2f = "('t \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r) frame option)"
 
 type_synonym ('k,'v,'r,'t) r2t = "('t \<Rightarrow> 'r \<Rightarrow> ('k,'v) tree option)"
+
 
 fun mk_r2t' :: "('k,'v,'r,'t) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v,'r,'t) r2t" where
 "mk_r2t' r2f n t r = (
@@ -28,6 +33,8 @@ fun mk_r2t' :: "('k,'v,'r,'t) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v,'r,'t) 
     )
   )
 )"
+
+(* map a blocks-and-pointers tree to an ADT tree *)
 
 definition mk_r2t :: "('k,'v,'r,'t) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v,'r,'t) r2t" where
 "mk_r2t = mk_r2t'"

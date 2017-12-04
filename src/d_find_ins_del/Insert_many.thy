@@ -22,7 +22,7 @@ definition mk_insert_state :: "'k \<Rightarrow> 'v \<Rightarrow> ('k*'v)s \<Righ
 definition dest_i_finished :: "('k,'v,'r) ist \<Rightarrow> ('r * ('k*'v)s) option" where
 "dest_i_finished s = (case s of I_finished (r,kvs) \<Rightarrow> Some (r,kvs) | _ \<Rightarrow> None)"
 
-(* defns ------------------------------------ *)
+(* defns ------------------------------------------------------------ *)
 
 definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r)d \<Rightarrow> (('k,'v,'r) d,'t) MM" where
 "step_down ps1 d = (

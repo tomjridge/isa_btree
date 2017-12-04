@@ -4,7 +4,10 @@ begin
 
 (* NOTE definitions are polymorphic in the key type *)
 
-(* FIXME what does this mean? equality is just hol equality, so we use this rather than a compare function *)
+(* FIXME what does this mean? equality is just hol equality, so we use
+this rather than a compare function *)
+
+(* 'k ord, kv ops --------------------------------------- *)
 
 
 (* keys are ordered *)
@@ -16,20 +19,26 @@ type_synonym 'k ord = "'k \<Rightarrow> 'k \<Rightarrow> int"
 record ('k,'v) kv_ops =
   compare_k :: "'k ord"
   
-(* check two lists of kv for equality; patched because values may have some non-standard equality *)
+
+(* check two lists of kv for equality; patched because values may have
+some non-standard equality *)
+
 definition kvs_equal :: "('k*'v) list \<Rightarrow> ('k*'v) list \<Rightarrow> bool" where
 "kvs_equal = failwith (STR ''FIXME patch'')"
 
-(* NOTE 'v is only compared for equality in wf checks; we assume these are only tested for simple 'v 
-for which ocaml's = is satisfactory; in fact, in the isa code we only compare trees for equality,
-so we can drop this altogether *)
+
+(* NOTE 'v is only compared for equality in wf checks; we assume these
+are only tested for simple 'v for which ocaml's = is satisfactory; in
+fact, in the isa code we only compare trees for equality, so we can
+drop this altogether *)
 
 (*
 definition v_equal :: "'v \<Rightarrow> 'v \<Rightarrow> bool" where
 "v_equal = failwith (STR ''FIXME patch'')"
 *)
 
-(* key ordering, generic defns --------------------------------------------------- *)
+
+(* key ordering, generic defns key_lt etc ------------------------ *)
 
 definition key_lt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
 "key_lt ord k1 k2 = ( ord k1 k2 < 0)"
@@ -59,6 +68,9 @@ definition wf_key_ord :: "'k ord \<Rightarrow> bool" where
 definition kv_lt :: "'k ord \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v) \<Rightarrow> bool" where
   "kv_lt ord kv1 kv2 = (key_lt ord (fst kv1) (fst kv2))"
 
+
+(* ordererd key list ------------------------------------------------ *)
+
 (* ordered key list, defined pointwise rather than inductively *)
 definition ordered_key_list :: "'k ord \<Rightarrow> 'k list \<Rightarrow> bool" where
 "ordered_key_list ord ks = (
@@ -67,7 +79,7 @@ definition ordered_key_list :: "'k ord \<Rightarrow> 'k list \<Rightarrow> bool"
 )"
 
 
-(* check keys --------------------------------- *)
+(* check keys ------------------------------------------------------- *)
 
 (* check key set is bounded *)
 definition check_keys :: "'k ord \<Rightarrow> 'k option => 'k set => 'k option => bool" where
@@ -87,7 +99,7 @@ definition check_keys_2 :: "'k ord \<Rightarrow> 'k set \<Rightarrow> 'k option 
 )"
 
 
-(* insert and delete in list of kv --------------------------------- *)
+(* insert and delete in list of kv ---------------------------------- *)
 
 (* insert a new kv into a list of kvs; used to insert new binding into a leaf *)
 primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
@@ -105,7 +117,7 @@ definition kvs_delete :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k*'v)list \<Ri
 "kvs_delete ord k kvs = List.filter (% kv. ~ (key_eq ord (fst kv) k)) kvs"
   
 
-(* search_key_to_index ------------- *)
+(* search_key_to_index ---------------------------------------------- *)
 
 (* FIXME move *)
 
@@ -119,12 +131,14 @@ definition search_key_to_index :: "'k ord \<Rightarrow> 'k list => 'k => nat" wh
   i')"
 
 
-(* split_ks_rs ------------------------------------------ *)
+(* split_ks_rs ------------------------------------------------------ *)
 
-(* when splitting leaves and nodes, we need to split based on a particular key; also used when 
-constructing frames *)
+(* when splitting leaves and nodes, we need to split based on a
+particular key; also used when constructing frames *)
 
-(* this version is high level but slow; prefer following defn which TODO should be equivalent (!) *)
+(* this version is high level but slow; prefer following defn which
+TODO should be equivalent (!) *)
+
 definition split_ks_rs' :: 
   "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
 "split_ks_rs' cmp k ks_rs = (
@@ -161,22 +175,28 @@ termination aux
  by (force intro:FIXME)
 
 
-(* search through a list, and stop when we reach a position where k1\<le>k<k2, or equivalently
-(given invariants) k < k2  *)
+(* search through a list, and stop when we reach a position where
+k1\<le>k<k2, or equivalently (given invariants) k < k2 *)
+
 definition split_ks_rs :: 
   "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
 "split_ks_rs cmp k ks_rs = (
   aux cmp k ([],[]) ks_rs
 )"
 
-(* insert aux funs: split_leaf and split_node ------------------------------------------------ *)
+(* insert aux funs: split_leaf and split_node ----------------------- *)
 
-(* FIXME aren't this aux funs shared with its? *)
-(* FIXME for insert_many we want to parameterize split_leaf so that it results in a full left leaf*)
+(* FIXME aren't these aux funs shared with its? *)
+
+(* FIXME for insert_many we want to parameterize split_leaf so that it
+results in a full left leaf*)
+
 definition split_leaf :: "constants \<Rightarrow> ('k*'v)list \<Rightarrow> (('k*'v)list * 'k * ('k*'v) list)" where
 "split_leaf c kvs = (
   let _ = check_true (% _. List.length kvs \<ge> c|>max_leaf_size+1) in
-  (* FIXME what is the best choice? min is probably too small; could split in two, but what if order is not dense? we may never insert any more keys at this point *)
+  (* FIXME what is the best choice? min is probably too small; could
+  split in two, but what if order is not dense? we may never insert
+  any more keys at this point *)
   (* FIXME following assumes leaf has size max_leaf_size+1, not anything more? *)
   let cut_point = (c|>max_leaf_size+1 - c|>min_leaf_size) in  
   let _ = check_true (% _ . cut_point \<le> List.length kvs) in
@@ -186,12 +206,13 @@ definition split_leaf :: "constants \<Rightarrow> ('k*'v)list \<Rightarrow> (('k
   (l,k,r)
 )"
 
-(* let max and min be the relevant bounds; suppose node has max+1 keys; we could divide by 2 to get
-max+1/2; but here we try to get the most in the left hand tree; 
+(* let max and min be the relevant bounds; suppose node has max+1
+keys; we could divide by 2 to get max+1/2; but here we try to get the
+most in the left hand tree;
 
-we need min in rhs; 1 for the middle, so we need max+1 -1 -min = max-min in left (assumes that the node has
-max+1 size; obviously we need to be more careful otherwise FIXME for bulk insert
-
+we need min in rhs; 1 for the middle, so we need max+1 -1 -min =
+max-min in left (assumes that the node has max+1 size; obviously we
+need to be more careful otherwise FIXME for bulk insert
 *)
 
 definition split_node :: 

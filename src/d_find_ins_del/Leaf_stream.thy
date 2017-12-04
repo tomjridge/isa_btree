@@ -2,7 +2,7 @@ theory Leaf_stream
 imports Find
 begin
 
-(* leaf stream types ----------------------------------------- *)
+(* leaf stream types ------------------------------------------------ *)
 
 (* we need these exposed outside functor body in ML *)
 

@@ -4,10 +4,17 @@ begin
 
 (* FIXME needs more documentation *)
 
-(* some of these defns could be parametric, but polytypes were getting a bit clunky, and the
-defns aren't exposed to the user so we don't need polymorphism *)
+(* some of these defns could be parametric, but polytypes were getting
+a bit clunky, and the defns aren't exposed to the user so we don't
+need polymorphism *)
 
-(* treestack ts_frame ------------------------------- *)
+(* treestack ts_frame ----------------------------------------------- *)
+
+(* A treestack is essentially a node with a hole for some some child;
+suppose the node is Node(ks1@ks2,ts1@[t]@ts2); then a frame can be
+represented as the following record. 'k is the key type; 'a is the
+"child" type, which is either a tree, or a pointer to a tree. *)
+
 
 record ('k,'a) ts_frame =
   f_ks1 :: "'k list"
@@ -24,6 +31,7 @@ definition dest_ts_frame :: "('k,'a) ts_frame \<Rightarrow> ('k list * 'a list) 
   (f|>f_ks2, f|>f_ts2)
 )"
 
+
 definition ts_frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'b) ts_frame" where
 "ts_frame_map g f = (
   \<lparr>
@@ -35,14 +43,16 @@ definition ts_frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame
   \<rparr>
 )"
 
+
 definition with_t :: "'a \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'a) ts_frame" where
 "with_t x f = f \<lparr> f_t:=x  \<rparr>"
+
 
 definition ts_frame_equal:: "('k,'a) ts_frame \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> bool" where
 "ts_frame_equal f1 f2 = failwith (STR ''FIXME patch'')"
 
 
-(* stack types ------------------------------------------------------------------- *)
+(* stack of frames ------------------------------------------------------ *)
 
 (* FIXME rename to stack *)
 type_synonym ('k,'a) ts_frames = "('k,'a) ts_frame list"   
@@ -55,7 +65,12 @@ definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame li
 definition stack_equal :: "('k,'a) ts_frames \<Rightarrow> ('k,'a) ts_frames \<Rightarrow> bool" where
 "stack_equal s1 s2 = failwith (STR ''FIXME patch'')"
 
-(* get bounds --------------------------------------------------- *)
+
+type_synonym ('k,'v) tree_stack = "('k,('k,'v)tree) ts_frames"
+
+
+
+(* get bounds ------------------------------------------------------- *)
 
 primrec stack_to_lu_of_child :: "('k,'a) ts_frames \<Rightarrow> 'k option * 'k option" where
 "stack_to_lu_of_child [] = (None,None)"
@@ -69,9 +84,7 @@ primrec stack_to_lu_of_child :: "('k,'a) ts_frames \<Rightarrow> 'k option * 'k 
 
 
 
-(* convert to/from tree from/to tree stack ----------------------------------- *)
-
-type_synonym ('k,'v) tree_stack = "('k,('k,'v)tree) ts_frames"
+(* convert to/from tree from/to tree stack -------------------------- *)
 
 (* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
 primrec tree_to_stack :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k,'v)tree \<Rightarrow> nat \<Rightarrow> (('k,'v)tree * ('k,'v)tree_stack)" where
@@ -83,9 +96,7 @@ primrec tree_to_stack :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k,'v)tree \<Ri
     | Node(ks,ts) \<Rightarrow> (
       let ((ks1,ts1),t',(ks2,ts2)) = split_ks_rs ord k (ks,ts) in
       let frm = \<lparr>f_ks1=ks1,f_ts1=ts1,f_t=t',f_ks2=ks2,f_ts2=ts2\<rparr> in
-      (t',frm#stk)
-    )
-  )"
+      (t',frm#stk) ))"
 
 (* we may provide a new focus *)
 fun stack_to_tree :: "('k,'v)tree \<Rightarrow> ('k,'v)tree_stack \<Rightarrow> ('k,'v)tree" where
@@ -95,18 +106,17 @@ fun stack_to_tree :: "('k,'v)tree \<Rightarrow> ('k,'v)tree_stack \<Rightarrow> 
   | x#ts' \<Rightarrow> (
     let (ks1,ts1,_,ks2,ts2) = (x|>f_ks1,x|>f_ts1,(),x|>f_ks2,x|>f_ts2) in
     let fo' = Node(ks1@ks2,ts1@[fo]@ts2) in
-    stack_to_tree fo' ts' 
-  )
-)"
+    stack_to_tree fo' ts' ))"
 
 (* remove "focus" *)
 definition no_focus :: "('k,'a) ts_frames \<Rightarrow> ('k,'a option) ts_frames" where
 "no_focus stk = (
   stk |> stack_map Some |> (% stk. 
-  case stk of [] \<Rightarrow> [] | frm#stk' \<Rightarrow> (frm\<lparr>f_t:=None \<rparr>)#stk')
-)"
+  case stk of [] \<Rightarrow> [] | frm#stk' \<Rightarrow> (frm\<lparr>f_t:=None \<rparr>)#stk'))"
 
-(* add new stk ts_frame -------------------------------------------- *)
+
+
+(* add new stk ts_frame --------------------------------------------- *)
 
 definition add_new_stack_frame :: 
   "'k ord => 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k,'a) ts_frames \<Rightarrow> (('k,'a) ts_frames * 'a)" where

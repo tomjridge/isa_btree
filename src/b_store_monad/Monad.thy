@@ -2,7 +2,7 @@ theory Monad
 imports "$SRC/b_params/Params" 
 begin
 
-(* monad -------------------------------------------------- *)
+(* monad ------------------------------------------------------------ *)
 
 definition fmap :: "('a \<Rightarrow> 'b) \<Rightarrow> ('a,'t) MM \<Rightarrow> ('b,'t) MM" where
 "fmap f m = ( % s.
