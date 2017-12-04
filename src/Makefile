@@ -5,7 +5,7 @@ index.txt: FORCE
 
 
 doc: FORCE
-	-isabelle build -D .  # fails, see NOTE 1
+	-isabelle build -o browser_info -v -D .  # fails, see NOTE 1
 	isabelle document -o pdf -n document -t '' output/document 2>&1
 	echo # NOTE output in output/document.pdf
 
@@ -13,6 +13,7 @@ doc: FORCE
 # should be... it is in the path, but perhaps subshells aren't
 # inheriting the right env), so next line is manually invoking
 # isabelle document
-
+#
+# Also html likely in dir like ~/.isabelle/Isabelle2015/browser_info/Unsorted/isa_btree
 
 FORCE:
