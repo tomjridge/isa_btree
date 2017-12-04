@@ -50,6 +50,7 @@ definition subtree_indexes :: "('k,'v)node \<Rightarrow> nat list" where
 
 
 (* perhaps we keep this defn? otherwise painful to state keys_consistent? *)
+(* FIXME this is a derived operation; where is it used? replace? *)
 definition index_to_bound :: "'k list \<Rightarrow> nat \<Rightarrow> ('k option * 'k option)" where
 "index_to_bound ks i = (
   let l = if (i=min_child_index) then None else Some(ks!(i-1)) in
@@ -83,14 +84,14 @@ fun tree_to_subtrees :: "('k,'v)tree => ('k,'v) tree list" where
     t0#((List.map tree_to_subtrees cs) |> List.concat)))"
 
 definition forall_subtrees :: "(('k,'v)tree => bool) => ('k,'v)tree => bool" where
-"forall_subtrees P t == (List.list_all P (t |> tree_to_subtrees))"
+"forall_subtrees P t = (List.list_all P (t |> tree_to_subtrees))"
 
 
 
 (* balanced --------------------------------------------------------- *)
 
 definition balanced_1 :: "('k,'v)tree => bool" where
-"balanced_1 t0 == (
+"balanced_1 t0 = (
   case t0 of Leaf(l) => True
   | Node(l,cs) => (
   (* FIXME assert cs <> [] *)
@@ -119,7 +120,7 @@ definition get_min_size :: "constants \<Rightarrow> (min_size_t * ('k,'v) tree) 
 
 
 
-(* wf size ---------------------------------------------------------- *)
+(* wf size, ie respects min/max bounds ---------------------------------- *)
 
 definition wf_size_1 :: "constants \<Rightarrow> ('k,'v) tree => bool" where
 "wf_size_1 c t1 = (
@@ -129,9 +130,8 @@ definition wf_size_1 :: "constants \<Rightarrow> ('k,'v) tree => bool" where
     (n >= c|>min_leaf_size) & ( n <= c|>max_leaf_size))
   | Node(l,cs) => (
     let n = length l in
-    (1 <= n) & (n >= c|>min_node_keys) & (n <= c|>max_node_keys)  (* FIXME 1\<le>n not needed since constants enforce this *)
-))
-"
+    (1 <= n) & (n >= c|>min_node_keys) & (n <= c|>max_node_keys)  
+    (* FIXME 1\<le>n not needed since constants enforce this *) ))"
 
 (* NOTE this treats the root differently, depending on ms; wf_size_1 has no ms *)
 definition wf_size :: "constants \<Rightarrow> ms_t => ('k,'v) tree => bool" where
@@ -147,15 +147,14 @@ definition wf_size :: "constants \<Rightarrow> ms_t => ('k,'v) tree => bool" whe
     | Node(l,cs) => (
       let n = length l in
       (min <= n) & (n <= c|>max_node_keys) 
-      & (List.list_all (forall_subtrees (wf_size_1 c)) cs))
-))"
+      & (List.list_all (forall_subtrees (wf_size_1 c)) cs)) ))"
 
 
 
-(* wf_ks_rs --------------------------------------------------------- *)
+(* wf_ks_rs, ie |rs|=|ks|+1 --------------------------------------------- *)
 
 definition wf_ks_rs_1 :: "('k,'v)tree => bool" where
-"wf_ks_rs_1 t0 == (
+"wf_ks_rs_1 t0 = (
   case t0 of Leaf _ => True | Node(l,cs) => ((1+ length l) = (length cs)))"
 
 definition wf_ks_rs :: "('k,'v)tree => bool" where
@@ -164,7 +163,10 @@ definition wf_ks_rs :: "('k,'v)tree => bool" where
 
 
 
-(* keys ------------------------------------------------------------- *)
+(* keys in tree (nodes and leaves) ------------------------------------- *)
+
+(* NOTE we return the keys as a list so that we can use this to check 
+keys_ordered *)
 
 definition keys_1 :: "('k,'v) tree => 'k list" where
 "keys_1 t0 = (case t0 of Leaf xs => (List.map fst xs) | Node (l,cs) => (l))"
@@ -174,7 +176,7 @@ definition keys :: "('k,'v) tree => 'k list" where
 
 
 
-(* keys consistent -------------------------------------------------- *)
+(* keys consistent ie node keys bounds subtrees -------------------------- *)
 
 definition keys_consistent_1 :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 "keys_consistent_1 cmp t0 = (
@@ -182,8 +184,7 @@ case t0 of Leaf(l) => True
 | Node(ks,rs) => (
   ! i : set(subtree_indexes (ks,rs)). 
   let (l,u) = index_to_bound ks i in
-  check_keys cmp l (set (keys(rs!i))) u))
-"
+  check_keys cmp l (set (keys(rs!i))) u))"
 
 (* NOTE this is usually the most difficult part of wf to prove *)
 definition keys_consistent :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
@@ -192,7 +193,7 @@ definition keys_consistent :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 
 
 
-(* keys_ordered ----------------------------------------------------- *)
+(* keys_ordered ie in nodes and leaves the keys are sorted --------------------- *)
 
 definition keys_ordered_1 :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 "keys_ordered_1 cmp t0 = (t0 |> keys_1 |> ordered_key_list cmp)"
@@ -203,7 +204,9 @@ definition keys_ordered :: "'k ord \<Rightarrow> ('k,'v)tree => bool" where
 
 
 
-(* wf_kv_tree ------------------------------------------------------- *)
+(* wellformed_tree ------------------------------------------------------- *)
+
+(* This is the main wellformedness constraint *)
 
 definition wellformed_tree :: "constants \<Rightarrow> ms_t \<Rightarrow> 'k ord => ('k,'v) tree => bool" where
 "wellformed_tree c ms cmp t0 = assert_true (
@@ -213,12 +216,11 @@ definition wellformed_tree :: "constants \<Rightarrow> ms_t \<Rightarrow> 'k ord
   let b4 = keys_consistent cmp t0 in
   let b5 = keys_ordered cmp t0 in
   let wf = b1&b2&b3&b4&b5 in
-  wf
-)"
+  wf)"
 
 
 
-(* tree_to_leaves etc ------------------------------------------- *)
+(* tree_to_leaves, tree_to_map etc ------------------------------------------- *)
 
 fun tree_to_leaves :: "('k,'v)tree => ('k,'v) leaf list" where
 "tree_to_leaves t0 = (
@@ -229,7 +231,8 @@ fun tree_to_leaves :: "('k,'v)tree => ('k,'v) leaf list" where
   
 declare tree_to_leaves.simps[simp del]
 
-lemma [simp] : "tree_to_leaves (Node(l,cs)) =  ((cs |> (List.map tree_to_leaves)) |> List.concat)" sorry
+lemma [simp]: 
+  "tree_to_leaves (Node(l,cs)) =  ((cs |> (List.map tree_to_leaves)) |> List.concat)" sorry
 
 (* this property enables easy leaves_to_map manipulation *)
 (*

@@ -71,7 +71,7 @@ type_synonym e = error
 Main? simpler defn here*)
 
 definition is_Some :: "'a option => bool" where
-  "is_Some x == x ~= None"
+  "is_Some x = (x ~= None)"
 
 
 primrec dest_Some (* :: "'a option => 'a" *) where 
@@ -80,7 +80,7 @@ primrec dest_Some (* :: "'a option => 'a" *) where
 
 
 definition is_None :: "'a option \<Rightarrow> bool" where 
-"is_None x == x = None"
+"is_None x = (x = None)"
 
 
 
@@ -119,20 +119,44 @@ definition split_at :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a lis
   let _ = check_true (% _. n \<le> List.length xs) in
   take n xs,drop n xs)"
 
+definition split_at_tests :: "unit" where
+"split_at_tests = (
+  let _ = assert_true (split_at 3 [(0::nat),1,2,3,4] = ([0,1,2],[3,4])) in
+  let _ = assert_true (split_at 3 [(0::nat),1,2] = ([0,1,2],[])) in
+  ())"
+
+
 definition split_at_3 :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a * 'a list" where
 "split_at_3 n xs = (
-  let _ = check_true (% _. n \<le> List.length xs -1) in
+  let _ = check_true (% _. n < List.length xs) in
   (take n xs,xs!n,drop (n+1) xs))"
+
+definition split_at_3_tests :: "unit" where
+"split_at_3_tests = (
+  let _ = assert_true (split_at_3 3 [(0::nat),1,2,3,4] = ([0,1,2],3,[4])) in
+  let _ = assert_true (split_at_3 3 [(0::nat),1,2,3] = ([0,1,2],3,[])) in
+  ())"
+
+
 
 definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 "from_to x y = upt x (Suc y)"
+
+definition from_to_tests :: "unit" where
+"from_to_tests = (
+  let _ = assert_true (from_to 3 5 = [3,4,5]) in
+  let _ = assert_true (from_to 3 3 = [3]) in
+  let _ = assert_true (from_to 3 2 = []) in
+  ())"
+
+
 
 definition while_not_nil :: "('a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'a list \<Rightarrow> 'b" where
 "while_not_nil f init xs = (List.foldr f xs init)"
 
 
 definition max_of_list :: "nat list \<Rightarrow> nat" where
-  "max_of_list xs == foldr max xs 0"
+"max_of_list xs = foldr max xs 0"
 
 
 (* iterate f:'a -> 'a option ------------------------------------ *)
@@ -141,11 +165,10 @@ definition max_of_list :: "nat list \<Rightarrow> nat" where
 (*begin iterator*)
 function iter_step :: "('a => 'a option) => 'a => 'a" where
 "iter_step f x = (
-let r = f x in
-(case r of
-None => x
-| Some x => iter_step f x
-))"
+  let r = f x in
+  case r of
+    None => x
+  | Some x => iter_step f x)"
 (*end iterator*)
 apply (force)+ done
 termination iter_step

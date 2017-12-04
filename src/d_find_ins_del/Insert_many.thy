@@ -33,9 +33,11 @@ definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r)d \<Rightarro
 (* insert kv, and as many from new as possible subject to lu bound and max size of 2*max_leaf_size; 
 kv<new, and new are sorted in order; return the remaining new that were not inserted
 *)
-definition kvs_insert_2 :: "'k ps0 \<Rightarrow> 'k option \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s * ('k*'v)s" where
-"kvs_insert_2 ps0 u kv new existing = (
-  let (cs,k_ord) = (ps0|>ps0_cs,ps0|>ps0_cmp_k) in
+definition kvs_insert_2 :: 
+  "constants \<Rightarrow> 'k ord \<Rightarrow> 'k option \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s * ('k*'v)s" 
+where
+"kvs_insert_2 cs' k_ord u kv new existing = (
+  let cs = cs' in
   let step = (% s. 
     let (acc,new') = s in
     case (length acc \<ge> 2 * cs|>max_leaf_size) of
@@ -52,8 +54,7 @@ definition kvs_insert_2 :: "'k ps0 \<Rightarrow> 'k option \<Rightarrow> ('k*'v)
         True \<Rightarrow> (Some(kvs_insert k_ord (k,v) acc,new''))
         | False \<Rightarrow> (None))))
   in
-  iter_step step (existing,new)
-)"
+  iter_step step (existing,new))"
 
 (* how to split a leaf where there are n > max_leaf_size and \<le> 2*max_leaf_size elts?
 
@@ -87,8 +88,8 @@ definition split_leaf :: "constants \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)
 
 definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_bottom ps1 d = (
-  let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
-  let store_ops = ps1|>ps1_store_ops in
+  let (cs,k_ord) = (ps1|>dot_constants,ps1|>dot_cmp) in
+  let store_ops = ps1|>dot_store_ops in
   let (fs,(v,kvs0)) = d in
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
@@ -96,7 +97,7 @@ definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Righta
     (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind 
     (% _.
     let (l,u) = stack_to_lu_of_child stk in
-    let (kvs',kvs0') = kvs_insert_2 (ps1|>ps1_ps0) u (k,v) kvs0 kvs in
+    let (kvs',kvs0') = kvs_insert_2 cs k_ord u (k,v) kvs0 kvs in
     let fo = (
       case (length kvs' \<le> cs|>max_leaf_size) of
       True \<Rightarrow> (Leaf_frame kvs' |> (store_ops|>store_alloc) |> fmap (% r'. I1(r',kvs0')))
@@ -110,8 +111,8 @@ definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Righta
 
 definition step_up :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_up ps1 u = (
-  let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
-  let store_ops = ps1|>ps1_store_ops in
+  let (cs,k_ord) = (ps1|>dot_constants,ps1|>dot_cmp) in
+  let store_ops = ps1|>dot_store_ops in
   let (fo,stk) = u in
   case stk of 
   [] \<Rightarrow> impossible1 (STR ''insert, step_up'') (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
@@ -137,8 +138,8 @@ definition step_up :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow
 
 definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> (('k,'v,'r) ist,'t) MM" where
 "insert_step ps1 s = (
-  let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
-  let store_ops = ps1|>ps1_store_ops in
+  let (cs,k_ord) = (ps1|>dot_constants,ps1|>dot_cmp) in
+  let store_ops = ps1|>dot_store_ops in
   case s of 
   I_down d \<Rightarrow> (
     let (fs,(v,kvs0)) = d in

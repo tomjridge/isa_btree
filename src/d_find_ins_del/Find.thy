@@ -24,8 +24,7 @@ definition dest_f_finished :: "('k,'v,'r)fs \<Rightarrow> ('k,'v,'r)f_finished o
 "dest_f_finished fs = (
   case fs of
   F_down _ \<Rightarrow> None
-  | F_finished (r0,k,r,kvs,stk) \<Rightarrow> Some(r0,k,r,kvs,stk)  
-)"
+  | F_finished (r0,k,r,kvs,stk) \<Rightarrow> Some(r0,k,r,kvs,stk) )"
 
 
 
@@ -36,16 +35,15 @@ definition mk_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)fs" whe
 
 definition find_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> (('k,'v,'r)fs,'t) MM" where
 "find_step ps1 fs = (
-  let store_ops = ps1 |> ps1_store_ops in
+  let store_ops = ps1 |> dot_store_ops in
   case fs of 
   F_finished _ \<Rightarrow> (return fs)  (* FIXME impossible, or return none? or have a finished error? or stutter? *)
   | F_down(r0,k,r,stk) \<Rightarrow> (
     (store_ops|>store_read) r |>fmap
     (% f. case f of 
       Node_frame (ks,rs) \<Rightarrow> (
-        let (stk',r') = add_new_stack_frame (ps1|>cmp_k) k (ks,rs) stk in
-        F_down(r0,k,r',stk')
-      )
+        let (stk',r') = add_new_stack_frame (ps1|>dot_cmp) k (ks,rs) stk in
+        F_down(r0,k,r',stk'))
       | Leaf_frame kvs \<Rightarrow> (F_finished(r0,k,r,kvs,stk)))) )"
 
 
@@ -67,7 +65,9 @@ definition wf_store_tree :: "('k,'v,'r,'t)r2t \<Rightarrow> 't \<Rightarrow> 'r 
 
 
 (* t0 is the tree we expect *)
-definition wellformed_find_state :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> bool" where
+definition wellformed_find_state :: 
+  "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> bool" 
+where
 "wellformed_find_state k_ord r2t t0 s fs = assert_true (
   let n = height t0 in
   (* need to check the stack and the focus *)

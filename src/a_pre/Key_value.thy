@@ -15,7 +15,7 @@ type_synonym 'k ord = "'k \<Rightarrow> 'k \<Rightarrow> int"
   
 (* NOTE variables of type 'k ord are typically called ord, or (better) cmp *)
 
-(* operations on keys and values (in fact, just a key comparison function *)
+(* operations on keys and values (in fact, just a key comparison function) *)
 record ('k,'v) kv_ops =
   compare_k :: "'k ord"
   
@@ -66,7 +66,7 @@ definition wf_key_ord :: "'k ord \<Rightarrow> bool" where
 
 (* lt on kv pair is just lt on k components *)
 definition kv_lt :: "'k ord \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v) \<Rightarrow> bool" where
-  "kv_lt ord kv1 kv2 = (key_lt ord (fst kv1) (fst kv2))"
+"kv_lt ord kv1 kv2 = (key_lt ord (fst kv1) (fst kv2))"
 
 
 (* ordererd key list ------------------------------------------------ *)
@@ -75,8 +75,18 @@ definition kv_lt :: "'k ord \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v) \<Righta
 definition ordered_key_list :: "'k ord \<Rightarrow> 'k list \<Rightarrow> bool" where
 "ordered_key_list ord ks = (
   (List.length ks < 2) |  
-  (! i : set(from_to 0 (length ks -2)). key_lt ord (ks!i) (ks!(i+1)))
-)"
+  (! i : set(from_to 0 (length ks -2)). key_lt ord (ks!i) (ks!(i+1))))"
+
+definition nat_ord :: "nat \<Rightarrow> nat \<Rightarrow> int" where
+"nat_ord x y = (
+  let n2i = Int.int in
+  (n2i x)-(n2i y))"
+
+definition okl_tests :: "unit" where
+"okl_tests = (
+  let _ = assert_true(ordered_key_list nat_ord [0,1,2,3]) in
+  let _ = assert_true(~(ordered_key_list nat_ord [0,1,1,3])) in
+  ())"
 
 
 (* check keys ------------------------------------------------------- *)
@@ -88,6 +98,13 @@ definition check_keys :: "'k ord \<Rightarrow> 'k option => 'k set => 'k option 
   let b2 = (case kr of None => True | Some kr => (! k : ks. key_lt cmp k kr)) in
   b1 & b2)"
 
+definition ck_tests :: unit where
+"ck_tests = (
+  let _ = assert_true (check_keys nat_ord (Some 1) (set[1,2,3]) (Some 4)) in
+  let _ = assert_true (~(check_keys nat_ord (Some 1) (set[1,2,3]) (Some 3))) in
+  ())"
+
+
 (* xs < l \<le> ks < u \<le> zs; an extended version of the above *)
 definition check_keys_2 :: "'k ord \<Rightarrow> 'k set \<Rightarrow> 'k option \<Rightarrow> 'k set \<Rightarrow> 'k option \<Rightarrow> 'k set \<Rightarrow> bool" where
 "check_keys_2 cmp xs l ks u zs = (
@@ -97,6 +114,11 @@ definition check_keys_2 :: "'k ord \<Rightarrow> 'k set \<Rightarrow> 'k option 
   (check_keys cmp l ks u) &
   (check_keys cmp u zs None)
 )"
+
+definition ck2_tests :: unit where
+"ck2_tests = (
+  let _ = assert_true (check_keys_2 nat_ord (set[0]) (Some 1) (set[1,2,3]) (Some 4) (set[4,5])) in
+  ())"
 
 
 (* insert and delete in list of kv ---------------------------------- *)
@@ -111,6 +133,17 @@ primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Ri
   else if (key_eq cmp k k') then (k,v)#kvs' else
   (k,v)#(k',v')#kvs'
 )"
+
+definition kvs_insert_tests :: unit where
+"kvs_insert_tests = (
+  let _ = assert_true (kvs_insert nat_ord (2,2) (List.map (% x. (x,x)) [0,1,3,4]) = 
+    (List.map (% x. (x,x)) [0,1,2,3,4]))
+  in
+  let _ = assert_true (kvs_insert nat_ord (6,6) (List.map (% x. (x,x)) [0,1,3,4]) = 
+    (List.map (% x. (x,x)) [0,1,3,4,6]))
+  in
+  ())"
+
 
 (* delete a pair with a particular key from a list of pairs *)
 definition kvs_delete :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
@@ -130,6 +163,12 @@ definition search_key_to_index :: "'k ord \<Rightarrow> 'k list => 'k => nat" wh
   let i' = (case i of None => num_keys | Some x => x) in
   i')"
 
+definition sk2i_tests :: unit where
+"sk2i_tests = (
+  let sk2i = search_key_to_index nat_ord in
+  let _ = assert_true (sk2i [0,10,20,30,40] 20 = 3) in
+  ())"
+
 
 (* split_ks_rs ------------------------------------------------------ *)
 
@@ -147,7 +186,6 @@ definition split_ks_rs' ::
   let i = search_key_to_index cmp ks k in
   let _ = check_true (% _. i \<le> List.length ks) in
   let (ks1,ks2) = split_at i ks in
-  let _ = check_true (% _. i \<le> List.length rs - 1) in
   let (rs1,r',rs2) = split_at_3 i rs in
   ((ks1,rs1),r',(ks2,rs2))
 )"
@@ -155,7 +193,9 @@ definition split_ks_rs' ::
 
 (* NB ks_rs1 stored in reverse *)
 function aux :: 
-  "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
+  "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) \<Rightarrow> 
+    ('k list * 'a list) * 'a * ('k list * 'a list)" 
+where
 "aux cmp k0 ks_rs1 ks_rs2 = (
   let (ks1,rs1) = ks_rs1 in
   let (ks,rs) = ks_rs2 in
@@ -176,22 +216,29 @@ termination aux
 
 
 (* search through a list, and stop when we reach a position where
-k1\<le>k<k2, or equivalently (given invariants) k < k2 *)
+k1\<le>k<k2, or equivalently (given ordered list) k < k2 *)
 
 definition split_ks_rs :: 
-  "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" where
+  "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" 
+where
 "split_ks_rs cmp k ks_rs = (
-  aux cmp k ([],[]) ks_rs
-)"
+  let res = aux cmp k ([],[]) ks_rs in
+  let _ = check_true (% _. split_ks_rs' cmp k ks_rs = res) in
+  res)"
+  
+(* NOTE tested via split_ks_rs' *)
+
 
 (* insert aux funs: split_leaf and split_node ----------------------- *)
 
 (* FIXME aren't these aux funs shared with its? *)
 
 (* FIXME for insert_many we want to parameterize split_leaf so that it
-results in a full left leaf*)
+results in a full left leaf *)
 
-definition split_leaf :: "constants \<Rightarrow> ('k*'v)list \<Rightarrow> (('k*'v)list * 'k * ('k*'v) list)" where
+(* FIXME document *)
+
+definition split_leaf :: "constants \<Rightarrow> ('k*'v)list \<Rightarrow> (('k*'v) list * 'k * ('k*'v) list)" where
 "split_leaf c kvs = (
   let _ = check_true (% _. List.length kvs \<ge> c|>max_leaf_size+1) in
   (* FIXME what is the best choice? min is probably too small; could
@@ -216,13 +263,18 @@ need to be more careful otherwise FIXME for bulk insert
 *)
 
 definition split_node :: 
-  "constants \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'k * ('k list * 'a list)" where
+  "constants \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'k * ('k list * 'a list)" 
+where
 "split_node c n = (
   let (ks,rs) = n in
-  let cut_point = (c|>max_node_keys-c|>min_node_keys) in  (* FIXME see above; FIXME prefer to split equally even in insert_many case? *)
+
+  let cut_point = (c|>max_node_keys-c|>min_node_keys) in  
+  (* FIXME see above; FIXME prefer to split equally even in insert_many case? *)
+
   let (ks1,k,ks2) = split_at_3 cut_point ks in
   let _ = check_true (%_.List.length ks2 \<ge> c|>min_node_keys) in
   let (rs1,rs2) = split_at (cut_point+1) rs in
+  (* FIXME check that uses of split_leaf and split_node enforce wellformedness *)
   ((ks1,rs1),k,(ks2,rs2))
 )"
 

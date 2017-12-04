@@ -34,8 +34,8 @@ definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarr
 
 definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_bottom ps1 d = (
-  let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
-  let store_ops = ps1 |> ps1_store_ops in
+  let (cs,k_ord) = (ps1|>dot_constants,ps1|>dot_cmp) in
+  let store_ops = ps1 |> dot_store_ops in
   let (fs,v) = d in
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
@@ -56,8 +56,8 @@ definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Righta
 
 definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_up ps1 u = (
-  let (cs,k_ord) = (ps1|>cs,ps1|>cmp_k) in
-  let store_ops = ps1 |> ps1_store_ops in
+  let (cs,k_ord) = (ps1|>dot_constants,ps1|>dot_cmp) in
+  let store_ops = ps1 |> dot_store_ops in
   let (fo,stk) = u in
   case stk of 
   [] \<Rightarrow> impossible1 (STR ''insert, step_up'') (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
@@ -83,7 +83,7 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow>
 
 definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> (('k,'v,'r) ist,'t) MM" where
 "insert_step ps1 s = (
-  let store_ops = ps1 |> ps1_store_ops in
+  let store_ops = ps1 |> dot_store_ops in
   case s of 
   I_down d \<Rightarrow> (
     let (fs,v) = d in
@@ -142,9 +142,8 @@ definition wf_u :: "('k,'v,'r,'t) r2t \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)
   )
 )"
 
-definition wf_f :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> 'r \<Rightarrow> bool" where
-"wf_f ps0 r2t t0 s k v r =  assert_true (
-  let (cs,k_ord) = (ps0|>ps0_cs,ps0|>ps0_cmp_k) in
+definition wf_f :: "constants \<Rightarrow> 'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> 'r \<Rightarrow> bool" where
+"wf_f cs k_ord r2t t0 s k v r =  assert_true (
   case r2t s r of
   None \<Rightarrow> False
   | Some t' \<Rightarrow> (
@@ -154,14 +153,13 @@ definition wf_f :: "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)t
 )"
 
 definition wellformed_insert_state :: 
-  "'k ps0 \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r)ist \<Rightarrow> bool" 
+  "constants \<Rightarrow> 'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r)ist \<Rightarrow> bool" 
 where
-"wellformed_insert_state ps0 r2t t0 s k v is = assert_true (
-  let k_ord = (ps0|>ps0_cmp_k) in
+"wellformed_insert_state cs k_ord r2t t0 s k v is = assert_true (
   case is of 
   I_down d \<Rightarrow> (wf_d k_ord r2t t0 s d)
   | I_up u \<Rightarrow> (wf_u r2t k_ord t0 s k v u)
-  | I_finished r \<Rightarrow> (wf_f ps0 r2t t0 s k v r) 
+  | I_finished r \<Rightarrow> (wf_f cs k_ord r2t t0 s k v r) 
 )
 "
 

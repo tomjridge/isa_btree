@@ -15,10 +15,20 @@ export_code "Code_Numeral.nat_of_integer" "Code_Numeral.int_of_integer"
 
 Util.from_to
 Util.String_error
+Util.split_at_tests  (* FIXME remove tests in production *)
+Util.split_at_3_tests
+Util.from_to_tests
 
 Prelude.constants_ext
 
 Key_value.key_lt
+
+(* FIXME remove tests in production code *)
+Key_value.okl_tests
+Key_value.ck_tests
+Key_value.ck2_tests
+Key_value.kvs_insert_tests
+Key_value.sk2i_tests
 
 (* frame_types *)
 Frame.Node_frame
@@ -36,7 +46,6 @@ Pre_params.mk_r2t
 
 (* params *)
 Params.dummy
-Params.Ps0
 Params.Ps1
 Params.store_ops_ext
 
