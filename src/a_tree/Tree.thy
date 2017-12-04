@@ -120,7 +120,7 @@ definition get_min_size :: "constants \<Rightarrow> (min_size_t * ('k,'v) tree) 
 
 
 
-(* wf size, ie respects min/max bounds ---------------------------------- *)
+(* wf size, ie respects min/max bounds ------------------------------ *)
 
 definition wf_size_1 :: "constants \<Rightarrow> ('k,'v) tree => bool" where
 "wf_size_1 c t1 = (
@@ -151,7 +151,7 @@ definition wf_size :: "constants \<Rightarrow> ms_t => ('k,'v) tree => bool" whe
 
 
 
-(* wf_ks_rs, ie |rs|=|ks|+1 --------------------------------------------- *)
+(* wf_ks_rs, ie |rs|=|ks|+1 ----------------------------------------- *)
 
 definition wf_ks_rs_1 :: "('k,'v)tree => bool" where
 "wf_ks_rs_1 t0 = (
@@ -163,7 +163,7 @@ definition wf_ks_rs :: "('k,'v)tree => bool" where
 
 
 
-(* keys in tree (nodes and leaves) ------------------------------------- *)
+(* keys in tree (nodes and leaves) ---------------------------------- *)
 
 (* NOTE we return the keys as a list so that we can use this to check 
 keys_ordered *)
@@ -176,7 +176,7 @@ definition keys :: "('k,'v) tree => 'k list" where
 
 
 
-(* keys consistent ie node keys bounds subtrees -------------------------- *)
+(* keys consistent ie node keys bounds subtrees --------------------- *)
 
 definition keys_consistent_1 :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 "keys_consistent_1 cmp t0 = (
@@ -193,7 +193,7 @@ definition keys_consistent :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 
 
 
-(* keys_ordered ie in nodes and leaves the keys are sorted --------------------- *)
+(* keys_ordered ie in nodes and leaves the keys are sorted ---------- *)
 
 definition keys_ordered_1 :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 "keys_ordered_1 cmp t0 = (t0 |> keys_1 |> ordered_key_list cmp)"
@@ -204,7 +204,7 @@ definition keys_ordered :: "'k ord \<Rightarrow> ('k,'v)tree => bool" where
 
 
 
-(* wellformed_tree ------------------------------------------------------- *)
+(* wellformed_tree -------------------------------------------------- *)
 
 (* This is the main wellformedness constraint *)
 
@@ -220,7 +220,7 @@ definition wellformed_tree :: "constants \<Rightarrow> ms_t \<Rightarrow> 'k ord
 
 
 
-(* tree_to_leaves, tree_to_map etc ------------------------------------------- *)
+(* tree_to_leaves, tree_to_map etc ---------------------------------- *)
 
 fun tree_to_leaves :: "('k,'v)tree => ('k,'v) leaf list" where
 "tree_to_leaves t0 = (

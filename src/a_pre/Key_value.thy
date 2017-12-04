@@ -7,7 +7,7 @@ begin
 (* FIXME what does this mean? equality is just hol equality, so we use
 this rather than a compare function *)
 
-(* 'k ord, kv ops --------------------------------------- *)
+(* 'k ord, kv ops --------------------------------------------------- *)
 
 
 (* keys are ordered *)
@@ -38,7 +38,7 @@ definition v_equal :: "'v \<Rightarrow> 'v \<Rightarrow> bool" where
 *)
 
 
-(* key ordering, generic defns key_lt etc ------------------------ *)
+(* key ordering, generic defns key_lt etc --------------------------- *)
 
 definition key_lt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
 "key_lt ord k1 k2 = ( ord k1 k2 < 0)"

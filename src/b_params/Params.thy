@@ -83,4 +83,3 @@ definition ps0_cs :: "'k ps0 \<Rightarrow> constants" where
 definition ps0_cmp_k:: "'k ps0 \<Rightarrow> 'k ord" where 
 "ps0_cmp_k ps0 = (ps0|>dest_ps0|>snd)"
 *)
-

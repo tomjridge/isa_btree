@@ -6,7 +6,7 @@ begin
 definition dummy :: "unit" where "dummy=()"
 
 
-(* mk_r2t ------------------------------ *)
+(* mk_r2t ----------------------------------------------------------- *)
 
 
 type_synonym ('k,'v,'r,'t) r2f = "('t \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r) frame option)"

@@ -52,7 +52,7 @@ definition ts_frame_equal:: "('k,'a) ts_frame \<Rightarrow> ('k,'a) ts_frame \<R
 "ts_frame_equal f1 f2 = failwith (STR ''FIXME patch'')"
 
 
-(* stack of frames ------------------------------------------------------ *)
+(* stack of frames -------------------------------------------------- *)
 
 (* FIXME rename to stack *)
 type_synonym ('k,'a) ts_frames = "('k,'a) ts_frame list"   
@@ -70,7 +70,7 @@ type_synonym ('k,'v) tree_stack = "('k,('k,'v)tree) ts_frames"
 
 
 
-(* stack_to_lu_of_child (get bounds of focus) ---------------------------------- *)
+(* stack_to_lu_of_child (get bounds of focus) ----------------------- *)
 
 (* get the bound surrounding the focus *)
 primrec stack_to_lu_of_child :: "('k,'a) ts_frames \<Rightarrow> 'k option * 'k option" where
@@ -84,7 +84,7 @@ primrec stack_to_lu_of_child :: "('k,'a) ts_frames \<Rightarrow> 'k option * 'k 
 
 
 
-(* tree_to_stack, stack_to_tree, no_focus -------------------------- *)
+(* tree_to_stack, stack_to_tree, no_focus --------------------------- *)
 
 (* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
 primrec tree_to_stack :: 
@@ -118,7 +118,7 @@ definition no_focus :: "('k,'a) ts_frames \<Rightarrow> ('k,'a option) ts_frames
 
 
 
-(* add_new_stk_frame; r_stk_to_rs --------------------------------------------- *)
+(* add_new_stk_frame; r_stk_to_rs ----------------------------------- *)
 
 definition add_new_stack_frame :: 
   "'k ord => 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k,'a) ts_frames \<Rightarrow> (('k,'a) ts_frames * 'a)" 

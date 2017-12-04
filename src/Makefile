@@ -1,7 +1,7 @@
 SHELL:=bash
 
 index.txt: FORCE
-	(for f in */*.thy; do echo "$$f ========================================"; grep "\------" $$f; echo; done)>$@
+	(for f in */*.thy; do echo "$$f ========================================"; tweak_comments.native $$f; grep "\------" $$f; echo; done)>$@
 
 
 doc: FORCE

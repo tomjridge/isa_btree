@@ -112,7 +112,7 @@ definition dest_Ok :: "'a res \<Rightarrow> 'a" where
 
 
 
-(* various list defs, split_at etc --------------------------- *)
+(* various list defs, split_at etc ---------------------------------- *)
 
 definition split_at :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a list" where
 "split_at n xs = (
@@ -159,7 +159,7 @@ definition max_of_list :: "nat list \<Rightarrow> nat" where
 "max_of_list xs = foldr max xs 0"
 
 
-(* iterate f:'a -> 'a option ------------------------------------ *)
+(* iterate f:'a -> 'a option ---------------------------------------- *)
 
 (*no termination proof for the following*)
 (*begin iterator*)
