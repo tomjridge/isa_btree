@@ -10,12 +10,13 @@ need polymorphism *)
 
 (* treestack ts_frame ----------------------------------------------- *)
 
-(* A treestack is essentially a node with a hole for some some child;
-suppose the node is Node(ks1@ks2,ts1@[t]@ts2); then a frame can be
+(* A treestack frame is essentially a node with a hole for some child;
+suppose the node is Node(ks1@ks2,ts1@[t]@ts2); then a frame focused on t can be
 represented as the following record. 'k is the key type; 'a is the
-"child" type, which is either a tree, or a pointer to a tree. *)
+"child" type, which is either a tree, or a pointer to a tree depending
+on whether we are taking the ADT view or the blocks-and-pointers view *)
 
-
+(* FIXME ks1,ts1 stored in reverse? *)
 record ('k,'a) ts_frame =
   f_ks1 :: "'k list"
   f_ts1 :: "'a list"
@@ -73,6 +74,7 @@ type_synonym ('k,'v) tree_stack = "('k,('k,'v)tree) ts_frames"
 (* stack_to_lu_of_child (get bounds of focus) ----------------------- *)
 
 (* get the bound surrounding the focus *)
+(* FIXME again this is derived from search_key_to_index etc *)
 primrec stack_to_lu_of_child :: "('k,'a) ts_frames \<Rightarrow> 'k option * 'k option" where
 "stack_to_lu_of_child [] = (None,None)"
 | "stack_to_lu_of_child (x#stk') = (
@@ -87,6 +89,7 @@ primrec stack_to_lu_of_child :: "('k,'a) ts_frames \<Rightarrow> 'k option * 'k 
 (* tree_to_stack, stack_to_tree, no_focus --------------------------- *)
 
 (* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
+(* FIXME why is focus returned separately? *)
 primrec tree_to_stack :: 
   "'k ord \<Rightarrow> 'k \<Rightarrow> ('k,'v)tree \<Rightarrow> nat \<Rightarrow> (('k,'v)tree * ('k,'v)tree_stack)" 
 where

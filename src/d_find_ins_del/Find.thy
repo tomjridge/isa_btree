@@ -2,12 +2,16 @@ theory Find
 imports "$SRC/b_store_monad/Monad"
 begin
 
+(* FIXME move *)
 type_synonym ('k,'r) rstk = "('k,'r) ts_frame list"
 
 type_synonym 'a s = "'a list"
 
 
 (* find ------------------------------------------------------------- *)
+
+(* we use a small-step style; we reify the state of the algorithm at every
+step as the following state type *)
 
 datatype ('k,'v,'r) find_state = 
   F_down "'r * 'k * 'r * ('k,'r) rstk"  (* root, search key, current pointer, stack *) 
@@ -16,7 +20,8 @@ datatype ('k,'v,'r) find_state =
 type_synonym ('k,'r) f_down = "'r * 'k * 'r * ('k,'r)rstk"
 type_synonym ('k,'v,'r) f_finished = "'r * 'k * 'r * ('k*'v)s * ('k,'r)rstk"
 type_synonym ('k,'v,'r) fs = "('k,'v,'r) find_state"
-type_synonym ('k,'r) fo = "'k*'r"  (* focus *)
+
+(* type_synonym ('k,'r) fo_unused = "'k*'r"  (* focus *) *)
 
   
   
@@ -54,7 +59,8 @@ definition find_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)fs \<Rightarro
 into a map from r * nat to tree option, then check the r with a t ,
 given t height *)
 
-
+(* given a store s, a block ref r, and a tree t, return true if the store 
+from r represents the tree t *)
 
 definition wf_store_tree :: "('k,'v,'r,'t)r2t \<Rightarrow> 't \<Rightarrow> 'r \<Rightarrow> ('k,'v)tree \<Rightarrow> bool" where
 "wf_store_tree r2t s r t = assert_true (
@@ -64,7 +70,9 @@ definition wf_store_tree :: "('k,'v,'r,'t)r2t \<Rightarrow> 't \<Rightarrow> 'r 
 
 
 
-(* t0 is the tree we expect *)
+(* given an expected tree t0, a store s, and a find state fs,
+check that the find state is wellformed and consistent with the
+store *)
 definition wellformed_find_state :: 
   "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> bool" 
 where
@@ -94,7 +102,7 @@ definition wf_trans :: "'t * ('k,'v,'r)fs \<Rightarrow> 't * ('k,'v,'r)fs \<Righ
 "wf_trans s1 s2 = assert_true (
   let (s1,fs1) = s1 in
   let (s2,fs2) = s2 in
-  (* FIXME dont want to force equality check of the store (s2=s1) & *)
+  (* FIXME don't want to force equality check of the store (s2=s1) & *)
   (case (fs1,fs2) of
   (F_down(r0,k,r,stk),F_down(r0',k',r',stk')) \<Rightarrow> (List.length stk' = 1+List.length stk)
   | (F_down(_),F_finished(_)) \<Rightarrow> True

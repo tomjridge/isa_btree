@@ -73,7 +73,7 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow>
       True \<Rightarrow> (
         Node_frame(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))
       | False \<Rightarrow> (
-        let (ks_rs1,k,ks_rs2) = split_node cs (ks',rs') in  (* FIXME move split_node et al to this file *)
+        let (ks_rs1,k,ks_rs2) = split_node cs (ks',rs') in  (* FIXME move split_node et al to this file? *)
         Node_frame(ks_rs1) |> (store_ops|>store_alloc) |> bind
         (% r1. Node_frame (ks_rs2) |> (store_ops|>store_alloc) |> fmap 
         (% r2. (I2(r1,k,r2),stk'))))

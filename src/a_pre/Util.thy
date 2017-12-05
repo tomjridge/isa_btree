@@ -64,7 +64,7 @@ type_synonym e = error
 
 
 
-(* misc ----------------------------------------------------------- *)  
+(* misc ------------------------------------------------------------- *)
   
 
 (* is_Some also in Quickcheck_Examples/Completeness.thy - should be in
@@ -98,7 +98,7 @@ definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
 
   
 
-(* res ------------------------------------------------------------ *)  
+(* res -------------------------------------------------------------- *)
   
 (* This is similar to the result type from OCaml *)
 

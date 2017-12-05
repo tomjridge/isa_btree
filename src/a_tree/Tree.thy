@@ -50,7 +50,8 @@ definition subtree_indexes :: "('k,'v)node \<Rightarrow> nat list" where
 
 
 (* perhaps we keep this defn? otherwise painful to state keys_consistent? *)
-(* FIXME this is a derived operation; where is it used? replace? *)
+(* FIXME this is a derived operation; where is it used? replace? FIXME this is 
+derived from the splitting code in Key_value *)
 definition index_to_bound :: "'k list \<Rightarrow> nat \<Rightarrow> ('k option * 'k option)" where
 "index_to_bound ks i = (
   let l = if (i=min_child_index) then None else Some(ks!(i-1)) in

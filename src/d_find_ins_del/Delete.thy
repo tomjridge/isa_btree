@@ -2,6 +2,8 @@ theory Delete
 imports Find
 begin
 
+(* FIXME change these definitions to match the org documentation alternative approach *)
+
 datatype ('k,'v,'r)del_t =
   D_small_leaf "('k*'v)s"
   | D_small_node "'k s * 'r s"
@@ -27,6 +29,8 @@ definition mk_delete_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)dst" 
 
 definition dest_d_finished :: "('k,'v,'r)dst \<Rightarrow> 'r option" where
 "dest_d_finished x = (case x of D_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
+
+
 
 (* steal or merge --------------------------------------------------- *)
 
@@ -154,8 +158,7 @@ where
             let (p_1,p2) = ((p_1_ks,p_1_ts),p_2) in
             (right,(p_1,p_2),(p_k,s)))
           | _ \<Rightarrow> impossible1 (STR ''delete, get_sibling'')
-        ))
-"
+        ))"
 
 definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (('k,'v,'r)u,'t) MM" where
 "step_up ps1 du = (
@@ -231,29 +234,21 @@ where
         True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
         | False \<Rightarrow> (
           Leaf_frame(kvs') |> (store_ops|>store_alloc) |> fmap
-          (% r. D_up(D_updated_subtree(r),stk,r0)))
-      )
+          (% r. D_up(D_updated_subtree(r),stk,r0))))
       | False \<Rightarrow> (
         (* nothing to delete *)
-        return (D_finished r0)
-      ))
-    )
-  )
+        return (D_finished r0) ))))  (* D_down *)
   | D_up(f,stk,r0) \<Rightarrow> (
     case stk of
     [] \<Rightarrow> (
       case f of
       D_small_leaf kvs \<Rightarrow> (Leaf_frame(kvs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r)) 
       | D_small_node (ks,rs) \<Rightarrow> (
-        Node_frame(ks,rs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r)
-      )
-      | D_updated_subtree(r) \<Rightarrow> (return (D_finished r))
-    )
-    | _ \<Rightarrow> (step_up ps1 (f,stk) |> fmap (% (f,stk). (D_up(f,stk,r0))))
-  )
-  | D_finished(r) \<Rightarrow> (return s)  (* stutter *)
-  
-)"
+        Node_frame(ks,rs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r) )
+      | D_updated_subtree(r) \<Rightarrow> (return (D_finished r)))
+    | _ \<Rightarrow> (step_up ps1 (f,stk) |> fmap (% (f,stk). (D_up(f,stk,r0)))) )
+  | D_finished(r) \<Rightarrow> (return s)  (* stutter *) )"
+
 
 (* wellformedness --------------------------------------------------- *)
 
@@ -313,7 +308,9 @@ where
 "wellformed_delete_state constants k_ord r2t t0 s k ds =  assert_true (
   case ds of 
   D_down d \<Rightarrow> (wf_d k_ord r2t t0 s d)
-  | D_up (fo,stk,r) \<Rightarrow> (wf_u constants k_ord r2t t0 s k (fo,stk) & (case r2t s r of None \<Rightarrow> False | Some t \<Rightarrow> tree_equal t t0))
+  | D_up (fo,stk,r) \<Rightarrow> (
+    wf_u constants k_ord r2t t0 s k (fo,stk) & 
+    (case r2t s r of None \<Rightarrow> False | Some t \<Rightarrow> tree_equal t t0))
   | D_finished r \<Rightarrow> (wf_f constants k_ord r2t t0 s k r) 
 )
 "
