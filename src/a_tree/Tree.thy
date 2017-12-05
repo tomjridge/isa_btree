@@ -8,7 +8,11 @@ begin
 
 (* tree algebraic datatype ------------------------------------------ *)
 
-datatype ('k,'v) tree = Node "('k list * ('k,'v) tree list)" | Leaf "('k*'v)list"
+(*:bc:*)
+datatype ('k,'v) tree = 
+  Node "('k list * ('k,'v) tree list)" 
+  | Leaf "('k*'v)list"
+(*:bd:*)
 
 type_synonym ('k,'v) t = "('k,'v) tree"
 

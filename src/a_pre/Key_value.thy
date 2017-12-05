@@ -230,7 +230,7 @@ definition split_ks_rs ::
 where
 "split_ks_rs cmp k ks_rs = (
   let res = aux cmp k ([],[]) ks_rs in
-  let _ = check_true (% _. split_ks_rs' cmp k ks_rs = res) in
+(* FIXME forces generated code to have extra args; fixup in OCaml  let _ = check_true (% _. split_ks_rs' cmp k ks_rs = res) in *)
   res)"
   
 (* NOTE tested via split_ks_rs' *)

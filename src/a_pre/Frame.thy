@@ -13,7 +13,10 @@ with pointers rather than children *)
 
 *)
 
-datatype ('k,'v,'r) frame = Node_frame "'k list * 'r list" | Leaf_frame "('k*'v) list"
+datatype ('k,'v,'r) frame = 
+  Node_frame "'k list * 'r list" 
+  | Leaf_frame "('k*'v) list"
+
 (* type_synonym pfr = "(key,value_t) t" *)
 
 definition dest_Node_frame :: "('k,'v,'r) frame \<Rightarrow> ('k list * 'r list)" where
