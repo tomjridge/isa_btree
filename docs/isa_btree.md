@@ -331,6 +331,249 @@ kv in a subtree may cause the subtree to split)
 
 
 
+## Basics: refinement, small step vs big step
+
+"Mathematical" functions map an argument to a result. There is no
+notion of the "steps" of the function, since the underlying model of a
+function is as a
+set of pairs.
+
+In computer science, however, programs typically do take several
+steps to execute. The distinction is important when the step-based
+nature of the computation can be observed. Concurrency is one way that
+the internal workings of an algorithm may be observed by another
+process. However, even for a single process, we may wish to model the
+program's steps explicitly. In the case of a B-tree, disk reads and
+writes can be observed by other processes, but even for a single
+process we want to argue that, say, the algorithm behaves correctly in
+the presence of host failure (which may occur at any point during the
+program's execution). A host failure causes the whole system
+to enter a "halt" state, which it exits when the user restarts the
+host (say). Since the failure can occur at any point, the essential
+step-based nature of any programs that use the disk is observable
+(some reads and writes may have happened before the host failed, but
+not necessarily all that would have occurred in a full run of the
+program without host failure).
+
+So far, we have considered the "find" operation executing on a map and
+on a tree:
+
+\includegraphics{./pics/tikz_big_step.pdf}
+
+// # #+BEGIN_SRC
+// # m_t,find k m_t ---> m_t,v
+// # ^                   ^
+// # |                   |
+// # t,find k t     ---> t,v
+// # #+END_SRC
+
+In this diagram, we show (bottom left) the tree $t$, and the operation
+$\find\ k\ t$ evaluating to $t$ (unchanged) and the result $v$
+(say). The top of the diagram shows the equivalent "mathematical
+function" evaluating on the map $m_t$. The vertical arrows represent
+the relation between $t$ and $m_t$.
+
+In this diagram, both versions of $\find$ take a single step to
+evalute. We now wish to address a more complicated scenario where the
+implementation of $\find$ on a search tree takes multiple steps. Each
+of these steps nominally corresponds to at most one disk operation, so
+that we properly capture the fact that disk accesses (or, more
+properly, requests for disk accesses) occur in sequence
+over a period of time.
+
+First of all, we suppress (for the sake of clarity) the arguments $t$
+and $m_t$:
+
+~~~~
+m_t,find(k) ---> m_t,v
+^                ^
+|                |
+t,find(k)   ---> t,v
+~~~~
+
+
+
+If we include multiple steps for the implementation $\find{}_t$, the
+diagram now looks like this:
+
+~~~~
+m_t,find(k) -----------------------------------> m_t,v
+^                                                ^
+|                                                |
+t,find(k) --> t[s],find(k) --> t[s'],find(k) --> t,v
+~~~~
+
+Here we have used the notation $t[s]$ to emphasize that the
+implementation descends from the root of the tree to the subtree $s$,
+and then to the subtree $s'$.
+
+The sequence of steps of the implementation constitute a *refinement* of
+the single step of $\find{}_m$. 
+
+It is possible to use the formal notion of state transition system to
+make the "refinement" notion precise. For the moment it suffices to
+understand that an implementation is a refinement of a specification
+when operations (such as find) "behave the same" given that we choose
+to ignore some details of how the implementation behaves (in this
+case, we choose to ignore the fact that the implementation takes many
+steps whilst the specification consists of only one). 
+
+*Note on etymology:* In the Oxford English Dictionary, one definition of
+refinement is: "the improvement or clarification of something by the
+making of small changes". Here we clarify HOW the find operation is
+implemented. The move from a single step to multiple small steps also
+recalls the essential "breaking down" and "separating out" aspects of
+refining in various forms.
+
+
+## B-tree definition
+
+In this section we give the formal definition of a B-tree. 
+
+*Definition:* B-trees are search trees which are:
+
+- balanced (every leaf is at the same distance from the root)
+- have minimum and maximum bounds on the sizes of nodes and leaves;
+  individual nodes and leaves can vary in size between these bounds;
+  there are four bounds: min leaf size, max leaf size, min node keys,
+  max node keys; the root node may not satisfy the "minimum node keys"
+  bound
+
+A B-tree is, therefore, simply a balanced search tree with size constraints
+on nodes and leaves.
+
+The bounds on the sizes of nodes and leaves are chosen for performance
+reasons, and to match the blocksize of the backing block
+device. These aspects are visible at the block layer, but at the
+current level what matters is that these bounds exist.
+
+*Note on performance:* The fact that the tree is balanced, together with a reasonably chosen
+minimum node size (say, half the maximum node size), guarantees
+$O(log\ n)$ access to any leaf.
+
+The use of minimum and maximum bounds, rather than a fixed size, means
+that (potentially expensive) tree rebalancing occurs rarely, when
+compared to, for example, a binary search tree.
+
+*Note on root size constraints:* TODO
+
+
+//  # A B-tree is a tree where nodes are of the form $t =
+//  # t_0,k_0,\ldots,k_{n-1},t_n$ (usually written {{{t0tn}}}) and leaves are of the form
+//  # $(k_0,v_0),(k_1,v_1),\ldots$. Keys in nodes and leaves are ordered in
+//  # strictly increasing order.
+//  # 
+//  # Additionally the following are satisfied:
+//  # 
+//  # - the tree is balanced
+//  # - all nodes and leaves (except possibly the root) have sizes
+//  #   consistent with the min/max bounds
+//  # - for a node $t=t_0,k_0,\ldots$, have $t_i \subseteq K_i$
+
+## Overview of approach to correctness
+
+Our approach to showing the correctness of the B-tree involves 2
+refinements. 
+
+#+attr_html: :height 200px
+[[../btree_pics/map_refinement.dot.svg]]
+
+At the top level, we have the specification, which is simply the
+"mathematical" description of a map, as a set of pairs say. Each
+operation "completes" in a "single step". No tree-like datastructures
+are present. 
+
+The map level is expressed at very high level of abstraction. The map
+interface is exposed to users, who are already familiar with the map
+ operations. However, at this level it is not possible to understand
+the on-disk behaviour of the B-tree, including how it behaves when the
+host fails.
+
+At the next level, we have the B-tree modelled as an algebraic
+datatype. At this level the operations take multiple steps
+(correspnding to disk accesses) but there are no blocks or
+pointers. It is at this level that the most interesting aspects of
+B-trees can be captured, including the rebalancing required during
+insert and delete operations. However, this level is still not
+sufficiently detailed to capture the behaviour when the host fails.
+
+At the lowest level, we have the B-tree modelled in full
+implementation detail, with disk blocks, and pointers between
+blocks. Caching and the behaviour of the underlying disk are all
+important at this level. It is at this level that the behaviour under
+host failure can be expressed.
+
+Each level is a refinement of the level above. 
+
+Our approach to correctness is to show the correctness of the datatype
+level by showing a refinement from the map specification. We then show
+a further refinement from the datatype to the "blocks and pointers"
+version of the code.
+
+
+## Framestacks: a concrete representation of context
+
+In previous sections we discussed how the find algorithm descended a
+search tree. At each step the algorithm focused on a subtree, and the
+rest of the tree was dubbed the "context". We now make this notion
+more precise.
+
+#+attr_html: :height 200px
+[[../btree_pics/btree_refinement.dot.svg]]
+
+In the diagram above we start off with the notion of a position in a
+tree. This is the "graph" view, where algorithms operate on single
+nodes in a tree and follow pointers to child nodes. For concreteness,
+a position or path in a tree might be the sequence of child indexes to
+reach a particular node. Thus $0,1$ represents the node that can be
+found by following the 0th child from the root, and then following the
+1th child from that node (indexing from 0).
+
+For the "datatype" view, it is more natural to identify a particular
+position in a tree with the subtree at that position. Then we need
+some way to formalize the context of the "rest of the tree". We could,
+as above, maintain the original tree and a path to the "current"
+subtree. However, we choose to develop a different notion of context
+based on framestacks. The reason is that we need to implement
+algorithms on the context, and these algorithms are more easily
+expressed using framestacks.
+
+The lowest level in the diagram involves reifying the notion of "tree
+context" as a concrete datastructure called a framestack.
+
+*Definition:* a frame is a node with a "missing" child; for a node
+$t=t_0,k_0,\ldots$, a frame is just a pair
+$(t_0,k_0,\ldots,k_{i-1}),(k_i,t_{i+1},\ldots)$. Compared to the
+original node, the child $t_i$ is missing. 
+  
+Example TODO
+
+*Notation:* a frame corresponding to a node $t$ with a missing child
+$t_i$ may be written $t/t_i$ or $t[\ ]_i$. An alternative notation is {{{ctxt}}}.
+Sometimes we use the alternative notation $t=\ldots,[\ ],\ldots$, or the
+tabular form when we want to emphasize the surrounding keys:
+
+| ... | k |     | k' | ... |
+| ... |   | [ ] |    | ... |
+
+
+*Definition:* a framestack is a list of frames $f_n,\ldots,f_0$. The
+frame $f_0$ corresponds to the root node, and the frame $f_n$
+corresponds to the parent node of the current subtree.
+
+Example TODO
+
+Clearly it is possible to reconstruct a tree given a context and a focus.
+
+*Definition:* a (tree-)context is a framestack.
+
+Informally, a *focus* is the part of some subtree that can be combined
+with a context to give the original tree. However, it is often useful
+to allow the focus to contain not only a fragment of a tree, or a
+subtree, but also additional data.
+
+FIXME define operation to combine a tree and a context
+
 
 
 
