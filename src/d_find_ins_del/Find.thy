@@ -3,7 +3,7 @@ imports "$SRC/b_store_monad/Monad"
 begin
 
 (* FIXME move *)
-type_synonym ('k,'r) rstk = "('k,'r) split_node list"
+type_synonym ('k,'r) rstk = "('k,'r) node_stack"
 
 type_synonym 'a s = "'a list"
 

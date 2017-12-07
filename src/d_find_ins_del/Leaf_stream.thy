@@ -7,9 +7,9 @@ begin
 (* we need these exposed outside functor body in ML *)
 
 datatype ('k,'v,'r) ls_state = 
-  LS_down "'r*('k,'r) split_node list" 
-  | LS_leaf "('k*'v) list * ('k,'r) split_node list" 
-  | LS_up "('k,'r) split_node list"
+  LS_down "'r*('k,'r) node_stack" 
+  | LS_leaf "('k*'v) list * ('k,'r) node_stack" 
+  | LS_up "('k,'r) node_stack"
   
 (* working with a F_finished find state, enumerate the leaves *)
 
