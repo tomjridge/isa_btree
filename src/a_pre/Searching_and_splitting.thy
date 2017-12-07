@@ -34,8 +34,8 @@ definition rsplit_node_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) rspli
 
 (* get_lu_bounds for rsplit_node ---------------------------- *)
 
-definition get_lu_bounds :: "('k,'a) rsplit_node \<Rightarrow> ('k option * 'k option)" where
-"get_lu_bounds rn = (
+definition rsplit_get_bounds :: "('k,'a) rsplit_node \<Rightarrow> ('k option * 'k option)" where
+"rsplit_get_bounds rn = (
   let l = case rn|>r_ks1 of [] \<Rightarrow> None | x # xs \<Rightarrow> Some x in
   let u = case rn|>r_ks2 of [] \<Rightarrow> None | x # xs \<Rightarrow> Some x in
   (l,u))"

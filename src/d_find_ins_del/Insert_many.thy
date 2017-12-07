@@ -96,7 +96,7 @@ definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Righta
   | Some(r0,k,r,kvs,stk) \<Rightarrow> (
     (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind 
     (% _.
-    let (l,u) = stack_to_lu_of_child stk in
+    let (l,u) = rstack_get_bounds stk in
     let (kvs',kvs0') = kvs_insert_2 cs k_ord u (k,v) kvs0 kvs in
     let fo = (
       case (length kvs' \<le> cs|>max_leaf_size) of

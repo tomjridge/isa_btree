@@ -80,7 +80,8 @@ where
   let n = height t0 in
   (* need to check the stack and the focus *)
   let check_focus = % r t. wf_store_tree r2t s r t in
-  let check_stack = % rstk tstk. rstack_equal (tstk |> rstack_map Some) (rstk |> rstack_map (r2t s)) in 
+  let check_stack = 
+    % rstk tstk. rstack_equal (tstk |> rstack_map Some) (rstk |> rstack_map (r2t s)) in 
   case fs of 
   F_finished (r0,k,r,kvs,stk) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
@@ -103,10 +104,10 @@ definition wf_trans :: "'t * ('k,'v,'r)fs \<Rightarrow> 't * ('k,'v,'r)fs \<Righ
   let (s1,fs1) = s1 in
   let (s2,fs2) = s2 in
   (* FIXME don't want to force equality check of the store (s2=s1) & *)
-  (case (fs1,fs2) of
+  case (fs1,fs2) of
   (F_down(r0,k,r,stk),F_down(r0',k',r',stk')) \<Rightarrow> (List.length stk' = 1+List.length stk)
-  | (F_down(_),F_finished(_)) \<Rightarrow> True
-  | _ \<Rightarrow> False) )"
+  | (F_down _,F_finished _) \<Rightarrow> True
+  | _ \<Rightarrow> False)"
 
 end
 

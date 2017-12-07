@@ -53,8 +53,9 @@ definition step_up :: "('k,'r) rstk \<Rightarrow> ('k,'v,'r) lss" where
     [] \<Rightarrow> (LS_up fs')
     | r'#rs' \<Rightarrow> (
       let f' = \<lparr> 
-        r_ks1=ks1@[List.hd ks2],
-        r_ts1=rs1@[r],
+        (* NOTE r_ks1, r_ts1 stored in reverse *)
+        r_ks1=(List.hd ks2)#ks1,
+        r_ts1=r#rs1,
         r_t=r', 
         r_ks2=(List.tl ks2),
         r_ts2=rs' \<rparr> 

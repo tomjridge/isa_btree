@@ -51,8 +51,8 @@ definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Righta
         Disk_leaf kvs1 |> (store_ops|>store_alloc) |> bind
         (% r1. Disk_leaf kvs2 |> (store_ops|>store_alloc) |> fmap (% r2. I2(r1,k',r2)))) )
     in
-    fo |> fmap (% fo. (fo,stk))))
-)"
+    fo |> fmap (% fo. (fo,stk)))) )"
+
 
 definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_up ps1 u = (
@@ -60,7 +60,9 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow>
   let store_ops = ps1 |> dot_store_ops in
   let (fo,stk) = u in
   case stk of 
-  [] \<Rightarrow> impossible1 (STR ''insert, step_up'') (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
+  [] \<Rightarrow> 
+    (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
+    impossible1 (STR ''insert, step_up'') 
   | x#stk' \<Rightarrow> (
     case fo of
     I1 r \<Rightarrow> (
@@ -73,10 +75,11 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow>
       True \<Rightarrow> (
         mk_Disk_node(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))
       | False \<Rightarrow> (
-        let (ks_rs1,k,ks_rs2) = split_node cs (ks',rs') in  (* FIXME move split_node et al to this file? *)
+        let (ks_rs1,k,ks_rs2) = split_node cs (ks',rs') in  
         mk_Disk_node(ks_rs1) |> (store_ops|>store_alloc) |> bind
         (% r1. mk_Disk_node (ks_rs2) |> (store_ops|>store_alloc) |> fmap 
         (% r2. (I2(r1,k,r2),stk')))) )))"
+
 
 definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> (('k,'v,'r) ist,'t) MM" where
 "insert_step ps1 s = (
@@ -97,8 +100,7 @@ definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Right
         (* create a new frame *)
         (mk_Disk_node([k],[r1,r2]) |> (store_ops|>store_alloc) |> fmap (% r. I_finished r))))
     | _ \<Rightarrow> (step_up ps1 u |> fmap (% u. I_up u)))
-  | I_finished f \<Rightarrow> (return s)  (* stutter *)
-)"
+  | I_finished f \<Rightarrow> (return s)  (* stutter *) )"
 
 
 (* wellformedness --------------------------------------------------- *)
@@ -106,14 +108,16 @@ definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Right
 definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r,'t) r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r)d \<Rightarrow> bool" where
 "wf_d k_ord r2t t0 s d =  assert_true (
   let (fs,v) = d in
-  wellformed_find_state k_ord r2t t0 s fs  
-)"
+  wellformed_find_state k_ord r2t t0 s fs)"
+
 
 definition wf_u :: "('k,'v,'r,'t) r2t \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r)u \<Rightarrow> bool" where
 "wf_u r2t k_ord t0 s k v u =  assert_true (
   (* need to check the stack and the focus *)
   let check_focus = % r t. wf_store_tree r2t s r t in
-  let check_stack = % rstk tstk. rstack_equal (rstk|>rstack_map (r2t s)|>no_focus) (tstk|>rstack_map Some|>no_focus) in   
+  let check_stack = % rstk tstk. 
+    rstack_equal (rstk|>rstack_map (r2t s)|>no_focus) (tstk|>rstack_map Some|>no_focus) 
+  in
   let (fo,stk) = u in
   case fo of
   I1 r \<Rightarrow> (
@@ -127,17 +131,15 @@ definition wf_u :: "('k,'v,'r,'t) r2t \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)
   | I2 (r1,k',r2) \<Rightarrow> (
     let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
     assert_true (check_stack stk t_stk) &
-    ( let (l,u) = stack_to_lu_of_child t_stk in
-      case (r2t s r1, r2t s r2) of
+    (case (r2t s r1, r2t s r2) of
       (Some t1, Some t2) \<Rightarrow> (
+        let (l,u) = rstack_get_bounds t_stk in
         let (ks1,ks2) = (t1|>tree_to_keys,t2|>tree_to_keys) in
         assert_true (check_keys k_ord l ks1 (Some k')) &
         assert_true (check_keys k_ord (Some k') ks2 u) &
         assert_true (kvs_equal (t_fo|>tree_to_kvs|>kvs_insert k_ord (k,v)) (t1|>tree_to_kvs @ (t2|>tree_to_kvs))))
-      |(_,_) \<Rightarrow> False
-    )
-  )
-)"
+      |(_,_) \<Rightarrow> False )))"
+
 
 definition wf_f :: "constants \<Rightarrow> 'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> 'r \<Rightarrow> bool" where
 "wf_f cs k_ord r2t t0 s k v r =  assert_true (
@@ -145,9 +147,8 @@ definition wf_f :: "constants \<Rightarrow> 'k ord \<Rightarrow> ('k,'v,'r,'t)r2
   None \<Rightarrow> False
   | Some t' \<Rightarrow> (
     wellformed_tree cs (Some(Small_root_node_or_leaf)) k_ord t' &
-    kvs_equal ( (t0|>tree_to_kvs|>kvs_insert k_ord (k,v))) (t'|>tree_to_kvs)
-  )
-)"
+    kvs_equal ( (t0|>tree_to_kvs|>kvs_insert k_ord (k,v))) (t'|>tree_to_kvs) ))"
+
 
 definition wellformed_insert_state :: 
   "constants \<Rightarrow> 'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r)ist \<Rightarrow> bool" 
@@ -156,9 +157,7 @@ where
   case is of 
   I_down d \<Rightarrow> (wf_d k_ord r2t t0 s d)
   | I_up u \<Rightarrow> (wf_u r2t k_ord t0 s k v u)
-  | I_finished r \<Rightarrow> (wf_f cs k_ord r2t t0 s k v r) 
-)
-"
+  | I_finished r \<Rightarrow> (wf_f cs k_ord r2t t0 s k v r) )"
 
 (* don't bother with wf_trans *)
 

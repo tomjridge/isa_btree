@@ -2,7 +2,9 @@ theory Delete
 imports Find
 begin
 
-(* FIXME change these definitions to match the org documentation alternative approach *)
+(* FIXME change these definitions to match the org documentation alternative approach; 
+FIXME at the moment likely that these defns are not updated to rsplit_node from split_node
+ *)
 
 datatype ('k,'v,'r)del_t =
   D_small_leaf "('k*'v)s"
@@ -139,6 +141,7 @@ where
 
 (* delete ----------------------------------------------------------  *)
 
+(* FIXME this not correct for rsplit_node *)
 definition get_sibling :: 
   "( ('k s * 'r s) * ('k s * 'r s)) \<Rightarrow> bool (* right *) * (('k s*'r s) * ('k s*'r s)) * ('k*'r)" 
 where
@@ -178,7 +181,12 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
       let (p_ks1,p_rs1,_,p_ks2,p_rs2) = p|>dest_rsplit_node in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = (store_ops|>store_read) r in
-      let d12 :: (('k,('k,'v,'r) dnode) d12_t,'t) MM = frm |> fmap (% frm. steal_or_merge (ps1|>dot_constants) right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Disk_leaf|>unzip)) in
+      let d12 :: (('k,('k,'v,'r) dnode) d12_t,'t) MM = 
+        frm |> fmap (% frm. 
+          steal_or_merge 
+            (ps1|>dot_constants) right leaf mk_c 
+            (kvs|>unzip) p_k (frm|>dest_Disk_leaf|>unzip))
+      in
       let d12' :: (('k,'r) d12_t,'t) MM = d12 |> bind
       (% x. case x of
         D1 frm \<Rightarrow> frm |> (store_ops|>store_alloc) |> fmap (% r. D1 r)
@@ -199,7 +207,10 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
       let (p_ks1,p_rs1,_,p_ks2,p_rs2) = p|>dest_rsplit_node in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = (store_ops|>store_read) r in
-      let d12 = frm |> fmap (% frm. steal_or_merge (ps1|>dot_constants) right leaf mk_c (ks,rs) p_k (frm|>dest_Disk_node)) in
+      let d12 = frm |> fmap (% frm. 
+        steal_or_merge (ps1|>dot_constants) right leaf mk_c 
+          (ks,rs) p_k (frm|>dest_Disk_node)) 
+      in
       let d12' = d12 |> bind
       (% x. case x of
         D1 frm \<Rightarrow> frm |> (store_ops|>store_alloc) |> fmap(% r. D1 r)

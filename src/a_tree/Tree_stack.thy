@@ -36,22 +36,22 @@ type_synonym ('k,'v) tree_rstack = "('k,('k,'v)tree) rstack"
 
 (* stack_to_lu_of_child (get bounds of focus) ----------------------- *)
 
-(* get the bound surrounding the focus *)
-(* FIXME again this is derived from search_key_to_index etc *)
-consts stack_to_lu_of_child :: "('k,'a) rstack \<Rightarrow> 'k option * 'k option" 
-
-(*where
-"stack_to_lu_of_child [] = (None,None)"
-| "stack_to_lu_of_child (x#stk') = (
-    let (l',u') = stack_to_lu_of_child stk' in
-    let (ks1,ks2) = (x|>f_ks1,x|>f_ks2) in    
-    let l = (if ks1 \<noteq> [] then Some(ks1|>List.last) else l') in
-    let u = (if ks2 \<noteq> [] then Some(ks2|>List.hd) else u') in
+(* get the bound surrounding the focus, via rsplit_get_bounds *)
+primrec rstack_get_bounds :: "('k,'a) rstack \<Rightarrow> 'k option * 'k option" where
+"rstack_get_bounds [] = (None,None)"
+| "rstack_get_bounds (x#stk') = (
+    let (l',u') = rsplit_get_bounds x in
+    let (l,u) = (
+      case (l',u') of
+      (Some l,Some u) \<Rightarrow> (Some l,Some u)
+      | _ \<Rightarrow> (
+        let (l,u) = rstack_get_bounds stk' in
+        ((if l'=None then l else l'), if u'=None then u else u')))
+    in
     (l,u))"
-*)
 
 
-(* tree_to_stack, stack_to_tree, no_focus --------------------------- *)
+(* tree_to_rstack, rstack_to_tree, no_focus --------------------------- *)
 
 (* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
 (* FIXME why is focus returned separately? *)
@@ -92,7 +92,6 @@ where
 "add_new_stack_frame cmp k ks_rs stk = (
   let (ks,rs) = ks_rs in
   let r = mk_rsplit_node cmp k (ks,rs) in
-  (* let (l,u) = stack_to_lu_of_child stk in *)
   (r#stk,r|>r_t) )"  (* FIXME why return r' explicitly? why not get from f_t? *)
 
 
