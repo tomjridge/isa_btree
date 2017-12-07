@@ -18,6 +18,18 @@ datatype ('k,'v,'r) dnode =
   | Disk_leaf "('k*'v) list"
 
 
+definition check_length_ks_rs :: "'k list * 'r list \<Rightarrow> bool" where
+"check_length_ks_rs ks_rs = (
+  let (ks,rs) = ks_rs in
+  1+List.length ks = List.length rs)"
+  
+
+definition mk_Disk_node :: "'k list * 'r list \<Rightarrow> ('k,'v','r) dnode" where
+"mk_Disk_node ks_rs = (
+  (* enforce a wellformedness property *)
+  let _ = check_true (% _. check_length_ks_rs ks_rs) in
+  (Disk_node (ks_rs)))"
+
 (* type_synonym pfr = "(key,value_t) t" *)
 
 definition dest_Disk_node :: "('k,'v,'r) dnode \<Rightarrow> ('k list * 'r list)" where

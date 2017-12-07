@@ -121,6 +121,34 @@ definition ck2_tests :: unit where
   ())"
 
 
+(* insert and delete in list of kv ---------------------------------- *)
+
+(* insert a new kv into a list of kvs; used to insert new binding into a leaf *)
+primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
+"kvs_insert cmp kv [] = [kv]"
+| "kvs_insert cmp kv (kv'#kvs') = (
+  let (k,v) = kv in
+  let (k',v') = kv' in
+  if key_lt cmp k' k then (k',v')#(kvs_insert cmp kv kvs')
+  else if (key_eq cmp k k') then (k,v)#kvs' else
+  (k,v)#(k',v')#kvs'
+)"
+
+definition kvs_insert_tests :: unit where
+"kvs_insert_tests = (
+  let _ = assert_true (kvs_insert nat_ord (2,2) (List.map (% x. (x,x)) [0,1,3,4]) = 
+    (List.map (% x. (x,x)) [0,1,2,3,4]))
+  in
+  let _ = assert_true (kvs_insert nat_ord (6,6) (List.map (% x. (x,x)) [0,1,3,4]) = 
+    (List.map (% x. (x,x)) [0,1,3,4,6]))
+  in
+  ())"
+
+
+(* delete a pair with a particular key from a list of pairs *)
+definition kvs_delete :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
+"kvs_delete ord k kvs = List.filter (% kv. ~ (key_eq ord (fst kv) k)) kvs"
+  
 
 
 end

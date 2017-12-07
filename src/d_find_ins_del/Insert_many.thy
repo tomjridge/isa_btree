@@ -120,17 +120,17 @@ definition step_up :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow
     let ((ks1,rs1),_,(ks2,rs2)) = dest_split_node x in
     case fo of
     I1 (r,kvs0) \<Rightarrow> (
-      Disk_node(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))
+      mk_Disk_node(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))
     | I2 ((r1,k,r2),kvs0) \<Rightarrow> (
       let ks' = ks1@[k]@ks2 in
       let rs' = rs1@[r1,r2]@rs2 in
       case (List.length ks' \<le> cs|>max_node_keys) of
       True \<Rightarrow> (
-        Disk_node(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))
+        mk_Disk_node(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))
       | False \<Rightarrow> (
         let (ks_rs1,k,ks_rs2) = split_node cs (ks',rs') in  (* FIXME move split_node et al to this file *)
-        Disk_node(ks_rs1) |> (store_ops|>store_alloc) |> bind
-        (% r1. Disk_node (ks_rs2) |> (store_ops|>store_alloc) |> fmap 
+        mk_Disk_node(ks_rs1) |> (store_ops|>store_alloc) |> bind
+        (% r1. mk_Disk_node (ks_rs2) |> (store_ops|>store_alloc) |> fmap 
         (% r2. (I2((r1,k,r2),kvs0),stk'))))
     )
   )
@@ -154,7 +154,7 @@ definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Right
       I1 (r,kvs0) \<Rightarrow> return (I_finished (r,kvs0))
       | I2((r1,k,r2),kvs0) \<Rightarrow> (
         (* create a new frame *)
-        (Disk_node([k],[r1,r2]) |> (store_ops|>store_alloc) |> fmap (% r. I_finished (r,kvs0)))))
+        (mk_Disk_node([k],[r1,r2]) |> (store_ops|>store_alloc) |> fmap (% r. I_finished (r,kvs0)))))
     | _ \<Rightarrow> (step_up ps1 u |> fmap (% u. I_up u)))
   | I_finished f \<Rightarrow> (return s)  (* stutter *)
 )"

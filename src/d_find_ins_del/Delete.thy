@@ -106,7 +106,7 @@ where
       let m = frac_mult in
       case x of 
       D1 c' \<Rightarrow> (
-        let p' = Disk_node(m (m p_1 ([],[c'])) p_2) in
+        let p' = mk_Disk_node(m (m p_1 ([],[c'])) p_2) in
         let p_sz = p'|>dest_Disk_node|>fst|>List.length in
         let f' = ( (* we may be at root, having deleted the single key *)
           case (p_sz = 0) of
@@ -122,7 +122,7 @@ where
         in
         f' |> fmap (% f'. (f',stk')) )
       | D2(c1,k,c2) \<Rightarrow> (
-        let p' = Disk_node(m (m p_1 ([k],[c1,c2])) p_2) in
+        let p' = mk_Disk_node(m (m p_1 ([k],[c1,c2])) p_2) in
         let p_sz = p'|>dest_Disk_node|>fst|>List.length in
         let f' = (
           (* we may be at the root, in which case f' may be small *)
@@ -170,7 +170,7 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
     case f of   
     D_updated_subtree r \<Rightarrow> (
       let ((ks1,rs1),_,(ks2,rs2)) = p|>dest_split_node in
-      Disk_node(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk'))
+      mk_Disk_node(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk'))
     )
     | D_small_leaf(kvs) \<Rightarrow> (
       let leaf = True in
@@ -193,7 +193,7 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
   | D_small_node(ks,rs) \<Rightarrow> (
       (* FIXME almost identical to small leaf case *)
       let leaf = False in
-      let mk_c = (% ks_rs. Disk_node(ks_rs)) in 
+      let mk_c = (% ks_rs. mk_Disk_node(ks_rs)) in 
       (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
       (* parent info is already read, but we must read the siblings from disk *)
       let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_split_node in
@@ -244,7 +244,7 @@ where
       case f of
       D_small_leaf kvs \<Rightarrow> (Disk_leaf(kvs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r)) 
       | D_small_node (ks,rs) \<Rightarrow> (
-        Disk_node(ks,rs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r) )
+        mk_Disk_node(ks,rs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r) )
       | D_updated_subtree(r) \<Rightarrow> (return (D_finished r)))
     | _ \<Rightarrow> (step_up ps1 (f,stk) |> fmap (% (f,stk). (D_up(f,stk,r0)))) )
   | D_finished(r) \<Rightarrow> (return s)  (* stutter *) )"

@@ -48,4 +48,33 @@ definition with_t :: "'a \<Rightarrow> ('k,'a) split_node \<Rightarrow> ('k,'a) 
 definition split_node_equal:: "('k,'a) split_node \<Rightarrow> ('k,'a) split_node \<Rightarrow> bool" where
 "split_node_equal f1 f2 = failwith (STR ''FIXME patch'')"
 
+
+(* alternative split_node, with reversed ks1,ts1 for efficiency ------------------ *)
+
+record ('k,'a) rsplit_node =
+  r_ks1 :: "'k list"
+  r_ts1 :: "'a list"
+  r_t :: 'a
+  r_ks2 :: "'k list"
+  r_ts2 :: "'a list"
+
+(* FIXME we want to try to move Searching_and_splitting defns to use this construct *)
+definition get_lu_bounds :: "('k,'a) rsplit_node \<Rightarrow> ('k option * 'k option)" where
+"get_lu_bounds rn = (
+  let l = case rn|>r_ks1 of [] \<Rightarrow> None | x # xs \<Rightarrow> Some x in
+  let u = case rn|>r_ks2 of [] \<Rightarrow> None | x # xs \<Rightarrow> Some x in
+  (l,u))"
+
+definition rsplit_to_split :: "('k,'a) rsplit_node \<Rightarrow> ('k,'a) split_node" where
+"rsplit_to_split r = (
+  let f= \<lparr>
+    f_ks1=(r|>r_ks1|>List.rev),
+    f_ts1=(r|>r_ts1|>List.rev),
+    f_t=(r|>r_t),
+    f_ks2=(r|>r_ks2),
+    f_ts2=(r|>r_ts2) \<rparr>
+  in
+  f)"
+
+
 end

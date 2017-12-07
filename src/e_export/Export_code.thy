@@ -27,10 +27,9 @@ Key_value.key_lt
 Key_value.okl_tests
 Key_value.ck_tests
 Key_value.ck2_tests
+Key_value.kvs_insert_tests
 
-
-Searching_and_splitting.kvs_insert_tests
-Searching_and_splitting.sk2i_tests
+(* Searching_and_splitting.sk2i_tests *)
 
 (* frame_types *)
 Disk_node.Disk_node

@@ -8,6 +8,9 @@ definition dummy :: "unit" where "dummy = Pre_params.dummy"
 
 (* ('a,'t) MM type_synonym ------------------------------------------ *)
 
+(* NOTE naming convention: 't is for the state type (not the "tree" 
+type or something like that *)
+
 type_synonym ('a,'t) MM = "'t \<Rightarrow> ('t * 'a res)"
 
 
