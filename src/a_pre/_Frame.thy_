@@ -1,0 +1,53 @@
+theory Frame  (* FIXME rename to disk_frame or similar? *)
+imports Prelude
+begin
+
+(* FIXME better to call this something else to avoid conflict with 
+ts_frame; no, use split_frame for treestack; also, these
+aren't really frames, but generalized nodes *)
+
+(* blocks on disk correspond to frames, which are like tree nodes, but
+with pointers rather than children *)
+
+(* type variable naming conventions:
+
+'k - keys
+'v - values
+'r - references to disk blocks
+
+*)
+
+datatype ('k,'v,'r) frame' = 
+  Disk_node "'k list * 'r list" 
+  | Disk_leaf "('k*'v) list"
+
+type_synonym ('k,'v,'r) dnode = "('k,'v,'r) frame'"
+
+(* type_synonym pfr = "(key,value_t) t" *)
+
+definition dest_Disk_node :: "('k,'v,'r) dnode \<Rightarrow> ('k list * 'r list)" where
+"dest_Disk_node f = (case f of Disk_node x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Disk_node''))"
+
+definition dest_Disk_leaf :: "('k,'v,'r) dnode \<Rightarrow> ('k*'v) list" where
+"dest_Disk_leaf f = (case f of Disk_leaf x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Disk_leaf''))"
+
+
+
+
+
+
+
+(* old ================================== *)
+
+(* there are local wf constraints relative to some particular
+constants; but prefer to convert to tree and check wf *)
+
+(*
+definition wf_node_frame :: "constants \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where
+"wf_node_frame c kn rn = ((kn + 1 = rn) & (c|>min_node_keys \<le> kn) & (kn \<le> c|>max_node_keys))"
+
+definition wf_leaf_frame :: "constants \<Rightarrow> nat \<Rightarrow> bool" where
+"wf_leaf_frame c n = ( c|>min_leaf_size \<le> n & n \<le> c|>max_leaf_size )"
+*)
+
+end

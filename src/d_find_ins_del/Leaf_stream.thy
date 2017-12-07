@@ -7,9 +7,9 @@ begin
 (* we need these exposed outside functor body in ML *)
 
 datatype ('k,'v,'r) ls_state = 
-  LS_down "'r*('k,'r) ts_frame list" 
-  | LS_leaf "('k*'v) list * ('k,'r) ts_frame list" 
-  | LS_up "('k,'r) ts_frame list"
+  LS_down "'r*('k,'r) split_node list" 
+  | LS_leaf "('k*'v) list * ('k,'r) split_node list" 
+  | LS_up "('k,'r) split_node list"
   
 (* working with a F_finished find state, enumerate the leaves *)
 
@@ -26,12 +26,12 @@ definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> 'r*('k,'r)rstk \<Righta
   let store_ops = ps1|>dot_store_ops in
   (store_ops|>store_read) r |> fmap 
   (% f. case f of 
-    Node_frame (ks,rs) \<Rightarrow> (
+    Disk_node (ks,rs) \<Rightarrow> (
       let r' = List.hd rs in
       let rs' = List.tl rs in
       let frm = \<lparr> f_ks1=[],f_ts1=[],f_t=r', f_ks2=ks,f_ts2=rs' \<rparr> in
       LS_down (r',frm#fs))  (* r' = f_t of frm *)
-    | Leaf_frame (kvs) \<Rightarrow> LS_leaf (kvs,fs))
+    | Disk_leaf (kvs) \<Rightarrow> LS_leaf (kvs,fs))
 )"
 
 (* don't have to access disk *)
@@ -48,7 +48,7 @@ definition step_up :: "('k,'r) rstk \<Rightarrow> ('k,'v,'r) lss" where
   case fs of 
   [] \<Rightarrow> (failwith (STR ''impossible: Leaf_stream.step_up''))
   | f#fs' \<Rightarrow> (
-    let ((ks1,rs1),r,(ks2,rs2)) = f|>dest_ts_frame in
+    let ((ks1,rs1),r,(ks2,rs2)) = f|>dest_split_node in
     case rs2 of
     [] \<Rightarrow> (LS_up fs')
     | r'#rs' \<Rightarrow> (

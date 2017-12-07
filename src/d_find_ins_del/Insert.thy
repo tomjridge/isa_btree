@@ -45,11 +45,11 @@ definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Righta
     let kvs' = kvs |> kvs_insert k_ord (k,v) in
     let fo = (
       case (length kvs' \<le> (cs|>max_leaf_size)) of
-      True \<Rightarrow> (Leaf_frame kvs' |> (store_ops|>store_alloc) |> fmap (% r'. I1(r')))
+      True \<Rightarrow> (Disk_leaf kvs' |> (store_ops|>store_alloc) |> fmap (% r'. I1(r')))
       | False \<Rightarrow> (
         let (kvs1,k',kvs2) = split_leaf cs kvs' in
-        Leaf_frame kvs1 |> (store_ops|>store_alloc) |> bind
-        (% r1. Leaf_frame kvs2 |> (store_ops|>store_alloc) |> fmap (% r2. I2(r1,k',r2)))) )
+        Disk_leaf kvs1 |> (store_ops|>store_alloc) |> bind
+        (% r1. Disk_leaf kvs2 |> (store_ops|>store_alloc) |> fmap (% r2. I2(r1,k',r2)))) )
     in
     fo |> fmap (% fo. (fo,stk))))
 )"
@@ -62,20 +62,20 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow>
   case stk of 
   [] \<Rightarrow> impossible1 (STR ''insert, step_up'') (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
   | x#stk' \<Rightarrow> (
-    let ((ks1,rs1),_,(ks2,rs2)) = dest_ts_frame x in
+    let ((ks1,rs1),_,(ks2,rs2)) = dest_split_node x in
     case fo of
     I1 r \<Rightarrow> (
-      Node_frame(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))
+      Disk_node(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))
     | I2 (r1,k,r2) \<Rightarrow> (
       let ks' = ks1@[k]@ks2 in
       let rs' = rs1@[r1,r2]@rs2 in
       case (List.length ks' \<le> cs|>max_node_keys) of
       True \<Rightarrow> (
-        Node_frame(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))
+        Disk_node(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))
       | False \<Rightarrow> (
         let (ks_rs1,k,ks_rs2) = split_node cs (ks',rs') in  (* FIXME move split_node et al to this file? *)
-        Node_frame(ks_rs1) |> (store_ops|>store_alloc) |> bind
-        (% r1. Node_frame (ks_rs2) |> (store_ops|>store_alloc) |> fmap 
+        Disk_node(ks_rs1) |> (store_ops|>store_alloc) |> bind
+        (% r1. Disk_node (ks_rs2) |> (store_ops|>store_alloc) |> fmap 
         (% r2. (I2(r1,k,r2),stk'))))
     )
   )
@@ -98,7 +98,7 @@ definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Right
       I1 r \<Rightarrow> return (I_finished r)
       | I2(r1,k,r2) \<Rightarrow> (
         (* create a new frame *)
-        (Node_frame([k],[r1,r2]) |> (store_ops|>store_alloc) |> fmap (% r. I_finished r))))
+        (Disk_node([k],[r1,r2]) |> (store_ops|>store_alloc) |> fmap (% r. I_finished r))))
     | _ \<Rightarrow> (step_up ps1 u |> fmap (% u. I_up u)))
   | I_finished f \<Rightarrow> (return s)  (* stutter *)
 )"

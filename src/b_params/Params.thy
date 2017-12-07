@@ -20,8 +20,8 @@ round many parameters individually, we package them up as follows. *)
 (* FIXME? ops and params are different kinds of things *)
 
 record ('k,'v,'r,'t) store_ops =
-  store_read :: "('r \<Rightarrow> (('k,'v,'r) frame,'t) MM)"
-  store_alloc :: "(('k,'v,'r) frame \<Rightarrow> ('r,'t) MM)"
+  store_read :: "('r \<Rightarrow> (('k,'v,'r) dnode,'t) MM)"
+  store_alloc :: "(('k,'v,'r) dnode \<Rightarrow> ('r,'t) MM)"
   store_free :: "('r list \<Rightarrow> (unit,'t) MM)"
 
 (* FIXME pass store_ops explicitly ? *)
@@ -48,5 +48,3 @@ definition dot_store_ops :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r,'t) store
 
 
 end
-
-

@@ -1,232 +1,84 @@
 a_pre/Frame.thy ========================================
-definition dest_Node_frame :: "('k,'v,'r) frame \<Rightarrow> ('k list * 'r list)" where
-definition dest_Leaf_frame :: "('k,'v,'r) frame \<Rightarrow> ('k*'v) list" where
-definition wf_node_frame :: "constants \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where
-definition wf_leaf_frame :: "constants \<Rightarrow> nat \<Rightarrow> bool" where
 
 a_pre/Key_value.thy ========================================
-(* NOTE definitions are polymorphic in the key type *)
 (* 'k ord, kv ops --------------------------------------------------- *)
-definition kvs_equal :: "('k*'v) list \<Rightarrow> ('k*'v) list \<Rightarrow> bool" where
-definition v_equal :: "'v \<Rightarrow> 'v \<Rightarrow> bool" where
 (* key ordering, generic defns key_lt etc --------------------------- *)
-definition key_lt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
-definition key_eq :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
-definition key_le :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
-definition key_gt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
-definition wf_key_ord :: "'k ord \<Rightarrow> bool" where
-definition kv_lt :: "'k ord \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v) \<Rightarrow> bool" where
 (* ordererd key list ------------------------------------------------ *)
-definition ordered_key_list :: "'k ord \<Rightarrow> 'k list \<Rightarrow> bool" where
-definition nat_ord :: "nat \<Rightarrow> nat \<Rightarrow> int" where
-definition okl_tests :: "unit" where
 (* check keys ------------------------------------------------------- *)
-definition check_keys :: "'k ord \<Rightarrow> 'k option => 'k set => 'k option => bool" where
-definition ck_tests :: unit where
-definition check_keys_2 :: "'k ord \<Rightarrow> 'k set \<Rightarrow> 'k option \<Rightarrow> 'k set \<Rightarrow> 'k option \<Rightarrow> 'k set \<Rightarrow> bool" where
-definition ck2_tests :: unit where
 (* insert and delete in list of kv ---------------------------------- *)
-definition kvs_insert_tests :: unit where
-definition kvs_delete :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
 (* search_key_to_index ---------------------------------------------- *)
-definition search_key_to_index :: "'k ord \<Rightarrow> 'k list => 'k => nat" where
-definition sk2i_tests :: unit where
 (* split_ks_rs ------------------------------------------------------ *)
-definition split_ks_rs' :: 
-definition split_ks_rs :: 
 (* insert aux funs: split_leaf and split_node ----------------------- *)
-definition split_leaf :: "constants \<Rightarrow> ('k*'v)list \<Rightarrow> (('k*'v) list * 'k * ('k*'v) list)" where
-definition split_node :: 
 
 a_pre/Prelude.thy ========================================
 (* min/max size constants ------------------------------------------- *)
 (* small node or leaf ----------------------------------------------- *)
 (* transition systems ----------------------------------------------- *)
-(* transition system basic definitions *)
-definition trace_set :: "('s * 's) set \<Rightarrow> (nat \<Rightarrow> 's) set" where
-definition invariant :: "('s * 's) set \<Rightarrow> ('s \<Rightarrow> bool) \<Rightarrow> bool" where
-definition invariant_thm :: "'s trans_t \<Rightarrow> bool" where
-definition invariant_assuming :: "('s * 's) set \<Rightarrow> ('s \<Rightarrow> bool) \<Rightarrow> ('s \<Rightarrow> bool) \<Rightarrow> bool" where
-definition invariant_assuming_thm :: "'s trans_t \<Rightarrow>  ('s \<Rightarrow> bool) \<Rightarrow> ('s \<Rightarrow> bool) \<Rightarrow> bool" where
 
 a_pre/Pre.thy ========================================
 
 a_pre/Todo.thy ========================================
 
 a_pre/Util.thy ========================================
-definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
 (* failwith --------------------------------------------------------- *)
-definition failwith :: "String.literal \<Rightarrow> 'b" where
-definition impossible1 :: "String.literal \<Rightarrow> 'a" where
 (* debugging, asserts ----------------------------------------------- *)
-definition assert_true :: "bool \<Rightarrow> bool" where
-definition check_true :: "(unit \<Rightarrow> bool) \<Rightarrow> bool" where
 (* a single error type, for all proof-relevant errors --------------- *)
-definition mk_err :: "String.literal \<Rightarrow> error" where
 (* misc ------------------------------------------------------------- *)
-definition is_Some :: "'a option => bool" where
-definition is_None :: "'a option \<Rightarrow> bool" where 
-definition dest_list :: "'a list \<Rightarrow> ('a * 'a list)" where
-definition dest_list' :: "'a list \<Rightarrow> ('a list * 'a)" where
-definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
 (* res -------------------------------------------------------------- *)
-definition is_Ok :: "'a res \<Rightarrow> bool" where
-definition dest_Ok :: "'a res \<Rightarrow> 'a" where
 (* various list defs, split_at etc ---------------------------------- *)
-definition split_at :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a list" where
-definition split_at_tests :: "unit" where
-definition split_at_3 :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a * 'a list" where
-definition split_at_3_tests :: "unit" where
-definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
-definition from_to_tests :: "unit" where
-definition while_not_nil :: "('a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'a list \<Rightarrow> 'b" where
-definition max_of_list :: "nat list \<Rightarrow> nat" where
 (* iterate f:'a -> 'a option ---------------------------------------- *)
 
 a_tree/Tree_stack.thy ========================================
 (* treestack ts_frame ----------------------------------------------- *)
-definition dest_ts_frame :: 
-definition ts_frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'b) ts_frame" where
-definition with_t :: "'a \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'a) ts_frame" where
-definition ts_frame_equal:: "('k,'a) ts_frame \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> bool" where
 (* stack of frames -------------------------------------------------- *)
-definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame list \<Rightarrow> ('k,'b) ts_frame list" where
-definition stack_equal :: "('k,'a) ts_frames \<Rightarrow> ('k,'a) ts_frames \<Rightarrow> bool" where
 (* stack_to_lu_of_child (get bounds of focus) ----------------------- *)
 (* tree_to_stack, stack_to_tree, no_focus --------------------------- *)
-definition no_focus :: "('k,'a) ts_frames \<Rightarrow> ('k,'a option) ts_frames" where
 (* add_new_stk_frame; r_stk_to_rs ----------------------------------- *)
-definition add_new_stack_frame :: 
-definition r_stk_to_rs :: "('k,'r) ts_frame list \<Rightarrow> 'r list" where 
 
 a_tree/Tree.thy ========================================
 (* tree algebraic datatype ------------------------------------------ *)
-definition tree_equal :: "('k,'v) tree \<Rightarrow> ('k,'v) tree \<Rightarrow> bool" where
 (* util ------------------------------------------------------------- *)
-definition min_child_index  :: nat where "min_child_index = 0"
-definition ks_to_max_child_index :: "'k list \<Rightarrow> nat" where
-definition subtree_indexes :: "('k,'v)node \<Rightarrow> nat list" where
-definition index_to_bound :: "'k list \<Rightarrow> nat \<Rightarrow> ('k option * 'k option)" where
 (* height ----------------------------------------------------------- *)
 (* to subtrees ------------------------------------------------------ *)
-definition forall_subtrees :: "(('k,'v)tree => bool) => ('k,'v)tree => bool" where
 (* balanced --------------------------------------------------------- *)
-definition balanced_1 :: "('k,'v)tree => bool" where
-definition balanced :: "('k,'v)tree => bool" where
 (* get min size ----------------------------------------------------- *)
-definition get_min_size :: "constants \<Rightarrow> (min_size_t * ('k,'v) tree) => nat" where
 (* wf size, ie respects min/max bounds ------------------------------ *)
-definition wf_size_1 :: "constants \<Rightarrow> ('k,'v) tree => bool" where
-definition wf_size :: "constants \<Rightarrow> ms_t => ('k,'v) tree => bool" where
 (* wf_ks_rs, ie |rs|=|ks|+1 ----------------------------------------- *)
-definition wf_ks_rs_1 :: "('k,'v)tree => bool" where
-definition wf_ks_rs :: "('k,'v)tree => bool" where
 (* keys in tree (nodes and leaves) ---------------------------------- *)
-definition keys_1 :: "('k,'v) tree => 'k list" where
-definition keys :: "('k,'v) tree => 'k list" where
 (* keys consistent ie node keys bounds subtrees --------------------- *)
-definition keys_consistent_1 :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
-definition keys_consistent :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 (* keys_ordered ie in nodes and leaves the keys are sorted ---------- *)
-definition keys_ordered_1 :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
-definition keys_ordered :: "'k ord \<Rightarrow> ('k,'v)tree => bool" where
 (* wellformed_tree -------------------------------------------------- *)
-definition wellformed_tree :: "constants \<Rightarrow> ms_t \<Rightarrow> 'k ord => ('k,'v) tree => bool" where
 (* tree_to_leaves, tree_to_map etc ---------------------------------- *)
-definition nice_leaves :: "leaf_lbl_t list \<Rightarrow> bool" where
-definition tree_to_kvs :: "('k,'v) tree \<Rightarrow> ('k * 'v) list" where
-definition tree_to_keys :: "('k,'v)tree \<Rightarrow> 'k set" where
-definition trees_to_keys :: "('k,'v) tree list \<Rightarrow> 'k set" where
-definition tree_to_map :: "('k,'v)tree \<Rightarrow> ('k,'v) map" where
 
 b_params/Params.thy ========================================
-definition dummy :: "unit" where "dummy = Pre_params.dummy"
 (* ('a,'t) MM type_synonym ------------------------------------------ *)
 (* params ----------------------------------------------------------- *)
-definition dest_ps1 :: "('k,'v,'r,'t) ps1 \<Rightarrow> constants * 'k ord * ('k,'v,'r,'t) store_ops" where
-definition dot_constants :: "('k,'v,'r,'t) ps1 \<Rightarrow> constants" where
-definition dot_cmp :: "('k,'v,'r,'t) ps1 \<Rightarrow> 'k ord" where
-definition dot_store_ops :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops" where
-definition ps1_ps0' :: "('k,'v,'r,'t) ps1 \<Rightarrow> 'k ps0" where
-definition dest_ps0 :: "'k ps0 \<Rightarrow> constants * 'k ord" where
-definition ps0_cs :: "'k ps0 \<Rightarrow> constants" where 
-definition ps0_cmp_k:: "'k ps0 \<Rightarrow> 'k ord" where 
 
 b_params/Pre_params.thy ========================================
-definition dummy :: "unit" where "dummy=()"
 (* mk_r2t ----------------------------------------------------------- *)
-definition mk_r2t :: "('k,'v,'r,'t) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v,'r,'t) r2t" where
 
 b_store_monad/Monad.thy ========================================
 (* monad ------------------------------------------------------------ *)
-definition fmap :: "('a \<Rightarrow> 'b) \<Rightarrow> ('a,'t) MM \<Rightarrow> ('b,'t) MM" where
-definition bind :: "('a \<Rightarrow> ('b,'t) MM) \<Rightarrow> ('a,'t) MM \<Rightarrow> ('b,'t) MM" where
-definition return :: "'a \<Rightarrow> ('a,'t) MM" where
 
 d_find_ins_del/Delete.thy ========================================
-definition mk_delete_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)dst" where
-definition dest_d_finished :: "('k,'v,'r)dst \<Rightarrow> 'r option" where
 (* steal or merge --------------------------------------------------- *)
-definition frac_mult :: "('k,'a) frac_t \<Rightarrow> ('k,'a) frac_t \<Rightarrow> ('k,'a) frac_t"  where
-definition steal_or_merge :: "
-definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) ts_frame \<Rightarrow> 
 (* delete ----------------------------------------------------------  *)
-definition get_sibling :: 
-definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (('k,'v,'r)u,'t) MM" where
-definition delete_step :: 
 (* wellformedness --------------------------------------------------- *)
-definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r) d \<Rightarrow> bool" where
-definition wf_u :: 
-definition wf_f :: 
-definition wellformed_delete_state :: 
 
 d_find_ins_del/Find.thy ========================================
 (* find ------------------------------------------------------------- *)
-definition dest_f_finished :: "('k,'v,'r)fs \<Rightarrow> ('k,'v,'r)f_finished option" where
-definition mk_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)fs" where
-definition find_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> (('k,'v,'r)fs,'t) MM" where
 (* wellformedness --------------------------------------------------- *)
-definition wf_store_tree :: "('k,'v,'r,'t)r2t \<Rightarrow> 't \<Rightarrow> 'r \<Rightarrow> ('k,'v)tree \<Rightarrow> bool" where
-definition wellformed_find_state :: 
 (* testing ---------------------------------------------------------- *)
-definition wf_trans :: "'t * ('k,'v,'r)fs \<Rightarrow> 't * ('k,'v,'r)fs \<Rightarrow> bool" where
-definition find_trans :: "(store * fs) trans_t" where
-definition invariant_lem :: "bool" where
 
 d_find_ins_del/Insert_many.thy ========================================
-definition mk_insert_state :: "'k \<Rightarrow> 'v \<Rightarrow> ('k*'v)s \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)ist" where
-definition dest_i_finished :: "('k,'v,'r) ist \<Rightarrow> ('r * ('k*'v)s) option" where
 (* defns ------------------------------------------------------------ *)
-definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r)d \<Rightarrow> (('k,'v,'r) d,'t) MM" where
-definition kvs_insert_2 :: 
-definition split_leaf :: "constants \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s * 'k * ('k*'v)s" where
-definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
-definition step_up :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u,'t) MM" where
-definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> (('k,'v,'r) ist,'t) MM" where
 
 d_find_ins_del/Insert.thy ========================================
-definition mk_insert_state :: "'k \<Rightarrow> 'v \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r) insert_state" where
-definition dest_i_finished :: "('k,'v,'r) ist \<Rightarrow> 'r option" where
 (* defns ------------------------------------------------------------ *)
-definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) d,'t) MM" where
-definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
-definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u,'t) MM" where
-definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> (('k,'v,'r) ist,'t) MM" where
 (* wellformedness --------------------------------------------------- *)
-definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r,'t) r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r)d \<Rightarrow> bool" where
-definition wf_u :: "('k,'v,'r,'t) r2t \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r)u \<Rightarrow> bool" where
-definition wf_f :: "constants \<Rightarrow> 'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> 'r \<Rightarrow> bool" where
-definition wellformed_insert_state :: 
 
 d_find_ins_del/Leaf_stream.thy ========================================
 (* leaf stream types ------------------------------------------------ *)
-definition mk_ls_state :: "'r \<Rightarrow> ('k,'v,'r)ls_state" where
-definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> 'r*('k,'r)rstk \<Rightarrow> (('k,'v,'r)lss,'t) MM" where
-definition step_leaf :: "('k,'v,'r) leaf_ref \<Rightarrow> ('k,'v,'r) lss" where
-definition step_up :: "('k,'r) rstk \<Rightarrow> ('k,'v,'r) lss" where
-definition lss_is_finished :: "('k,'v,'r) lss \<Rightarrow> bool" where
-definition dest_LS_leaf :: "('k,'v,'r) lss \<Rightarrow> ('k*'v)s option" where
-definition lss_step :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) lss \<Rightarrow> (('k,'v,'r) lss,'t) MM" where
 
 e_export/Export_code.thy ========================================
 

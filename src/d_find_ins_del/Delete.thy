@@ -98,7 +98,7 @@ definition steal_or_merge :: "
 (* when called on a node (D_...) which is a root resulting from a delete op,
 we may have the situation that the root contains no keys, or is small *)
 
-definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) ts_frame \<Rightarrow> 
+definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) split_node \<Rightarrow> 
   ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'r) d12_t => (('k,'v,'r) u,'t) MM" 
 where
 "post_steal_or_merge ps1 stk' p_unused p_1 p_2 x = (
@@ -106,8 +106,8 @@ where
       let m = frac_mult in
       case x of 
       D1 c' \<Rightarrow> (
-        let p' = Node_frame(m (m p_1 ([],[c'])) p_2) in
-        let p_sz = p'|>dest_Node_frame|>fst|>List.length in
+        let p' = Disk_node(m (m p_1 ([],[c'])) p_2) in
+        let p_sz = p'|>dest_Disk_node|>fst|>List.length in
         let f' = ( (* we may be at root, having deleted the single key *)
           case (p_sz = 0) of
           True \<Rightarrow> (
@@ -115,21 +115,21 @@ where
             return (D_updated_subtree(c')))
           | False \<Rightarrow> (
             case (p_sz < ps1|>dot_constants|>min_node_keys) of 
-            True \<Rightarrow> (return (D_small_node(p'|>dest_Node_frame)))
+            True \<Rightarrow> (return (D_small_node(p'|>dest_Disk_node)))
             | False \<Rightarrow> (
               (* write the frame at this point *)
               p'|>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r)))))
         in
         f' |> fmap (% f'. (f',stk')) )
       | D2(c1,k,c2) \<Rightarrow> (
-        let p' = Node_frame(m (m p_1 ([k],[c1,c2])) p_2) in
-        let p_sz = p'|>dest_Node_frame|>fst|>List.length in
+        let p' = Disk_node(m (m p_1 ([k],[c1,c2])) p_2) in
+        let p_sz = p'|>dest_Disk_node|>fst|>List.length in
         let f' = (
           (* we may be at the root, in which case f' may be small *)
           case (p_sz < ps1|>dot_constants|>min_node_keys) of
           True \<Rightarrow> (
             let _ = check_true (%_.stk'=[]) in
-            return (D_small_node(p'|>dest_Node_frame))
+            return (D_small_node(p'|>dest_Disk_node))
           )
           | False \<Rightarrow> (
             p' |>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r))))
@@ -169,16 +169,16 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
   | p#stk' \<Rightarrow> (
     case f of   
     D_updated_subtree r \<Rightarrow> (
-      let ((ks1,rs1),_,(ks2,rs2)) = p|>dest_ts_frame in
-      Node_frame(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk'))
+      let ((ks1,rs1),_,(ks2,rs2)) = p|>dest_split_node in
+      Disk_node(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk'))
     )
     | D_small_leaf(kvs) \<Rightarrow> (
       let leaf = True in
-      let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Leaf_frame(List.zip ks vs)) in
-      let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_ts_frame in
+      let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Disk_leaf(List.zip ks vs)) in
+      let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_split_node in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = (store_ops|>store_read) r in
-      let d12 :: (('k,('k,'v,'r) frame) d12_t,'t) MM = frm |> fmap (% frm. steal_or_merge (ps1|>dot_constants) right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Leaf_frame|>unzip)) in
+      let d12 :: (('k,('k,'v,'r) dnode) d12_t,'t) MM = frm |> fmap (% frm. steal_or_merge (ps1|>dot_constants) right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Disk_leaf|>unzip)) in
       let d12' :: (('k,'r) d12_t,'t) MM = d12 |> bind
       (% x. case x of
         D1 frm \<Rightarrow> frm |> (store_ops|>store_alloc) |> fmap (% r. D1 r)
@@ -193,13 +193,13 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
   | D_small_node(ks,rs) \<Rightarrow> (
       (* FIXME almost identical to small leaf case *)
       let leaf = False in
-      let mk_c = (% ks_rs. Node_frame(ks_rs)) in 
+      let mk_c = (% ks_rs. Disk_node(ks_rs)) in 
       (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
       (* parent info is already read, but we must read the siblings from disk *)
-      let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_ts_frame in
+      let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_split_node in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = (store_ops|>store_read) r in
-      let d12 = frm |> fmap (% frm. steal_or_merge (ps1|>dot_constants) right leaf mk_c (ks,rs) p_k (frm|>dest_Node_frame)) in
+      let d12 = frm |> fmap (% frm. steal_or_merge (ps1|>dot_constants) right leaf mk_c (ks,rs) p_k (frm|>dest_Disk_node)) in
       let d12' = d12 |> bind
       (% x. case x of
         D1 frm \<Rightarrow> frm |> (store_ops|>store_alloc) |> fmap(% r. D1 r)
@@ -233,7 +233,7 @@ where
         case (List.length kvs' < ps1|>dot_constants|>min_leaf_size) of
         True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
         | False \<Rightarrow> (
-          Leaf_frame(kvs') |> (store_ops|>store_alloc) |> fmap
+          Disk_leaf(kvs') |> (store_ops|>store_alloc) |> fmap
           (% r. D_up(D_updated_subtree(r),stk,r0))))
       | False \<Rightarrow> (
         (* nothing to delete *)
@@ -242,9 +242,9 @@ where
     case stk of
     [] \<Rightarrow> (
       case f of
-      D_small_leaf kvs \<Rightarrow> (Leaf_frame(kvs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r)) 
+      D_small_leaf kvs \<Rightarrow> (Disk_leaf(kvs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r)) 
       | D_small_node (ks,rs) \<Rightarrow> (
-        Node_frame(ks,rs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r) )
+        Disk_node(ks,rs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r) )
       | D_updated_subtree(r) \<Rightarrow> (return (D_finished r)))
     | _ \<Rightarrow> (step_up ps1 (f,stk) |> fmap (% (f,stk). (D_up(f,stk,r0)))) )
   | D_finished(r) \<Rightarrow> (return s)  (* stutter *) )"

@@ -9,7 +9,7 @@ definition dummy :: "unit" where "dummy=()"
 (* mk_r2t ----------------------------------------------------------- *)
 
 
-type_synonym ('k,'v,'r,'t) r2f = "('t \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r) frame option)"
+type_synonym ('k,'v,'r,'t) r2f = "('t \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r) dnode option)"
 
 type_synonym ('k,'v,'r,'t) r2t = "('t \<Rightarrow> 'r \<Rightarrow> ('k,'v) tree option)"
 
@@ -23,8 +23,8 @@ fun mk_r2t' :: "('k,'v,'r,'t) r2f \<Rightarrow> nat \<Rightarrow> ('k,'v,'r,'t) 
     None \<Rightarrow> None
     | Some frm \<Rightarrow> (
       case frm of
-      Leaf_frame kvs \<Rightarrow> Some(Leaf(kvs))
-      | Node_frame(ks,rs) \<Rightarrow> (
+      Disk_leaf kvs \<Rightarrow> Some(Leaf(kvs))
+      | Disk_node(ks,rs) \<Rightarrow> (
         let ts = List.map (mk_r2t' r2f n t) rs in
         case (List.filter is_None ts) of
         [] \<Rightarrow> Some(Node(ks,ts|>List.map dest_Some))

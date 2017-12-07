@@ -27,15 +27,17 @@ Key_value.key_lt
 Key_value.okl_tests
 Key_value.ck_tests
 Key_value.ck2_tests
-Key_value.kvs_insert_tests
-Key_value.sk2i_tests
+
+
+Searching_and_splitting.kvs_insert_tests
+Searching_and_splitting.sk2i_tests
 
 (* frame_types *)
-Frame.Node_frame
+Disk_node.Disk_node
 
 (* tree *)
 Tree.dest_Node
-Tree_stack.dest_ts_frame
+Tree_stack.dest_split_node
 Tree_stack.stack_to_lu_of_child
 tree_to_leaves 
 wellformed_tree

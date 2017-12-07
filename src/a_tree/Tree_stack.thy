@@ -8,7 +8,7 @@ begin
 a bit clunky, and the defns aren't exposed to the user so we don't
 need polymorphism *)
 
-(* treestack ts_frame ----------------------------------------------- *)
+(* treestack split_node ----------------------------------------------- *)
 
 (* A treestack frame is essentially a node with a hole for some child;
 suppose the node is Node(ks1@ks2,ts1@[t]@ts2); then a frame focused on t can be
@@ -17,25 +17,27 @@ represented as the following record. 'k is the key type; 'a is the
 on whether we are taking the ADT view or the blocks-and-pointers view *)
 
 (* FIXME ks1,ts1 stored in reverse? *)
-record ('k,'a) ts_frame =
+record ('k,'a) split_node =
   f_ks1 :: "'k list"
   f_ts1 :: "'a list"
   f_t :: 'a
   f_ks2 :: "'k list"
   f_ts2 :: "'a list"
+
+type_synonym ('k,'a) frame = "('k,'a) split_node"
   
 
-definition dest_ts_frame :: 
-  "('k,'a) ts_frame \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" 
+definition dest_split_node :: 
+  "('k,'a) split_node \<Rightarrow> ('k list * 'a list) * 'a * ('k list * 'a list)" 
 where
-"dest_ts_frame f = (
+"dest_split_node f = (
   (f|>f_ks1,f|>f_ts1),
   f|>f_t,
   (f|>f_ks2, f|>f_ts2))"
 
 
-definition ts_frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'b) ts_frame" where
-"ts_frame_map g f = (
+definition split_node_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) split_node \<Rightarrow> ('k,'b) split_node" where
+"split_node_map g f = (
   \<lparr>
     f_ks1=(f|>f_ks1),
     f_ts1=(f|>f_ts1|>List.map g),
@@ -45,29 +47,29 @@ definition ts_frame_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame
   \<rparr>)"
 
 
-definition with_t :: "'a \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> ('k,'a) ts_frame" where
+definition with_t :: "'a \<Rightarrow> ('k,'a) split_node \<Rightarrow> ('k,'a) split_node" where
 "with_t x f = f \<lparr> f_t:=x  \<rparr>"
 
 
-definition ts_frame_equal:: "('k,'a) ts_frame \<Rightarrow> ('k,'a) ts_frame \<Rightarrow> bool" where
-"ts_frame_equal f1 f2 = failwith (STR ''FIXME patch'')"
+definition split_node_equal:: "('k,'a) split_node \<Rightarrow> ('k,'a) split_node \<Rightarrow> bool" where
+"split_node_equal f1 f2 = failwith (STR ''FIXME patch'')"
 
 
 (* stack of frames -------------------------------------------------- *)
 
 (* FIXME rename to stack *)
-type_synonym ('k,'a) ts_frames = "('k,'a) ts_frame list"   
+type_synonym ('k,'a) split_nodes = "('k,'a) split_node list"   
 
 (* map a function over the non-'k component *)
-definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) ts_frame list \<Rightarrow> ('k,'b) ts_frame list" where
+definition stack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) split_node list \<Rightarrow> ('k,'b) split_node list" where
 "stack_map f stk = (
-  stk |> List.map (ts_frame_map f))"
+  stk |> List.map (split_node_map f))"
 
-definition stack_equal :: "('k,'a) ts_frames \<Rightarrow> ('k,'a) ts_frames \<Rightarrow> bool" where
+definition stack_equal :: "('k,'a) split_nodes \<Rightarrow> ('k,'a) split_nodes \<Rightarrow> bool" where
 "stack_equal s1 s2 = failwith (STR ''FIXME patch'')"
 
 (* a tree_stack has 'a = ('k,'v)tree *)
-type_synonym ('k,'v) tree_stack = "('k,('k,'v)tree) ts_frames"
+type_synonym ('k,'v) tree_stack = "('k,('k,'v)tree) split_nodes"
 
 
 
@@ -75,7 +77,7 @@ type_synonym ('k,'v) tree_stack = "('k,('k,'v)tree) ts_frames"
 
 (* get the bound surrounding the focus *)
 (* FIXME again this is derived from search_key_to_index etc *)
-primrec stack_to_lu_of_child :: "('k,'a) ts_frames \<Rightarrow> 'k option * 'k option" where
+primrec stack_to_lu_of_child :: "('k,'a) split_nodes \<Rightarrow> 'k option * 'k option" where
 "stack_to_lu_of_child [] = (None,None)"
 | "stack_to_lu_of_child (x#stk') = (
     let (l',u') = stack_to_lu_of_child stk' in
@@ -114,7 +116,7 @@ fun stack_to_tree :: "('k,'v)tree \<Rightarrow> ('k,'v)tree_stack \<Rightarrow> 
     stack_to_tree fo' ts' ))"
 
 (* remove "focus"; NOTE 'a option is always None FIXME so why not use unit? *)
-definition no_focus :: "('k,'a) ts_frames \<Rightarrow> ('k,'a option) ts_frames" where
+definition no_focus :: "('k,'a) split_nodes \<Rightarrow> ('k,'a option) split_nodes" where
 "no_focus stk = (
   stk |> stack_map Some |> (% stk. 
   case stk of [] \<Rightarrow> [] | frm#stk' \<Rightarrow> (frm\<lparr>f_t:=None \<rparr>)#stk'))"
@@ -124,7 +126,7 @@ definition no_focus :: "('k,'a) ts_frames \<Rightarrow> ('k,'a option) ts_frames
 (* add_new_stk_frame; r_stk_to_rs ----------------------------------- *)
 
 definition add_new_stack_frame :: 
-  "'k ord => 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k,'a) ts_frames \<Rightarrow> (('k,'a) ts_frames * 'a)" 
+  "'k ord => 'k \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k,'a) split_nodes \<Rightarrow> (('k,'a) split_nodes * 'a)" 
 where
 "add_new_stack_frame cmp k ks_rs stk = (
   let (ks,rs) = ks_rs in
@@ -134,7 +136,7 @@ where
   (frm'#stk,r') )"  (* FIXME why return r' explicitly? why not get from f_t? *)
 
 
-definition r_stk_to_rs :: "('k,'r) ts_frame list \<Rightarrow> 'r list" where 
+definition r_stk_to_rs :: "('k,'r) split_node list \<Rightarrow> 'r list" where 
 "r_stk_to_rs xs = (xs|>List.map f_t)"
 
 end

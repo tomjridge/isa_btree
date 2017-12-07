@@ -3,7 +3,7 @@ imports "$SRC/b_store_monad/Monad"
 begin
 
 (* FIXME move *)
-type_synonym ('k,'r) rstk = "('k,'r) ts_frame list"
+type_synonym ('k,'r) rstk = "('k,'r) split_node list"
 
 type_synonym 'a s = "'a list"
 
@@ -46,10 +46,10 @@ definition find_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)fs \<Rightarro
   | F_down(r0,k,r,stk) \<Rightarrow> (
     (store_ops|>store_read) r |>fmap
     (% f. case f of 
-      Node_frame (ks,rs) \<Rightarrow> (
+      Disk_node (ks,rs) \<Rightarrow> (
         let (stk',r') = add_new_stack_frame (ps1|>dot_cmp) k (ks,rs) stk in
         F_down(r0,k,r',stk'))
-      | Leaf_frame kvs \<Rightarrow> (F_finished(r0,k,r,kvs,stk)))) )"
+      | Disk_leaf kvs \<Rightarrow> (F_finished(r0,k,r,kvs,stk)))) )"
 
 
 
