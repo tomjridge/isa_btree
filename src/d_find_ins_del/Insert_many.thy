@@ -1,5 +1,5 @@
 theory Insert_many
-imports Find
+imports Pre_insert
 begin
 
 (* like Insert, but allows to insert many keys during a single traversal to a leaf *)
@@ -117,13 +117,13 @@ definition step_up :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow
   case stk of 
   [] \<Rightarrow> impossible1 (STR ''insert, step_up'') (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
   | x#stk' \<Rightarrow> (
-    let ((ks1,rs1),_,(ks2,rs2)) = dest_split_node x in
     case fo of
     I1 (r,kvs0) \<Rightarrow> (
-      mk_Disk_node(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))
+      let (ks,rs) = unsplit_node (x\<lparr>r_t:=r\<rparr>) in
+      mk_Disk_node(ks,rs) |> (store_ops|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))
     | I2 ((r1,k,r2),kvs0) \<Rightarrow> (
-      let ks' = ks1@[k]@ks2 in
-      let rs' = rs1@[r1,r2]@rs2 in
+      let (ks2,rs2) = (x|>r_ks2,x|>r_ts2) in
+      let (ks',rs') = unsplit_node (x\<lparr>r_ks2:=k#ks2, r_ts2:=[r1,r2]@rs2\<rparr>) in
       case (List.length ks' \<le> cs|>max_node_keys) of
       True \<Rightarrow> (
         mk_Disk_node(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (I1 (r,kvs0),stk')))

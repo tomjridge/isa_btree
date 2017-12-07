@@ -7,9 +7,9 @@ begin
 (* we need these exposed outside functor body in ML *)
 
 datatype ('k,'v,'r) ls_state = 
-  LS_down "'r*('k,'r) node_stack" 
-  | LS_leaf "('k*'v) list * ('k,'r) node_stack" 
-  | LS_up "('k,'r) node_stack"
+  LS_down "'r*('k,'r) rstack" 
+  | LS_leaf "('k*'v) list * ('k,'r) rstack" 
+  | LS_up "('k,'r) rstack"
   
 (* working with a F_finished find state, enumerate the leaves *)
 
@@ -29,7 +29,7 @@ definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> 'r*('k,'r)rstk \<Righta
     Disk_node (ks,rs) \<Rightarrow> (
       let r' = List.hd rs in
       let rs' = List.tl rs in
-      let frm = \<lparr> f_ks1=[],f_ts1=[],f_t=r', f_ks2=ks,f_ts2=rs' \<rparr> in
+      let frm = \<lparr> r_ks1=[],r_ts1=[],r_t=r', r_ks2=ks,r_ts2=rs' \<rparr> in
       LS_down (r',frm#fs))  (* r' = f_t of frm *)
     | Disk_leaf (kvs) \<Rightarrow> LS_leaf (kvs,fs))
 )"
@@ -48,21 +48,18 @@ definition step_up :: "('k,'r) rstk \<Rightarrow> ('k,'v,'r) lss" where
   case fs of 
   [] \<Rightarrow> (failwith (STR ''impossible: Leaf_stream.step_up''))
   | f#fs' \<Rightarrow> (
-    let ((ks1,rs1),r,(ks2,rs2)) = f|>dest_split_node in
+    let (ks1,rs1,r,ks2,rs2) = f|>dest_rsplit_node in
     case rs2 of
     [] \<Rightarrow> (LS_up fs')
     | r'#rs' \<Rightarrow> (
       let f' = \<lparr> 
-        f_ks1=ks1@[List.hd ks2],
-        f_ts1=rs1@[r],
-        f_t=r', 
-        f_ks2=(List.tl ks2),
-        f_ts2=rs' \<rparr> 
+        r_ks1=ks1@[List.hd ks2],
+        r_ts1=rs1@[r],
+        r_t=r', 
+        r_ks2=(List.tl ks2),
+        r_ts2=rs' \<rparr> 
       in
-      LS_down (r',f'#fs')
-    )
-  )
-)"
+      LS_down (r',f'#fs') )))"
 
 (* detect when we are finished *)
 definition lss_is_finished :: "('k,'v,'r) lss \<Rightarrow> bool" where

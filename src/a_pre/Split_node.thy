@@ -1,8 +1,24 @@
 theory Split_node
-imports Prelude
+imports Prelude Disk_node
 begin
 
+
+
+
+
+end
+
+
+
+
+
+
+
+(* old =================================================================== *)
+
 (* treestack split_node (aka frame) ---------------------------------------- *)
+
+(*
 
 (* A treestack frame is essentially a node with a hole for some child;
 suppose the node is Node(ks1@ks2,ts1@[t]@ts2); then a frame focused on t can be
@@ -47,24 +63,11 @@ definition with_t :: "'a \<Rightarrow> ('k,'a) split_node \<Rightarrow> ('k,'a) 
 
 definition split_node_equal:: "('k,'a) split_node \<Rightarrow> ('k,'a) split_node \<Rightarrow> bool" where
 "split_node_equal f1 f2 = failwith (STR ''FIXME patch'')"
+*)
 
 
-(* alternative split_node, with reversed ks1,ts1 for efficiency ------------------ *)
 
-record ('k,'a) rsplit_node =
-  r_ks1 :: "'k list"
-  r_ts1 :: "'a list"
-  r_t :: 'a
-  r_ks2 :: "'k list"
-  r_ts2 :: "'a list"
-
-(* FIXME we want to try to move Searching_and_splitting defns to use this construct *)
-definition get_lu_bounds :: "('k,'a) rsplit_node \<Rightarrow> ('k option * 'k option)" where
-"get_lu_bounds rn = (
-  let l = case rn|>r_ks1 of [] \<Rightarrow> None | x # xs \<Rightarrow> Some x in
-  let u = case rn|>r_ks2 of [] \<Rightarrow> None | x # xs \<Rightarrow> Some x in
-  (l,u))"
-
+(*
 definition rsplit_to_split :: "('k,'a) rsplit_node \<Rightarrow> ('k,'a) split_node" where
 "rsplit_to_split r = (
   let f= \<lparr>
@@ -75,6 +78,5 @@ definition rsplit_to_split :: "('k,'a) rsplit_node \<Rightarrow> ('k,'a) split_n
     f_ts2=(r|>r_ts2) \<rparr>
   in
   f)"
+*)
 
-
-end

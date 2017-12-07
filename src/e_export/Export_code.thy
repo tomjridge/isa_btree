@@ -34,11 +34,11 @@ Key_value.kvs_insert_tests
 (* frame_types *)
 Disk_node.Disk_node
 
-Split_node.dest_split_node
+Searching_and_splitting.dest_rsplit_node
 
 (* tree *)
 Tree.dest_Node
-Tree_stack.stack_to_lu_of_child
+(* Tree_stack.stack_to_lu_of_child *)
 tree_to_leaves 
 wellformed_tree
 

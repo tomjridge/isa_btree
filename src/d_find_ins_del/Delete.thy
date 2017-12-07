@@ -98,7 +98,7 @@ definition steal_or_merge :: "
 (* when called on a node (D_...) which is a root resulting from a delete op,
 we may have the situation that the root contains no keys, or is small *)
 
-definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) split_node \<Rightarrow> 
+definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) rsplit_node \<Rightarrow> 
   ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'r) d12_t => (('k,'v,'r) u,'t) MM" 
 where
 "post_steal_or_merge ps1 stk' p_unused p_1 p_2 x = (
@@ -169,13 +169,13 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
   | p#stk' \<Rightarrow> (
     case f of   
     D_updated_subtree r \<Rightarrow> (
-      let ((ks1,rs1),_,(ks2,rs2)) = p|>dest_split_node in
-      mk_Disk_node(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk'))
+      let (ks,rs) = unsplit_node (p\<lparr>r_t:=r\<rparr>) in
+      mk_Disk_node(ks,rs) |> (store_ops|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk'))
     )
     | D_small_leaf(kvs) \<Rightarrow> (
       let leaf = True in
       let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Disk_leaf(List.zip ks vs)) in
-      let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_split_node in
+      let (p_ks1,p_rs1,_,p_ks2,p_rs2) = p|>dest_rsplit_node in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = (store_ops|>store_read) r in
       let d12 :: (('k,('k,'v,'r) dnode) d12_t,'t) MM = frm |> fmap (% frm. steal_or_merge (ps1|>dot_constants) right leaf mk_c (kvs|>unzip) p_k (frm|>dest_Disk_leaf|>unzip)) in
@@ -196,7 +196,7 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
       let mk_c = (% ks_rs. mk_Disk_node(ks_rs)) in 
       (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
       (* parent info is already read, but we must read the siblings from disk *)
-      let ((p_ks1,p_rs1),_,(p_ks2,p_rs2)) = p|>dest_split_node in
+      let (p_ks1,p_rs1,_,p_ks2,p_rs2) = p|>dest_rsplit_node in
       let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
       let frm = (store_ops|>store_read) r in
       let d12 = frm |> fmap (% frm. steal_or_merge (ps1|>dot_constants) right leaf mk_c (ks,rs) p_k (frm|>dest_Disk_node)) in
@@ -263,12 +263,12 @@ definition wf_u ::
 where
 "wf_u constants k_ord r2t t0 s k u =  assert_true (
   let (fo,stk) = u in
-  let check_stack = % rstk tstk. (stack_equal (rstk|>stack_map (r2t s)|>no_focus) (tstk|>stack_map Some|>no_focus)) in
+  let check_stack = % rstk tstk. (rstack_equal (rstk|>rstack_map (r2t s)|>no_focus) (tstk|>rstack_map Some|>no_focus)) in
   let check_wf = % ms t. (wellformed_tree constants ms k_ord t) in
   let check_focus = % fo kvs. kvs_equal (fo|> tree_to_kvs |> kvs_delete k_ord k) kvs in
   case fo of
   D_small_leaf kvs \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_leaf) in
     assert_true (check_stack stk t_stk) & 
     assert_true (check_wf ms (Leaf kvs)) &
@@ -276,7 +276,7 @@ where
   )
   | D_small_node (ks,rs) \<Rightarrow> (
     (* FIXME don't we need some wf on Node(ks,rs)? *)
-    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> Some Small_node) in
     let t = Node(ks,rs|>List.map (r2t s) |> List.map dest_Some) in  (* FIXME check we can dest_Some *)
     assert_true (check_stack stk t_stk) &
@@ -284,7 +284,7 @@ where
     assert_true (check_focus t_fo (t|>tree_to_kvs))   
   )
   | D_updated_subtree(r) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
     let ms  = (case stk of [] \<Rightarrow> Some Small_root_node_or_leaf | _ \<Rightarrow> None) in
     let t = r|>r2t s|>dest_Some in  (* FIXME check dest *)
     assert_true (check_stack stk t_stk) &

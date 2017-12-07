@@ -3,7 +3,7 @@ imports "$SRC/b_store_monad/Monad"
 begin
 
 (* FIXME move *)
-type_synonym ('k,'r) rstk = "('k,'r) node_stack"
+type_synonym ('k,'r) rstk = "('k,'r) rstack"
 
 type_synonym 'a s = "'a list"
 
@@ -80,14 +80,14 @@ where
   let n = height t0 in
   (* need to check the stack and the focus *)
   let check_focus = % r t. wf_store_tree r2t s r t in
-  let check_stack = % rstk tstk. stack_equal (tstk |> stack_map Some) (rstk |> stack_map (r2t s)) in 
+  let check_stack = % rstk tstk. rstack_equal (tstk |> rstack_map Some) (rstk |> rstack_map (r2t s)) in 
   case fs of 
   F_finished (r0,k,r,kvs,stk) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
     assert_true (check_focus r t_fo) &
     assert_true (check_stack stk t_stk))
   | F_down (r0,k,r,stk) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
     assert_true (check_focus r t_fo) &
     assert_true (check_stack stk t_stk) ))"
 

@@ -1,5 +1,5 @@
 theory Insert
-imports Find
+imports Pre_insert
 begin
 
 
@@ -62,13 +62,13 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow>
   case stk of 
   [] \<Rightarrow> impossible1 (STR ''insert, step_up'') (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
   | x#stk' \<Rightarrow> (
-    let ((ks1,rs1),_,(ks2,rs2)) = dest_split_node x in
     case fo of
     I1 r \<Rightarrow> (
-      mk_Disk_node(ks1@ks2,rs1@[r]@rs2) |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))
+      let (ks,rs) = unsplit_node (x\<lparr>r_t:=r\<rparr>) in
+      mk_Disk_node(ks,rs) |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))
     | I2 (r1,k,r2) \<Rightarrow> (
-      let ks' = ks1@[k]@ks2 in
-      let rs' = rs1@[r1,r2]@rs2 in
+      let (ks2,rs2) = (x|>r_ks2,x|>r_ts2) in
+      let (ks',rs') = unsplit_node (x\<lparr>r_ks2:=k#ks2, r_ts2:=[r1,r2]@rs2\<rparr>) in
       case (List.length ks' \<le> cs|>max_node_keys) of
       True \<Rightarrow> (
         mk_Disk_node(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))
@@ -76,10 +76,7 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow>
         let (ks_rs1,k,ks_rs2) = split_node cs (ks',rs') in  (* FIXME move split_node et al to this file? *)
         mk_Disk_node(ks_rs1) |> (store_ops|>store_alloc) |> bind
         (% r1. mk_Disk_node (ks_rs2) |> (store_ops|>store_alloc) |> fmap 
-        (% r2. (I2(r1,k,r2),stk'))))
-    )
-  )
-)"
+        (% r2. (I2(r1,k,r2),stk')))) )))"
 
 definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> (('k,'v,'r) ist,'t) MM" where
 "insert_step ps1 s = (
@@ -116,11 +113,11 @@ definition wf_u :: "('k,'v,'r,'t) r2t \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)
 "wf_u r2t k_ord t0 s k v u =  assert_true (
   (* need to check the stack and the focus *)
   let check_focus = % r t. wf_store_tree r2t s r t in
-  let check_stack = % rstk tstk. stack_equal (rstk|>stack_map (r2t s)|>no_focus) (tstk|>stack_map Some|>no_focus) in   
+  let check_stack = % rstk tstk. rstack_equal (rstk|>rstack_map (r2t s)|>no_focus) (tstk|>rstack_map Some|>no_focus) in   
   let (fo,stk) = u in
   case fo of
   I1 r \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
     assert_true (check_stack stk t_stk) &
     (* FIXME need wf_tree r , and below *)
     (case (r2t s r) of 
@@ -128,7 +125,7 @@ definition wf_u :: "('k,'v,'r,'t) r2t \<Rightarrow> 'k ord \<Rightarrow> ('k,'v)
     | Some t' \<Rightarrow> assert_true (
       kvs_equal (t' |> tree_to_kvs) (t_fo|>tree_to_kvs|>kvs_insert k_ord (k,v)))))
   | I2 (r1,k',r2) \<Rightarrow> (
-    let (t_fo,t_stk) = tree_to_stack k_ord k t0 (List.length stk) in
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
     assert_true (check_stack stk t_stk) &
     ( let (l,u) = stack_to_lu_of_child t_stk in
       case (r2t s r1, r2t s r2) of
