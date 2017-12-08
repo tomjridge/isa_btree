@@ -1,0 +1,20 @@
+
+digraph g {
+node [
+fontsize = "16"
+shape = "record"
+];
+
+ x [label="<b>|3|<c>|6|<z>|10|<w>|...|<a>"]; 
+ x:b -> b:n; 
+ x:c -> c:n; 
+ x:z -> z:n; 
+ x:w -> w:n; 
+ x:a -> a:n; 
+ b [label="1|2"]; 
+ c [label="3|4|5"]; 
+ z [label="6|7|8|9"]; 
+ w [label="..."]; 
+ a [label="..."]; 
+
+}

@@ -73,7 +73,7 @@ specialized for block storage.
 A map is (traditionally) a set of pairs ${}(k,v)$, where $k$ is the key
 and $v$ the associated value. At most one value is associated to each
 key. In computer science, maps are finite functions (the set of pairs
-is finite). Maps may be written, for example, as $((k_1 -> v_1, k_2 -> v_2, \ldots))$.
+is finite). Maps may be written, for example, as ${}(k_1 -> v_1, k_2 -> v_2, \ldots)$.
 
 Maps support 3 basic operations: find, insert and delete.
 
@@ -327,7 +327,7 @@ write $t[s]_p$, where $p$ is the path from the root of $t$ to the focus $s$.
 generalize to allow the focus to be eg two trees (because inserting a
 kv in a subtree may cause the subtree to split)
 
-# FIXME../btree_pics/IMG_20170616_150443157.jpg
+// # FIXME../btree_pics/IMG_20170616_150443157.jpg
 
 
 
@@ -470,13 +470,14 @@ compared to, for example, a binary search tree.
 //  #   consistent with the min/max bounds
 //  # - for a node $t=t_0,k_0,\ldots$, have $t_i \subseteq K_i$
 
+
+
 ## Overview of approach to correctness
 
 Our approach to showing the correctness of the B-tree involves 2
 refinements. 
 
-#+attr_html: :height 200px
-[[../btree_pics/map_refinement.dot.svg]]
+\includegraphics{pics/map_refinement.dot.pdf}
 
 At the top level, we have the specification, which is simply the
 "mathematical" description of a map, as a set of pairs say. Each
@@ -518,8 +519,7 @@ search tree. At each step the algorithm focused on a subtree, and the
 rest of the tree was dubbed the "context". We now make this notion
 more precise.
 
-#+attr_html: :height 200px
-[[../btree_pics/btree_refinement.dot.svg]]
+\includegraphics{pics/btree_refinement.dot.pdf}
 
 In the diagram above we start off with the notion of a position in a
 tree. This is the "graph" view, where algorithms operate on single
@@ -543,19 +543,23 @@ context" as a concrete datastructure called a framestack.
 
 *Definition:* a frame is a node with a "missing" child; for a node
 $t=t_0,k_0,\ldots$, a frame is just a pair
-$(t_0,k_0,\ldots,k_{i-1}),(k_i,t_{i+1},\ldots)$. Compared to the
+${}(t_0,k_0,\ldots,k_{i-1}),(k_i,t_{i+1},\ldots)$. Compared to the
 original node, the child $t_i$ is missing. 
   
 Example TODO
 
+\newcommand{\ctxt}{$\ldots|^{k_{i-1}}|_{\Box}|^{k_i}|\ldots$}
+
 *Notation:* a frame corresponding to a node $t$ with a missing child
-$t_i$ may be written $t/t_i$ or $t[\ ]_i$. An alternative notation is {{{ctxt}}}.
-Sometimes we use the alternative notation $t=\ldots,[\ ],\ldots$, or the
-tabular form when we want to emphasize the surrounding keys:
+$t_i$ may be written $t/t_i$ or $t[\ ]_i$. An alternative notation is \ctxt{}.
+Sometimes we use the alternative notation $t=\ldots,[\ ],\ldots$.
 
-| ... | k |     | k' | ... |
-| ... |   | [ ] |    | ... |
-
+// , or the
+// tabular form when we want to emphasize the surrounding keys:
+// 
+// | ... | k |     | k' | ... |
+// | ... |   | [ ] |    | ... |
+// 
 
 *Definition:* a framestack is a list of frames $f_n,\ldots,f_0$. The
 frame $f_0$ corresponds to the root node, and the frame $f_n$
@@ -576,7 +580,628 @@ FIXME define operation to combine a tree and a context
 
 
 
+# Find
 
+
+We are now in a position to describe the find implementation formally.
+
+## Example tree
+
+\includegraphics{pics/find1.dot.pdf}
+
+In what follows, we use the following abbreviations:
+
+- $t$, or $t_{(13)}$ - the whole tree
+- $t_{(4,7,10)}$ the subtree rooted at $4,7,10$.
+- $t_{(1,2,3)}$, the subtree rooted at $1,2,3$ (a leaf!)
+- etc.
+
+## Find: using a search key to identify a leaf 
+
+The find operation uses a key to descend the tree, eventually
+locating a leaf which possibly contains the key.
+
+*Example:* Suppose the search key $k$ is $5$. The find operation examines the
+root of $t$, determines that $k < 13$, and so descends to
+$t_{(4,7,10)}$. At the next step, the find operation determines that
+$4 \le k < 7$ and descends to $t_{(4,5,6)}$. At
+this point the algorithm has found the relevant leaf.
+
+The state of the algorithm comprises the search key (which is unchanged during the find
+operation), the context (as a framestack),
+focus (a tree), and lower and upper bounds (which play an important role
+in proofs of correctness, but are not stricly necessary for
+implementations). This is written as a tuple ${}(k,ctxt,t,l,u)$.
+
+*Example:* Continuing the previous example, we can now show how the
+state of the algorithm changes:
+
+
+\begin{verbatim}
+FIXME table formatting
+| Step | Focus          | Context                       | l,u       |
+|------+----------------+-------------------------------+-----------|
+|    1 | $t$            | (empty)                       | -inf,+inf |
+|    2 | $t_{(4,7,10)}$ | $t[\ ]_0$                     | -inf,13   |
+|    3 | $t_{(4,5,6)}$  | $t_{(4,7,10)}[\ ]_1, t[\ ]_0$ | 4,7       |
+\end{verbatim}
+
+
+## Pseudocode for find
+
+The main step of find can be written using pseudocode as follows:
+
+\begin{verbatim}
+// k - the search key (constant for duration of find steps)
+// ctxt - the context (a framestack)
+// t - the focus (a tree)
+// l,u - lower and upper bound on keys appearing in the focus t
+define find_step(k,ctxt,t,l,u) = {
+  if (t is a leaf) then return (ctxt,t,l,u)
+                                // NB t is a node... (t0,k0,...,k(n-1),t(n))
+  i <- get_child_index (k0,...) k     // find i st k(i-1)<=k<k(i)
+                                // t is a node ... k(i-1) ti ki ...
+  frame <- t[ ]i                 // new frame, with hole at t(i)
+  ctxt <- cons(frame,ctxt)      // add frame to context
+  t <- t(i)                     // set focus to child t(i)
+  l <- if i>0 then k(i-1) else l  // update l
+  u <- if i<n then k(i) else u  // update u
+  return (ctxt,t,l,u)           // return updated values
+}
+\end{verbatim}
+
+The main find routine then repeatedly applies the step function until
+a leaf is reached.
+
+\begin{verbatim}
+define find(k,t) = {
+  ctxt <- empty               // initial values...
+  l <- -inf
+  u <- +inf
+  while(t is not a leaf) {    // repeatedly apply find_step
+    ctxt,t,l,u <- find_step(k,ctxt,t,l,u)
+  }
+  // t is a leaf
+  return (value associated with k in leaf t, if any)
+}
+\end{verbatim}
+
+
+It is better to work with the following version of find that returns
+the leaf itself:
+
+
+\begin{verbatim}
+define find(k,t) = {
+  ctxt <- empty               // initial values...
+  l <- -inf
+  u <- +inf
+  while(t is not a leaf) {    // repeatedly apply find_step
+    ctxt,t,l,u <- find_step(k,ctxt,t,l,u)
+  }
+  // t is a leaf
+  return (k,ctxt,t,l,u)
+}
+\end{verbatim}
+
+This version is used in the insert and delete operations.
+
+
+
+## Correctness of find
+
+Let $s$ be the original tree. We wish to show:
+
+*Lemma:* When $find\ k\ s$
+terminates, it returns $ctxt,t,l,u$ such that:
+
+//  - $t$ is a subtree of $s$
+//  - $ctxt[t]$ is the original tree 
+//  - for any $k'$ st. $l \le k' < u$, we have $m_s(k') = m_t(k')$
+//  - $l \le k < u$
+
+- $t$ is a leaf
+- $m_s(k) = m_t(k)$
+
+In fact, at any point during the execution of find, if $t$ is the
+focus, then the property $P(k,ctxt,t,l,u)
+= (m_s(k) = m_t(k))$ is a T-invariant on (wellformed) states of find, where T is the
+set of find-step transitions. 
+
+*Proof:* Assume a find-step transition ${}(k,ctxt,t,l,u) \rightarrow
+(k,ctxt',t',l',u')$. Assume $P(...t...)$ holds, i.e., $m_s(k) =
+m_t(k)$. To show $m_s(k) = m_{t'}(k)$, it suffices to show $m_t(k) =
+m_{t'}(k)$. By definition of find-step, $t' = t_i$, where $k \in
+K_i$. By definition of $m_t$, $m_t$ is the disjoint union of
+$m_{t_j}$, and by wellformedness of $t$, $m_t(k) = m_{t_i}(k)$.
+
+*Note:* by "wellformed states of find" we mean states where the focus
+(at least!) is a wellformed search tree. This property is itself
+T-invariant (!) in the sense that find-step maps wellformed states to
+wellformed states.
+
+From the lemma, it follows that $m_s(k) = m_t(k)$, where $m_t$ is the
+map formed from the leaf $t$ returned by find.
+
+In fact, much more informative properties hold (for example, we have
+not said anything here about $l$ and $u$), but this suffices for
+the correctness of find.
+
+
+
+# Insert
+
+The insert operation is more complicated than find, because it
+potentially involves splitting nodes that are too big.
+
+
+## Simple example
+
+The simple case arises when we insert a new $(k,v)$ pair into a leaf
+and the resulting leaf is not too big (according to
+max-leaf-keys). For example, consider the following tree:
+
+\includegraphics{pics/insert10.dot.pdf}
+
+Suppose we wish to insert a new key $5$ and associated value. We can
+use find to locate the leaf $4,6$, and after inserting $5$ we get a
+new leaf $4,5,6$, which we then place back into the context to
+construct the new tree with the additional key:
+
+\includegraphics{pics/insert11.dot.pdf}
+
+Unfortunately not all cases are this simple.
+
+
+## Example involving splitting the leaf
+
+Consider the following tree:
+
+\includegraphics{pics/insert12.dot.pdf}
+
+Suppose max-leaf-keys is 3. Suppose we attempt to insert the key
+$4$. We descend the tree, arrive at the leaf, insert the key, and
+obtain the new leaf $1,2,3,4$. Unfortunately this is too big, so we
+need to split it into two leaves $1,2$ and $3,4$ separated by the
+key 3. Instead of a leaf, we now have a tree as the focus:
+
+\includegraphics{pics/insert13.dot.pdf}
+
+We then insert this *tree* into the context to get the final tree:
+
+\includegraphics{pics/insert14.dot.pdf}
+
+
+## Example involving splitting a node
+
+If we split a leaf, we increase by one the number of keys in the
+parent. This can cause the parent node to become too big, so that it
+must be split in turn. For example, if max-node-keys was 4, we would
+take the following focus:
+
+\includegraphics{pics/insert20.dot.pdf}
+
+and split it to get a new focus:
+
+\includegraphics{pics/insert21.dot.pdf}
+
+And similarly to the leaf case, we would then insert this into the context (assuming the
+context is not empty).
+
+## Pseudocode for insert
+
+Pseudocode for insert is as follows.
+
+TODO find to locate leaf; insert kv; split leaf; repeatedly step up
+
+\begin{verbatim}
+// inputs:
+// ctxt - the ctxt from find'
+// focus - a focus, either a tree [t1], or a pair of trees separated by a key [t1,k,t2]
+
+define insert_step_up(ctxt,focus) = {
+  case focus matches [t1] {
+    t[_] <- hd(ctxt)
+    ctxt <- tl(ctxt)
+    focus <- t[t1]  // place t1 in t[_] and make new focus
+    return (ctxt,focus)  
+  }
+    
+  case focus matches [t1,k,t2] {
+    t[_] <- hd(ctxt)
+    ctxt <- tl(ctxt)
+    focus <- t[t1,k,t2]  // TODO define this!
+    (if (focus too big) then focus <- split(focus)); // TODO define
+    return (ctxt,focus)    
+  }
+}
+\end{verbatim}
+
+
+
+## Split leaf focus, formally
+
+We now treat the case where the leaf is split more formally.
+
+The focus is a leaf $k_0,\ldots,k_n$ where $n$ is the maximum leaf
+size. Since there are $n+1$ keys in the leaf, it must be split into
+two smaller leaves $c_1$ and $c_2$: 
+
+$c_1 = k_0,...,k_{i-1}$ and $c_2 = k_i,\ldots,k_{n}$
+
+Here we choose $i = \lfloor n/2 \rfloor$ so there are $i$ keys in the
+first child and $n+1-i$ in the second. 
+
+*Note on size constraints:* Clearly we require 
+$\textit{min-leaf-keys} \le \lfloor \textit{max-leaf-keys}/2 \rfloor$.
+
+The focus is now a node: 
+
+$_{c_1}|^{k_i}|_{c_2}$
+
+*Note:* that the focus has changed from a leaf to a tree.
+
+Now consider the context which (if non-empty) starts with a frame: ${}\ldots{}|^k|_{\Box}|^{k'}|\ldots$
+
+If we insert the new focus into the frame we get a new focus:
+
+${}\ldots{}|^k|_{c_1}|^{k_i}|_{c_2}|^{k'}|\ldots$.
+
+Note that there is 1 more key in this node than the frame from which
+it was created, and so this focus may in turn need to be split.
+
+
+// # $\ldots|_{k_0, k_1, \ldots, k_{2n}}|^{k}|\ldots %
+// # \rightarrow %
+// # 
+
+*Example:* Suppose the context is
+$_{\Box}|^6|_{t_1}|^{10}|_{t_2}|^{14}|_{t_3}|^{18}|_{t_4}$. Focus is
+the leaf $1,2,3,4$. Inserting new key 5 into the leaf gives an updated leaf
+$1,2,3,4,5$. After splitting, we have a new focus
+$_{1,2}|^3|_{3,4,5}$.
+
+If we now insert this focus into the context, we get a new node focus
+$_{1,2}|^3|_{3,4,5}|^6|_{t_1} | \ldots$
+
+// # FIXME max leaf size can be 3, because splitting doesn't remove a kv.
+// # 
+// # Max node keys ... splitting a node
+
+
+## Split node focus, formally
+
+The focus is a node $t_0,k_0,\ldots, k_n,t_{n+1}$ where $n = \textit{max-node-keys}$ is the max
+number of node keys. Since there are $n+1$ node keys, we must split
+the node to get a new node with two children:
+
+$_{\ldots,k_{i-1},t_i}|^{k_i}|_{t_{i+1},{k_{i+1}},\ldots}$
+
+We can choose $i = \lfloor \textit{max-node-keys}/2 \rfloor$.
+
+Before we had $n+1$ keys. Now we have $i$ keys in the first child and
+$n-i$ in the second child, with the remaining key used to separate the children.
+
+*Note on size constraints:* Clearly we require $\textit{min-node-keys}
+\le \lfloor \textit{max-node-keys}/2 \rfloor$.
+
+
+// # first child: k0...k_{m-1} gives m keys
+// # second child: k(m+1)...k(m+m) gives m keys
+
+Now consider what happens when we insert this new focus into the
+context. For a context ${}\ldots|^k|_{\Box}|^{k'}\ldots$ we must insert
+a tree of the form $_{c_1}|^{k_i}|_{c_2}$ between $k$ and $k'$,
+resulting in a node
+$\ldots|^k|_{c_1}|^{k_i}|_{c_2}|^{k'}\ldots$. Note that in this case,
+the number of keys (in the parent of the original node) increases by
+1, and this new focus may in turn need to be split.
+
+
+*Example:* Suppose the focus is a node 
+
+$_{t_0}|^3|_{t_1}|^6|_{t_2}|^{10}|_{t_3}|^{14}|_{t_4}|^{18}|_{t_5}$.
+
+Suppose max-node-keys is $4$. In this case, we split the focus to get:
+
+$_{c_1}|^{10}|_{c_2}$ where $c_1 = _{t_0}|^3|_{t_1}|^6|_{t_2}$ and
+$c_2 = _{t_3}|^{14}|_{t_4}|^{18}|_{t_5}$.
+
+This is the new focus which we then proceed to insert into the first
+frame in the context (if any).
+
+
+
+## TODO Phases, sequence of operations
+
+FIXME have a flowchart?
+
+In the first phase we use $find'$ to locate the relevant leaf:
+ 
+$t,k \rightarrow ctxt,focus_1$
+
+Then we insert the new ${}(k,v)$ pair into the leaf:
+
+$focus_1 \rightarrow_{insert} focus'$
+
+If the leaf is too big, we split the focus:
+
+$focus' \rightarrow_{split} focus''$
+
+Finally, we combine the focus with the first frame in the context to
+get a new focus:
+
+$frame,focus'' \rightarrow_{combine} focus_2$
+
+*Note:* for the non-leaf case, we have a (node) focus, which we
+combine with the frame to get a new focus, which we may need to
+split. Then we continue with the next frame.
+
+## TODO Beyond the simple example
+
+Suppose the leaf is of the form ${}(k_0,v_0),(k_1,v_1),\ldots$. If the
+leaf is not already at the maximum size allowed, we can just insert
+the new key-value pair to obtain a new leaf, which we then combine
+with the context to obtain a new tree. If the leaf already contains
+$k$, we can update with the new key-value pair even if the leaf has
+maximum size.
+
+The difficult case to handle occurs when the leaf has maximum size
+and adding the new pair would result in a leaf that is too big. In
+this case, the leaf of length $max_{leaf}+1$ is divided into two
+leaves, separated by a key. Suppose we divide at position $i$. Then
+leaf 1 is $kv_0,kv1,\ldots,kv_{i-1}$ and leaf 2 is
+${}(k_i,v_i),\ldots$, and clearly these leaves are separated by $k_i$,
+in the sense that $leaf_1,k_i,leaf_2$ is a valid partition. FIXME 
+
+Let's rename the components ${}(l_1,k_l,l_2)$.
+
+Suppose the context has frame
+${}(\ldots,t_{i-1},k_{i-1}),(k_i,t_{i+1},\ldots)$ at the head
+(corresponding to the parent of the leaf). Clearly we could insert the
+new leaves to get a new node
+${}(\ldots,k_{i-1},l_1,k_l,l_2,k_i,\ldots)$. However, it may well be
+the case that this node in turn is too big, since it has one more
+child than the original. In this case, we must again split the node,
+and continue with the next frame on the framestack. 
+
+Eventually we may end up with a root that is too big, at which point
+we split the root in two, and create a new root with two children. At
+this point, the height of the tree grows by one.
+
+
+---
+
+
+
+
+# Note on choice of minimum and maximum sizes
+
+A possible choice: min-leaf-keys=$l$; max-leaf-keys=$l'$; min-node-keys=$m$;
+max-node-keys=$m'$
+
+Write these bounds as: leaf:(l,l'), node:(m,m')
+
+Examples: (leaf:(2,3), node:(2,4))  FIXME check that these are indeed valid
+
+In this case, if we try to insert into a leaf with 3 keys, we split to
+get 2 leaves with 2 keys each. For a node, if we have $4$ keys and we
+insert another, we split to get two nodes, each with $2$ keys (the
+remaining key is used to separate these two nodes).
+
+Clearly for a leaf we require $l<= \lfloor {(l'+1)/2} \rfloor$.
+
+For a node, if $m' = 2m''+1$ is odd, then we require $m <=
+m''$. Otherwise $m <= m'/2$. In short, $m <= \lfloor (m'+1)/2 \rfloor$
+
+
+# Delete
+
+Delete is considerably more complicated than insert. Insert involves
+splitting nodes. Delete involves merging nodes, and additionally
+delete has many cases that involve "stealing" keys and children from
+neighbouring nodes. These operations are similar to the "rotations"
+encountered when balancing red-black trees (and other similar
+datastructures). These additional cases are many because we must treat
+nodes and leaves differently, and must also distinguish between
+stealing and merging from the right or the left. Thus, it is important
+that we try to treat these cases uniformly as far as possible, in
+order to mitigate the explosion of cases.
+
+TODO talk about root case
+
+## Steal right (node)
+
+
+
+
+We now develop some syntax to treat the various cases.
+
+Suppose $t=t_0,k_0,\ldots$ and we are focused on child
+$t_i$. We typically deal with left and right siblings. Let's say that
+we are interested in the right child.
+
+// #+INCLUDE: "./steal_right_node.org"
+
+steal right node:
+
+// # | k' |   | k |         | k'' | ===> | k' |        | rk |   | k'' |
+// # |    | l |   | rt,rk,r |     |      |    | l,k,rt |    | r |     |
+// # 
+// # $x^y$
+// # 
+// # $\ldots|^{k'}|_l|^k|_{rt,rk,r}|^{k''}|\ldots %
+// # \rightarrow %
+// # \ldots|^{k'}|_{l,k,rt}|^{rk}|_{r}|^{k''}|\ldots$
+// # 
+// # 
+// # $\ldots|^{k_1}|_l|^{k_2}|_{t,k,r}|^{k_3}|\ldots %
+// # \rightarrow %
+// # \ldots|^{k_1}|_{l,k_2,t}|^{k}|_{r}|^{k_3}|\ldots$
+
+
+$$
+\ldots|_{\ldots,k_1,t_1}|^{k}|_{t,k',\ldots}|\ldots %
+\rightarrow %
+\ldots|_{\ldots,k_1,t_1,k,t}|^{k'}|_{\ldots}|\ldots
+$$
+
+
+*Note on how to interpret this diagram:* TODO
+
+Note that it seems very useful to have a function `dest_right_node`
+which produces $rt,rk,r$, and similarly for left node.
+
+TODO have concrete examples to demonstrate these cases
+
+## Steal right (leaf)
+
+steal right leaf:
+
+// # | k' |   | k |          | k'' | ===> | k' |      | rk' |       | k'' |
+// # |    | l |   | rk,rk',r |     |      |    | l,rk |     | rk',r |     |
+// # 
+
+$$
+\ldots|_{\ldots,k_1}|^{k_2}|_{k,k',\ldots}|\ldots %
+\rightarrow %
+\ldots|_{\ldots,k_1,k}|^{k'}|_{k',\ldots}|\ldots
+$$
+
+// #+INCLUDE: "./steal_right_leaf.org"
+
+Note that this takes only one kv, whereas the node case moves a
+subtree and a key.
+
+~dest_right_leaf~ gives $rk,rk',r$
+
+
+
+
+## Steal left (node)
+
+steal left node:
+
+// # | k' |         | k |   | k'' | ===> | k' |   | lk |        | k'' |
+// # |    | l,lk,lt |   | r |     |      |    | l |    | lt,k,r |     |
+// # 
+// # 
+
+$$
+\ldots|_{\ldots,k,t}|^{k'}|_{t_1,k_1,\ldots}|\ldots %
+\rightarrow %
+\ldots|_{\ldots}|^{k}|_{t,k',t_1,k_1,\ldots}|\ldots
+$$
+
+// #+INCLUDE: "./steal_left_node.org"
+
+~dest_left_node~ gives $k,t$
+
+
+
+
+## Steal left (leaf)
+
+
+steal left leaf:
+
+// # | k' |      | k |   | k'' | ===> | k' |   | lk |      | k'' |
+// # |    | l,lk |   | r |     |      |    | l |    | lk,r |     |
+// # 
+
+$$
+\ldots|_{\ldots, k_1, k}|^{k'}|_{k_2, \ldots}|\ldots %
+\rightarrow %
+\ldots|_{\ldots, k_1}|^{k}|_{k, k_2, \ldots}|\ldots
+$$
+
+// #+INCLUDE: "./steal_left_leaf.org"
+
+Note carefully the difference between this case and steal right
+(leaf): the role of the keys lk and rk are different, sine here lk is
+promoted to the parent, whereas in the right case, it is the key rk'
+that is promoted. This arises because of the asymmetry on the order of
+the keys and the children they flank: $k \le t_i < k'$.
+
+
+~dest_left_leaf~ gives $l,lk$
+
+
+
+## Merge {right,left} (node)
+
+For checking:
+
+merge node (right and left):
+
+// # | k' |         | k |         | k'' | ===> | k' |                   | k'' |
+// # |    | l,lk,lt |   | rt,rk,r |     |      |    | l,lk,lt,k,rt,rk,r |     |
+// # 
+
+$$
+\ldots|_{\ldots, k_1, t_1}|^{k}|_{t_2, k_2, \ldots}|\ldots %
+\rightarrow %
+\ldots|_{\ldots, k_1, t_1, k, t_2, k_2, \ldots}|\ldots
+$$
+
+// #+INCLUDE: "./merge_node.org"
+
+
+For code:
+
+| k' |   | k |   | k'' | ===> | k' |       | k'' |
+|    | l |   | r |     |      |    | l,k,r |     |
+
+Note that this picture also works for merge left (node)
+
+Note that this causes the parent to have one less key, possibly
+becoming too small. For the root, with only one key, the result may be
+a root with no keys, in which case the height of the tree decreases
+by 1.
+
+
+## Merge {right,left} (leaf, easy)
+
+merge leaf (left and right):
+
+// # | k' |   | k |   | k'' | ===> | k' |     | k'' |
+// # |    | l |   | r |     |      |    | l,r |     |
+// # 
+
+$$
+\ldots|_{\ldots, k_1}|^{k}|_{k_2, \ldots}|\ldots %
+\rightarrow %
+\ldots|_{\ldots, k_1, k_2,\ldots}|\ldots
+$$
+
+// #+INCLUDE: "./merge_leaf.org"
+
+Note that, as above, this causes the parent to have one less key, and
+the parent could be the root with only one key.
+
+TODO explain how these pictures work!
+
+FIXME put these in a table
+
+FIXME perhaps rewrite delete code along these lines? probably best to
+spell out all the cases explicitly, with an aux function indicating
+whether to steal or merge, and whether this is left or right.
+
+
+TODO: for code, we may want to isolate the parts that can potentially change
+
+| k1 |   | k2 |   | k3 |   | k4 |
+|    | l |    | c |    | r |    |
+
+or perhaps we just deal with the cases one by one, explicitly?
+
+These mutations would be easy to check in Isabelle
+
+
+# following in btree_doc.org
+# Leaf stream
+# Insert many
+# Reading from a given range
 
 # Main definitions
 

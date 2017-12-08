@@ -24,5 +24,6 @@ mk_latex.native: mk_latex.ml
 
 clean:
 	rm -f tmp.*
+	$(MAKE) -C pics clean
 
 FORCE:

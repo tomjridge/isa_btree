@@ -1,0 +1,14 @@
+
+digraph g {
+node [
+fontsize = "16"
+shape = "record"
+];
+
+ x [label="<c>|3|<d>"]; 
+ x:c -> c:n; 
+ x:d -> d:n; 
+ c [label="1|2"]; 
+ d [label="3|4"]; 
+
+}
