@@ -18,6 +18,8 @@ datatype ('k,'v,'r) dnode =
   | Disk_leaf "('k*'v) list"
 
 
+(* FIXME do we also want to check wrt size constraints? probably yes *)
+
 definition check_length_ks_rs :: "'k list * 'r list \<Rightarrow> bool" where
 "check_length_ks_rs ks_rs = (
   let (ks,rs) = ks_rs in

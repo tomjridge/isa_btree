@@ -39,76 +39,142 @@ datatype ('k,'a) d12_t = D1 "'a" | D2 "'a * 'k * 'a"
 
 type_synonym ('k,'a) node = "'k list * 'a list"  (* with +1 constraint *)
 
-(* parent, child, sibling *)
+(* parent, child, sibling; FIXME or better? parent, left, right? *)
 type_synonym ('k,'a) node_triple = 
   "('k,'a) rsplit_node * ('k,'a) node * ('k,'a) node"
 
 type_synonym ('k,'a) n3 = "('k,'a) node_triple"
 type_synonym ('k,'a) n2 = "('k,'a) rsplit_node * ('k,'a) node"
 
-(* steal or merge to the right *)
+(* node steal -------------- *)
+
 definition node_steal_right :: "('k,'a) n3 \<Rightarrow> ('k,'a) n3" where
-"node_steal_right pcs = (
-  let (p,c,s) = pcs in
-  case (p|>r_ks2,s) of
-  (k#pks2',(k'#rest,t#rest')) \<Rightarrow> (
-    let c = 
-      let (ks,rs) = c in
+"node_steal_right plr = (
+  let (p,l,r) = plr in
+  case (p|>r_ks2,r) of
+  (k#ks2',(k'#rest,t#rest')) \<Rightarrow> (
+    let l = 
+      let (ks,rs) = l in
       (ks@[k],rs@[t])
     in
-    let p = p \<lparr> r_ks2:=k'#pks2' \<rparr> in
-    let s = (rest,rest') in
-    (p,c,s))
+    let r = (rest,rest') in
+    let p = p \<lparr> r_ks2:=k'#ks2' \<rparr> in
+    (p,l,r))
   | (_,_) \<Rightarrow> impossible1 (STR ''node_steal_right''))"
 
+
+definition node_steal_left :: "('k,'a) n3 \<Rightarrow> ('k,'a) n3" where
+"node_steal_left plr = (
+  let (p,l,r) = plr in
+  (* make it easier to access the relevant parts of the left sibling *)
+  let l = (l |> (% (x,y). (List.rev x, List.rev y))) in
+  case (l,p|>r_ks1) of
+  ((k'#rest,t#rest'),k#ks1') \<Rightarrow> (
+    let l = (List.rev rest,rest') in
+    let r = 
+      let (ks,rs) = r in
+      (k#ks,t#rs)
+    in
+    let p = p \<lparr> r_ks1:=k#ks1' \<rparr> in
+    (p,l,r))
+  | (_,_) \<Rightarrow> impossible1 (STR ''node_steal_right''))"
+
+
+(* node merge ----------------- *)
+
 definition node_merge_right :: "('k,'a) n3 \<Rightarrow> ('k,'a) n2" where
-"node_merge_right pcs = (
-  let (p,c,s) = pcs in
+"node_merge_right plr = (
+  let (p,l,r) = plr in
   case (p|>r_ks2) of
-  k#pks2' \<Rightarrow> (
-    let c = 
-      let (ks,rs) = c in
-      let (ks',rs') = s in
+  k#ks2' \<Rightarrow> (
+    let l = 
+      let (ks,rs) = l in
+      let (ks',rs') = r in
       (ks@[k]@ks',rs@rs')
     in
-    let p = p \<lparr> r_ks2:=pks2' \<rparr> in
-    (p,c))
+    let p = p \<lparr> r_ks2:=ks2' \<rparr> in
+    (p,l))
   | _ \<Rightarrow> impossible1 (STR ''node_merge_right''))"
 
+definition node_merge_left :: "('k,'a) n3 \<Rightarrow> ('k,'a) n2" where
+"node_merge_left plr = (
+  let (p,l,r) = plr in
+  case (p|>r_ks1) of
+  k#ks1' \<Rightarrow> (
+    let r = 
+      let (ks,rs) = l in
+      let (ks',rs') = r in
+      (ks@[k]@ks',rs@rs')
+    in
+    let p = p \<lparr> r_ks1:=ks1' \<rparr> in
+    (p,r))
+  | _ \<Rightarrow> impossible1 (STR ''node_merge_left''))"
+
+
+
+(* leaf steal --------------------- *)
 
 type_synonym ('k,'v) leaf = "('k * 'v) list"
 
-(* parent, child, sibling *)
+(* parent, left, right *)
 type_synonym ('k,'a) l3 = "('k,'a) rsplit_node * ('k,'a) leaf * ('k,'a) leaf"
 type_synonym ('k,'a) l2 = "('k,'a) rsplit_node * ('k,'a) leaf"
 
 
 definition leaf_steal_right :: "('k,'a)l3 \<Rightarrow> ('k,'a)l3" where
-"leaf_steal_right pcs = (
-  let (p,c,s) = pcs in
-  case (p|>r_ks2,s) of
-  (_#ks2',((k,v)#(k',v')#rest)) \<Rightarrow> (
-    let c = c@[(k,v)] in
+"leaf_steal_right plr = (
+  let (p,l,r) = plr in
+  case (p|>r_ks2,r) of
+  (_#ks2',((k,v)#(k',v')#rest)) \<Rightarrow> (  (* FIXME min size constraint *)
+    let l = l@[(k,v)] in
     let p = p \<lparr> r_ks2:=k'#ks2' \<rparr> in
-    let s = (k',v')#rest in
-    (p,c,s))
+    let r = (k',v')#rest in
+    (p,l,r))
   | _ \<Rightarrow> impossible1 (STR ''leaf_steal_right''))"
 
+definition leaf_steal_left :: "('k,'a)l3 \<Rightarrow> ('k,'a)l3" where
+"leaf_steal_left plr = (
+  let (p,l,r) = plr in
+  let l = List.rev l in
+  case (l,p|>r_ks1) of
+  (((k,v)#rest),_#ks1') \<Rightarrow> ( 
+    let l = List.rev rest in
+    let p = p \<lparr> r_ks1:=k#ks1' \<rparr> in
+    let r = (k,v)#rest in
+    (p,l,r))
+  | _ \<Rightarrow> impossible1 (STR ''leaf_steal_left''))"
+
+
+(* leaf merge -------------------------- *)
+
 definition leaf_merge_right :: "('k,'a)l3 \<Rightarrow> ('k,'a)l2" where
-"leaf_merge_right pcs = (
-  let (p,c,s) = pcs in
+"leaf_merge_right plr = (
+  let (p,l,r) = plr in
   case p|>r_ks2 of 
   _#ks2' \<Rightarrow> (
-    let c = c@s in
+    let l = l@r in
     let p = p \<lparr> r_ks2:=ks2' \<rparr> in
-    (p,c))
+    (p,l))
   | _ \<Rightarrow> impossible1 (STR ''leaf_merge_right''))"
 
+definition leaf_merge_left :: "('k,'a)l3 \<Rightarrow> ('k,'a)l2" where
+"leaf_merge_left plr = (
+  let (p,l,r) = plr in
+  case p|>r_ks1 of 
+  _#ks1' \<Rightarrow> (
+    let r = l@r in
+    let p = p \<lparr> r_ks1:=ks1' \<rparr> in
+    (p,r))
+  | _ \<Rightarrow> impossible1 (STR ''leaf_merge_left''))"
 
+
+
+(* post_steal_or_merge ---------------------- *)
 
 (* when called on a node (D_...) which is a root resulting from a delete op,
 we may have the situation that the root contains no keys, or is small *)
 
+(*
 definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) rsplit_node \<Rightarrow> 
   ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'r) d12_t => (('k,'v,'r) u,'t) MM" 
 where
@@ -122,12 +188,16 @@ where
         let f' = ( (* we may be at root, having deleted the single key *)
           case (p_sz = 0) of
           True \<Rightarrow> (
+            (* the parent was the root; it had one key *)
             let _ = check_true (%_. stk'=[]) in
             return (D_updated_subtree(c')))
           | False \<Rightarrow> (
             case (p_sz < ps1|>dot_constants|>min_node_keys) of 
-            True \<Rightarrow> (return (D_small_node(p'|>dest_Disk_node)))
+            True \<Rightarrow> (
+              (* new parent is small *)
+              return (D_small_node(p'|>dest_Disk_node)))
             | False \<Rightarrow> (
+              (* new parent is not small *)
               (* write the frame at this point *)
               p'|>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r)))))
         in
@@ -139,6 +209,7 @@ where
           (* we may be at the root, in which case f' may be small *)
           case (p_sz < ps1|>dot_constants|>min_node_keys) of
           True \<Rightarrow> (
+            (* we are at the root, and the new root is small *)
             let _ = check_true (%_.stk'=[]) in
             return (D_small_node(p'|>dest_Disk_node))
           )
@@ -147,30 +218,11 @@ where
         in
         f' |> fmap (% f'. (f',stk')))       
 )"
+*)
+
+
 
 (* delete ----------------------------------------------------------  *)
-
-(* FIXME this not correct for rsplit_node *)
-definition get_sibling :: 
-  "( ('k s * 'r s) * ('k s * 'r s)) \<Rightarrow> bool (* right *) * (('k s*'r s) * ('k s*'r s)) * ('k*'r)" 
-where
-"get_sibling p = (
-  let (p_1,p_2) = p in
-        case p_2 of
-        (p_k#p_ks2,r#p_ts2) \<Rightarrow> (
-        let right = True in
-        (right,(p_1,(p_ks2,p_ts2)),(p_k,r)))
-        | _ \<Rightarrow> (
-          case p_1 of
-          (_#_,_#_) \<Rightarrow> (
-            let right = False in
-            let (p_ks1,p_ts1) = p_1 in
-            let (p_1_ks,p_k) = dest_list' p_ks1 in
-            let (p_1_ts,s) = dest_list' p_ts1 in
-            let (p_1,p2) = ((p_1_ks,p_1_ts),p_2) in
-            (right,(p_1,p_2),(p_k,s)))
-          | _ \<Rightarrow> impossible1 (STR ''delete, get_sibling'')
-        ))"
 
 definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (('k,'v,'r)u,'t) MM" where
 "step_up ps1 du = (
@@ -179,12 +231,27 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
   case stk of
   [] \<Rightarrow> (impossible1 (STR ''delete, step_up''))
   | p#stk' \<Rightarrow> (
+    (* NOTE p is the parent *)
     case f of   
     D_updated_subtree r \<Rightarrow> (
       let (ks,rs) = unsplit_node (p\<lparr>r_t:=r\<rparr>) in
-      mk_Disk_node(ks,rs) |> (store_ops|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk'))
-    )
+      mk_Disk_node(ks,rs) |> (store_ops|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk')))
     | D_small_leaf(kvs) \<Rightarrow> (
+      (* we need to steal or merge *)
+      case p|>r_ks2 of 
+      [] \<Rightarrow> (
+        (* no right sibling, so try left *)
+        case p|>r_ks1 of
+        [] \<Rightarrow> impossible1 (STR ''step_up: no right sibling, no left sibling)
+        | ks1 \<Rightarrow> (
+          (* need to decide whether to steal or merge *)
+          case List.length ks1 = ps1|>dot_cs of
+          True \<Rightarrow> (
+            (* left sibling has minimal length; merge *)
+            
+            )
+          
+        )
       let leaf = True in
       let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Disk_leaf(List.zip ks vs)) in
       let (p_ks1,p_rs1,_,p_ks2,p_rs2) = p|>dest_rsplit_node in
@@ -336,3 +403,25 @@ where
 "
 
 end
+
+
+
+
+(* old ----------------------- *)
+
+(* steal or merge to the right *)
+(*
+definition node_steal_right :: "('k,'a) n3 \<Rightarrow> ('k,'a) n3" where
+"node_steal_right pcs = (
+  let (p,c,s) = pcs in
+  case (p|>r_ks2,s) of
+  (k#ks2',(k'#rest,t#rest')) \<Rightarrow> (
+    let c = 
+      let (ks,rs) = c in
+      (ks@[k],rs@[t])
+    in
+    let s = (rest,rest') in
+    let p = p \<lparr> r_ks2:=k'#ks2' \<rparr> in
+    (p,c,s))
+  | (_,_) \<Rightarrow> impossible1 (STR ''node_steal_right''))"
+*)

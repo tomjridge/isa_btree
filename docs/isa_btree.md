@@ -1087,8 +1087,7 @@ steal left node:
 // # 
 // # 
 
-$$
-\ldots|_{\ldots,k,t}|^{k'}|_{t_1,k_1,\ldots}|\ldots %
+$$\ldots|_{\ldots,k,t}|^{k'}|_{t_1,k_1,\ldots}|\ldots %
 \rightarrow %
 \ldots|_{\ldots}|^{k}|_{t,k',t_1,k_1,\ldots}|\ldots
 $$
