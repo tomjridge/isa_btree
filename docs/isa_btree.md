@@ -1078,6 +1078,7 @@ subtree and a key.
 
 
 
+
 ## Steal left (node)
 
 steal left node:
@@ -1195,6 +1196,20 @@ TODO: for code, we may want to isolate the parts that can potentially change
 or perhaps we just deal with the cases one by one, explicitly?
 
 These mutations would be easy to check in Isabelle
+
+## Commentary on store interactions leading up to and including leaf-merge-right
+
+- We first examine the parent ts2 to see if there is a right
+sibling. 
+- Assuming there is, we then read the right sibling from
+store. 
+- We then form a merged leaf, write this, obtain the resulting
+ref...
+- update the parent frame with the new ref and new keys, and then
+  continue with this as the new focus (without writing it... yet!)
+
+
+
 
 
 # following in btree_doc.org

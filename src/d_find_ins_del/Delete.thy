@@ -2,9 +2,20 @@ theory Delete
 imports Find
 begin
 
+(* NOTE part of the complexity of the following is that it deals with the ADT and the 
+blocks-and-pointers views using the same code *)
+
+
 (* FIXME change these definitions to match the org documentation alternative approach; 
 FIXME at the moment likely that these defns are not updated to rsplit_node from split_node
  *)
+
+(*
+NOTE there is a pattern regarding store_osp: if the result of processing the focus is a 
+node that is not small, we can write it and continue 
+with a reference; otherwise we do not want to write it because we may subsequently steal
+or merge
+*)
 
 datatype ('k,'v,'r)del_t =
   D_small_leaf "('k*'v)s"
@@ -18,7 +29,7 @@ type_synonym ('k,'v,'r) fo = "('k,'v,'r) del_t"  (* focus *)
 (* D_down: r is the original pointer to root, in case we don't delete anything *)
 datatype (dead 'k, dead 'v,dead 'r) delete_state = 
   D_down "('k,'v,'r) fs * 'r"  
-  | D_up "('k,'v,'r) fo * ('k,'r) rstk * 'r"
+  | D_up "('k,'v,'r) fo * ('k,'r) rstk * 'r"  (* FIXME the last component is the original root, but is not actually needed *)
   | D_finished "'r" 
   
 type_synonym ('k,'v,'r)u = "('k,'v,'r)fo * ('k,'r)rstk"  
@@ -48,6 +59,11 @@ let (a',b') = ys in
 (* 'a - the tree type; 'v - the values in the children; 't - the values in the parent
 'c - child type = ks * 'v list
 'p - parent type = ks * 't list
+
+this datatype has 'a initially as the type of modified nodes, 
+which are then replaced with block refs 'r, before the modifications
+are finally allocated to store
+
 *)
 
 datatype ('k,'a) d12_t = D1 "'a" | D2 "'a * 'k * 'a"
@@ -98,7 +114,14 @@ definition steal_or_merge :: "
 
 
 (* when called on a node (D_...) which is a root resulting from a delete op,
-we may have the situation that the root contains no keys, or is small *)
+we may have the situation that the root contains no keys, or is small 
+
+p_1 is the parent left part that is not touched; p_2 is the right part that is untouched
+
+x is of type d12_t and has the references (previously allocated) to the modified child/children
+and possibly information about the new separator key in the parent
+
+*)
 
 definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) rsplit_node \<Rightarrow> 
   ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'r) d12_t => (('k,'v,'r) u,'t) MM" 
