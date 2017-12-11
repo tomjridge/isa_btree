@@ -1013,7 +1013,9 @@ TODO talk about root case
 ## Steal right (node)
 
 
-
+FIXME update following latex to follow more closely the verbatim for
+this case; NOTE ki ri are numbered sequentially and in increasing
+order (so k1 lt k2 etc)
 
 We now develop some syntax to treat the various cases.
 
@@ -1025,29 +1027,65 @@ we are interested in the right child.
 
 steal right node:
 
-// # | k' |   | k |         | k'' | ===> | k' |        | rk |   | k'' |
-// # |    | l |   | rt,rk,r |     |      |    | l,k,rt |    | r |     |
-// # 
-// # $x^y$
-// # 
-// # $\ldots|^{k'}|_l|^k|_{rt,rk,r}|^{k''}|\ldots %
-// # \rightarrow %
-// # \ldots|^{k'}|_{l,k,rt}|^{rk}|_{r}|^{k''}|\ldots$
-// # 
-// # 
-// # $\ldots|^{k_1}|_l|^{k_2}|_{t,k,r}|^{k_3}|\ldots %
-// # \rightarrow %
-// # \ldots|^{k_1}|_{l,k_2,t}|^{k}|_{r}|^{k_3}|\ldots$
+\begin{verbatim}
+Initial parent state:
+| ... | k1 |     | k2 |   | k5 | ... |
+|     |    | (c) |    | d |    |     |
+
+c points to
+| ... | X |   | ==> | ... | X |   | k2 |    |
+|     |   | X |     |     |   | X |    | r1 |
+
+d points to 
+|    | k3 |    | k4 | ... | ==> |    | k4 | ... |
+| r1 |    | r2 |    |     |     | r2 |    |     |
+
+
+Final parent state:
+
+| ... | k1 |      | k3 |    | k5 | ... |
+|     |    | (c') |    | d' |    |     |
+\end{verbatim}
+
+
+Using reduced mathematical notation (don't expect the variables to
+match up FIXME):
+
+% https://tex.stackexchange.com/questions/334008/how-to-create-a-box-with-a-superscript
+\newcommand{\boxsym}[1]{%
+[#1]}
 
 
 $$
-\ldots|_{\ldots,k_1,t_1}|^{k}|_{t,k',\ldots}|\ldots %
+\ldots|_{\boxsym{\ldots_1,k_?,r_?}}|^{k_1}|_{(r_2,k_2,\ldots_2)}|\ldots %
 \rightarrow %
-\ldots|_{\ldots,k_1,t_1,k,t}|^{k'}|_{\ldots}|\ldots
+\ldots|_{r_3(\ldots_1,k_?,r_?,k_1,r_2)}|^{k_2}|_{r_4(\ldots_2)}|\ldots
 $$
 
 
-*Note on how to interpret this diagram:* TODO
+
+NOTE: the focus is not on disk, so is not pointed to by a reference
+
+NOTE: by the time we decide to steal right, we have already read the
+right sibling from disk.
+
+*Note on how to interpret this diagram:* In the above diagram, we show
+only what changes. We are dealing with 3 nodes: the parent, the left
+child and the right child. Although we are dealing with block
+references, we omit this and instead represent the trees directly. The
+focus is the node ${}[\ldots,k_?,t_?]$. The key $k_1$ is a key in the
+parent (in fact, it is the first key in the right hand side of the
+split parent FIXME explain split). After transformation, we again have
+3 nodes, but the left child has gained $k_1,t$ and the parent key
+which separates the left child from the right child has changed to
+$k_2$. FIXME reconcile this with above
+
+
+*Sequence of events:* $r_1$ is followed to read $r_2,\ldots$. New node
+is constructed and written to give $r_3$. Similarly for
+$r_4$. Finally, separating key is changed to $k_2$, and the new parent
+node thus formed becomes the new focus.
+
 
 Note that it seems very useful to have a function `dest_right_node`
 which produces $rt,rk,r$, and similarly for left node.

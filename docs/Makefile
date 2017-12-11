@@ -7,6 +7,7 @@ all: tmp.pdf
 # graphics=true ensures that we use pandoc's graphics setup (which
 # scales images nicely)
 tmp.pdf: mk_latex.native isa_btree.md FORCE
+	$(MAKE) -C pics
 	./mk_latex.native >tmp.md_with_latex
 	pandoc --from=markdown+raw_tex --to=latex \
     --template=pandoc_latex_template.modified \

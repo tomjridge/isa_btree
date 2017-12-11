@@ -36,47 +36,56 @@ definition dest_d_finished :: "('k,'v,'r)dst \<Rightarrow> 'r option" where
 
 (* steal or merge --------------------------------------------------- *)
 
+(* some variable namings 
+
+p.ks1: k1#ks1'
+p.ks2: 
+
+*)
+
 
 (* node steal -------------- *)
 
+definition dest_krs :: "('k s * 'r s) \<Rightarrow> ('k * 'r * ('k s * 'r s))" where
+"dest_krs krs = (
+  case krs of 
+  (k#rest,r#rest') \<Rightarrow> (k,r,(rest,rest'))
+  | _ \<Rightarrow> failwith (STR ''dest_node''))"
+  
+
+(* args are left split node context, focus, right sib; returns updated parent *)
 definition node_steal_right :: 
+  "('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('r,'t) MM" 
+where
+"node_steal_right store_ops p c1 c2 = (
+  case c1 of (ks1,rs1) \<Rightarrow> 
+  case c2 of (k2#rest,r2#rest') \<Rightarrow> 
+  case (p|>r_ks2,p|>r_ts2) of (k1#ks2,_#rs2) \<Rightarrow>   
+  (ks1@[k1],rs1@[r2]) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r3.
+  (rest,rest') |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r4.
+  p \<lparr> r_t:=r3, r_ks2:=k2#ks2, r_ts2:=r4#rs2 \<rparr>
+  |> unsplit_node |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
+  return p))))"
+
+
+definition node_steal_left :: 
   "('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k s * 'r s) \<Rightarrow> (('k,'v,'r)fo,'t) MM" 
 where
-"node_steal_right store_ops p c1 = (
-  (* read the right node *)
-  case p|>r_ts2 of 
-  [] \<Rightarrow> impossible1 (STR ''node_steal_right'')
-  | c2#ts2' \<Rightarrow> 
-    c2|>(store_ops|>store_read)|> bind (% c2.
-    let c2 = dest_Disk_node c2 in
-    case (p|>r_ks2, c2) of
-    ([],_) \<Rightarrow> impossible1 (STR ''node_steal_right, 2'')
-    | (k#ks2',(k'#rest,t#rest')) \<Rightarrow> (
-      let c1 = c1 |> (% (ks,rs). mk_Disk_node(ks@[k],rs@[t])) in
-      c1 |> (store_ops|>store_alloc) |> bind (% c1.
-      let c2 = mk_Disk_node(rest,rest') in
-      c2 |> (store_ops|>store_alloc) |> bind (% c2.
-      let p = p \<lparr> r_ks2:=k'#ks2', r_t:=c1, r_ts2:=c2#ts2' \<rparr> in
-      p |> unsplit_node |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
+"node_steal_left store_ops p c2 = (
+  case p|>r_ts1 of
+  [] \<Rightarrow> impossible1 (STR ''node_steal_left'')
+  | c1#ts1' \<Rightarrow> 
+    c1|>(store_ops|>store_read) |> fmap dest_Disk_node |> bind (% c1.
+    let c1 = (c1 |> (% (x,y). (List.rev x, List.rev y))) in
+    case (c1,p|>r_ks1) of
+    (_,[]) \<Rightarrow> impossible1 (STR ''node_steal_left, 2'')
+    | ((k'#rest,t#rest'),k#ks1') \<Rightarrow> (
+      mk_Disk_node(List.rev rest,List.rev rest') |> (store_ops|>store_alloc) |> bind (% c1.
+      c2 |> (% (ks,rs). mk_Disk_node(k#ks,t#rs)) |> (store_ops|>store_alloc) |> bind (% c2.
+      p \<lparr> r_ks1:=k'#ks1', r_ts1:=c1#ts1', r_t:=c2 \<rparr>
+      |> unsplit_node |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
       (* since we are stealing, we know that p is not small *)
       return (D_updated_subtree(p))))))))"
-
-
-definition node_steal_left :: "('k,'a) n3 \<Rightarrow> ('k,'a) n3" where
-"node_steal_left plr = (
-  let (p,l,r) = plr in
-  (* make it easier to access the relevant parts of the left sibling *)
-  let l = (l |> (% (x,y). (List.rev x, List.rev y))) in
-  case (l,p|>r_ks1) of
-  ((k'#rest,t#rest'),k#ks1') \<Rightarrow> (
-    let l = (List.rev rest,rest') in
-    let r = 
-      let (ks,rs) = r in
-      (k#ks,t#rs)
-    in
-    let p = p \<lparr> r_ks1:=k#ks1' \<rparr> in
-    (p,l,r))
-  | (_,_) \<Rightarrow> impossible1 (STR ''node_steal_right''))"
 
 
 (* node merge ----------------- *)

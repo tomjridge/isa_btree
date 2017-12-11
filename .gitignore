@@ -5,3 +5,5 @@
 /src/document/root.toc
 src/output/
 /docs/tmp.*
+/docs/pics/*.pdf
+docs/pics/*.ps
