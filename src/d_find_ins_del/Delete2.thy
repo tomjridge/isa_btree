@@ -423,23 +423,3 @@ where
 end
 
 
-
-
-(* old ----------------------- *)
-
-(* steal or merge to the right *)
-(*
-definition node_steal_right :: "('k,'a) n3 \<Rightarrow> ('k,'a) n3" where
-"node_steal_right pcs = (
-  let (p,c,s) = pcs in
-  case (p|>r_ks2,s) of
-  (k#ks2',(k'#rest,t#rest')) \<Rightarrow> (
-    let c = 
-      let (ks,rs) = c in
-      (ks@[k],rs@[t])
-    in
-    let s = (rest,rest') in
-    let p = p \<lparr> r_ks2:=k'#ks2' \<rparr> in
-    (p,c,s))
-  | (_,_) \<Rightarrow> impossible1 (STR ''node_steal_right''))"
-*)
