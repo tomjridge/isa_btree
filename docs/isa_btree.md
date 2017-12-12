@@ -1110,24 +1110,14 @@ $$
 
 ## Steal right (leaf)
 
-steal right leaf:
-
-// # | k' |   | k |          | k'' | ===> | k' |      | rk' |       | k'' |
-// # |    | l |   | rk,rk',r |     |      |    | l,rk |     | rk',r |     |
-// # 
-
 $$
-\ldots|_{\ldots,k_1}|^{k_2}|_{k,k',\ldots}|\ldots %
+\ldots|_{r_?(\ldots_1,k_1)}|^{k_2}|_{r_?(k_3,k_4,\ldots_2)}|\ldots %
 \rightarrow %
-\ldots|_{\ldots,k_1,k}|^{k'}|_{k',\ldots}|\ldots
+\ldots|_{r_1(\ldots_1,k_1,k_3)}|^{k_4}|_{r_2(k_4,\ldots_2)}|\ldots
 $$
-
-// #+INCLUDE: "./steal_right_leaf.org"
 
 Note that this takes only one kv, whereas the node case moves a
 subtree and a key.
-
-~dest_right_leaf~ gives $rk,rk',r$
 
 
 
@@ -1136,17 +1126,10 @@ subtree and a key.
 
 ## Steal left (leaf)
 
-
-steal left leaf:
-
-// # | k' |      | k |   | k'' | ===> | k' |   | lk |      | k'' |
-// # |    | l,lk |   | r |     |      |    | l |    | lk,r |     |
-// # 
-
 $$
-\ldots|_{\ldots, k_1, k}|^{k'}|_{k_2, \ldots}|\ldots %
+\ldots|_{r_?(\ldots_1, k_1, k_2)}|^{k_3}|_{[r_?(k_4, \ldots_2)]}|\ldots %
 \rightarrow %
-\ldots|_{\ldots, k_1}|^{k}|_{k, k_2, \ldots}|\ldots
+\ldots|_{r_1(\ldots_1, k_1)}|^{k_2}|_{[r_2(k_2, k_4, \ldots])}|\ldots
 $$
 
 // #+INCLUDE: "./steal_left_leaf.org"
@@ -1166,7 +1149,7 @@ the keys and the children they flank: $k \le t_i < k'$.
 
 
 $$
-\ldots|_{\ldots_1, k_1, r_1}|^{k_2}|_{r_3, k_3, \ldots_2}|\ldots %
+\ldots|_{r_?(\ldots_1, k_1, r_1)}|^{k_2}|_{r_?(r_3, k_3, \ldots_2)}|\ldots %
 \rightarrow %
 \ldots|_{r_4(\ldots_1, k_1, r_1, k_2, r_3, k_3, \ldots_2)}|\ldots
 $$
@@ -1182,19 +1165,11 @@ by 1.
 
 ## Merge {right,left} (leaf, easy)
 
-merge leaf (left and right):
-
-// # | k' |   | k |   | k'' | ===> | k' |     | k'' |
-// # |    | l |   | r |     |      |    | l,r |     |
-// # 
-
 $$
-\ldots|_{\ldots, k_1}|^{k}|_{k_2, \ldots}|\ldots %
+\ldots|_{r_?(\ldots_1, k_1)}|^{k_2}|_{r_?(k_3, \ldots_2)}|\ldots %
 \rightarrow %
-\ldots|_{\ldots, k_1, k_2,\ldots}|\ldots
+\ldots|_{r_1(\ldots_1, k_1, k_3, \ldots_2)}|\ldots
 $$
-
-// #+INCLUDE: "./merge_leaf.org"
 
 Note that, as above, this causes the parent to have one less key, and
 the parent could be the root with only one key.

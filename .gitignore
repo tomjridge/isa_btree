@@ -7,3 +7,4 @@ src/output/
 /docs/tmp.*
 /docs/pics/*.pdf
 docs/pics/*.ps
+/docs/pics/all
