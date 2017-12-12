@@ -69,55 +69,54 @@ where
 
 
 definition node_steal_left :: 
-  "('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k s * 'r s) \<Rightarrow> (('k,'v,'r)fo,'t) MM" 
+  "('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('r,'t) MM" 
 where
-"node_steal_left store_ops p c2 = (
-  case p|>r_ts1 of
-  [] \<Rightarrow> impossible1 (STR ''node_steal_left'')
-  | c1#ts1' \<Rightarrow> 
-    c1|>(store_ops|>store_read) |> fmap dest_Disk_node |> bind (% c1.
-    let c1 = (c1 |> (% (x,y). (List.rev x, List.rev y))) in
-    case (c1,p|>r_ks1) of
-    (_,[]) \<Rightarrow> impossible1 (STR ''node_steal_left, 2'')
-    | ((k'#rest,t#rest'),k#ks1') \<Rightarrow> (
-      mk_Disk_node(List.rev rest,List.rev rest') |> (store_ops|>store_alloc) |> bind (% c1.
-      c2 |> (% (ks,rs). mk_Disk_node(k#ks,t#rs)) |> (store_ops|>store_alloc) |> bind (% c2.
-      p \<lparr> r_ks1:=k'#ks1', r_ts1:=c1#ts1', r_t:=c2 \<rparr>
-      |> unsplit_node |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
-      (* since we are stealing, we know that p is not small *)
-      return (D_updated_subtree(p))))))))"
-
+"node_steal_left store_ops p c1 c2 = (
+  let c1 = (c1 |> (% (x,y). (rev x, rev y))) in
+  case c1 of (k1#rest,r1#rest') \<Rightarrow>
+  case c2 of (ks2,rs2) \<Rightarrow>
+  case (p|>r_ks1,p|>r_ts1) of (k2#ks1,_#rs1) \<Rightarrow>
+  (rev rest,rev rest') |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r3.
+  (k2#ks2,r1#rs2) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r4.
+  p \<lparr> r_ks1:=k1#ks1, r_ts1:=r3#rs1, r_t:=r4 \<rparr>
+  |> unsplit_node |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
+  return p))))"
 
 (* node merge ----------------- *)
 
-definition node_merge_right :: "('k,'a) n3 \<Rightarrow> ('k,'a) n2" where
-"node_merge_right plr = (
-  let (p,l,r) = plr in
-  case (p|>r_ks2) of
-  k#ks2' \<Rightarrow> (
-    let l = 
-      let (ks,rs) = l in
-      let (ks',rs') = r in
-      (ks@[k]@ks',rs@rs')
-    in
-    let p = p \<lparr> r_ks2:=ks2' \<rparr> in
-    (p,l))
-  | _ \<Rightarrow> impossible1 (STR ''node_merge_right''))"
+definition node_merge_right :: 
+  "constants \<Rightarrow> ('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> (('k,'v,'r)fo,'t) MM"
+where
+"node_merge_right cs store_ops p c1 c2 = (
+  case c1 of (ks1,rs1) \<Rightarrow> 
+  case c2 of (ks2,rs2) \<Rightarrow> 
+  case (p|>r_ks2,p|>r_ts2) of (k2#ks2,_#p_rs2) \<Rightarrow>   
+  (ks1@[k2]@ks2,rs1@rs2) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r4. 
+  p \<lparr> r_t:=r4, r_ks2:=ks2, r_ts2:=p_rs2 \<rparr>
+  |> unsplit_node |> (% (ks,rs).
+  case List.length ks < cs|>min_node_keys of
+  False \<Rightarrow> (
+    (ks,rs) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
+    return (D_updated_subtree(p))))
+  | True \<Rightarrow> (
+    return (D_small_node(ks,rs))))))"
 
-definition node_merge_left :: "('k,'a) n3 \<Rightarrow> ('k,'a) n2" where
-"node_merge_left plr = (
-  let (p,l,r) = plr in
-  case (p|>r_ks1) of
-  k#ks1' \<Rightarrow> (
-    let r = 
-      let (ks,rs) = l in
-      let (ks',rs') = r in
-      (ks@[k]@ks',rs@rs')
-    in
-    let p = p \<lparr> r_ks1:=ks1' \<rparr> in
-    (p,r))
-  | _ \<Rightarrow> impossible1 (STR ''node_merge_left''))"
-
+definition node_merge_left :: 
+"constants \<Rightarrow> ('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> (('k,'v,'r)fo,'t) MM"
+where
+"node_merge_left cs store_ops p c1 c2 = (
+  case c1 of (ks1,rs1) \<Rightarrow> 
+  case c2 of (ks2,rs2) \<Rightarrow> 
+  case (p|>r_ks1,p|>r_ts1) of (k2#ks1,_#p_rs1) \<Rightarrow>   
+  (ks1@[k2]@ks2,rs1@rs2) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r4. 
+  p \<lparr> r_t:=r4, r_ks1:=ks1, r_ts1:=p_rs1 \<rparr>
+  |> unsplit_node |> (% (ks,rs).
+  case List.length ks < cs|>min_node_keys of
+  False \<Rightarrow> (
+    (ks,rs) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
+    return (D_updated_subtree(p))))
+  | True \<Rightarrow> (
+    return (D_small_node(ks,rs))))))"
 
 
 (* leaf steal --------------------- *)

@@ -1092,6 +1092,22 @@ which produces $rt,rk,r$, and similarly for left node.
 
 TODO have concrete examples to demonstrate these cases
 
+
+## Steal left (node)
+
+steal left node:
+
+$$\ldots|_{\ldots_1,k_1,r_1}|^{k_2}|_{[\ldots_2]}|\ldots %
+\rightarrow %
+\ldots|_{r_3(\ldots_1)}|^{k_1}|_{r_4(r_1,k_2,\ldots_2)}|\ldots
+$$
+
+
+
+
+
+
+
 ## Steal right (leaf)
 
 steal right leaf:
@@ -1114,26 +1130,6 @@ subtree and a key.
 ~dest_right_leaf~ gives $rk,rk',r$
 
 
-
-
-
-## Steal left (node)
-
-steal left node:
-
-// # | k' |         | k |   | k'' | ===> | k' |   | lk |        | k'' |
-// # |    | l,lk,lt |   | r |     |      |    | l |    | lt,k,r |     |
-// # 
-// # 
-
-$$\ldots|_{\ldots,k,t}|^{k'}|_{t_1,k_1,\ldots}|\ldots %
-\rightarrow %
-\ldots|_{\ldots}|^{k}|_{t,k',t_1,k_1,\ldots}|\ldots
-$$
-
-// #+INCLUDE: "./steal_left_node.org"
-
-~dest_left_node~ gives $k,t$
 
 
 
@@ -1168,29 +1164,15 @@ the keys and the children they flank: $k \le t_i < k'$.
 
 ## Merge {right,left} (node)
 
-For checking:
-
-merge node (right and left):
-
-// # | k' |         | k |         | k'' | ===> | k' |                   | k'' |
-// # |    | l,lk,lt |   | rt,rk,r |     |      |    | l,lk,lt,k,rt,rk,r |     |
-// # 
 
 $$
-\ldots|_{\ldots, k_1, t_1}|^{k}|_{t_2, k_2, \ldots}|\ldots %
+\ldots|_{\ldots_1, k_1, r_1}|^{k_2}|_{r_3, k_3, \ldots_2}|\ldots %
 \rightarrow %
-\ldots|_{\ldots, k_1, t_1, k, t_2, k_2, \ldots}|\ldots
+\ldots|_{r_4(\ldots_1, k_1, r_1, k_2, r_3, k_3, \ldots_2)}|\ldots
 $$
 
-// #+INCLUDE: "./merge_node.org"
-
-
-For code:
-
-| k' |   | k |   | k'' | ===> | k' |       | k'' |
-|    | l |   | r |     |      |    | l,k,r |     |
-
-Note that this picture also works for merge left (node)
+Note that this picture also works for merge left (node), but must be
+careful about the split node and reversing.
 
 Note that this causes the parent to have one less key, possibly
 becoming too small. For the root, with only one key, the result may be
