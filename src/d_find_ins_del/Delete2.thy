@@ -191,95 +191,52 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
 "step_up ps1 du = (
   let (f,stk) = du in
   let store_ops = ps1|>dot_store_ops in
-  let cs = ps1|>dot_cs in
-  case stk of
-  [] \<Rightarrow> (impossible1 (STR ''delete, step_up''))
-  | p#stk' \<Rightarrow> (
-    (* NOTE p is the parent *)
-    case f of   
-    D_updated_subtree r \<Rightarrow> (
-      let (ks,rs) = unsplit_node (p\<lparr>r_t:=r\<rparr>) in
-      mk_Disk_node(ks,rs) |> (store_ops|>store_alloc) |> fmap (% r'. (D_updated_subtree r',stk')))
-    | D_small_leaf(kvs) \<Rightarrow> (
-      (* we need to steal or merge *)
-      case p|>r_ks2 of 
-      [] \<Rightarrow> (
-        (* no right sibling; steal or merge from left *)
-        case p|>r_ks1 of
-        [] \<Rightarrow> impossible1 (STR ''step_up: no right sibling, no left sibling'')
-        | ks1 \<Rightarrow> (        
-          (* decide whether to steal or merge *)
-          let r = List.hd (p|>r_ts1) in
-          r 
-          |> (store_ops|>store_read)
-          |> fmap (% frm. dest_Disk_leaf frm) 
-          |> bind (% left_kvs. 
-            case List.length left_kvs = cs|>min_leaf_keys of
-            True \<Rightarrow> (
-              (* left sibling has minimal length; merge *)
-              leaf_merge_left p left_kvs kvs |> 
-              (% fo. 
-                case fo of
-                D_updated_subtree p \<Rightarrow> D_updated_subtree p
-                | D_small_node(ks,rs) \<Rightarrow> (
-                  case List.length ks = 0 of 
-                )
-                (* FIXME we should go through something like d12 because we don't know the child
-                reference to place in the parent *)
-                r |> (store_ops|>store_alloc) |> bind 
-                (% r. p |> (store_ops|>store_alloc) |> fmap
-                (% p. 
-                
-            )
-          
-        )
-      let leaf = True in
-      let mk_c = (% ks_vs. let (ks,vs) = ks_vs in Disk_leaf(List.zip ks vs)) in
-      let (p_ks1,p_rs1,_,p_ks2,p_rs2) = p|>dest_rsplit_node in
-      let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
-      let frm = (store_ops|>store_read) r in
-      let d12 :: (('k,('k,'v,'r) dnode) d12_t,'t) MM = 
-        frm |> fmap (% frm. 
-          steal_or_merge 
-            (ps1|>dot_constants) right leaf mk_c 
-            (kvs|>unzip) p_k (frm|>dest_Disk_leaf|>unzip))
-      in
-      let d12' :: (('k,'r) d12_t,'t) MM = d12 |> bind
-      (% x. case x of
-        D1 frm \<Rightarrow> frm |> (store_ops|>store_alloc) |> fmap (% r. D1 r)
-        | D2(frm1,p_k,frm2) \<Rightarrow> (
-          frm1 |> (store_ops|>store_alloc) |> bind
-          (% r1. frm2 |> (store_ops|>store_alloc) |> fmap 
-          (% r2. D2(r1,p_k,r2)))))
-      in
-      d12' |> bind (% x. post_steal_or_merge ps1 stk' p p_1 p_2 x) 
-    )
-    
+  let (alloc,read) = (store_ops|>store_alloc,store_ops|>store_read) in
+  let cs = ps1|>dot_constants in
+  case stk of [] \<Rightarrow> (impossible1 (STR ''delete, step_up'')) | p#stk' \<Rightarrow> (
+  (* NOTE p is the parent *)
+  (* take the result of what follows, and add the stk' component *)
+  (% x. x |> fmap (% y. (y,stk'))) (case f of   
+  D_updated_subtree r \<Rightarrow> (
+    unsplit_node (p\<lparr>r_t:=r\<rparr>) |> mk_Disk_node |> alloc |> fmap D_updated_subtree)
+  | D_small_leaf(kvs) \<Rightarrow> (
+    let no_right_sibling = is_Nil' (p|>r_ks2) in
+    case no_right_sibling of 
+    True \<Rightarrow> (
+      (* steal or merge from left *)
+      let ks1 = p|>r_ks1 in
+      let _ = check_true (% _. case ks1 of [] \<Rightarrow> False | _ \<Rightarrow> True) in
+      let r = List.hd (p|>r_ts1) in
+      r |> read |> fmap (% frm. dest_Disk_leaf frm) |> bind (% left_kvs. 
+      case List.length left_kvs = cs|>min_leaf_size of
+      True \<Rightarrow> leaf_merge_left cs store_ops p left_kvs kvs
+      | False \<Rightarrow> leaf_steal_left store_ops p left_kvs kvs |> fmap D_updated_subtree))
+    | False \<Rightarrow> (
+      (* steal or merge from right *)
+      let r = List.hd (p|>r_ts2) in
+      r |> read |> fmap (% frm. dest_Disk_leaf frm) |> bind (% right_kvs. 
+      case List.length right_kvs = cs|>min_leaf_size of
+      True \<Rightarrow> leaf_merge_right cs store_ops p kvs right_kvs
+      | False \<Rightarrow> leaf_steal_right store_ops p kvs right_kvs |> fmap D_updated_subtree)))
   | D_small_node(ks,rs) \<Rightarrow> (
-      (* FIXME almost identical to small leaf case *)
-      let leaf = False in
-      let mk_c = (% ks_rs. mk_Disk_node(ks_rs)) in 
-      (* FIXME the small cases can be handled uniformly; want steal left,right to be uniform, and take a child as arg; also return option *)  
-      (* parent info is already read, but we must read the siblings from disk *)
-      let (p_ks1,p_rs1,_,p_ks2,p_rs2) = p|>dest_rsplit_node in
-      let (right,(p_1,p_2),(p_k,r)) = get_sibling ((p_ks1,p_rs1),(p_ks2,p_rs2)) in
-      let frm = (store_ops|>store_read) r in
-      let d12 = frm |> fmap (% frm. 
-        steal_or_merge (ps1|>dot_constants) right leaf mk_c 
-          (ks,rs) p_k (frm|>dest_Disk_node)) 
-      in
-      let d12' = d12 |> bind
-      (% x. case x of
-        D1 frm \<Rightarrow> frm |> (store_ops|>store_alloc) |> fmap(% r. D1 r)
-        | D2(frm1,p_k,frm2) \<Rightarrow> (
-          frm1 |> (store_ops|>store_alloc) |> bind
-          (% r1. frm2 |> (store_ops|>store_alloc) |> fmap 
-          (% r2. D2(r1,p_k,r2)))))
-      in
-      d12' |> bind (% x. post_steal_or_merge ps1 stk' p p_1 p_2 x)
-    )
-  )
-)"
+    let no_right_sibling = is_Nil' (p|>r_ks2) in
+    case no_right_sibling of 
+    True \<Rightarrow> (
+      (* steal or merge from left *)
+      let ks1 = p|>r_ks1 in
+      let _ = check_true (% _. case ks1 of [] \<Rightarrow> False | _ \<Rightarrow> True) in
+      let r = List.hd (p|>r_ts1) in
+      r |> read |> fmap (% frm. dest_Disk_node frm) |> bind (% (l_ks,l_rs). 
+      case List.length l_ks = cs|>min_node_keys of
+      True \<Rightarrow> node_merge_left cs store_ops p (l_ks,l_rs) (ks,rs)
+      | False \<Rightarrow> node_steal_left store_ops p (l_ks,l_rs) (ks,rs) |> fmap D_updated_subtree))
+    | False \<Rightarrow> (
+      (* steal or merge from right *)
+      let r = List.hd (p|>r_ts2) in
+      r |> read |> fmap (% frm. dest_Disk_node frm) |> bind (% (r_ks,r_rs). 
+      case List.length r_ks = cs|>min_node_keys of
+      True \<Rightarrow> node_merge_right cs store_ops p (ks,rs) (r_ks,r_rs)
+      | False \<Rightarrow> node_steal_right store_ops p (ks,rs) (r_ks,r_rs) |> fmap D_updated_subtree))))))"
 
 definition delete_step :: 
   "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> (('k,'v,'r)delete_state,'t) MM" 

@@ -97,6 +97,9 @@ definition unzip :: "('a*'b) list \<Rightarrow> ('a list * 'b list)" where
 "unzip xs = (xs|>List.map fst, xs|>List.map snd)"
 
   
+definition is_Nil' :: "'a list \<Rightarrow> bool" where
+"is_Nil' x = (case x of [] \<Rightarrow> True | _ \<Rightarrow> False)"
+
 
 (* res -------------------------------------------------------------- *)
   
