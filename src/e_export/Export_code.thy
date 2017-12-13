@@ -1,7 +1,7 @@
 theory Export_code
 imports 
 "$SRC/d_find_ins_del/Find"
-"$SRC/d_find_ins_del/Delete"
+"$SRC/d_find_ins_del/Delete2"
 "$SRC/d_find_ins_del/Insert"
 "$SRC/d_find_ins_del/Insert_many"
 "$SRC/d_find_ins_del/Leaf_stream"
@@ -76,11 +76,11 @@ Insert_many.I1 Insert_many.I2 Insert_many.I_down Insert_many.I_up Insert_many.I_
 Insert_many.insert_step
 
 
-(* delete *)
+(* delete2 *)
 mk_delete_state
 dest_d_finished
 D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
-Delete.delete_step
+Delete2.delete_step
 wellformed_delete_state
 
 (* leaf_stream *)
