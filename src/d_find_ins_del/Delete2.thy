@@ -37,8 +37,33 @@ definition dest_d_finished :: "('k,'v,'r)dst \<Rightarrow> 'r option" where
 (* steal or merge --------------------------------------------------- *)
 
 
-(* node steal -------------- *)
 
+(* fixup empty parent --------------- *)
+
+(* it may be the case that we merge two children, and the parent root has just one key, 
+which is then removed as well, leaving a potentially malformed tree; 
+this code fixes that problem *)
+
+(* fo is the alternative focus in case root is empty *)
+definition maybe_fixup_empty_parent_after_merge :: 
+  "constants \<Rightarrow> ('k,'v,'r,'t)store_ops \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'v,'r)fo \<Rightarrow> (('k,'v,'r)fo,'t)MM"
+where
+"maybe_fixup_empty_parent_after_merge cs store_ops krs fo = (
+  let (ks,rs) = krs in
+  let n = List.length ks in
+  let (c::nat) = if n = 0 then 0 else if n < cs|>min_node_keys then 1 else 2 in
+  case c of 
+  0 \<Rightarrow> (
+    (* let _ = check_true (% _. stk_empty) in *)
+    return fo)
+  | Suc 0 \<Rightarrow> (return (D_small_node(ks,rs)))
+  | _ \<Rightarrow> (
+    (ks,rs)|>mk_Disk_node|>(store_ops|>store_alloc)|>bind (% r.
+    return (D_updated_subtree(r)))))"
+
+
+
+(* node steal -------------- *)
 
 (* args are left split node context, focus, right sib; returns updated parent *)
 definition node_steal_right :: 
@@ -69,6 +94,8 @@ where
   |> unsplit_node |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
   return p))))"
 
+
+
 (* node merge ----------------- *)
 
 definition node_merge_right :: 
@@ -81,12 +108,7 @@ where
   (ks1@[k2]@ks2,rs1@rs2) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r4. 
   p \<lparr> r_t:=r4, r_ks2:=ks2, r_ts2:=p_rs2 \<rparr>
   |> unsplit_node |> (% (ks,rs).
-  case List.length ks < cs|>min_node_keys of
-  False \<Rightarrow> (
-    (ks,rs) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
-    return (D_updated_subtree(p))))
-  | True \<Rightarrow> (
-    return (D_small_node(ks,rs))))))"
+  maybe_fixup_empty_parent_after_merge cs store_ops (ks,rs) (D_updated_subtree r4))))"
 
 definition node_merge_left :: 
 "constants \<Rightarrow> ('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> (('k,'v,'r)fo,'t) MM"
@@ -98,12 +120,7 @@ where
   (ks1@[k2]@ks2,rs1@rs2) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r4. 
   p \<lparr> r_t:=r4, r_ks1:=ks1, r_ts1:=p_rs1 \<rparr>
   |> unsplit_node |> (% (ks,rs).
-  case List.length ks < cs|>min_node_keys of
-  False \<Rightarrow> (
-    (ks,rs) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
-    return (D_updated_subtree(p))))
-  | True \<Rightarrow> (
-    return (D_small_node(ks,rs))))))"
+  maybe_fixup_empty_parent_after_merge cs store_ops (ks,rs) (D_updated_subtree r4))))"
 
 
 (* leaf steal --------------------- *)
@@ -152,12 +169,7 @@ where
   (c1@c2) |> Disk_leaf |> (store_ops|>store_alloc) |> bind (% r1.
   p \<lparr> r_t:=r1, r_ks2:=ks2, r_ts2:=p_rs2 \<rparr>
   |> unsplit_node |> (% (ks,rs).
-  case List.length ks < cs|>min_node_keys of
-  False \<Rightarrow> (
-    (ks,rs) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
-    return (D_updated_subtree(p))))
-  | True \<Rightarrow> (
-    return (D_small_node(ks,rs))))))"
+  maybe_fixup_empty_parent_after_merge cs store_ops (ks,rs) (D_updated_subtree r1))))"
 
 definition leaf_merge_left :: 
   "constants \<Rightarrow> ('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> (('k,'v,'r)fo,'t) MM"  
@@ -167,65 +179,9 @@ where
   (c1@c2) |> Disk_leaf |> (store_ops|>store_alloc) |> bind (% r1.
   p \<lparr> r_t:=r1, r_ks1:=ks1, r_ts1:=p_rs1 \<rparr>
   |> unsplit_node |> (% (ks,rs).
-  case List.length ks < cs|>min_node_keys of
-  False \<Rightarrow> (
-    (ks,rs) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
-    return (D_updated_subtree(p))))
-  | True \<Rightarrow> (
-    return (D_small_node(ks,rs))))))"
+  maybe_fixup_empty_parent_after_merge cs store_ops (ks,rs) (D_updated_subtree r1))))"
 
 
-
-(* post_steal_or_merge ---------------------- *)
-
-(* when called on a node (D_...) which is a root resulting from a delete op,
-we may have the situation that the root contains no keys, or is small *)
-
-(*
-definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) rsplit_node \<Rightarrow> 
-  ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'r) d12_t => (('k,'v,'r) u,'t) MM" 
-where
-"post_steal_or_merge ps1 stk' p_unused p_1 p_2 x = (
-      let store_ops = ps1 |> dot_store_ops in
-      let m = frac_mult in
-      case x of 
-      D1 c' \<Rightarrow> (
-        let p' = mk_Disk_node(m (m p_1 ([],[c'])) p_2) in
-        let p_sz = p'|>dest_Disk_node|>fst|>List.length in
-        let f' = ( (* we may be at root, having deleted the single key *)
-          case (p_sz = 0) of
-          True \<Rightarrow> (
-            (* the parent was the root; it had one key *)
-            let _ = check_true (%_. stk'=[]) in
-            return (D_updated_subtree(c')))
-          | False \<Rightarrow> (
-            case (p_sz < ps1|>dot_constants|>min_node_keys) of 
-            True \<Rightarrow> (
-              (* new parent is small *)
-              return (D_small_node(p'|>dest_Disk_node)))
-            | False \<Rightarrow> (
-              (* new parent is not small *)
-              (* write the frame at this point *)
-              p'|>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r)))))
-        in
-        f' |> fmap (% f'. (f',stk')) )
-      | D2(c1,k,c2) \<Rightarrow> (
-        let p' = mk_Disk_node(m (m p_1 ([k],[c1,c2])) p_2) in
-        let p_sz = p'|>dest_Disk_node|>fst|>List.length in
-        let f' = (
-          (* we may be at the root, in which case f' may be small *)
-          case (p_sz < ps1|>dot_constants|>min_node_keys) of
-          True \<Rightarrow> (
-            (* we are at the root, and the new root is small *)
-            let _ = check_true (%_.stk'=[]) in
-            return (D_small_node(p'|>dest_Disk_node))
-          )
-          | False \<Rightarrow> (
-            p' |>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r))))
-        in
-        f' |> fmap (% f'. (f',stk')))       
-)"
-*)
 
 
 
@@ -235,6 +191,7 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
 "step_up ps1 du = (
   let (f,stk) = du in
   let store_ops = ps1|>dot_store_ops in
+  let cs = ps1|>dot_cs in
   case stk of
   [] \<Rightarrow> (impossible1 (STR ''delete, step_up''))
   | p#stk' \<Rightarrow> (
@@ -252,15 +209,21 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
         [] \<Rightarrow> impossible1 (STR ''step_up: no right sibling, no left sibling'')
         | ks1 \<Rightarrow> (        
           (* decide whether to steal or merge *)
-          let l = List.hd (p|>r_ts1) in
-          (store_ops|>store_read) l 
+          let r = List.hd (p|>r_ts1) in
+          r 
+          |> (store_ops|>store_read)
           |> fmap (% frm. dest_Disk_leaf frm) 
-          |> bind (% l_kvs. 
-            case List.length l_kvs = ps1|>dot_cs|>min_leaf_keys of
+          |> bind (% left_kvs. 
+            case List.length left_kvs = cs|>min_leaf_keys of
             True \<Rightarrow> (
               (* left sibling has minimal length; merge *)
-              leaf_merge_left (p,l_kvs,kvs) |> 
-              (% (p,r). 
+              leaf_merge_left p left_kvs kvs |> 
+              (% fo. 
+                case fo of
+                D_updated_subtree p \<Rightarrow> D_updated_subtree p
+                | D_small_node(ks,rs) \<Rightarrow> (
+                  case List.length ks = 0 of 
+                )
                 (* FIXME we should go through something like d12 because we don't know the child
                 reference to place in the parent *)
                 r |> (store_ops|>store_alloc) |> bind 
@@ -423,3 +386,61 @@ where
 end
 
 
+
+
+
+
+
+
+
+
+(* post_steal_or_merge ---------------------- *)
+
+(* when called on a node (D_...) which is a root resulting from a delete op,
+we may have the situation that the root contains no keys, or is small *)
+
+(*
+definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) rsplit_node \<Rightarrow> 
+  ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'r) d12_t => (('k,'v,'r) u,'t) MM" 
+where
+"post_steal_or_merge ps1 stk' p_unused p_1 p_2 x = (
+      let store_ops = ps1 |> dot_store_ops in
+      let m = frac_mult in
+      case x of 
+      D1 c' \<Rightarrow> (
+        let p' = mk_Disk_node(m (m p_1 ([],[c'])) p_2) in
+        let p_sz = p'|>dest_Disk_node|>fst|>List.length in
+        let f' = ( (* we may be at root, having deleted the single key *)
+          case (p_sz = 0) of
+          True \<Rightarrow> (
+            (* the parent was the root; it had one key *)
+            let _ = check_true (%_. stk'=[]) in
+            return (D_updated_subtree(c')))
+          | False \<Rightarrow> (
+            case (p_sz < ps1|>dot_constants|>min_node_keys) of 
+            True \<Rightarrow> (
+              (* new parent is small *)
+              return (D_small_node(p'|>dest_Disk_node)))
+            | False \<Rightarrow> (
+              (* new parent is not small *)
+              (* write the frame at this point *)
+              p'|>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r)))))
+        in
+        f' |> fmap (% f'. (f',stk')) )
+      | D2(c1,k,c2) \<Rightarrow> (
+        let p' = mk_Disk_node(m (m p_1 ([k],[c1,c2])) p_2) in
+        let p_sz = p'|>dest_Disk_node|>fst|>List.length in
+        let f' = (
+          (* we may be at the root, in which case f' may be small *)
+          case (p_sz < ps1|>dot_constants|>min_node_keys) of
+          True \<Rightarrow> (
+            (* we are at the root, and the new root is small *)
+            let _ = check_true (%_.stk'=[]) in
+            return (D_small_node(p'|>dest_Disk_node))
+          )
+          | False \<Rightarrow> (
+            p' |>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r))))
+        in
+        f' |> fmap (% f'. (f',stk')))       
+)"
+*)
