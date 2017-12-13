@@ -18,7 +18,7 @@ type_synonym ('k,'v,'r) fo = "('k,'v,'r) del_t"  (* focus *)
 (* D_down: r is the original pointer to root, in case we don't delete anything *)
 datatype (dead 'k, dead 'v,dead 'r) delete_state = 
   D_down "('k,'v,'r) fs * 'r"  
-  | D_up "('k,'v,'r) fo * ('k,'r) rstk"
+  | D_up "('k,'v,'r) fo * ('k,'r) rstk * 'r"  (* last 'r is the root, for wellformedness check *)
   | D_finished "'r" 
   
 type_synonym ('k,'v,'r)u = "('k,'v,'r)fo * ('k,'r)rstk"  
@@ -110,6 +110,7 @@ where
   |> unsplit_node |> (% (ks,rs).
   maybe_fixup_empty_parent_after_merge cs store_ops (ks,rs) (D_updated_subtree r4))))"
 
+
 definition node_merge_left :: 
 "constants \<Rightarrow> ('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> (('k,'v,'r)fo,'t) MM"
 where
@@ -143,6 +144,7 @@ where
   p \<lparr> r_t:=r1, r_ks2:=(fst k4)#ks2, r_ts2:=r2#p_rs2 \<rparr>
   |> unsplit_node |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
   return p))))"
+
 
 definition leaf_steal_left :: 
   "('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('r,'t) MM"  
@@ -238,41 +240,37 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
       True \<Rightarrow> node_merge_right cs store_ops p (ks,rs) (r_ks,r_rs)
       | False \<Rightarrow> node_steal_right store_ops p (ks,rs) (r_ks,r_rs) |> fmap D_updated_subtree))))))"
 
+
 definition delete_step :: 
   "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> (('k,'v,'r)delete_state,'t) MM" 
 where
 "delete_step ps1 s = (
   let store_ops = ps1|>dot_store_ops in
+  let alloc = store_ops|>store_alloc in
   case s of 
   D_down(f,r0) \<Rightarrow> (
     case (dest_f_finished f) of
     None \<Rightarrow> (find_step ps1 f |> fmap (% f'. D_down(f',r0)))
     | Some x \<Rightarrow> (
       let (r0,k,r,kvs,stk) = x in
-      (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind 
-      (% _.
-      case (? x : set (kvs|>List.map fst). key_eq (ps1|>dot_cmp) x k) of
+      (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind (% _.
+      let something_to_delete = (? x : set (kvs|>List.map fst). key_eq (ps1|>dot_cmp) x k) in
+      case something_to_delete of
       True \<Rightarrow> (
-        (* something to delete *)
         let kvs' = kvs|>List.filter (% x. ~ (key_eq (ps1|>dot_cmp) (fst x) k)) in
         case (List.length kvs' < ps1|>dot_constants|>min_leaf_size) of
         True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
-        | False \<Rightarrow> (
-          Disk_leaf(kvs') |> (store_ops|>store_alloc) |> fmap
-          (% r. D_up(D_updated_subtree(r),stk,r0))))
-      | False \<Rightarrow> (
-        (* nothing to delete *)
-        return (D_finished r0) ))))  (* D_down *)
+        | False \<Rightarrow> (Disk_leaf(kvs') |> alloc |> fmap (% r. D_up(D_updated_subtree(r),stk,r0))))
+      | False \<Rightarrow> (return (D_finished r0) ))))
   | D_up(f,stk,r0) \<Rightarrow> (
-    case stk of
-    [] \<Rightarrow> (
+    case is_Nil' stk of
+    True \<Rightarrow> (
       case f of
-      D_small_leaf kvs \<Rightarrow> (Disk_leaf(kvs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r)) 
-      | D_small_node (ks,rs) \<Rightarrow> (
-        mk_Disk_node(ks,rs)|>(store_ops|>store_alloc)|>fmap (% r. D_finished r) )
+      D_small_leaf kvs \<Rightarrow> (Disk_leaf(kvs)|>alloc|>fmap D_finished)
+      | D_small_node (ks,rs) \<Rightarrow> (mk_Disk_node(ks,rs)|>alloc|>fmap D_finished)
       | D_updated_subtree(r) \<Rightarrow> (return (D_finished r)))
-    | _ \<Rightarrow> (step_up ps1 (f,stk) |> fmap (% (f,stk). (D_up(f,stk,r0)))) )
-  | D_finished(r) \<Rightarrow> (return s)  (* stutter *) )"
+    | False \<Rightarrow> (step_up ps1 (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
+  | D_finished(r) \<Rightarrow> (return s)  (* stutter *))"
 
 
 (* wellformedness --------------------------------------------------- *)
@@ -314,9 +312,8 @@ where
     let t = r|>r2t s|>dest_Some in  (* FIXME check dest *)
     assert_true (check_stack stk t_stk) &
     assert_true (check_wf ms t) &
-    assert_true (check_focus t_fo (t|>tree_to_kvs))   
-  )
-)"
+    assert_true (check_focus t_fo (t|>tree_to_kvs))   ))"
+
 
 definition wf_f :: 
   "constants \<Rightarrow> 'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> 'r \<Rightarrow> bool" 
@@ -324,8 +321,7 @@ where
 "wf_f constants k_ord r2t t0 s k r =  assert_true (
   let t' = r2t s r |> dest_Some in  (* check dest_Some *)
   assert_true (wellformed_tree constants (Some(Small_root_node_or_leaf)) k_ord t') &
-  assert_true (kvs_equal ( (t0|>tree_to_kvs|>kvs_delete k_ord k)) (t'|>tree_to_kvs))
-)"
+  assert_true (kvs_equal ( (t0|>tree_to_kvs|>kvs_delete k_ord k)) (t'|>tree_to_kvs)))"
 
 definition wellformed_delete_state :: 
   "constants \<Rightarrow> 'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v)tree \<Rightarrow> 't \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> bool" 
@@ -336,68 +332,8 @@ where
   | D_up (fo,stk,r) \<Rightarrow> (
     wf_u constants k_ord r2t t0 s k (fo,stk) & 
     (case r2t s r of None \<Rightarrow> False | Some t \<Rightarrow> tree_equal t t0))
-  | D_finished r \<Rightarrow> (wf_f constants k_ord r2t t0 s k r) 
-)
-"
+  | D_finished r \<Rightarrow> (wf_f constants k_ord r2t t0 s k r) )"
 
 end
 
 
-
-
-
-
-
-
-
-
-(* post_steal_or_merge ---------------------- *)
-
-(* when called on a node (D_...) which is a root resulting from a delete op,
-we may have the situation that the root contains no keys, or is small *)
-
-(*
-definition post_steal_or_merge :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'r)rstk \<Rightarrow> ('k,'r) rsplit_node \<Rightarrow> 
-  ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k,'r) d12_t => (('k,'v,'r) u,'t) MM" 
-where
-"post_steal_or_merge ps1 stk' p_unused p_1 p_2 x = (
-      let store_ops = ps1 |> dot_store_ops in
-      let m = frac_mult in
-      case x of 
-      D1 c' \<Rightarrow> (
-        let p' = mk_Disk_node(m (m p_1 ([],[c'])) p_2) in
-        let p_sz = p'|>dest_Disk_node|>fst|>List.length in
-        let f' = ( (* we may be at root, having deleted the single key *)
-          case (p_sz = 0) of
-          True \<Rightarrow> (
-            (* the parent was the root; it had one key *)
-            let _ = check_true (%_. stk'=[]) in
-            return (D_updated_subtree(c')))
-          | False \<Rightarrow> (
-            case (p_sz < ps1|>dot_constants|>min_node_keys) of 
-            True \<Rightarrow> (
-              (* new parent is small *)
-              return (D_small_node(p'|>dest_Disk_node)))
-            | False \<Rightarrow> (
-              (* new parent is not small *)
-              (* write the frame at this point *)
-              p'|>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r)))))
-        in
-        f' |> fmap (% f'. (f',stk')) )
-      | D2(c1,k,c2) \<Rightarrow> (
-        let p' = mk_Disk_node(m (m p_1 ([k],[c1,c2])) p_2) in
-        let p_sz = p'|>dest_Disk_node|>fst|>List.length in
-        let f' = (
-          (* we may be at the root, in which case f' may be small *)
-          case (p_sz < ps1|>dot_constants|>min_node_keys) of
-          True \<Rightarrow> (
-            (* we are at the root, and the new root is small *)
-            let _ = check_true (%_.stk'=[]) in
-            return (D_small_node(p'|>dest_Disk_node))
-          )
-          | False \<Rightarrow> (
-            p' |>(store_ops|>store_alloc)|>fmap (% r. D_updated_subtree(r))))
-        in
-        f' |> fmap (% f'. (f',stk')))       
-)"
-*)
