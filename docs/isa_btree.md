@@ -982,17 +982,72 @@ max-node-keys=$m'$
 
 Write these bounds as: leaf:(l,l'), node:(m,m')
 
-Examples: (leaf:(2,3), node:(2,4))  FIXME check that these are indeed valid
+## Splitting leaf $2l<=l'!$
 
-In this case, if we try to insert into a leaf with 3 keys, we split to
-get 2 leaves with 2 keys each. For a node, if we have $4$ keys and we
-insert another, we split to get two nodes, each with $2$ keys (the
-remaining key is used to separate these two nodes).
+Clearly for a leaf we require $l<= floor((l'+1)/2)$
 
-Clearly for a leaf we require $l<= \lfloor {(l'+1)/2} \rfloor$.
+l' odd: $l <= (l'+1)/2$, or $2l <= l'+1$
 
-For a node, if $m' = 2m''+1$ is odd, then we require $m <=
-m''$. Otherwise $m <= m'/2$. In short, $m <= \lfloor (m'+1)/2 \rfloor$
+l' even: $l <= l'/2$, or $2l <= l'$
+
+This is the constraint $2l <= l'!$ where $l'!$ selects the next even number if $l'$ not even
+
+
+## Merging leaf (satisfied automatically if the constraint for splitting leaf is satisfied)
+
+One leaf has $l-1$ keys, the other has $l$ keys.
+
+We require $l <= 2l-1 <= l'$
+
+$l <= 2l-1 <= l'$: clearly equivalent to $l>=1, 2l <= l'+1$; and let's
+assume $l>1,m>1$, so equivalent to $2l <= l'+1$
+
+
+## Splitting node $2m <= m'?$
+
+We have a node with $m'+1$ keys, which gets split, with one key used
+to split the children, and $m'$ keys distributed to each child, so each
+child has $floor(m'/2)$ keys.
+
+So we require $m <= floor(m'/2)$.
+
+m' odd: require $m <= m'-1/2$, or $2m <= m'-1$.
+
+m' even: $m<=m'/2$, or $2m <= m'$
+
+So $2m <= m'?$ where $?$ selects the even number immediately below
+$m'$ if $m'$ not even
+
+
+## Merging node $2m <= m'$ (automatically satisfied by above)
+
+One child has $m-1$ keys, the other has $m$ keys, and merging them
+requires an additional key inserted to give $(m-1)+m+1$ keys in
+resulting node.
+
+So require $m <= 2m <= m'$
+
+## Combined constraints: $2l <= l'!$ and $2m <= m'?$
+## Alternative constraints $l'>=2l-1$ and $m' >= 2m$
+
+Leaf constraints $2l <= l'!$ is equivalent to $l' >= 2l-1$
+
+Node constraints $2m <= m'?$ is equivalent to $m' >= 2m$
+
+## Examples
+
+Notice that nodes and leaves have separate constraints, in that there
+is no constraint between $l,l'$ and $m,m'$.
+
+Example leaf constraints:
+- l=1,l'>=1
+- l=2,l'>=3
+- l=3,l'>=5
+
+Example node constraints:
+- m=1,m'>=2
+- m=2,m'>=4
+- m=3,m'>=6
 
 
 # Delete

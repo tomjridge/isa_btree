@@ -40,8 +40,7 @@ definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Righta
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
   | Some(r0,k,r,kvs,stk) \<Rightarrow> (
-    (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind 
-    (% _.
+    (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind (% _.
     let kvs' = kvs |> kvs_insert k_ord (k,v) in
     let fo = (
       case (length kvs' \<le> (cs|>max_leaf_size)) of
@@ -63,14 +62,14 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow>
   [] \<Rightarrow> 
     (* FIXME what about trace? can't have arb here; or just stutter on I_finished in step? *)
     impossible1 (STR ''insert, step_up'') 
-  | x#stk' \<Rightarrow> (
+  | p#stk' \<Rightarrow> (
     case fo of
     I1 r \<Rightarrow> (
-      let (ks,rs) = unsplit_node (x\<lparr>r_t:=r\<rparr>) in
+      let (ks,rs) = unsplit_node (p\<lparr>r_t:=r\<rparr>) in
       mk_Disk_node(ks,rs) |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))
     | I2 (r1,k,r2) \<Rightarrow> (
-      let (ks2,rs2) = (x|>r_ks2,x|>r_ts2) in
-      let (ks',rs') = unsplit_node (x\<lparr>r_ks2:=k#ks2, r_ts2:=[r1,r2]@rs2\<rparr>) in
+      let (ks2,rs2) = (p|>r_ks2,p|>r_ts2) in
+      let (ks',rs') = unsplit_node (p\<lparr> r_t:=r1, r_ks2:=k#ks2, r_ts2:=r2#rs2\<rparr>) in
       case (List.length ks' \<le> cs|>max_node_keys) of
       True \<Rightarrow> (
         mk_Disk_node(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (I1 r,stk')))

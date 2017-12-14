@@ -19,6 +19,7 @@ results in a full left leaf *)
 (* if a leaf is too big, we split it to get two leaves (lists of kv); we also return the separator
 key k such that l < k \<le> r *)
 
+(* FIXME split_at is inefficient *)
 definition split_leaf :: "constants \<Rightarrow> ('k*'v)list \<Rightarrow> (('k*'v) list * 'k * ('k*'v) list)" where
 "split_leaf c kvs = (
   let _ = check_true (% _. List.length kvs \<ge> c|>max_leaf_size+1) in

@@ -17,6 +17,8 @@ need polymorphism *)
 
 type_synonym ('k,'a) rstack = "('k,'a) rsplit_node list"
 
+type_synonym ('k,'r) rstk = "('k,'r) rstack"
+
 
 (* map a function over the non-'k component *)
 definition rstack_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) rstack \<Rightarrow> ('k,'b) rstack" where
