@@ -1037,14 +1037,16 @@ Node constraints $2m <= m'?$ is equivalent to $m' >= 2m$
 ## Examples
 
 Notice that nodes and leaves have separate constraints, in that there
-is no constraint between $l,l'$ and $m,m'$.
+is no relationship between $l,l'$ and $m,m'$.
 
 Example leaf constraints:
+
 - l=1,l'>=1
 - l=2,l'>=3
 - l=3,l'>=5
 
 Example node constraints:
+
 - m=1,m'>=2
 - m=2,m'>=4
 - m=3,m'>=6

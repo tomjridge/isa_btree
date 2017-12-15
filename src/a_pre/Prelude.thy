@@ -15,6 +15,8 @@ record constants =
   min_node_keys :: nat
   max_node_keys :: nat
 
+(* FIXME add wf constraint following docs $l'>=2l-1$ and $m' >= 2m$ *)
+
 
 (* small node or leaf ----------------------------------------------- *)
 
