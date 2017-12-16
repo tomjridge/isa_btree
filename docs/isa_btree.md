@@ -1027,6 +1027,13 @@ resulting node.
 
 So require $m <= 2m <= m'$
 
+## Deleting a key from node after merging two children
+
+If $m=1$ we could have a node far down in the tree, with one key and
+two children. If the children get merged then the node has 0 keys, so
+is small (but is not the root). This does not cause problems, but this
+case is something other descriptions never address.
+
 ## Combined constraints: $2l <= l'!$ and $2m <= m'?$
 ## Alternative constraints $l'>=2l-1$ and $m' >= 2m$
 
