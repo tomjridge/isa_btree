@@ -1268,7 +1268,51 @@ ref...
   continue with this as the new focus (without writing it... yet!)
 
 
+# Related work
 
+## Comparison with (Sexton and Thielecke, 2008)
+
+The work of \cite{sextonFIXME} is probably the closest in the
+literature to the work we present here. They present proofs of
+correctness for find and insert, and operate on a version of B-trees
+where leaf nodes have sibling pointers. The main similarities and
+differences with our work are:
+
+* They work with a datastructure with explicit links between sibling
+  leaves. Our B-trees are simpler, with no links between leaves. Their
+  presentation is closer to traditional B-trees, whereas ours is
+  similar to recent copy-on-write presentations, where leaf links are
+  omitted~\cite{FIXME}.
+* We have mechanized our definitions and proofs. For non-mechanized
+  proofs, there are (almost inevitably) errors and typos.
+* Both works make use of operational semantics.
+* They additionally use separation logic. The use of separation logic
+  affects the presentation of lemmas and proofs, but one could argue
+  that this is not a huge difference, since separation logic
+  assertions could be translated into operational equivalents fairly
+  directly.
+* They operate on the level of stores, where (for example) page
+  identifiers are explicitly present in the proof. We have proofs at
+  the level of abstract tree datatypes (with framestacks), and the
+  refinement to working with a block device is presented as a further
+  step. This further step additionally includes aspects of separation
+  that they treat using separation logic. Thus, we have separated out
+  the algebraic aspect from the separation/store aspect, whereas they
+  treat both simultaneously.
+* Our presentation is in terms of a small-step semantics. If the
+  datastructures are not altered by concurrent processes, then the
+  proofs remain essentially the same, and so proofs directly
+  accommodate other concurrent users of the store. Their proofs
+  probably can be extended to cope with concurrency (for example, by
+  using a rely/guarantee version of separation logic), but this at
+  best not immediately clear.
+* Their proofs tend to involve inductions on the tree structure, and
+  are (to our taste) rather complicated. Our proofs are direct
+  inductions on the steps taken by the algorithm, to show that various
+  invariants hold. Correctness of the operations follows directly from
+  the invariants. Thus, the proof structure differs between these two
+  works.
+* FIXME more?
 
 
 # following in btree_doc.org
