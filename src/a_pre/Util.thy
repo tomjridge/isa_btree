@@ -3,8 +3,6 @@ imports Main
 begin
 
 
-(* FIXME move some of this to prelude *)
-
 lemma FIXME: "P" sorry
 
 definition rev_apply :: "'a => ('a => 'b) => 'b" (infixl "|>" 100) where
@@ -73,7 +71,7 @@ Main? simpler defn here*)
 definition is_Some :: "'a option => bool" where
   "is_Some x = (x ~= None)"
 
-
+(* FIXME dest_Some None should never happen - so use failwith *)
 primrec dest_Some (* :: "'a option => 'a" *) where 
   "dest_Some (Some x) = x"
   | "dest_Some None = undefined"
@@ -116,6 +114,8 @@ definition dest_Ok :: "'a res \<Rightarrow> 'a" where
 
 
 (* various list defs, split_at etc ---------------------------------- *)
+
+(* FIXME take and drop used separately is inefficient *)
 
 definition split_at :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a list" where
 "split_at n xs = (

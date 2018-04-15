@@ -104,7 +104,7 @@ definition ck_tests :: unit where
   let _ = assert_true (~(check_keys nat_ord (Some 1) (set[1,2,3]) (Some 3))) in
   ())"
 
-
+(* FIXME following looks a bit strange for l,u=None; what is the semantics of this function? *)
 (* xs < l \<le> ks < u \<le> zs; an extended version of the above *)
 definition check_keys_2 :: "'k ord \<Rightarrow> 'k set \<Rightarrow> 'k option \<Rightarrow> 'k set \<Rightarrow> 'k option \<Rightarrow> 'k set \<Rightarrow> bool" where
 "check_keys_2 cmp xs l ks u zs = (
@@ -122,6 +122,8 @@ definition ck2_tests :: unit where
 
 
 (* insert and delete in list of kv ---------------------------------- *)
+
+(* FIXME may want to use binary search; but this assumes an array-like implementation *)
 
 (* insert a new kv into a list of kvs; used to insert new binding into a leaf *)
 primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
