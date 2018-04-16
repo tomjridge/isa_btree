@@ -38,6 +38,8 @@ type_synonym ('k,'v) tree_rstack = "('k,('k,'v)tree) rstack"
 
 (* stack_to_lu_of_child (get bounds of focus) ----------------------- *)
 
+(* FIXME align this with other splitting/bounds code *)
+
 (* get the bound surrounding the focus, via rsplit_get_bounds *)
 primrec rstack_get_bounds :: "('k,'a) rstack \<Rightarrow> 'k option * 'k option" where
 "rstack_get_bounds [] = (None,None)"

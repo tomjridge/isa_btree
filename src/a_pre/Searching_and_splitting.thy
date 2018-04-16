@@ -84,7 +84,7 @@ definition mk_rsplit_node :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k list * '
   \<rparr>)"
 
 
-(* convert a rsplit_node to a disk node FIXME move to searching and splitting? *)
+(* convert a rsplit_node to a disk node *)
 definition unsplit_node :: "('k,'a) rsplit_node \<Rightarrow> ('k list * 'a list)" where
 "unsplit_node r = (
   let ks = (List.rev (r|>r_ks1))@(r|>r_ks2) in
