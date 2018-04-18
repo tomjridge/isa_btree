@@ -11,6 +11,11 @@ definition dummy :: "unit" where "dummy = Pre_params.dummy"
 (* NOTE naming convention: 't is for the state type (not the "tree" 
 type or something like that *)
 
+(* NOTE in this monad, ALL errors (even unexpected errors eg disk block read fail) are explicit; 
+in OCaml we may prefer to keep unexpected errors implicit. By making the errors explicit we
+force the proofs to discuss all possible cases... but perhaps if we always just halt on an 
+"unexpected" error, and expected errors are returned in 'a, then this is unnecessary?
+*)
 type_synonym ('a,'t) MM = "'t \<Rightarrow> ('t * 'a res)"
 
 
@@ -22,6 +27,7 @@ round many parameters individually, we package them up as follows. *)
 
 (* FIXME? ops and params are different kinds of things *)
 
+(* FIXME why is store_ops here? *)
 record ('k,'v,'r,'t) store_ops =
   store_read :: "('r \<Rightarrow> (('k,'v,'r) dnode,'t) MM)"
   store_alloc :: "(('k,'v,'r) dnode \<Rightarrow> ('r,'t) MM)"

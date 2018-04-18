@@ -2,7 +2,7 @@ theory Pre_params
 imports  "$SRC/a_tree/Tree_stack"
 begin
 
-(* this to force dependency order? *)
+(* this to force dependency order in exported code? *)
 definition dummy :: "unit" where "dummy=()"
 
 

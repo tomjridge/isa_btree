@@ -4,6 +4,8 @@ begin
 
 (* monad ------------------------------------------------------------ *)
 
+(* definition of MM is in params *)
+
 definition fmap :: "('a \<Rightarrow> 'b) \<Rightarrow> ('a,'t) MM \<Rightarrow> ('b,'t) MM" where
 "fmap f m = ( % s.
   m s |> (% (s',r). (s',case r of Ok y \<Rightarrow> Ok (f y) | Error x \<Rightarrow> Error x)))"
