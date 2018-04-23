@@ -13,6 +13,7 @@ begin
 
 export_code "Code_Numeral.nat_of_integer" "Code_Numeral.int_of_integer" 
 
+Util.is_Ok
 Util.from_to
 Util.String_error
 Util.split_at_tests  (* FIXME remove tests in production *)
