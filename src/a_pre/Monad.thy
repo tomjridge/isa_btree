@@ -1,8 +1,12 @@
 theory Monad
-imports "$SRC/b_params/Pre_params" 
+imports Main
 begin
 
-(* ('a,'t) MM type_synonym ------------------------------------------ *)
+(* NOTE this depends on Util for the concrete defn *)
+
+(* monad ------------------------------------------------------------ *)
+
+(* FIXME this could come after Util *)
 
 (* NOTE naming convention: 't is for the state type (not the "tree" 
 type or something like that *)
@@ -12,14 +16,12 @@ in OCaml we may prefer to keep unexpected errors implicit. By making the errors 
 force the proofs to discuss all possible cases... but perhaps if we always just halt on an 
 "unexpected" error, and expected errors are returned in 'a, then this is unnecessary?
 *)
+
+
+
+(*
+
 type_synonym ('a,'t) MM = "'t \<Rightarrow> ('t * 'a res)"
-
-
-
-(* monad ------------------------------------------------------------ *)
-
-(* definition of MM is in params *)
-
 definition fmap :: "('a \<Rightarrow> 'b) \<Rightarrow> ('a,'t) MM \<Rightarrow> ('b,'t) MM" where
 "fmap f m = ( % s.
   m s |> (% (s',r). (s',case r of Ok y \<Rightarrow> Ok (f y) | Error x \<Rightarrow> Error x)))"
@@ -33,5 +35,21 @@ definition bind :: "('a \<Rightarrow> ('b,'t) MM) \<Rightarrow> ('a,'t) MM \<Rig
   
 definition return :: "'a \<Rightarrow> ('a,'t) MM" where
 "return x = (% s. (s,Ok(x)))"
+*)
+
+
+(* abstract version; NOTE obviously can't be exported *)
+(* NOTE undefined is accepted by the code generator and allows these abstract defns to be exported *)
+typedecl ('a,'b) MM
+
+definition fmap :: "('a \<Rightarrow> 'b) \<Rightarrow> ('a,'t) MM \<Rightarrow> ('b,'t) MM" where
+"fmap x y = undefined"
+
+definition bind :: "('a \<Rightarrow> ('b,'t) MM) \<Rightarrow> ('a,'t) MM \<Rightarrow> ('b,'t) MM" where
+"bind b a = undefined"
+  
+definition return :: "'a \<Rightarrow> ('a,'t) MM" where
+"return x = undefined"
+
 
 end
