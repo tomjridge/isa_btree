@@ -48,7 +48,6 @@ Pre_params.dummy
 Pre_params.mk_r2t
 
 (* params *)
-Params.dummy
 Params.Ps1
 Params.store_ops_ext
 

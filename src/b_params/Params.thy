@@ -1,24 +1,6 @@
 theory Params
-imports Pre_params
+imports Monad
 begin
-
-(* for export order *)
-definition dummy :: "unit" where "dummy = Pre_params.dummy"
-
-
-(* ('a,'t) MM type_synonym ------------------------------------------ *)
-
-(* NOTE naming convention: 't is for the state type (not the "tree" 
-type or something like that *)
-
-(* NOTE in this monad, ALL errors (even unexpected errors eg disk block read fail) are explicit; 
-in OCaml we may prefer to keep unexpected errors implicit. By making the errors explicit we
-force the proofs to discuss all possible cases... but perhaps if we always just halt on an 
-"unexpected" error, and expected errors are returned in 'a, then this is unnecessary?
-*)
-type_synonym ('a,'t) MM = "'t \<Rightarrow> ('t * 'a res)"
-
-
 
 (* params ----------------------------------------------------------- *)
 
