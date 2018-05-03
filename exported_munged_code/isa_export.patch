@@ -1,0 +1,35 @@
+--- isa_export.ml.orig	2018-05-03 15:40:53.829530057 +0100
++++ isa_export.ml.patched	2018-05-03 15:42:33.318877405 +0100
+@@ -1063,14 +1063,15 @@ let rec dot_constants
+ 
+ end;; (*struct Params*)
+ 
+-module Monad : sig
++module Make(Monad : sig
+   type ('a, 'b) mm
+   val bind : ('a -> ('b, 'c) mm) -> ('a, 'c) mm -> ('b, 'c) mm
+   val fmap : ('a -> 'b) -> ('a, 'c) mm -> ('b, 'c) mm
+   val dummy : unit
+   val return : 'a -> ('a, 'b) mm
+-end = struct
++end) = struct
+ 
++(*
+ type ('a, 'b) mm = EMPTY__;;
+ 
+ let rec bind b a = failwith "undefined";;
+@@ -1082,6 +1083,7 @@ let dummy : unit = Params.dummy;;
+ let rec return x = failwith "undefined";;
+ 
+ end;; (*struct Monad*)
++*)
+ 
+ module Store_ops : sig
+   type ('a, 'b, 'c, 'd, 'e) store_ops_ext
+@@ -2330,3 +2332,6 @@ let rec lss_is_finished
+           | LS_up [] -> true | LS_up (_ :: _) -> false);;
+ 
+ end;; (*struct Leaf_stream*)
++
++
++end

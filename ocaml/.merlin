@@ -1,1 +1,2 @@
 PKG lwt
+FLG -w -8
