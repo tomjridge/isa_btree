@@ -1,0 +1,51 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Isa_export.Prelude.html">
+<link rel="next" href="Isa_export.Tree_stack.html">
+<link rel="Up" href="Isa_export.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Isa_btree_defns" rel="Chapter" href="Isa_btree_defns.html"><title>Isa_export.Tree</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Isa_export.Prelude.html" title="Isa_export.Prelude">Previous</a>
+&nbsp;<a class="up" href="Isa_export.html" title="Isa_export">Up</a>
+&nbsp;<a class="post" href="Isa_export.Tree_stack.html" title="Isa_export.Tree_stack">Next</a>
+</div>
+<h1>Module <a href="type_Isa_export.Tree.html">Isa_export.Tree</a></h1>
+
+<pre><span class="keyword">module</span> Tree: <code class="code">sig</code> <a href="Isa_export.Tree.html">..</a> <code class="code">end</code></pre><hr width="100%">
+
+<pre><code><span id="TYPEtree"><span class="keyword">type</span> <code class="type">('a, 'b)</code> tree</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTtree.Node"><span class="constructor">Node</span></span> <span class="keyword">of</span> <code class="type">('a list * ('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> list)</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTtree.Leaf"><span class="constructor">Leaf</span></span> <span class="keyword">of</span> <code class="type">('a * 'b) list</code></code></td>
+
+</tr></table>
+
+
+
+<pre><span id="VALheight"><span class="keyword">val</span> height</span> : <code class="type">('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> -> <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a></code></pre>
+<pre><span id="VALdest_Node"><span class="keyword">val</span> dest_Node</span> : <code class="type">('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> -> 'a list * ('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> list</code></pre>
+<pre><span id="VALtree_equal"><span class="keyword">val</span> tree_equal</span> : <code class="type">'a -> 'b -> 'c</code></pre>
+<pre><span id="VALtree_to_leaves"><span class="keyword">val</span> tree_to_leaves</span> : <code class="type">('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> -> ('a * 'b) list list</code></pre>
+<pre><span id="VALtree_to_kvs"><span class="keyword">val</span> tree_to_kvs</span> : <code class="type">('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> -> ('a * 'b) list</code></pre>
+<pre><span id="VALtree_to_keys"><span class="keyword">val</span> tree_to_keys</span> : <code class="type">('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> -> 'a <a href="Isa_export.Set.html#TYPEset">Isa_export.Set.set</a></code></pre>
+<pre><span id="VALwellformed_tree"><span class="keyword">val</span> wellformed_tree</span> : <code class="type">'a <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       <a href="Isa_export.Prelude.html#TYPEmin_size_t">Isa_export.Prelude.min_size_t</a> option -><br>       ('b -> 'b -> <a href="Isa_export.Arith.html#TYPEint">Isa_export.Arith.int</a>) -> ('b, 'c) <a href="Isa_export.Tree.html#TYPEtree">tree</a> -> bool</code></pre></body></html>

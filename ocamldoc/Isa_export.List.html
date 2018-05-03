@@ -1,0 +1,43 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Isa_export.Arith.html">
+<link rel="next" href="Isa_export.Set.html">
+<link rel="Up" href="Isa_export.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Isa_btree_defns" rel="Chapter" href="Isa_btree_defns.html"><title>Isa_export.List</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Isa_export.Arith.html" title="Isa_export.Arith">Previous</a>
+&nbsp;<a class="up" href="Isa_export.html" title="Isa_export">Up</a>
+&nbsp;<a class="post" href="Isa_export.Set.html" title="Isa_export.Set">Next</a>
+</div>
+<h1>Module <a href="type_Isa_export.List.html">Isa_export.List</a></h1>
+
+<pre><span class="keyword">module</span> List: <code class="code">sig</code> <a href="Isa_export.List.html">..</a> <code class="code">end</code></pre><hr width="100%">
+
+<pre><span id="VALequal_lista"><span class="keyword">val</span> equal_lista</span> : <code class="type">'a <a href="Isa_export.HOL.html#TYPEequal">Isa_export.HOL.equal</a> -> 'a list -> 'a list -> bool</code></pre>
+<pre><span id="VALequal_list"><span class="keyword">val</span> equal_list</span> : <code class="type">'a <a href="Isa_export.HOL.html#TYPEequal">Isa_export.HOL.equal</a> -> 'a list <a href="Isa_export.HOL.html#TYPEequal">Isa_export.HOL.equal</a></code></pre>
+<pre><span id="VALnth"><span class="keyword">val</span> nth</span> : <code class="type">'a list -> <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a> -> 'a</code></pre>
+<pre><span id="VALrev"><span class="keyword">val</span> rev</span> : <code class="type">'a list -> 'a list</code></pre>
+<pre><span id="VALupt"><span class="keyword">val</span> upt</span> : <code class="type"><a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a> -> <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a> -> <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a> list</code></pre>
+<pre><span id="VALdrop"><span class="keyword">val</span> drop</span> : <code class="type"><a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a> -> 'a list -> 'a list</code></pre>
+<pre><span id="VALnull"><span class="keyword">val</span> null</span> : <code class="type">'a list -> bool</code></pre>
+<pre><span id="VALtake"><span class="keyword">val</span> take</span> : <code class="type"><a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a> -> 'a list -> 'a list</code></pre>
+<pre><span id="VALfoldr"><span class="keyword">val</span> foldr</span> : <code class="type">('a -> 'b -> 'b) -> 'a list -> 'b -> 'b</code></pre>
+<pre><span id="VALconcat"><span class="keyword">val</span> concat</span> : <code class="type">'a list list -> 'a list</code></pre>
+<pre><span id="VALfilter"><span class="keyword">val</span> filter</span> : <code class="type">('a -> bool) -> 'a list -> 'a list</code></pre>
+<pre><span id="VALhd"><span class="keyword">val</span> hd</span> : <code class="type">'a list -> 'a</code></pre>
+<pre><span id="VALtl"><span class="keyword">val</span> tl</span> : <code class="type">'a list -> 'a list</code></pre>
+<pre><span id="VALlist_ex"><span class="keyword">val</span> list_ex</span> : <code class="type">('a -> bool) -> 'a list -> bool</code></pre>
+<pre><span id="VALmap"><span class="keyword">val</span> map</span> : <code class="type">('a -> 'b) -> 'a list -> 'b list</code></pre>
+<pre><span id="VALpred_list"><span class="keyword">val</span> pred_list</span> : <code class="type">('a -> bool) -> 'a list -> bool</code></pre>
+<pre><span id="VALsize_list"><span class="keyword">val</span> size_list</span> : <code class="type">'a list -> <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a></code></pre></body></html>

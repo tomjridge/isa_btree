@@ -42,6 +42,7 @@ Tree.dest_Node
 (* Tree_stack.stack_to_lu_of_child *)
 tree_to_leaves 
 wellformed_tree
+rstack
 
 
 (* pre_params *)

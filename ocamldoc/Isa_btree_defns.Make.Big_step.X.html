@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="Up" href="Isa_btree_defns.Make.Big_step.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Isa_btree_defns" rel="Chapter" href="Isa_btree_defns.html"><title>Isa_btree_defns.Make.Big_step.X</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Isa_btree_defns.Make.Big_step.html" title="Isa_btree_defns.Make.Big_step">Up</a>
+&nbsp;</div>
+<h1>Module <a href="type_Isa_btree_defns.Make.Big_step.X.html">Isa_btree_defns.Make.Big_step.X</a></h1>
+
+<pre><span class="keyword">module</span> X: <code class="type"><a href="Isa_btree_defns.Make.Small_step.html">Isa_btree_defns.Make.Small_step</a></code></pre><hr width="100%">
+
+<pre><span id="VALmk_find_state"><span class="keyword">val</span> mk_find_state</span> : <code class="type">'k -> 'r -> ('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEfind_state">Isa_btree_defns.Make.find_state</a></code></pre><div class="info ">
+Construct an initial "find state" given a key and a reference to
+        a B-tree root.<br>
+</div>
+
+<pre><span id="VALfind_step"><span class="keyword">val</span> find_step</span> : <code class="type">constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       cmp:('a -> 'a -> int) -><br>       store_ops:('a, 'b, 'c, 't, unit) Store_ops.store_ops_ext -><br>       ('a, 'b, 'c) Find.find_state -> (('a, 'b, 'c) Find.find_state, 't) Monad.mm</code></pre><div class="info ">
+Small step the find state: take a find state and return an updated
+        find state (in the monad).<br>
+</div>
+
+<pre><span id="VALdest_f_finished"><span class="keyword">val</span> dest_f_finished</span> : <code class="type">('k, 'a, 'r) Find.find_state -><br>       ('r * 'k * 'r * ('k * 'a) list * ('k, 'r) <a href="Isa_btree_defns.Make.html#TYPErstk">Isa_btree_defns.Make.rstk</a>) option</code></pre><div class="info ">
+Check whether we have reached a leaf. Returns the reference to the
+        B-tree root (when <code class="code">mk_find_state</code> was called), the key we are
+        looking for (ditto), a reference to a leaf (that may contain the
+        key... if any leaf contains the key, this leaf does) and a the list
+        of (key,values) in that leaf.<br>
+</div>
+
+<pre><span id="VALwellformed_find_state"><span class="keyword">val</span> wellformed_find_state</span> : <code class="type">r2t:('t -> 'r -> ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       cmp:('k -> 'k -> int) -><br>       ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -><br>       't -> ('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEfind_state">Isa_btree_defns.Make.find_state</a> -> bool</code></pre><div class="info ">
+Wellformedness check. Assumes access to the "spec tree", the
+        global state and the find state.<br>
+</div>
+
+<pre><span id="VALmk_delete_state"><span class="keyword">val</span> mk_delete_state</span> : <code class="type">'k -> 'r -> ('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEdelete_state">Isa_btree_defns.Make.delete_state</a></code></pre><div class="info ">
+Similar functionality to <code class="code">mk_find_state</code><br>
+</div>
+
+<pre><span id="VALdelete_step"><span class="keyword">val</span> delete_step</span> : <code class="type">constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       cmp:('a -> 'a -> int) -><br>       store_ops:('a, 'b, 'c, 't, unit) Store_ops.store_ops_ext -><br>       ('a, 'b, 'c) Delete2.delete_state -><br>       (('a, 'b, 'c) Delete2.delete_state, 't) Monad.mm</code></pre>
+<pre><span id="VALdest_d_finished"><span class="keyword">val</span> dest_d_finished</span> : <code class="type">('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEdelete_state">Isa_btree_defns.Make.delete_state</a> -> 'r option</code></pre><div class="info ">
+The result is a reference to the updated B-tree<br>
+</div>
+
+<pre><span id="VALwellformed_delete_state"><span class="keyword">val</span> wellformed_delete_state</span> : <code class="type">cmp:('k -> 'k -> int) -><br>       constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       r2t:('t -> 'r -> ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -><br>       't -> 'k -> ('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEdelete_state">Isa_btree_defns.Make.delete_state</a> -> bool</code></pre>
+<pre><span id="VALmk_insert_state"><span class="keyword">val</span> mk_insert_state</span> : <code class="type">'k -> 'v -> 'r -> ('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEinsert_state">Isa_btree_defns.Make.insert_state</a></code></pre>
+<pre><span id="VALinsert_step"><span class="keyword">val</span> insert_step</span> : <code class="type">cmp:('a -> 'a -> int) -><br>       constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       store_ops:('a, 'b, 'c, 't, unit) Store_ops.store_ops_ext -><br>       ('a, 'b, 'c) Insert.insert_state -><br>       (('a, 'b, 'c) Insert.insert_state, 't) Monad.mm</code></pre>
+<pre><span id="VALdest_i_finished"><span class="keyword">val</span> dest_i_finished</span> : <code class="type">('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEinsert_state">Isa_btree_defns.Make.insert_state</a> -> 'r option</code></pre><div class="info ">
+Result is a reference to the updated B-tree<br>
+</div>
+
+<pre><span id="VALwellformed_insert_state"><span class="keyword">val</span> wellformed_insert_state</span> : <code class="type">cmp:('k -> 'k -> int) -><br>       constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       r2t:('t -> 'r -> ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -><br>       't -> 'k -> 'v -> ('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEinsert_state">Isa_btree_defns.Make.insert_state</a> -> bool</code></pre>
+<pre><span id="VALmk_im_state"><span class="keyword">val</span> mk_im_state</span> : <code class="type">'k -><br>       'v -> ('k * 'v) list -> 'r -> ('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEim_state">Isa_btree_defns.Make.im_state</a></code></pre>
+<pre><span id="VALim_step"><span class="keyword">val</span> im_step</span> : <code class="type">constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       cmp:('a -> 'a -> int) -><br>       store_ops:('a, 'b, 'c, 't, unit) Store_ops.store_ops_ext -><br>       ('a, 'b, 'c) Insert_many.ist -> (('a, 'b, 'c) Insert_many.ist, 't) Monad.mm</code></pre>
+<pre><span id="VALdest_im_finished"><span class="keyword">val</span> dest_im_finished</span> : <code class="type">('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEim_state">Isa_btree_defns.Make.im_state</a> -> ('r * ('k * 'v) list) option</code></pre>
+<pre><span id="VALmk_ls_state"><span class="keyword">val</span> mk_ls_state</span> : <code class="type">'r -> ('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEls_state">Isa_btree_defns.Make.ls_state</a></code></pre><div class="info ">
+Given a reference to a B-tree root, construct a stream of leaves<br>
+</div>
+
+<pre><span id="VALls_step"><span class="keyword">val</span> ls_step</span> : <code class="type">constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       cmp:('k -> 'k -> int) -><br>       store_ops:('k, 'v, 'r, 't, unit) Store_ops.store_ops_ext -><br>       ('k, 'v, 'r) Leaf_stream.ls_state -><br>       (('k, 'v, 'r) <a href="Isa_btree_defns.Make.html#TYPEls_state">Isa_btree_defns.Make.ls_state</a>, 't) Monad.mm</code></pre><div class="info ">
+Step the leaf stream to the next leaf. If the leaf stream is
+        finished (no more leaves), stepping will just return the leaf
+        stream unchanged. So in the loop you need to check whether you have
+        finished using <code class="code">ls_is_finished</code>. FIXME here and elsewhere, staging<br>
+</div>
+
+<pre><span id="VALls_dest_leaf"><span class="keyword">val</span> ls_dest_leaf</span> : <code class="type">('a, 'b, 'c) Leaf_stream.ls_state -> ('a * 'b) list option</code></pre><div class="info ">
+Return the (key,value) list at the current leaf in the stream.<br>
+</div>
+
+<pre><span id="VALls_is_finished"><span class="keyword">val</span> ls_is_finished</span> : <code class="type">('a, 'b, 'c) Leaf_stream.ls_state -> bool</code></pre></body></html>

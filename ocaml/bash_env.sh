@@ -4,7 +4,7 @@ set -a # export all vars
 
 # NOTE in toplevel you need to #require "bos.top" and bos.setup;;
 
-libname="isa_monad"
+libname="isabelle_btree_lib"
 required_packages="stdlib"  # may want a separate package for lwt 
 description="$libname"
 

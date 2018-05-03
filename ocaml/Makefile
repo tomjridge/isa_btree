@@ -32,5 +32,7 @@ clean:
 
 doc:
 	mk_doc
+	mv *.html ../ocamldoc
+	rm -f *.css
 
 FORCE:

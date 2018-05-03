@@ -1,0 +1,38 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="next" href="Isa_export.Make.Find.html">
+<link rel="Up" href="Isa_export.Make.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Isa_btree_defns" rel="Chapter" href="Isa_btree_defns.html"><title>Isa_export.Make.Store_ops</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Isa_export.Make.html" title="Isa_export.Make">Up</a>
+&nbsp;<a class="post" href="Isa_export.Make.Find.html" title="Isa_export.Make.Find">Next</a>
+</div>
+<h1>Module <a href="type_Isa_export.Make.Store_ops.html">Isa_export.Make.Store_ops</a></h1>
+
+<pre><span class="keyword">module</span> Store_ops: <code class="code">sig</code> <a href="Isa_export.Make.Store_ops.html">..</a> <code class="code">end</code></pre><hr width="100%">
+
+<pre><code><span id="TYPEstore_ops_ext"><span class="keyword">type</span> <code class="type">('a, 'b, 'c, 'd, 'e)</code> store_ops_ext</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTstore_ops_ext.Store_ops_ext"><span class="constructor">Store_ops_ext</span></span> <span class="keyword">of</span> <code class="type">('c -> (('a, 'b, 'c) <a href="Isa_export.Disk_node.html#TYPEdnode">Isa_export.Disk_node.dnode</a>, 'd) Monad.mm)<br>        * (('a, 'b, 'c) <a href="Isa_export.Disk_node.html#TYPEdnode">Isa_export.Disk_node.dnode</a> -> ('c, 'd) Monad.mm)<br>        * ('c list -> (unit, 'd) Monad.mm) * 'e</code></code></td>
+
+</tr></table>
+
+
+
+<pre><span id="VALstore_free"><span class="keyword">val</span> store_free</span> : <code class="type">('a, 'b, 'c, 'd, 'e) <a href="Isa_export.Make.Store_ops.html#TYPEstore_ops_ext">store_ops_ext</a> -><br>       'c list -> (unit, 'd) Monad.mm</code></pre>
+<pre><span id="VALstore_read"><span class="keyword">val</span> store_read</span> : <code class="type">('a, 'b, 'c, 'd, 'e) <a href="Isa_export.Make.Store_ops.html#TYPEstore_ops_ext">store_ops_ext</a> -><br>       'c -> (('a, 'b, 'c) <a href="Isa_export.Disk_node.html#TYPEdnode">Isa_export.Disk_node.dnode</a>, 'd) Monad.mm</code></pre>
+<pre><span id="VALstore_alloc"><span class="keyword">val</span> store_alloc</span> : <code class="type">('a, 'b, 'c, 'd, 'e) <a href="Isa_export.Make.Store_ops.html#TYPEstore_ops_ext">store_ops_ext</a> -><br>       ('a, 'b, 'c) <a href="Isa_export.Disk_node.html#TYPEdnode">Isa_export.Disk_node.dnode</a> -> ('c, 'd) Monad.mm</code></pre></body></html>

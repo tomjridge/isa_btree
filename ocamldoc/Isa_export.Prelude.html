@@ -1,0 +1,66 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Isa_export.Searching_and_splitting.html">
+<link rel="next" href="Isa_export.Tree.html">
+<link rel="Up" href="Isa_export.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Isa_btree_defns" rel="Chapter" href="Isa_btree_defns.html"><title>Isa_export.Prelude</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Isa_export.Searching_and_splitting.html" title="Isa_export.Searching_and_splitting">Previous</a>
+&nbsp;<a class="up" href="Isa_export.html" title="Isa_export">Up</a>
+&nbsp;<a class="post" href="Isa_export.Tree.html" title="Isa_export.Tree">Next</a>
+</div>
+<h1>Module <a href="type_Isa_export.Prelude.html">Isa_export.Prelude</a></h1>
+
+<pre><span class="keyword">module</span> Prelude: <code class="code">sig</code> <a href="Isa_export.Prelude.html">..</a> <code class="code">end</code></pre><hr width="100%">
+
+<pre><code><span id="TYPEmin_size_t"><span class="keyword">type</span> <code class="type"></code>min_size_t</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTmin_size_t.Small_root_node_or_leaf"><span class="constructor">Small_root_node_or_leaf</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTmin_size_t.Small_node"><span class="constructor">Small_node</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTmin_size_t.Small_leaf"><span class="constructor">Small_leaf</span></span></code></td>
+
+</tr></table>
+
+
+
+<pre><code><span id="TYPEconstants_ext"><span class="keyword">type</span> <code class="type">'a</code> constants_ext</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTconstants_ext.Constants_ext"><span class="constructor">Constants_ext</span></span> <span class="keyword">of</span> <code class="type"><a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a> * <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a> * <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a><br>        * <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a> * 'a</code></code></td>
+
+</tr></table>
+
+
+
+<pre><span id="VALmax_leaf_size"><span class="keyword">val</span> max_leaf_size</span> : <code class="type">'a <a href="Isa_export.Prelude.html#TYPEconstants_ext">constants_ext</a> -> <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a></code></pre>
+<pre><span id="VALmax_node_keys"><span class="keyword">val</span> max_node_keys</span> : <code class="type">'a <a href="Isa_export.Prelude.html#TYPEconstants_ext">constants_ext</a> -> <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a></code></pre>
+<pre><span id="VALmin_leaf_size"><span class="keyword">val</span> min_leaf_size</span> : <code class="type">'a <a href="Isa_export.Prelude.html#TYPEconstants_ext">constants_ext</a> -> <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a></code></pre>
+<pre><span id="VALmin_node_keys"><span class="keyword">val</span> min_node_keys</span> : <code class="type">'a <a href="Isa_export.Prelude.html#TYPEconstants_ext">constants_ext</a> -> <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a></code></pre></body></html>

@@ -27,6 +27,7 @@ patch: $(PATCH)
 
 generated_patched: $(GENERATED_PATCHED)
 	ocamlc -c -w -8-20 $(GENERATED_PATCHED) # check builds
+	cp $(GENERATED_PATCHED) ../ocaml 
 
 $(PATCH): $(ORIG) $(PATCHED)
 	diff -u3 -p $(ORIG) $(PATCHED) >$@ 

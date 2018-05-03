@@ -1063,13 +1063,15 @@ let rec dot_constants
 
 end;; (*struct Params*)
 
-module Make(Monad : sig
+module type MONAD = sig
   type ('a, 'b) mm
   val bind : ('a -> ('b, 'c) mm) -> ('a, 'c) mm -> ('b, 'c) mm
   val fmap : ('a -> 'b) -> ('a, 'c) mm -> ('b, 'c) mm
   val dummy : unit
   val return : 'a -> ('a, 'b) mm
-end) = struct
+end
+
+module Make(Monad : MONAD) = struct
 
 (*
 type ('a, 'b) mm = EMPTY__;;

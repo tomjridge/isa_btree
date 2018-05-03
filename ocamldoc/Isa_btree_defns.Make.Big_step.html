@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Isa_btree_defns.Make.Pre_map_ops.html">
+<link rel="Up" href="Isa_btree_defns.Make.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Isa_btree_defns" rel="Chapter" href="Isa_btree_defns.html"><title>Isa_btree_defns.Make.Big_step</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Isa_btree_defns.Make.Pre_map_ops.html" title="Isa_btree_defns.Make.Pre_map_ops">Previous</a>
+&nbsp;<a class="up" href="Isa_btree_defns.Make.html" title="Isa_btree_defns.Make">Up</a>
+&nbsp;</div>
+<h1>Module <a href="type_Isa_btree_defns.Make.Big_step.html">Isa_btree_defns.Make.Big_step</a></h1>
+
+<pre><span class="keyword">module</span> Big_step: <code class="code">sig</code> <a href="Isa_btree_defns.Make.Big_step.html">..</a> <code class="code">end</code></pre><hr width="100%">
+
+<pre><span id="VALcmp"><span class="keyword">val</span> cmp</span> : <code class="type">< cmp : 'k -> 'k -> int; .. > -> 'k -> 'k -> int</code></pre><div class="info ">
+The order on keys. B-trees work with ordered keys.<br>
+</div>
+
+<pre><span id="VALconstants"><span class="keyword">val</span> constants</span> : <code class="type">< constants : constants; .. > -> constants</code></pre><div class="info ">
+Constants. See <a href="Isa_btree_defns.Constants.html"><code class="code">Isa_btree_defns.Constants</code></a><br>
+</div>
+<br>
+Iterate small-step map operations to provide big-step map
+        operations. The important functions in this module are <code class="code">find</code>,
+        <code class="code">insert</code>, <code class="code">insert_many</code> and <code class="code">delete</code> (together with the leaf stream
+        big-step operations).<br>
+
+<pre><span class="keyword">module</span> <a href="Isa_btree_defns.Make.Big_step.X.html">X</a>: <code class="type"><a href="Isa_btree_defns.Make.Small_step.html">Isa_btree_defns.Make.Small_step</a></code></pre>
+<pre><span id="VALstep"><span class="keyword">val</span> step</span> : <code class="type">small_step:('a -> ('a, 'b) Monad.mm) -><br>       dest:('a -> 'c option) -> 'a -> ('c, 'b) Monad.mm</code></pre>
+<pre><span id="VALfind_leaf'"><span class="keyword">val</span> find_leaf'</span> : <code class="type">cmp:('a -> 'a -> int) -><br>       constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       store_ops:('a, 'b, 'c, 'd, unit) Store_ops.store_ops_ext -><br>       k:'a -><br>       r:'c -><br>       ('c * 'a * 'c * ('a * 'b) list * ('a, 'c) <a href="Isa_btree_defns.Make.html#TYPErstk">Isa_btree_defns.Make.rstk</a>, 'd)<br>       Monad.mm</code></pre>
+<pre><span id="VALfind_leaf"><span class="keyword">val</span> find_leaf</span> : <code class="type">ps:< cmp : 'k -> 'k -> int; constants : constants; .. > -><br>       store_ops:('k, 'a, 'r, 'b, unit) Store_ops.store_ops_ext -><br>       k:'k -><br>       r:'r -><br>       ('r * ('k * 'a) list * ('k, 'r) <a href="Isa_btree_defns.Make.html#TYPErstk">Isa_btree_defns.Make.rstk</a>, 'b) Monad.mm</code></pre>
+<pre><span id="VALfind'"><span class="keyword">val</span> find'</span> : <code class="type">cmp:('k -> 'k -> int) -><br>       constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       store_ops:('k, 'a, 'r, 'b, unit) Store_ops.store_ops_ext -><br>       k:'k -><br>       r:'r -><br>       ('r * 'k * 'r * ('k * 'a) list * ('k, 'r) <a href="Isa_btree_defns.Make.html#TYPErstk">Isa_btree_defns.Make.rstk</a>, 'b)<br>       Monad.mm</code></pre>
+<pre><span id="VALfind"><span class="keyword">val</span> find</span> : <code class="type">ps:< cmp : 'a -> 'a -> int; constants : constants; .. > -><br>       store_ops:('a, 'b, 'c, 'd, unit) Store_ops.store_ops_ext -><br>       k:'a -> r:'c -> ('c * ('a * 'b) list, 'd) Monad.mm</code></pre><div class="info ">
+Find. Take a key, a pointer to the root of a B-tree, and the
+        global state. Return the updated state, a reference to the leaf of
+        the B-tree that possibly contains the key (or alternatively return
+        an error).<br>
+</div>
+
+<pre><span id="VALinsert'"><span class="keyword">val</span> insert'</span> : <code class="type">cmp:('a -> 'a -> int) -><br>       constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       store_ops:('a, 'b, 'c, 'd, unit) Store_ops.store_ops_ext -><br>       k:'a -> v:'b -> r:'c -> ('c, 'd) Monad.mm</code></pre>
+<pre><span id="VALinsert"><span class="keyword">val</span> insert</span> : <code class="type">ps:< cmp : 'a -> 'a -> int; constants : constants; .. > -><br>       store_ops:('a, 'b, 'c, 'd, unit) Store_ops.store_ops_ext -><br>       k:'a -> v:'b -> r:'c -> ('c, 'd) Monad.mm</code></pre><div class="info ">
+Insert. Take a key, a value, a reference (to the B-tree root) and
+        a state and return an updated state, with a new reference to the
+        root of the updated B-tree.<br>
+</div>
+
+<pre><span id="VALim'"><span class="keyword">val</span> im'</span> : <code class="type">cmp:('a -> 'a -> int) -><br>       constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       store_ops:('a, 'b, 'c, 'd, unit) Store_ops.store_ops_ext -><br>       k:'a -><br>       v:'b -> kvs:('a * 'b) list -> r:'c -> ('c * ('a * 'b) list, 'd) Monad.mm</code></pre>
+<pre><span id="VALinsert_many"><span class="keyword">val</span> insert_many</span> : <code class="type">ps:< cmp : 'k -> 'k -> int; constants : constants; .. > -><br>       store_ops:('k, 'v, 'r, 'a, unit) Store_ops.store_ops_ext -><br>       k:'k -><br>       v:'v -> kvs:('k * 'v) list -> r:'r -> ('r * ('k * 'v) list, 'a) Monad.mm</code></pre><div class="info ">
+Insert many. Take a key, value, and list of further key/values, a
+        pointer to the B-tree root and a global state. Return the updated
+        state, a new pointer to a B-tree root, and a list of key/values
+        which could not be inserted into the same leaf as the first
+        key/value. Typically this function is called in a loop till all kvs
+        have been inserted. It is assumed faster than multiple inserts,
+        although caching may invalidate this assumption.<br>
+</div>
+
+<pre><span id="VALdelete'"><span class="keyword">val</span> delete'</span> : <code class="type">cmp:('k -> 'k -> int) -><br>       constants:unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       store_ops:('k, 'a, 'r, 'b, unit) Store_ops.store_ops_ext -><br>       k:'k -> r:'r -> ('r, 'b) Monad.mm</code></pre>
+<pre><span id="VALdelete"><span class="keyword">val</span> delete</span> : <code class="type">ps:< cmp : 'k -> 'k -> int; constants : constants; .. > -><br>       store_ops:('k, 'a, 'r, 'b, unit) Store_ops.store_ops_ext -><br>       k:'k -> r:'r -> ('r, 'b) Monad.mm</code></pre><div class="info ">
+Delete. Take a key and a reference to a B-tree root, and a global
+        state. Return the updated state and a reference to the new root.<br>
+</div>
+
+<pre><span id="VALmake_pre_map_ops"><span class="keyword">val</span> make_pre_map_ops</span> : <code class="type">ps:< cmp : 'k -> 'k -> int; constants : constants; .. > -><br>       store_ops:('k, 'v, 'r, 'a) store_ops -><br>       ('k, 'v, 'r, 'a) <a href="Isa_btree_defns.Make.Pre_map_ops.html#TYPEpre_map_ops">Isa_btree_defns.Make.Pre_map_ops.pre_map_ops</a></code></pre><div class="info ">
+Construct <code class="code">pre_map_ops</code> using functions above. Takes a "parameters" object ps.<br>
+</div>
+</body></html>
