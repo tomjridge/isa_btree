@@ -49,11 +49,12 @@ Pre_params.dummy
 Pre_params.mk_r2t
 
 (* params *)
+Params.dummy
 Params.Ps1
-Params.store_ops_ext
+(* Params.store_ops_ext *)
 
 (* monad *)
-(* Monad.dest_MM *) fmap  bind
+(* Monad.dest_MM *) Monad.dummy fmap  bind
 
 (* store *) 
 

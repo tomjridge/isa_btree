@@ -20,10 +20,10 @@ type_synonym ('k,'v,'r) lss = "('k,'v,'r) ls_state"
 definition mk_ls_state :: "'r \<Rightarrow> ('k,'v,'r)ls_state" where
 "mk_ls_state r = LS_down (r,[])"
 
-definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> 'r*('k,'r)rstk \<Rightarrow> (('k,'v,'r)lss,'t) MM" where
-"step_down ps1 rfs = (
+definition step_down :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t)store_ops \<Rightarrow> 'r*('k,'r)rstk \<Rightarrow> (('k,'v,'r)lss,'t) MM" where
+"step_down ps1 store_ops rfs = (
   let (r,fs) = rfs in
-  let store_ops = ps1|>dot_store_ops in
+  (* let store_ops = ps1|>dot_store_ops in *)
   (store_ops|>store_read) r |> fmap 
   (% f. case f of 
     Disk_node (ks,rs) \<Rightarrow> (
@@ -77,10 +77,10 @@ definition dest_LS_leaf :: "('k,'v,'r) lss \<Rightarrow> ('k*'v)s option" where
   | _ \<Rightarrow> None
 )"
   
-definition lss_step :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) lss \<Rightarrow> (('k,'v,'r) lss,'t) MM" where
-"lss_step ps1 lss = (
+definition lss_step :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r) lss \<Rightarrow> (('k,'v,'r) lss,'t) MM" where
+"lss_step ps1 store_ops lss = (
   case lss of 
-  LS_down x \<Rightarrow> (step_down ps1 x)
+  LS_down x \<Rightarrow> (step_down ps1 store_ops x)
   | LS_leaf x \<Rightarrow> (return (step_leaf x))
   | LS_up x \<Rightarrow> (return (step_up x)) 
 )"

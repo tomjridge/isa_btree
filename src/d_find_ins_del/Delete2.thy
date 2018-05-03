@@ -197,10 +197,10 @@ where
     return (D_updated_subtree(r)))))"
 
 
-definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (('k,'v,'r)u,'t) MM" where
-"step_up ps1 du = (
+definition step_up :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r)u \<Rightarrow> (('k,'v,'r)u,'t) MM" where
+"step_up ps1 store_ops du = (
   let (f,stk) = du in
-  let store_ops = ps1|>dot_store_ops in
+  (* let store_ops = ps1|>dot_store_ops in *)
   let (alloc,read) = (store_ops|>store_alloc,store_ops|>store_read) in
   let cs = ps1|>dot_constants in
   let post_merge = post_merge cs store_ops in
@@ -251,15 +251,15 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow>('k,'v,'r)u \<Rightarrow> (
 
 
 definition delete_step :: 
-  "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> (('k,'v,'r)delete_state,'t) MM" 
+  "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> (('k,'v,'r)delete_state,'t) MM" 
 where
-"delete_step ps1 s = (
-  let store_ops = ps1|>dot_store_ops in
+"delete_step ps1 store_ops s = (
+  (* let store_ops = ps1|>dot_store_ops in *)
   let alloc = store_ops|>store_alloc in
   case s of 
   D_down(f,r0) \<Rightarrow> (
     case (dest_f_finished f) of
-    None \<Rightarrow> (find_step ps1 f |> fmap (% f'. D_down(f',r0)))
+    None \<Rightarrow> (find_step ps1 store_ops f |> fmap (% f'. D_down(f',r0)))
     | Some x \<Rightarrow> (
       let (r0,k,r,kvs,stk) = x in
       (* FIXME don't free r0 if nothing to delete *)
@@ -282,7 +282,7 @@ where
         True \<Rightarrow> return (D_finished (List.hd rs))
         | False \<Rightarrow> (mk_Disk_node(ks,rs)|>alloc|>fmap D_finished))
       | D_updated_subtree(r) \<Rightarrow> (return (D_finished r)))
-    | False \<Rightarrow> (step_up ps1 (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
+    | False \<Rightarrow> (step_up ps1 store_ops (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
   | D_finished(r) \<Rightarrow> (return s)  (* stutter *))"
 
 

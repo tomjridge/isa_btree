@@ -1,5 +1,5 @@
 theory Find 
-imports "$SRC/b_params/Params"
+imports "Pre_find"
 begin
 
 
@@ -36,9 +36,9 @@ definition mk_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)fs" whe
 
 
 
-definition find_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> (('k,'v,'r)fs,'t) MM" where
-"find_step ps1 fs = (
-  let store_ops = ps1 |> dot_store_ops in
+definition find_step :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> (('k,'v,'r)fs,'t) MM" where
+"find_step ps1 store_ops fs = (
+  (* let store_ops = ps1 |> dot_store_ops in *)
   case fs of 
   F_finished _ \<Rightarrow> (return fs)  (* FIXME impossible, or return none? or have a finished error? or stutter? *)
   | F_down(r0,k,r,stk) \<Rightarrow> (

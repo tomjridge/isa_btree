@@ -26,16 +26,16 @@ definition dest_i_finished :: "('k,'v,'r) ist \<Rightarrow> 'r option" where
 
 (* defns ------------------------------------------------------------ *)
 
-definition step_down :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) d,'t) MM" where
-"step_down ps1 d = (
+definition step_down :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) d,'t) MM" where
+"step_down ps1 store_ops d = (
   let (fs,v) = d in
-  find_step ps1 fs |> fmap (% d'. (d',v))
+  find_step ps1 store_ops fs |> fmap (% d'. (d',v))
 )"
 
-definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
-"step_bottom ps1 d = (
+definition step_bottom :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
+"step_bottom ps1 store_ops d = (
   let (cs,k_ord) = (ps1|>dot_constants,ps1|>dot_cmp) in
-  let store_ops = ps1 |> dot_store_ops in
+  (* let store_ops = ps1 |> dot_store_ops in *)
   let (fs,v) = d in
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
@@ -53,10 +53,10 @@ definition step_bottom :: "('k,'v,'r,'t) ps1 \<Rightarrow> ('k,'v,'r) d \<Righta
     fo |> fmap (% fo. (fo,stk)))) )"
 
 
-definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u,'t) MM" where
-"step_up ps1 u = (
+definition step_up :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u,'t) MM" where
+"step_up ps1 store_ops u = (
   let (cs,k_ord) = (ps1|>dot_constants,ps1|>dot_cmp) in
-  let store_ops = ps1 |> dot_store_ops in
+  (* let store_ops = ps1 |> dot_store_ops in *)
   let (fo,stk) = u in
   case stk of 
   [] \<Rightarrow> 
@@ -80,15 +80,15 @@ definition step_up :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) u \<Rightarrow>
         (% r2. (I2(r1,k,r2),stk')))) )))"
 
 
-definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> (('k,'v,'r) ist,'t) MM" where
-"insert_step ps1 s = (
-  let store_ops = ps1 |> dot_store_ops in
+definition insert_step :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r) ist \<Rightarrow> (('k,'v,'r) ist,'t) MM" where
+"insert_step ps1 store_ops s = (
+  (* let store_ops = ps1 |> dot_store_ops in *)
   case s of 
   I_down d \<Rightarrow> (
     let (fs,v) = d in
     case (dest_f_finished fs) of 
-    None \<Rightarrow> (step_down ps1 d |> fmap (% d. I_down d))
-    | Some _ \<Rightarrow> step_bottom ps1 d |> fmap (% u. I_up u))
+    None \<Rightarrow> (step_down ps1 store_ops d |> fmap (% d. I_down d))
+    | Some _ \<Rightarrow> step_bottom ps1 store_ops d |> fmap (% u. I_up u))
   | I_up u \<Rightarrow> (
     let (fo,stk) = u in
     case stk of
@@ -98,7 +98,7 @@ definition insert_step :: "('k,'v,'r,'t)ps1 \<Rightarrow> ('k,'v,'r) ist \<Right
       | I2(r1,k,r2) \<Rightarrow> (
         (* create a new frame *)
         (mk_Disk_node([k],[r1,r2]) |> (store_ops|>store_alloc) |> fmap (% r. I_finished r))))
-    | _ \<Rightarrow> (step_up ps1 u |> fmap (% u. I_up u)))
+    | _ \<Rightarrow> (step_up ps1 store_ops u |> fmap (% u. I_up u)))
   | I_finished f \<Rightarrow> (return s)  (* stutter *) )"
 
 

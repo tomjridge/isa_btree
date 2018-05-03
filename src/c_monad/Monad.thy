@@ -1,6 +1,9 @@
 theory Monad
-imports Main
+imports "$SRC/b_params/Params"
 begin
+
+(* this to force dependency order in exported code? *)
+definition dummy :: "unit" where "dummy=Params.dummy"
 
 (* NOTE this depends on Util for the concrete defn *)
 
@@ -50,6 +53,8 @@ definition bind :: "('a \<Rightarrow> ('b,'t) MM) \<Rightarrow> ('a,'t) MM \<Rig
   
 definition return :: "'a \<Rightarrow> ('a,'t) MM" where
 "return x = undefined"
+
+
 
 
 end
