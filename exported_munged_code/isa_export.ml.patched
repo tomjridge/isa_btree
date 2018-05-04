@@ -1,3 +1,15 @@
+(** This file is exported from Isabelle, and lightly patched (eg to
+   include this comment!). The OCaml interfaces wrap this basic
+   functionality. *)
+
+module Res = struct
+  include Pervasives
+  type 'a res = ('a,string) result
+end
+
+let check_flag = ref true
+
+
 module Fun : sig
   val id : 'a -> 'a
   val comp : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
@@ -295,7 +307,7 @@ end = struct
 
 type error = String_error of string;;
 
-type 'a res = Ok of 'a | Error of error;;
+include Res 
 
 let rec is_Ok x = (match x with Ok _ -> true | Error _ -> false);;
 
@@ -307,9 +319,9 @@ let rec is_None x = Option.is_none x;;
 
 let rec rev_apply x f = f x;;
 
-let rec failwitha x = rev_apply "FIXME patch" (fun _ -> failwith "undefined");;
+let rec failwitha x = failwith x
 
-let rec check_true f = rev_apply "FIXME patch" (fun _ -> failwith "undefined");;
+let rec check_true f = if !check_flag then (let b = f () in assert(b);b) else true;;
 
 let rec split_at
   n xs =
@@ -501,7 +513,7 @@ let ck2_tests : unit
       in
     ();;
 
-let rec kvs_equal x = Util.failwitha "FIXME patch" x;;
+let rec kvs_equal x = (x=y)
 
 let rec ordered_key_list
   ord ks =
@@ -585,7 +597,7 @@ end;; (*struct Key_value*)
 
 module Searching_and_splitting : sig
   type ('a, 'b, 'c) rsplit_node_ext =
-    Rsplit_node_ext of 'a list * 'b list * 'b * 'a list * 'b list * 'c
+    Rsplit_node_ext of 'a list * 'b list * 'b * 'a list * 'b list * 'c  [@@deriving yojson]
   val r_ts2 : ('a, 'b, 'c) rsplit_node_ext -> 'b list
   val r_ts1 : ('a, 'b, 'c) rsplit_node_ext -> 'b list
   val r_ks2 : ('a, 'b, 'c) rsplit_node_ext -> 'a list
@@ -620,7 +632,7 @@ module Searching_and_splitting : sig
 end = struct
 
 type ('a, 'b, 'c) rsplit_node_ext =
-  Rsplit_node_ext of 'a list * 'b list * 'b * 'a list * 'b list * 'c;;
+  Rsplit_node_ext of 'a list * 'b list * 'b * 'a list * 'b list * 'c  [@@deriving yojson];;
 
 let rec aux
   cmp k0 ks_rs1 ks_rs2 =
@@ -743,7 +755,7 @@ end;; (*struct Prelude*)
 
 module Tree : sig
   type ('a, 'b) tree = Node of ('a list * ('a, 'b) tree list) |
-    Leaf of ('a * 'b) list
+    Leaf of ('a * 'b) list  [@@deriving yojson]
   val height : ('a, 'b) tree -> Arith.nat
   val dest_Node : ('a, 'b) tree -> 'a list * ('a, 'b) tree list
   val tree_equal : ('a, 'b) tree -> ('a, 'b) tree -> bool
@@ -757,7 +769,7 @@ module Tree : sig
 end = struct
 
 type ('a, 'b) tree = Node of ('a list * ('a, 'b) tree list) |
-  Leaf of ('a * 'b) list;;
+  Leaf of ('a * 'b) list  [@@deriving yojson];;
 
 let rec tree_to_subtrees
   t0 = (match t0
@@ -852,7 +864,7 @@ let rec dest_Node
   = function Node (ks, rs) -> (ks, rs)
     | Leaf uu -> Util.failwitha "dest_Node";;
 
-let rec tree_equal t1 t2 = Util.failwitha "FIXME patch";;
+let rec tree_equal t1 t2 = (t1=t2)
 
 let rec tree_to_leaves
   t0 = (match t0
@@ -926,6 +938,7 @@ let rec wellformed_tree
 end;; (*struct Tree*)
 
 module Tree_stack : sig
+  type ('k,'a) rstack = ('k,'a,unit) Searching_and_splitting.rsplit_node_ext list
   val rstack_map :
     ('a -> 'b) ->
       ('c, 'a, unit) Searching_and_splitting.rsplit_node_ext list ->
@@ -955,6 +968,8 @@ module Tree_stack : sig
                 ('a, 'b, unit) Searching_and_splitting.rsplit_node_ext list * 'b
 end = struct
 
+type ('k,'a) rstack = ('k,'a,unit) Searching_and_splitting.rsplit_node_ext list
+
 let rec rstack_map
   f stk =
     Util.rev_apply stk (List.map (Searching_and_splitting.rsplit_node_map f));;
@@ -969,7 +984,7 @@ let rec no_focus
 let rec r_stk_to_rs
   xs = Util.rev_apply xs (List.map Searching_and_splitting.r_t);;
 
-let rec rstack_equal s1 s2 = Util.failwitha "FIXME patch";;
+let rec rstack_equal s1 s2 = (s1=s2)
 
 let rec tree_to_rstack
   ord k t n =
@@ -1010,14 +1025,14 @@ end;; (*struct Tree_stack*)
 
 module Disk_node : sig
   type ('a, 'b, 'c) dnode = Disk_node of ('a list * 'c list) |
-    Disk_leaf of ('a * 'b) list
+    Disk_leaf of ('a * 'b) list  [@@deriving yojson]
   val mk_Disk_node : 'a list * 'b list -> ('a, 'c, 'b) dnode
   val dest_Disk_leaf : ('a, 'b, 'c) dnode -> ('a * 'b) list
   val dest_Disk_node : ('a, 'b, 'c) dnode -> 'a list * 'c list
 end = struct
 
 type ('a, 'b, 'c) dnode = Disk_node of ('a list * 'c list) |
-  Disk_leaf of ('a * 'b) list;;
+  Disk_leaf of ('a * 'b) list  [@@deriving yojson];;
 
 let rec check_length_ks_rs
   ks_rs =
@@ -1117,7 +1132,7 @@ let rec store_alloc
 end;; (*struct Store_ops*)
 
 module Find : sig
-  type ('a, 'b, 'c) find_state
+  type ('a, 'b, 'c) find_state  [@@deriving yojson]
   val find_step :
     'a Params.ps1 ->
       ('a, 'b, 'c, 'd, unit) Store_ops.store_ops_ext ->
@@ -1144,7 +1159,7 @@ type ('a, 'b, 'c) find_state =
   | F_finished of
       ('c * ('a * ('c * (('a * 'b) list *
                           ('a, 'c, unit)
-                            Searching_and_splitting.rsplit_node_ext list))));;
+                            Searching_and_splitting.rsplit_node_ext list))))  [@@deriving yojson];;
 
 let rec find_step
   ps1 store_ops fs =
@@ -1264,12 +1279,12 @@ let rec split_node
 end;; (*struct Pre_insert*)
 
 module Insert : sig
-  type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c))
+  type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c))  [@@deriving yojson]
   type ('a, 'b, 'c) insert_state = I_down of (('a, 'b, 'c) Find.find_state * 'b)
     | I_up of
         (('a, 'b, 'c) i12_t *
           ('a, 'c, unit) Searching_and_splitting.rsplit_node_ext list)
-    | I_finished of 'c
+    | I_finished of 'c  [@@deriving yojson]
   val insert_step :
     'a Params.ps1 ->
       ('a, 'b, 'c, 'd, unit) Store_ops.store_ops_ext ->
@@ -1284,13 +1299,13 @@ module Insert : sig
             'b -> 'a -> 'd -> ('a, 'd, 'c) insert_state -> bool
 end = struct
 
-type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c));;
+type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c))  [@@deriving yojson];;
 
 type ('a, 'b, 'c) insert_state = I_down of (('a, 'b, 'c) Find.find_state * 'b) |
   I_up of
     (('a, 'b, 'c) i12_t *
       ('a, 'c, unit) Searching_and_splitting.rsplit_node_ext list)
-  | I_finished of 'c;;
+  | I_finished of 'c  [@@deriving yojson];;
 
 let rec wf_d
   k_ord r2t t0 s d =
@@ -1492,12 +1507,12 @@ end;; (*struct Insert*)
 
 module Delete2 : sig
   type ('a, 'b, 'c) del_t = D_small_leaf of ('a * 'b) list |
-    D_small_node of ('a list * 'c list) | D_updated_subtree of 'c
+    D_small_node of ('a list * 'c list) | D_updated_subtree of 'c  [@@deriving yojson]
   type ('a, 'b, 'c) delete_state = D_down of (('a, 'b, 'c) Find.find_state * 'c)
     | D_up of
         (('a, 'b, 'c) del_t *
           (('a, 'c, unit) Searching_and_splitting.rsplit_node_ext list * 'c))
-    | D_finished of 'c
+    | D_finished of 'c  [@@deriving yojson]
   val delete_step :
     'a Params.ps1 ->
       ('a, 'b, 'c, 'd, unit) Store_ops.store_ops_ext ->
@@ -1512,13 +1527,13 @@ module Delete2 : sig
 end = struct
 
 type ('a, 'b, 'c) del_t = D_small_leaf of ('a * 'b) list |
-  D_small_node of ('a list * 'c list) | D_updated_subtree of 'c;;
+  D_small_node of ('a list * 'c list) | D_updated_subtree of 'c  [@@deriving yojson];;
 
 type ('a, 'b, 'c) delete_state = D_down of (('a, 'b, 'c) Find.find_state * 'c) |
   D_up of
     (('a, 'b, 'c) del_t *
       (('a, 'c, unit) Searching_and_splitting.rsplit_node_ext list * 'c))
-  | D_finished of 'c;;
+  | D_finished of 'c  [@@deriving yojson];;
 
 let rec wf_d
   k_ord r2f t0 s d =
