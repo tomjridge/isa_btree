@@ -15,7 +15,7 @@ GENERATED_PATCHED:=isa_export.ml
 #
 # - Copy to ORIG
 # - Try to apply patch: make generated_patched
-# - If this fails, manually patch ORIG, output to PATCHED and remake patch
+# - If this fails, manually patch ORIG, output to PATCHED and remake patch; then make generated_patched again
 #
 # https://forums.anandtech.com/threads/best-practices-for-creating-patch-with-diff.2264468/
 
@@ -33,7 +33,7 @@ $(PATCH): $(ORIG) $(PATCHED)
 	diff -u3 -p $(ORIG) $(PATCHED) >$@ 
 # this fails if there are changes?
 
-$(GENERATED_PATCHED): $(ORIG) 
+$(GENERATED_PATCHED): $(ORIG) FORCE
 	-patch -i $(PATCH) $(ORIG) -o $@ 
 
 FORCE:

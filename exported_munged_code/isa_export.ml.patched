@@ -513,7 +513,7 @@ let ck2_tests : unit
       in
     ();;
 
-let rec kvs_equal x = (x=y)
+let rec kvs_equal x y = (x=y)
 
 let rec ordered_key_list
   ord ks =
@@ -1103,7 +1103,11 @@ end;; (*struct Monad*)
 *)
 
 module Store_ops : sig
-  type ('a, 'b, 'c, 'd, 'e) store_ops_ext
+  type ('a, 'b, 'c, 'd, 'e) store_ops_ext = 
+  Store_ops_ext of
+    ('c -> (('a, 'b, 'c) Disk_node.dnode, 'd) Monad.mm) *
+      (('a, 'b, 'c) Disk_node.dnode -> ('c, 'd) Monad.mm) *
+      ('c list -> (unit, 'd) Monad.mm) * 'e
   val store_free :
     ('a, 'b, 'c, 'd, 'e) store_ops_ext -> 'c list -> (unit, 'd) Monad.mm
   val store_read :
