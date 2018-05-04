@@ -1,9 +1,12 @@
 theory Monad
-imports "$SRC/b_params/Params"
+imports Pre_monad Find_state Delete_state Insert_many_state Insert_state Leaf_stream_state
 begin
 
 (* this to force dependency order in exported code? *)
-definition dummy :: "unit" where "dummy=Params.dummy"
+definition dummy :: "unit" where "dummy=
+  (Find_state.dummy,Delete_state.dummy,Insert_many_state.dummy,Insert_state.dummy,Leaf_stream_state.dummy)
+  |> (% x. Params.dummy)"
+
 
 (* NOTE this depends on Util for the concrete defn *)
 

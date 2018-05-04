@@ -53,11 +53,25 @@ Params.dummy
 Params.Ps1
 (* Params.store_ops_ext *)
 
+Insert_state.mk_insert_state
+Insert_state.dest_i_finished
+Insert_state.I1 Insert_state.I2 Insert_state.I_down Insert_state.I_up Insert_state.I_finished
+
+Insert_many_state.mk_im_state
+Insert_many_state.dest_im_finished
+Insert_many_state.IM1 Insert_many_state.IM_down
+
+mk_delete_state
+dest_d_finished
+D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
+
+mk_ls_state lss_is_finished dest_LS_leaf 
+
 (* monad *)
 (* Monad.dest_MM *) Monad.dummy fmap  bind
 
 (* store *) 
-Store_ops.store_ops_ext
+Store_ops.store_alloc store_read store_free
 
 (* find *)
 mk_find_state
@@ -66,28 +80,19 @@ find_step
 wellformed_find_state 
 
 (* insert *)
-Insert.mk_insert_state
-Insert.dest_i_finished
-Insert.I1 Insert.I2 Insert.I_down Insert.I_up Insert.I_finished
 Insert.insert_step
 Insert.wellformed_insert_state
 
 (* insert_many *)
-Insert_many.mk_insert_state
-Insert_many.dest_i_finished
-Insert_many.I1 Insert_many.I2 Insert_many.I_down Insert_many.I_up Insert_many.I_finished
 Insert_many.insert_step
 
 
 (* delete2 *)
-mk_delete_state
-dest_d_finished
-D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
 Delete2.delete_step
 wellformed_delete_state
 
 (* leaf_stream *)
-mk_ls_state lss_is_finished dest_LS_leaf lss_step
+lss_step
 
 
 in OCaml file "/tmp/isa_export.ml"

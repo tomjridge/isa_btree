@@ -3,7 +3,7 @@ imports Pre_params
 begin
 
 (* this to force dependency order in exported code? *)
-definition dummy :: "unit" where "dummy=()"
+definition dummy :: "unit" where "dummy=Pre_params.dummy"
 
 (* params ----------------------------------------------------------- *)
 
