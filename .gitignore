@@ -8,3 +8,4 @@ src/output/
 /docs/pics/*.pdf
 docs/pics/*.ps
 /docs/pics/all
+/ocaml/META

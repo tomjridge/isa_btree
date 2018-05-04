@@ -9,7 +9,7 @@ required_packages="stdlib"  # may want a separate package for lwt
 description="$libname"
 
 function clean() {
-	rm -f *.cmi *.cmo *.cmx *.o *.x *.a *.cma *.cmxa
+	rm -f *.cmi *.cmo *.cmx *.o *.x *.a *.cma *.cmxa *.cmt *.odoc
 	find . -maxdepth 1 -type l -exec rm -f \{\} \;
   rm -f *.html *.css
   rm -f META
@@ -38,9 +38,11 @@ SYNTAX=""
 # 26~"unused variable s2"
 WARN="-w @f@p@u@s@40-8-11-26"
 
+WITH_CMT="-bin-annot"
+
 # -thread needed for core
-  ocamlc="$DISABLE_BYTE ocamlfind ocamlc   -thread -g $WARN $PKGS $SYNTAX"
-ocamlopt="$DISABLE_NTVE ocamlfind ocamlopt -thread -g $WARN $PKGS $SYNTAX"
+  ocamlc="$DISABLE_BYTE ocamlfind ocamlc   -thread -g $WARN $PKGS $SYNTAX $WITH_CMT"
+ocamlopt="$DISABLE_NTVE ocamlfind ocamlopt -thread -g $WARN $PKGS $SYNTAX $WITH_CMT"
 ocamldep="ocamlfind ocamldep $PKGS"
 
 mk_cma="$DISABLE_BYTE ocamlfind ocamlc"

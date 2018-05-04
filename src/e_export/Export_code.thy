@@ -42,7 +42,6 @@ Tree.dest_Node
 (* Tree_stack.stack_to_lu_of_child *)
 tree_to_leaves 
 wellformed_tree
-rstack
 
 
 (* pre_params *)
@@ -58,6 +57,7 @@ Params.Ps1
 (* Monad.dest_MM *) Monad.dummy fmap  bind
 
 (* store *) 
+Store_ops.store_ops_ext
 
 (* find *)
 mk_find_state

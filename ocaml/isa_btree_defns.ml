@@ -36,7 +36,7 @@ module Constants = struct
       max_node_keys|>int_to_nat,
       ())
 
-  let x_constants cs = cs
+  let x_constants (cs:constants) = cs
 
 end
 include Constants
@@ -69,15 +69,20 @@ module Make(Monad: MONAD) = struct
      dest_LS_leaf, and lss_is_finished ops *)
   type ('k,'v,'r) ls_state = ('k,'v,'r) Leaf_stream.ls_state
 
-  include struct
+  (* FIXME not included in ocamldoc for some reason... *)
+  module Store_ops' = struct
     open Store_ops
 
     type ('k,'v,'r,'t) store_ops = ('k,'v,'r,'t,unit) Store_ops.store_ops_ext
+
+    let mk_store_ops ~store_free ~store_read ~store_alloc : ('k,'v,'r,'t)store_ops =
+      Store_ops_ext(store_read,store_alloc,store_free,())
 
     let dest_store_ops (store_ops:('k,'v,'r,'t)store_ops) = fun f ->
       f ~store_free:(store_free store_ops) ~store_read:(store_read store_ops)
         ~store_alloc:(store_alloc store_ops)
   end
+  include Store_ops'
 
   open Monad
 
@@ -340,7 +345,7 @@ module Make(Monad: MONAD) = struct
     open Store_ops
 
     (** Construct [pre_map_ops] using functions above. Takes a "parameters" object ps. *)
-    let make_pre_map_ops ~ps ~store_ops = 
+    let store_ops_to_pre_map_ops ~ps ~(store_ops:('k,'v,'r,'t)store_ops) = 
       dest_store_ops store_ops @@ 
       fun ~store_free ~store_read ~store_alloc ->
       let find_leaf=(fun (k:'k) (r:'r) -> find_leaf ~ps ~store_ops ~k ~r) in
@@ -350,11 +355,21 @@ module Make(Monad: MONAD) = struct
       let delete=(fun k r -> delete ~ps ~store_ops ~k ~r) in
       Pre_map_ops.mk_pre_map_ops ~find_leaf ~find ~insert ~insert_many ~delete
 
-    let _ = make_pre_map_ops
+    let _ = store_ops_to_pre_map_ops
 
   end
 
-  let make_pre_map_ops = Big_step.make_pre_map_ops
+  (** The main functionality exported by the B-tree code: implement a
+      map on top of a store *)
+  (* NOTE we phrase it in this form so that we avoid types like
+     store_ops that are dependent on the monad *)
+  let store_ops_to_pre_map_ops ~ps ~store_free ~store_read ~store_alloc = 
+    mk_store_ops ~store_free ~store_read ~store_alloc |> fun store_ops ->
+    Big_step.store_ops_to_pre_map_ops ~ps ~store_ops |> fun map_ops ->
+    fun f -> 
+      f 
+        ~find_leaf:map_ops.find_leaf ~find:map_ops.find ~insert:map_ops.insert 
+        ~insert_many:map_ops.insert_many ~delete:map_ops.delete
 
 end
 
@@ -368,3 +383,75 @@ end
 *)
 
 
+
+(*
+module Free_monad_instance = struct
+
+  (** The functor [Make] allows the Monad to be a parameter of the
+      whole code. The following instantiates the monad as a "syntactic"
+      monad, which may or may not be useful. *)
+
+  type ('a,'k,'v,'r,'t) free =
+    | Return : 'a -> ('a,'k,'v,'r,'t) free
+    | Bind: ('a,'k,'v,'r,'t) free * ('a -> ('b,'k,'v,'r,'t) free) -> ('b,'k,'v,'r,'t) free
+    | Store_free: 'r list -> (unit,'k,'v,'r,'t) free
+    | Store_read: 'r -> (('k,'v,'r)Disk_node.dnode,'k,'v,'r,'t) free
+    | Store_alloc: ('k,'v,'r)Disk_node.dnode -> ('r,'k,'v,'r,'t) free
+
+  let return x = Return x
+  let bind a ab = Bind (a,ab)
+  let store_free rs = Store_free rs
+  let store_read r = Store_read r
+  let store_alloc dnode = Store_alloc dnode 
+
+
+  (* alternatively, at this point we can interpret into another monad?
+     but then we might as well interpret directly into our phantom
+     monad *)
+
+  let store_ops_to_pre_map_ops 
+
+
+
+    = Made.store_ops_to_pre_map_ops
+
+      
+  (* ah! the problem is that we can't treat ('a,'k,'v,'r,'t) free as a
+     monad 'a m with parameters 'k,'v,'r,'t *)
+  module Make(S:sig type k type v type r end) = struct
+    open S
+    module Monad : MONAD = struct
+      type ('a,'t) mm = ('a,k,v,r,'t) free
+      let bind ab a = bind a ab
+      let return = return
+      let dummy = ()
+      let fmap f a = bind (fun a -> return (f a)) a
+    end
+    
+    include Make(Monad)
+
+    let _ = store_ops_to_pre_map_ops
+        
+    (* NOTE this allows us to generalize over the k v r types *)
+    let store_ops_to_pre_map_ops 
+      (type kk vv rr) ~ps ~store_free ~store_read ~store_alloc 
+      = 
+      store_ops_to_pre_map_ops ~ps ~store_free ~store_read ~store_alloc
+
+    let _ = store_ops_to_pre_map_ops
+    
+  end
+
+  module Made = Make(struct type k type v type r end)
+
+  let _ = store_ops_to_pre_map_ops
+   
+  (* Ah, but this won't work because the monad type is in Made, with a fixed k etc *)
+  let example ps = 
+    store_ops_to_pre_map_ops ~ps ~store_free ~store_read ~store_alloc
+
+
+  (* so it looks like we have to do the whole thing in a function? *)
+
+end
+*)

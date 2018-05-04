@@ -33,7 +33,7 @@ $(PATCH): $(ORIG) $(PATCHED)
 	diff -u3 -p $(ORIG) $(PATCHED) >$@ 
 # this fails if there are changes?
 
-$(GENERATED_PATCHED): $(ORIG) $(PATCH)
+$(GENERATED_PATCHED): $(ORIG) 
 	-patch -i $(PATCH) $(ORIG) -o $@ 
 
 FORCE:
