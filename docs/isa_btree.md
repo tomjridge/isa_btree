@@ -1315,6 +1315,93 @@ differences with our work are:
 * FIXME more?
 
 
+# Comments for Andrea on refinement of tree model
+
+In this chapter we have dealt with B-trees as algebraic data types,
+i.e., as trees. Real storage hardware, such as hard disk drives and
+SSDs, work with blocks of bytes. Whilst the algebraic viewpoint
+suffices to discuss the correctness of operations -- such as find,
+insert and delete -- we need to explain how to extend our treatment to
+deal with the additional complexities of block storage.
+
+What are block devices? Most storage operates in terms of a block
+model. A block is simply a large contiguous chunk of bytes, for
+example, 1024 bytes or 4096 bytes are common block sizes. Blocks are
+read and written as a whole, and addressed by block number. Thus,
+block read and writes must occur at a byte address that is a multiple
+of the block size. For example, if the block size is 1024, it is
+possible to read 1024 bytes from position 2048 (a multiple of the
+block size) in a single operation, but to read 1024 bytes from
+position 2049 would require two block reads (one at offset 2048, and
+one at 3096).
+
+Performance of file systems depend on minimizing the number of block
+operations. The B-tree datastructure allows the branching factor of
+nodes, and the size of leaves, to be chosen so that a full node fits
+exactly in one block. This typically reduces the number of block
+operations needed when executing the B-tree map operations, and makes
+B-trees a very good fit for block devices. FIXME but B-trees impose
+some overhead as well eg maintaining the tree structure rather than
+indexing directly into the data.
+
+The algebraic model treats a tree as a node consisting of children
+which are *subtrees*:
+
+\includegraphics{pics/tree_view.png}
+
+When dealing with block devices, we instead
+model the children via pointers:
+
+\includegraphics{pics/block_view.png}
+
+Here $r_i$ is the pointer to the block representing the root of
+$t_i$. Given a pointer $r$ to a block representing the root of a tree,
+it is easy to reconstruct the tree as an algebraic structure. Thus,
+the block model is a refinement of the tree model: what is represented
+is the algebraic tree structure, but the block model exposes the
+pointers that are used to encode this structure on top of a block
+device. 
+
+The real-world nature of block devices means that we need to take
+extra care because all operations may potentially fail in a number of
+ways. At the most extreme, a USB device can be unplugged at any point,
+causing the entire block device to disappear. More mundanely, the
+device may become full and unable to service further requests. These
+complexities can be dealt with uniformly through the use of a monad (a
+technique from functional programming) to syntactically hide the
+numerous error cases which otherwise would cause the B-tree code to
+become unreadable.
+
+The use of a block device also entails that we must somehow keep track
+of which blocks are in use. There are several ways to implement
+this. Perhaps the simplest (and stupidest) maintains the "minimum free
+block" number, and simply increments this when blocks are
+allocated. When free blocks are exhausted, we can simply transfer all
+in-use blocks to another device, and continue. This has the downside
+that one needs two block devices, and most of the time one of the
+devices is inactive. To be usable, the transfer must occur ahead of
+time, and asynchronously, so that there is no perceptible pause while
+the transfer takes place. An alternative is to maintain an explicit
+free map on the block device itself. Yet another alternative is to
+reuse an existing logical block manager such as is found in Linux LVM.
+
+Beyond this, we must also address mundane issues such as how to
+marshal a tree node (with pointers!) to a block-sized byte
+sequence. Typically nothing depends on exactly how this is done, and
+we are free to choose whichever marshalling scheme is most suitable.
+
+Suprisingly it is possible to deal with all these issues whilst still
+keeping the essential B-tree routines short and readable. The main
+additions to the code are explicit block allocations and frees. To see
+how this is done, we refer the interested reader to the `isa_btree`
+repository\footnote{\url{https://github.com/tomjridge/isa_btree}}, which
+also includes the development of delete routines, and further B-tree
+operations such as "list all keys". Executable OCaml code, extracted
+from the formal development and packaged so that it is accessible as
+an OCaml library, can be found in the `tjr_btree`
+repository\footnote{\url{https://github.com/tomjridge/tjr_btree}}.
+
+
 # following in btree_doc.org
 # Leaf stream
 # Insert many
