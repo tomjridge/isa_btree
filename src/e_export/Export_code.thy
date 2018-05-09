@@ -71,7 +71,7 @@ mk_ls_state lss_is_finished dest_LS_leaf
 (* Monad.dest_MM *) Monad.dummy fmap  bind
 
 (* store *) 
-Store_ops.store_alloc store_read store_free
+Store_ops.store_alloc store_read store_free wf_store_ops
 
 (* find *)
 mk_find_state

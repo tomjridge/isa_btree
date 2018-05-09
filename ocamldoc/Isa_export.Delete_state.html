@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Isa_export.Insert_state.html">
+<link rel="next" href="Isa_export.Pre_params.html">
+<link rel="Up" href="Isa_export.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Isa_btree_defns" rel="Chapter" href="Isa_btree_defns.html"><title>Isa_export.Delete_state</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Isa_export.Insert_state.html" title="Isa_export.Insert_state">Previous</a>
+&nbsp;<a class="up" href="Isa_export.html" title="Isa_export">Up</a>
+&nbsp;<a class="post" href="Isa_export.Pre_params.html" title="Isa_export.Pre_params">Next</a>
+</div>
+<h1>Module <a href="type_Isa_export.Delete_state.html">Isa_export.Delete_state</a></h1>
+
+<pre><span class="keyword">module</span> Delete_state: <code class="code">sig</code> <a href="Isa_export.Delete_state.html">..</a> <code class="code">end</code></pre><hr width="100%">
+
+<pre><code><span id="TYPEdel_t"><span class="keyword">type</span> <code class="type">('a, 'b, 'c)</code> del_t</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTdel_t.D_small_leaf"><span class="constructor">D_small_leaf</span></span> <span class="keyword">of</span> <code class="type">('a * 'b) list</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTdel_t.D_small_node"><span class="constructor">D_small_node</span></span> <span class="keyword">of</span> <code class="type">('a list * 'c list)</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTdel_t.D_updated_subtree"><span class="constructor">D_updated_subtree</span></span> <span class="keyword">of</span> <code class="type">'c</code></code></td>
+
+</tr></table>
+
+
+
+<pre><code><span id="TYPEdelete_state"><span class="keyword">type</span> <code class="type">('a, 'b, 'c)</code> delete_state</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTdelete_state.D_down"><span class="constructor">D_down</span></span> <span class="keyword">of</span> <code class="type">(('a, 'b, 'c) <a href="Isa_export.Find_state.html#TYPEfind_state">Isa_export.Find_state.find_state</a> * 'c)</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTdelete_state.D_up"><span class="constructor">D_up</span></span> <span class="keyword">of</span> <code class="type">(('a, 'b, 'c) <a href="Isa_export.Delete_state.html#TYPEdel_t">del_t</a> *<br>      (('a, 'c, unit) <a href="Isa_export.Searching_and_splitting.html#TYPErsplit_node_ext">Isa_export.Searching_and_splitting.rsplit_node_ext</a> list * 'c))</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTdelete_state.D_finished"><span class="constructor">D_finished</span></span> <span class="keyword">of</span> <code class="type">'c</code></code></td>
+
+</tr></table>
+
+
+
+<pre><span id="VALdummy"><span class="keyword">val</span> dummy</span> : <code class="type">unit</code></pre>
+<pre><span id="VALdest_d_finished"><span class="keyword">val</span> dest_d_finished</span> : <code class="type">('a, 'b, 'c) <a href="Isa_export.Delete_state.html#TYPEdelete_state">delete_state</a> -> 'c option</code></pre>
+<pre><span id="VALmk_delete_state"><span class="keyword">val</span> mk_delete_state</span> : <code class="type">'a -> 'b -> ('a, 'c, 'b) <a href="Isa_export.Delete_state.html#TYPEdelete_state">delete_state</a></code></pre></body></html>

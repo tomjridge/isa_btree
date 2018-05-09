@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link rel="previous" href="Isa_export.Make.Store_ops.html">
-<link rel="next" href="Isa_export.Make.Pre_insert.html">
+<link rel="next" href="Isa_export.Make.Insert.html">
 <link rel="Up" href="Isa_export.Make.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
 <link title="Index of values" rel=Appendix href="index_values.html">
@@ -18,32 +18,12 @@
 <body>
 <div class="navbar"><a class="pre" href="Isa_export.Make.Store_ops.html" title="Isa_export.Make.Store_ops">Previous</a>
 &nbsp;<a class="up" href="Isa_export.Make.html" title="Isa_export.Make">Up</a>
-&nbsp;<a class="post" href="Isa_export.Make.Pre_insert.html" title="Isa_export.Make.Pre_insert">Next</a>
+&nbsp;<a class="post" href="Isa_export.Make.Insert.html" title="Isa_export.Make.Insert">Next</a>
 </div>
 <h1>Module <a href="type_Isa_export.Make.Find.html">Isa_export.Make.Find</a></h1>
 
 <pre><span class="keyword">module</span> Find: <code class="code">sig</code> <a href="Isa_export.Make.Find.html">..</a> <code class="code">end</code></pre><hr width="100%">
 
-<pre><code><span id="TYPEfind_state"><span class="keyword">type</span> <code class="type">('a, 'b, 'c)</code> find_state</span> = </code></pre><table class="typetable">
-<tr>
-<td align="left" valign="top" >
-<code><span class="keyword">|</span></code></td>
-<td align="left" valign="top" >
-<code><span id="TYPEELTfind_state.F_down"><span class="constructor">F_down</span></span> <span class="keyword">of</span> <code class="type">('c *<br>      ('a *<br>       ('c *<br>        ('a, 'c, unit) <a href="Isa_export.Searching_and_splitting.html#TYPErsplit_node_ext">Isa_export.Searching_and_splitting.rsplit_node_ext</a> list)))</code></code></td>
-
-</tr>
-<tr>
-<td align="left" valign="top" >
-<code><span class="keyword">|</span></code></td>
-<td align="left" valign="top" >
-<code><span id="TYPEELTfind_state.F_finished"><span class="constructor">F_finished</span></span> <span class="keyword">of</span> <code class="type">('c *<br>      ('a *<br>       ('c *<br>        (('a * 'b) list *<br>         ('a, 'c, unit) <a href="Isa_export.Searching_and_splitting.html#TYPErsplit_node_ext">Isa_export.Searching_and_splitting.rsplit_node_ext</a> list))))</code></code></td>
-
-</tr></table>
-
-
-
-<pre><span id="VALfind_step"><span class="keyword">val</span> find_step</span> : <code class="type">'a <a href="Isa_export.Params.html#TYPEps1">Isa_export.Params.ps1</a> -><br>       ('a, 'b, 'c, 'd, 'e) <a href="Isa_export.Make.Store_ops.html#TYPEstore_ops_ext">Isa_export.Make.Store_ops.store_ops_ext</a> -><br>       ('a, 'b, 'c) <a href="Isa_export.Make.Find.html#TYPEfind_state">find_state</a> -><br>       (('a, 'b, 'c) <a href="Isa_export.Make.Find.html#TYPEfind_state">find_state</a>, 'd) Monad.mm</code></pre>
-<pre><span id="VALmk_find_state"><span class="keyword">val</span> mk_find_state</span> : <code class="type">'a -> 'b -> ('a, 'c, 'b) <a href="Isa_export.Make.Find.html#TYPEfind_state">find_state</a></code></pre>
+<pre><span id="VALfind_step"><span class="keyword">val</span> find_step</span> : <code class="type">'a <a href="Isa_export.Params.html#TYPEps1">Isa_export.Params.ps1</a> -><br>       ('b -> (('a, 'c, 'b) <a href="Isa_export.Disk_node.html#TYPEdnode">Isa_export.Disk_node.dnode</a>, 'd) Monad.mm) *<br>       ((('a, 'c, 'b) <a href="Isa_export.Disk_node.html#TYPEdnode">Isa_export.Disk_node.dnode</a> -> ('b, 'd) Monad.mm) *<br>        ('b list -> (unit, 'd) Monad.mm)) -><br>       ('a, 'c, 'b) <a href="Isa_export.Find_state.html#TYPEfind_state">Isa_export.Find_state.find_state</a> -><br>       (('a, 'c, 'b) <a href="Isa_export.Find_state.html#TYPEfind_state">Isa_export.Find_state.find_state</a>, 'd) Monad.mm</code></pre>
 <pre><span id="VALwf_store_tree"><span class="keyword">val</span> wf_store_tree</span> : <code class="type">('a -> 'b -> ('c, 'd) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       'a -> 'b -> ('c, 'd) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -> bool</code></pre>
-<pre><span id="VALdest_f_finished"><span class="keyword">val</span> dest_f_finished</span> : <code class="type">('a, 'b, 'c) <a href="Isa_export.Make.Find.html#TYPEfind_state">find_state</a> -><br>       ('c *<br>        ('a *<br>         ('c *<br>          (('a * 'b) list *<br>           ('a, 'c, unit) <a href="Isa_export.Searching_and_splitting.html#TYPErsplit_node_ext">Isa_export.Searching_and_splitting.rsplit_node_ext</a> list))))<br>       option</code></pre>
-<pre><span id="VALwellformed_find_state"><span class="keyword">val</span> wellformed_find_state</span> : <code class="type">('a -> 'a -> <a href="Isa_export.Arith.html#TYPEint">Isa_export.Arith.int</a>) -><br>       ('b -> 'c -> ('a, 'd) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       ('a, 'd) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -><br>       'b -> ('a, 'e, 'c) <a href="Isa_export.Make.Find.html#TYPEfind_state">find_state</a> -> bool</code></pre></body></html>
+<pre><span id="VALwellformed_find_state"><span class="keyword">val</span> wellformed_find_state</span> : <code class="type">('a -> 'a -> <a href="Isa_export.Arith.html#TYPEint">Isa_export.Arith.int</a>) -><br>       ('b -> 'c -> ('a, 'd) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       ('a, 'd) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -><br>       'b -> ('a, 'e, 'c) <a href="Isa_export.Find_state.html#TYPEfind_state">Isa_export.Find_state.find_state</a> -> bool</code></pre></body></html>

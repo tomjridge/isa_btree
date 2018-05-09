@@ -17,6 +17,9 @@ type_synonym ('k,'v,'r,'t) store_ops = "
   (('k,'v,'r) dnode \<Rightarrow> ('r,'t) MM) *
   ('r list \<Rightarrow> (unit,'t) MM)"
 
+definition wf_store_ops :: "('k,'v,'r,'t) store_ops \<Rightarrow> bool" where 
+"wf_store_ops s = True"
+
 definition store_read :: "('k,'v,'r,'t) store_ops => ('r \<Rightarrow> (('k,'v,'r) dnode,'t) MM)" where
 "store_read raf = (let (r,a,f) = raf in r)"
 

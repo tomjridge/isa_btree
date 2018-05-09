@@ -51,11 +51,13 @@ module Make(Monad: MONAD) = struct
 
   include Isa_export.Make(Monad)
 
+  type ('k,'v,'r) dnode = ('k,'v,'r) Isa_export.Disk_node.dnode
+
   
-  type ('k,'v,'r) find_state = ('k,'v,'r) Find.find_state
-  type ('k,'v,'r) insert_state = ('k,'v,'r) Insert.insert_state
-  type ('k,'v,'r) im_state = ('k,'v,'r) Insert_many.ist
-  type ('k,'v,'r) delete_state = ('k,'v,'r) Delete2.delete_state
+  type ('k,'v,'r) find_state = ('k,'v,'r) Find_state.find_state
+  type ('k,'v,'r) insert_state = ('k,'v,'r) Insert_state.insert_state
+  type ('k,'v,'r) im_state = ('k,'v,'r) Insert_many_state.imst
+  type ('k,'v,'r) delete_state = ('k,'v,'r) Delete_state.delete_state
 
   (* isa doesn't export type abbrevs *)
   type ('k,'r) rsplit_node = ('k,'r,unit) Searching_and_splitting.rsplit_node_ext
@@ -67,17 +69,21 @@ module Make(Monad: MONAD) = struct
 
   (* NOTE this type is made abstract in isa_export; it supports step,
      dest_LS_leaf, and lss_is_finished ops *)
-  type ('k,'v,'r) ls_state = ('k,'v,'r) Leaf_stream.ls_state
+  type ('k,'v,'r) ls_state = ('k,'v,'r) Leaf_stream_state.ls_state
 
   (* FIXME not included in ocamldoc for some reason... *)
   module Store_ops' = struct
     open Store_ops
 
-    type ('k,'v,'r,'t) store_ops = ('k,'v,'r,'t,unit) Store_ops.store_ops_ext
+    (* NOTE isa iterated pairs nest to right *)
+    type ('k,'v,'r,'t) store_ops = 
+ ('r -> (('k,'v,'r) dnode,'t) Monad.mm) * 
+ ((('k,'v,'r) dnode -> ('r,'t) Monad.mm) *
+ ('r list -> (unit,'t) Monad.mm))
 
     let mk_store_ops ~store_free ~store_read ~store_alloc : ('k,'v,'r,'t)store_ops =
-      Store_ops_ext(store_read,store_alloc,store_free,())
-
+      (store_read,(store_alloc,store_free))
+    
     let dest_store_ops (store_ops:('k,'v,'r,'t)store_ops) = fun f ->
       f ~store_free:(store_free store_ops) ~store_read:(store_read store_ops)
         ~store_alloc:(store_alloc store_ops)
@@ -94,7 +100,7 @@ module Make(Monad: MONAD) = struct
 
     (** Construct an initial "find state" given a key and a reference to
         a B-tree root. *)
-    let  mk_find_state k r : ('k,'v,'r) find_state = Find.mk_find_state k r
+    let  mk_find_state k r : ('k,'v,'r) find_state = Find_state.mk_find_state k r
 
     (** Small step the find state: take a find state and return an updated
         find state (in the monad). *)
@@ -107,7 +113,7 @@ module Make(Monad: MONAD) = struct
         key... if any leaf contains the key, this leaf does) and a the list
         of (key,values) in that leaf. *)
     let dest_f_finished fs: ('r * 'k * 'r * 'kvs * ('k,'r) rstk) option = (
-      Find.dest_f_finished fs 
+      Find_state.dest_f_finished fs 
       |> (function None -> None | Some  x -> Some (x5 x)))
 
     (*open Params2*)
@@ -126,13 +132,13 @@ module Make(Monad: MONAD) = struct
 
     (** Similar functionality to [mk_find_state] *)
     let mk_delete_state: 'k -> 'r -> ('k,'v,'r) delete_state = 
-      Delete2.mk_delete_state
+      Delete_state.mk_delete_state
 
     let delete_step ~constants ~cmp ~store_ops : 'ds -> ('ds,'t) mm = 
       (fun ds -> Delete2.delete_step (x_ps1 ~constants ~cmp) store_ops ds)
 
     (** The result is a reference to the updated B-tree *)
-    let dest_d_finished: ('k,'v,'r) delete_state->'r option = Delete2.dest_d_finished
+    let dest_d_finished: ('k,'v,'r) delete_state->'r option = Delete_state.dest_d_finished
 
     let wellformed_delete_state ~cmp ~constants ~r2t : 'tree->'t->'k->('k,'v,'r) delete_state->bool = (
       fun t s k ds -> 
@@ -144,14 +150,14 @@ module Make(Monad: MONAD) = struct
     (* insert ---------------------------------------- *)
 
     let mk_insert_state: 'k->'v->'r->('k,'v,'r) insert_state = 
-      Insert.mk_insert_state
+      Insert_state.mk_insert_state
 
     let insert_step ~cmp ~constants ~store_ops : 'is -> ('is,'t) mm = 
       (fun is -> Insert.insert_step (x_ps1 ~cmp ~constants) store_ops is)
 
     (** Result is a reference to the updated B-tree *)
     let dest_i_finished: ('k,'v,'r)insert_state -> 'r option = 
-      Insert.dest_i_finished
+      Insert_state.dest_i_finished
 
     let wellformed_insert_state ~cmp ~constants ~r2t :'tree->'t->'k->'v->('k,'v,'r) insert_state->bool = (
       fun t s k v is ->
@@ -162,20 +168,20 @@ module Make(Monad: MONAD) = struct
     (* insert_many ---------------------------------------- *)
 
     let mk_im_state: 'k -> 'v -> ('k*'v) list -> 'r -> ('k,'v,'r) im_state = 
-      Insert_many.mk_insert_state
+      Insert_many_state.mk_im_state
 
     let im_step ~constants ~cmp ~store_ops : 'im -> ('im,'t) mm = 
       (fun is -> Insert_many.insert_step (x_ps1 ~constants ~cmp) store_ops is)
 
     let dest_im_finished: ('k,'v,'r)im_state -> ('r*('k*'v)list) option = 
-      Insert_many.dest_i_finished
+      Insert_many_state.dest_im_finished
     (* no wf *)
 
 
     (* leaf stream ---------------------------------------- *)
 
     (** Given a reference to a B-tree root, construct a stream of leaves *)
-    let mk_ls_state : 'r -> ('k,'v,'r) ls_state = Leaf_stream.mk_ls_state
+    let mk_ls_state : 'r -> ('k,'v,'r) ls_state = Leaf_stream_state.mk_ls_state
 
     (** Step the leaf stream to the next leaf. If the leaf stream is
         finished (no more leaves), stepping will just return the leaf
@@ -195,7 +201,11 @@ module Make(Monad: MONAD) = struct
   end
 
 
+  (* FIXME not clear if we want to include Pre_map_ops and Big_step
+     here or not; probably not - leave this as a thin layer over
+     isa_export *)
 
+(*
   module Pre_map_ops = struct
 
     type ('k,'v,'r,'t) pre_map_ops = {
@@ -371,6 +381,7 @@ module Make(Monad: MONAD) = struct
         ~find_leaf:map_ops.find_leaf ~find:map_ops.find ~insert:map_ops.insert 
         ~insert_many:map_ops.insert_many ~delete:map_ops.delete
 
+*)
 end
 
 (*

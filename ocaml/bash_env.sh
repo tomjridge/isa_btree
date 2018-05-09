@@ -4,9 +4,9 @@ set -a # export all vars
 
 # NOTE in toplevel you need to #require "bos.top" and bos.setup;;
 
-libname="isabelle_btree_lib"
+libname="isa_btree"
 required_packages="stdlib"  # may want a separate package for lwt 
-description="$libname"
+description="$libname, OCaml version of Isabelle B-tree defns"
 
 function clean() {
 	rm -f *.cmi *.cmo *.cmx *.o *.x *.a *.cma *.cmxa *.cmt *.odoc

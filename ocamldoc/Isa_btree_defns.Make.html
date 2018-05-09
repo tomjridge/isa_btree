@@ -38,16 +38,19 @@
 
 <pre><span class="keyword">include</span> struct ... end</pre>
 
-<pre><span id="TYPEfind_state"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> find_state</span> = <code class="type">('k, 'v, 'r) Find.find_state</code> </pre>
+<pre><span id="TYPEdnode"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> dnode</span> = <code class="type">('k, 'v, 'r) <a href="Isa_export.Disk_node.html#TYPEdnode">Isa_export.Disk_node.dnode</a></code> </pre>
 
 
-<pre><span id="TYPEinsert_state"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> insert_state</span> = <code class="type">('k, 'v, 'r) Insert.insert_state</code> </pre>
+<pre><span id="TYPEfind_state"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> find_state</span> = <code class="type">('k, 'v, 'r) <a href="Isa_export.Find_state.html#TYPEfind_state">Isa_export.Find_state.find_state</a></code> </pre>
 
 
-<pre><span id="TYPEim_state"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> im_state</span> = <code class="type">('k, 'v, 'r) Insert_many.ist</code> </pre>
+<pre><span id="TYPEinsert_state"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> insert_state</span> = <code class="type">('k, 'v, 'r) <a href="Isa_export.Insert_state.html#TYPEinsert_state">Isa_export.Insert_state.insert_state</a></code> </pre>
 
 
-<pre><span id="TYPEdelete_state"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> delete_state</span> = <code class="type">('k, 'v, 'r) Delete2.delete_state</code> </pre>
+<pre><span id="TYPEim_state"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> im_state</span> = <code class="type">('k, 'v, 'r) <a href="Isa_export.Insert_many_state.html#TYPEimst">Isa_export.Insert_many_state.imst</a></code> </pre>
+
+
+<pre><span id="TYPEdelete_state"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> delete_state</span> = <code class="type">('k, 'v, 'r) <a href="Isa_export.Delete_state.html#TYPEdelete_state">Isa_export.Delete_state.delete_state</a></code> </pre>
 
 
 <pre><span id="TYPErsplit_node"><span class="keyword">type</span> <code class="type">('k, 'r)</code> rsplit_node</span> = <code class="type">('k, 'r, unit) <a href="Isa_export.Searching_and_splitting.html#TYPErsplit_node_ext">Isa_export.Searching_and_splitting.rsplit_node_ext</a></code> </pre>
@@ -61,19 +64,10 @@
 <br>
 Leaf stream state. Needed early for store_ops<br>
 
-<pre><span id="TYPEls_state"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> ls_state</span> = <code class="type">('k, 'v, 'r) Leaf_stream.ls_state</code> </pre>
+<pre><span id="TYPEls_state"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> ls_state</span> = <code class="type">('k, 'v, 'r) <a href="Isa_export.Leaf_stream_state.html#TYPEls_state">Isa_export.Leaf_stream_state.ls_state</a></code> </pre>
 
 
 <pre><span class="keyword">module</span> <a href="Isa_btree_defns.Make.Store_ops'.html">Store_ops'</a>: <code class="code">sig</code> <a href="Isa_btree_defns.Make.Store_ops'.html">..</a> <code class="code">end</code></pre>
 <pre><span class="keyword">include</span> Store_ops'</pre>
 
-<pre><span class="keyword">module</span> <a href="Isa_btree_defns.Make.Small_step.html">Small_step</a>: <code class="code">sig</code> <a href="Isa_btree_defns.Make.Small_step.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Isa_btree_defns.Make.Pre_map_ops.html">Pre_map_ops</a>: <code class="code">sig</code> <a href="Isa_btree_defns.Make.Pre_map_ops.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">include</span> Pre_map_ops</pre>
-
-<pre><span class="keyword">module</span> <a href="Isa_btree_defns.Make.Big_step.html">Big_step</a>: <code class="code">sig</code> <a href="Isa_btree_defns.Make.Big_step.html">..</a> <code class="code">end</code></pre>
-<pre><span id="VALstore_ops_to_pre_map_ops"><span class="keyword">val</span> store_ops_to_pre_map_ops</span> : <code class="type">ps:< cmp : 'a -> 'a -> int; constants : constants; .. > -><br>       store_free:('b list -> (unit, 'c) Monad.mm) -><br>       store_read:('b -> (('a, 'd, 'b) <a href="Isa_export.Disk_node.html#TYPEdnode">Isa_export.Disk_node.dnode</a>, 'c) Monad.mm) -><br>       store_alloc:(('a, 'd, 'b) <a href="Isa_export.Disk_node.html#TYPEdnode">Isa_export.Disk_node.dnode</a> -> ('b, 'c) Monad.mm) -><br>       (find_leaf:('a -><br>                   'b -><br>                   ('b * ('a * 'd) list * ('a, 'b) <a href="Isa_btree_defns.Make.html#TYPErstk">rstk</a>, 'c)<br>                   Monad.mm) -><br>        find:('a -> 'b -> ('b * ('a * 'd) list, 'c) Monad.mm) -><br>        insert:('a -> 'd -> 'b -> ('b, 'c) Monad.mm) -><br>        insert_many:('a -><br>                     'd -><br>                     ('a * 'd) list -> 'b -> ('b * ('a * 'd) list, 'c) Monad.mm) -><br>        delete:('a -> 'b -> ('b, 'c) Monad.mm) -> 'e) -><br>       'e</code></pre><div class="info ">
-The main functionality exported by the B-tree code: implement a
-      map on top of a store<br>
-</div>
-</body></html>
+<pre><span class="keyword">module</span> <a href="Isa_btree_defns.Make.Small_step.html">Small_step</a>: <code class="code">sig</code> <a href="Isa_btree_defns.Make.Small_step.html">..</a> <code class="code">end</code></pre></body></html>
