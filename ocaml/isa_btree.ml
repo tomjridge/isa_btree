@@ -75,18 +75,26 @@ module Make(Monad: MONAD) = struct
   module Store_ops' = struct
     open Store_ops
 
+    module Store_ops_type = struct 
+
+    end
+
     (* NOTE isa iterated pairs nest to right *)
-    type ('k,'v,'r,'t) store_ops = 
+    type ('k,'v,'r,'t) store_ops = Store_ops of (
  ('r -> (('k,'v,'r) dnode,'t) Monad.mm) * 
  ((('k,'v,'r) dnode -> ('r,'t) Monad.mm) *
- ('r list -> (unit,'t) Monad.mm))
+ ('r list -> (unit,'t) Monad.mm)))
 
     let mk_store_ops ~store_free ~store_read ~store_alloc : ('k,'v,'r,'t)store_ops =
-      (store_read,(store_alloc,store_free))
+      Store_ops(store_read,(store_alloc,store_free))
     
     let dest_store_ops (store_ops:('k,'v,'r,'t)store_ops) = fun f ->
+      let Store_ops store_ops = store_ops in
       f ~store_free:(store_free store_ops) ~store_read:(store_read store_ops)
         ~store_alloc:(store_alloc store_ops)
+
+    let x_store_ops = function (Store_ops s) -> s
+
   end
   include Store_ops'
 
