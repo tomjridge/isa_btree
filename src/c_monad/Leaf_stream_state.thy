@@ -24,4 +24,19 @@ type_synonym ('k,'v,'r) lss = "('k,'v,'r) ls_state"
 definition mk_ls_state :: "'r \<Rightarrow> ('k,'v,'r)ls_state" where
 "mk_ls_state r = LS_down (r,[])"
 
+(* detect when we are finished *)
+definition lss_is_finished :: "('k,'v,'r) lss \<Rightarrow> bool" where
+"lss_is_finished lss = (
+  case lss of
+  LS_up [] \<Rightarrow> True
+  | _ \<Rightarrow> False)"
+
+(* detect when we are at the next leaf *)
+definition dest_LS_leaf :: "('k,'v,'r) lss \<Rightarrow> ('k*'v)s option" where
+"dest_LS_leaf x = (
+  case x of 
+  LS_leaf (kvs,_) \<Rightarrow> Some kvs
+  | _ \<Rightarrow> None
+)"
+
 end

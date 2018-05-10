@@ -45,20 +45,6 @@ definition step_up :: "('k,'r) rstk \<Rightarrow> ('k,'v,'r) lss" where
       in
       LS_down (r',f'#fs') )))"
 
-(* detect when we are finished *)
-definition lss_is_finished :: "('k,'v,'r) lss \<Rightarrow> bool" where
-"lss_is_finished lss = (
-  case lss of
-  LS_up [] \<Rightarrow> True
-  | _ \<Rightarrow> False)"
-
-(* detect when we are at the next leaf *)
-definition dest_LS_leaf :: "('k,'v,'r) lss \<Rightarrow> ('k*'v)s option" where
-"dest_LS_leaf x = (
-  case x of 
-  LS_leaf (kvs,_) \<Rightarrow> Some kvs
-  | _ \<Rightarrow> None
-)"
   
 definition lss_step :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r) lss \<Rightarrow> (('k,'v,'r) lss,'t) MM" where
 "lss_step ps1 store_ops lss = (

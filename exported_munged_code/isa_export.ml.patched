@@ -1090,12 +1090,21 @@ module Find_state : sig
                             ('a, 'c, unit)
                               Searching_and_splitting.rsplit_node_ext list))))  [@@deriving yojson]
   val dummy : unit
+  val wf_trans :
+    'a * ('b, 'c, 'd) find_state -> 'a * ('b, 'c, 'd) find_state -> bool
   val mk_find_state : 'a -> 'b -> ('a, 'c, 'b) find_state
+  val wf_store_tree :
+    ('a -> 'b -> ('c, 'd) Tree.tree option) ->
+      'a -> 'b -> ('c, 'd) Tree.tree -> bool
   val dest_f_finished :
     ('a, 'b, 'c) find_state ->
       ('c * ('a * ('c * (('a * 'b) list *
                           ('a, 'c, unit)
                             Searching_and_splitting.rsplit_node_ext list)))) option
+  val wellformed_find_state :
+    ('a -> 'a -> Arith.int) ->
+      ('b -> 'c -> ('a, 'd) Tree.tree option) ->
+        ('a, 'd) Tree.tree -> 'b -> ('a, 'd, 'c) find_state -> bool
 end = struct
 
 type ('a, 'b, 'c) find_state =
@@ -1109,12 +1118,52 @@ type ('a, 'b, 'c) find_state =
 
 let dummy : unit = ();;
 
+let rec wf_trans
+  s1 s2 =
+    Util.assert_true
+      (let (_, fs1) = s1 in
+       let (_, fs2) = s2 in
+       (match (fs1, fs2)
+         with (F_down (_, (_, (_, stk))), F_down (_, (_, (_, stka)))) ->
+           Arith.equal_nata (List.size_list stka)
+             (Arith.plus_nat Arith.one_nat (List.size_list stk))
+         | (F_down (_, (_, (_, _))), F_finished _) -> true
+         | (F_finished _, _) -> false));;
+
 let rec mk_find_state k r = F_down (r, (k, (r, [])));;
+
+let rec wf_store_tree
+  r2t s r t =
+    Util.assert_true
+      (match r2t s r with None -> false | Some a -> Tree.tree_equal t a);;
 
 let rec dest_f_finished
   fs = (match fs with F_down _ -> None
          | F_finished (r0, (k, (r, (kvs, stk)))) ->
            Some (r0, (k, (r, (kvs, stk)))));;
+
+let rec wellformed_find_state
+  k_ord r2t t0 s fs =
+    Util.assert_true
+      (let _ = Tree.height t0 in
+       let check_focus = wf_store_tree r2t s in
+       let check_stack =
+         (fun rstk tstk ->
+           Tree_stack.rstack_equal
+             (Util.rev_apply tstk (Tree_stack.rstack_map (fun a -> Some a)))
+             (Util.rev_apply rstk (Tree_stack.rstack_map (r2t s))))
+         in
+       (match fs
+         with F_down (_, (k, (r, stk))) ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
+           Util.assert_true (check_focus r t_fo) &&
+             Util.assert_true (check_stack stk t_stk)
+         | F_finished (_, (k, (r, (_, stk)))) ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
+           Util.assert_true (check_focus r t_fo) &&
+             Util.assert_true (check_stack stk t_stk)));;
 
 end;; (*struct Find_state*)
 
@@ -1160,6 +1209,8 @@ module Leaf_stream_state : sig
     | LS_up of ('a, 'c, unit) Searching_and_splitting.rsplit_node_ext list
   val dummy : unit
   val mk_ls_state : 'a -> ('b, 'c, 'a) ls_state
+  val dest_LS_leaf : ('a, 'b, 'c) ls_state -> (('a * 'b) list) option
+  val lss_is_finished : ('a, 'b, 'c) ls_state -> bool
 end = struct
 
 type ('a, 'b, 'c) ls_state =
@@ -1172,6 +1223,14 @@ type ('a, 'b, 'c) ls_state =
 let dummy : unit = ();;
 
 let rec mk_ls_state r = LS_down (r, []);;
+
+let rec dest_LS_leaf
+  x = (match x with LS_down _ -> None | LS_leaf (kvs, _) -> Some kvs
+        | LS_up _ -> None);;
+
+let rec lss_is_finished
+  lss = (match lss with LS_down _ -> false | LS_leaf _ -> false
+          | LS_up [] -> true | LS_up (_ :: _) -> false);;
 
 end;; (*struct Leaf_stream_state*)
 
@@ -1217,20 +1276,92 @@ module Insert_state : sig
     I_up of
       (('a, 'b, 'c) i12_t *
         ('a, 'c, unit) Searching_and_splitting.rsplit_node_ext list)
-    | I_finished of 'c [@@deriving yojson]
+    | I_finished of 'c  [@@deriving yojson]
   val dummy : unit
   val dest_i_finished : ('a, 'b, 'c) insert_state -> 'c option
   val mk_insert_state : 'a -> 'b -> 'c -> ('a, 'b, 'c) insert_state
+  val wellformed_insert_state :
+    unit Prelude.constants_ext ->
+      ('a -> 'a -> Arith.int) ->
+        ('b -> 'c -> ('a, 'd) Tree.tree option) ->
+          ('a, 'd) Tree.tree ->
+            'b -> 'a -> 'd -> ('a, 'd, 'c) insert_state -> bool
 end = struct
 
-type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c))  [@@deriving yojson];;
+type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c))   [@@deriving yojson];;
 
 type ('a, 'b, 'c) insert_state =
   I_down of (('a, 'b, 'c) Find_state.find_state * 'b) |
   I_up of
     (('a, 'b, 'c) i12_t *
       ('a, 'c, unit) Searching_and_splitting.rsplit_node_ext list)
-  | I_finished of 'c  [@@deriving yojson];;
+  | I_finished of 'c   [@@deriving yojson];;
+
+let rec wf_d
+  k_ord r2t t0 s d =
+    Util.assert_true
+      (let (fs, _) = d in
+       Find_state.wellformed_find_state k_ord r2t t0 s fs);;
+
+let rec wf_f
+  cs k_ord r2t t0 s k v r =
+    Util.assert_true
+      (match r2t s r with None -> false
+        | Some t ->
+          Tree.wellformed_tree cs (Some Prelude.Small_root_node_or_leaf) k_ord
+            t &&
+            Key_value.kvs_equal
+              (Util.rev_apply (Util.rev_apply t0 Tree.tree_to_kvs)
+                (Key_value.kvs_insert k_ord (k, v)))
+              (Util.rev_apply t Tree.tree_to_kvs));;
+
+let rec wf_u
+  r2t k_ord t0 s k v u =
+    Util.assert_true
+      (let _ = Find_state.wf_store_tree r2t s in
+       let check_stack =
+         (fun rstk tstk ->
+           Tree_stack.rstack_equal
+             (Util.rev_apply
+               (Util.rev_apply rstk (Tree_stack.rstack_map (r2t s)))
+               Tree_stack.no_focus)
+             (Util.rev_apply
+               (Util.rev_apply tstk (Tree_stack.rstack_map (fun a -> Some a)))
+               Tree_stack.no_focus))
+         in
+       (match u
+         with (I1 r, stk) ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
+           Util.assert_true (check_stack stk t_stk) &&
+             (match r2t s r with None -> Util.assert_true false
+               | Some t ->
+                 Util.assert_true
+                   (Key_value.kvs_equal (Util.rev_apply t Tree.tree_to_kvs)
+                     (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
+                       (Key_value.kvs_insert k_ord (k, v)))))
+         | (I2 (r1, (ka, r2)), stk) ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
+           Util.assert_true (check_stack stk t_stk) &&
+             (match (r2t s r1, r2t s r2) with (None, _) -> false
+               | (Some _, None) -> false
+               | (Some t1, Some t2) ->
+                 let (l, ua) = Tree_stack.rstack_get_bounds t_stk in
+                 let (ks1, ks2) =
+                   (Util.rev_apply t1 Tree.tree_to_keys,
+                     Util.rev_apply t2 Tree.tree_to_keys)
+                   in
+                 Util.assert_true
+                   (Key_value.check_keys k_ord l ks1 (Some ka)) &&
+                   (Util.assert_true
+                      (Key_value.check_keys k_ord (Some ka) ks2 ua) &&
+                     Util.assert_true
+                       (Key_value.kvs_equal
+                         (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
+                           (Key_value.kvs_insert k_ord (k, v)))
+                         (Util.rev_apply t1 Tree.tree_to_kvs @
+                           Util.rev_apply t2 Tree.tree_to_kvs))))));;
 
 let dummy : unit = ();;
 
@@ -1240,31 +1371,123 @@ let rec dest_i_finished
 
 let rec mk_insert_state k v r = I_down (Find_state.mk_find_state k r, v);;
 
+let rec wellformed_insert_state
+  cs k_ord r2t t0 s k v is =
+    Util.assert_true
+      (match is with I_down a -> wf_d k_ord r2t t0 s a
+        | I_up a -> wf_u r2t k_ord t0 s k v a
+        | I_finished a -> wf_f cs k_ord r2t t0 s k v a);;
+
 end;; (*struct Insert_state*)
 
 module Delete_state : sig
   type ('a, 'b, 'c) del_t = D_small_leaf of ('a * 'b) list |
-    D_small_node of ('a list * 'c list) | D_updated_subtree of 'c  [@@deriving yojson]
+    D_small_node of ('a list * 'c list) | D_updated_subtree of 'c   [@@deriving yojson]
   type ('a, 'b, 'c) delete_state =
     D_down of (('a, 'b, 'c) Find_state.find_state * 'c) |
     D_up of
       (('a, 'b, 'c) del_t *
         (('a, 'c, unit) Searching_and_splitting.rsplit_node_ext list * 'c))
-    | D_finished of 'c  [@@deriving yojson]
+    | D_finished of 'c   [@@deriving yojson]
   val dummy : unit
   val dest_d_finished : ('a, 'b, 'c) delete_state -> 'c option
   val mk_delete_state : 'a -> 'b -> ('a, 'c, 'b) delete_state
+  val wellformed_delete_state :
+    unit Prelude.constants_ext ->
+      ('a -> 'a -> Arith.int) ->
+        ('b -> 'c -> ('a, 'd) Tree.tree option) ->
+          ('a, 'd) Tree.tree -> 'b -> 'a -> ('a, 'd, 'c) delete_state -> bool
 end = struct
 
 type ('a, 'b, 'c) del_t = D_small_leaf of ('a * 'b) list |
-  D_small_node of ('a list * 'c list) | D_updated_subtree of 'c  [@@deriving yojson];;
+  D_small_node of ('a list * 'c list) | D_updated_subtree of 'c   [@@deriving yojson];;
 
 type ('a, 'b, 'c) delete_state =
   D_down of (('a, 'b, 'c) Find_state.find_state * 'c) |
   D_up of
     (('a, 'b, 'c) del_t *
       (('a, 'c, unit) Searching_and_splitting.rsplit_node_ext list * 'c))
-  | D_finished of 'c  [@@deriving yojson];;
+  | D_finished of 'c   [@@deriving yojson];;
+
+let rec wf_d
+  k_ord r2f t0 s d =
+    Util.assert_true
+      (let (fs, _) = d in
+       Util.assert_true (Find_state.wellformed_find_state k_ord r2f t0 s fs));;
+
+let rec wf_f
+  constants k_ord r2t t0 s k r =
+    Util.assert_true
+      (let t = Util.rev_apply (r2t s r) Util.dest_Some in
+       Util.assert_true
+         (Tree.wellformed_tree constants (Some Prelude.Small_root_node_or_leaf)
+           k_ord t) &&
+         Util.assert_true
+           (Key_value.kvs_equal
+             (Util.rev_apply (Util.rev_apply t0 Tree.tree_to_kvs)
+               (Key_value.kvs_delete k_ord k))
+             (Util.rev_apply t Tree.tree_to_kvs)));;
+
+let rec wf_u
+  constants k_ord r2t t0 s k u =
+    Util.assert_true
+      (let (fo, stk) = u in
+       let check_stack =
+         (fun rstk tstk ->
+           Tree_stack.rstack_equal
+             (Util.rev_apply
+               (Util.rev_apply rstk (Tree_stack.rstack_map (r2t s)))
+               Tree_stack.no_focus)
+             (Util.rev_apply
+               (Util.rev_apply tstk (Tree_stack.rstack_map (fun a -> Some a)))
+               Tree_stack.no_focus))
+         in
+       let check_wf = (fun ms -> Tree.wellformed_tree constants ms k_ord) in
+       let check_focus =
+         (fun foa ->
+           Key_value.kvs_equal
+             (Util.rev_apply (Util.rev_apply foa Tree.tree_to_kvs)
+               (Key_value.kvs_delete k_ord k)))
+         in
+       (match fo
+         with D_small_leaf kvs ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
+           let ms =
+             (match stk with [] -> Some Prelude.Small_root_node_or_leaf
+               | _ :: _ -> Some Prelude.Small_leaf)
+             in
+           Util.assert_true (check_stack stk t_stk) &&
+             (Util.assert_true (check_wf ms (Tree.Leaf kvs)) &&
+               Util.assert_true (check_focus t_fo kvs))
+         | D_small_node (ks, rs) ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
+           let ms =
+             (match stk with [] -> Some Prelude.Small_root_node_or_leaf
+               | _ :: _ -> Some Prelude.Small_node)
+             in
+           let t =
+             Tree.Node
+               (ks, Util.rev_apply (Util.rev_apply rs (List.map (r2t s)))
+                      (List.map Util.dest_Some))
+             in
+           Util.assert_true (check_stack stk t_stk) &&
+             (Util.assert_true (check_wf ms t) &&
+               Util.assert_true
+                 (check_focus t_fo (Util.rev_apply t Tree.tree_to_kvs)))
+         | D_updated_subtree r ->
+           let (t_fo, t_stk) =
+             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
+           let ms =
+             (match stk with [] -> Some Prelude.Small_root_node_or_leaf
+               | _ :: _ -> None)
+             in
+           let t = Util.rev_apply (Util.rev_apply r (r2t s)) Util.dest_Some in
+           Util.assert_true (check_stack stk t_stk) &&
+             (Util.assert_true (check_wf ms t) &&
+               Util.assert_true
+                 (check_focus t_fo (Util.rev_apply t Tree.tree_to_kvs)))));;
 
 let dummy : unit = ();;
 
@@ -1273,6 +1496,15 @@ let rec dest_d_finished
         | D_finished a -> Some a);;
 
 let rec mk_delete_state k r = D_down (Find_state.mk_find_state k r, r);;
+
+let rec wellformed_delete_state
+  constants k_ord r2t t0 s k ds =
+    Util.assert_true
+      (match ds with D_down a -> wf_d k_ord r2t t0 s a
+        | D_up (fo, (stk, r)) ->
+          wf_u constants k_ord r2t t0 s k (fo, stk) &&
+            (match r2t s r with None -> false | Some t -> Tree.tree_equal t t0)
+        | D_finished a -> wf_f constants k_ord r2t t0 s k a);;
 
 end;; (*struct Delete_state*)
 
@@ -1373,6 +1605,11 @@ module Store_ops : sig
       ((('b, 'c, 'a) Disk_node.dnode -> ('a, 'd) Monad.mm) *
         ('a list -> (unit, 'd) Monad.mm)) ->
       ('b, 'c, 'a) Disk_node.dnode -> ('a, 'd) Monad.mm
+  val wf_store_ops :
+    ('a -> (('b, 'c, 'a) Disk_node.dnode, 'd) Monad.mm) *
+      ((('b, 'c, 'a) Disk_node.dnode -> ('a, 'd) Monad.mm) *
+        ('a list -> (unit, 'd) Monad.mm)) ->
+      bool
 end = struct
 
 let rec store_free raf = let (_, (_, f)) = raf in
@@ -1387,6 +1624,8 @@ let rec store_alloc
         let (ab, _) = aa in
         ab;;
 
+let rec wf_store_ops s = true;;
+
 end;; (*struct Store_ops*)
 
 module Find : sig
@@ -1397,13 +1636,6 @@ module Find : sig
           ('b list -> (unit, 'd) Monad.mm)) ->
         ('a, 'c, 'b) Find_state.find_state ->
           (('a, 'c, 'b) Find_state.find_state, 'd) Monad.mm
-  val wf_store_tree :
-    ('a -> 'b -> ('c, 'd) Tree.tree option) ->
-      'a -> 'b -> ('c, 'd) Tree.tree -> bool
-  val wellformed_find_state :
-    ('a -> 'a -> Arith.int) ->
-      ('b -> 'c -> ('a, 'd) Tree.tree option) ->
-        ('a, 'd) Tree.tree -> 'b -> ('a, 'd, 'c) Find_state.find_state -> bool
 end = struct
 
 let rec find_step
@@ -1424,34 +1656,6 @@ let rec find_step
                   Find_state.F_finished (r0, (k, (r, (kvs, stk)))))))
       | Find_state.F_finished _ -> Monad.return fs);;
 
-let rec wf_store_tree
-  r2t s r t =
-    Util.assert_true
-      (match r2t s r with None -> false | Some a -> Tree.tree_equal t a);;
-
-let rec wellformed_find_state
-  k_ord r2t t0 s fs =
-    Util.assert_true
-      (let _ = Tree.height t0 in
-       let check_focus = wf_store_tree r2t s in
-       let check_stack =
-         (fun rstk tstk ->
-           Tree_stack.rstack_equal
-             (Util.rev_apply tstk (Tree_stack.rstack_map (fun a -> Some a)))
-             (Util.rev_apply rstk (Tree_stack.rstack_map (r2t s))))
-         in
-       (match fs
-         with Find_state.F_down (_, (k, (r, stk))) ->
-           let (t_fo, t_stk) =
-             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
-           Util.assert_true (check_focus r t_fo) &&
-             Util.assert_true (check_stack stk t_stk)
-         | Find_state.F_finished (_, (k, (r, (_, stk)))) ->
-           let (t_fo, t_stk) =
-             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
-           Util.assert_true (check_focus r t_fo) &&
-             Util.assert_true (check_stack stk t_stk)));;
-
 end;; (*struct Find*)
 
 module Insert : sig
@@ -1462,79 +1666,7 @@ module Insert : sig
           ('b list -> (unit, 'd) Monad.mm)) ->
         ('a, 'c, 'b) Insert_state.insert_state ->
           (('a, 'c, 'b) Insert_state.insert_state, 'd) Monad.mm
-  val wellformed_insert_state :
-    unit Prelude.constants_ext ->
-      ('a -> 'a -> Arith.int) ->
-        ('b -> 'c -> ('a, 'd) Tree.tree option) ->
-          ('a, 'd) Tree.tree ->
-            'b -> 'a -> 'd -> ('a, 'd, 'c) Insert_state.insert_state -> bool
 end = struct
-
-let rec wf_d
-  k_ord r2t t0 s d =
-    Util.assert_true
-      (let (fs, _) = d in
-       Find.wellformed_find_state k_ord r2t t0 s fs);;
-
-let rec wf_f
-  cs k_ord r2t t0 s k v r =
-    Util.assert_true
-      (match r2t s r with None -> false
-        | Some t ->
-          Tree.wellformed_tree cs (Some Prelude.Small_root_node_or_leaf) k_ord
-            t &&
-            Key_value.kvs_equal
-              (Util.rev_apply (Util.rev_apply t0 Tree.tree_to_kvs)
-                (Key_value.kvs_insert k_ord (k, v)))
-              (Util.rev_apply t Tree.tree_to_kvs));;
-
-let rec wf_u
-  r2t k_ord t0 s k v u =
-    Util.assert_true
-      (let _ = Find.wf_store_tree r2t s in
-       let check_stack =
-         (fun rstk tstk ->
-           Tree_stack.rstack_equal
-             (Util.rev_apply
-               (Util.rev_apply rstk (Tree_stack.rstack_map (r2t s)))
-               Tree_stack.no_focus)
-             (Util.rev_apply
-               (Util.rev_apply tstk (Tree_stack.rstack_map (fun a -> Some a)))
-               Tree_stack.no_focus))
-         in
-       (match u
-         with (Insert_state.I1 r, stk) ->
-           let (t_fo, t_stk) =
-             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
-           Util.assert_true (check_stack stk t_stk) &&
-             (match r2t s r with None -> Util.assert_true false
-               | Some t ->
-                 Util.assert_true
-                   (Key_value.kvs_equal (Util.rev_apply t Tree.tree_to_kvs)
-                     (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
-                       (Key_value.kvs_insert k_ord (k, v)))))
-         | (Insert_state.I2 (r1, (ka, r2)), stk) ->
-           let (t_fo, t_stk) =
-             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
-           Util.assert_true (check_stack stk t_stk) &&
-             (match (r2t s r1, r2t s r2) with (None, _) -> false
-               | (Some _, None) -> false
-               | (Some t1, Some t2) ->
-                 let (l, ua) = Tree_stack.rstack_get_bounds t_stk in
-                 let (ks1, ks2) =
-                   (Util.rev_apply t1 Tree.tree_to_keys,
-                     Util.rev_apply t2 Tree.tree_to_keys)
-                   in
-                 Util.assert_true
-                   (Key_value.check_keys k_ord l ks1 (Some ka)) &&
-                   (Util.assert_true
-                      (Key_value.check_keys k_ord (Some ka) ks2 ua) &&
-                     Util.assert_true
-                       (Key_value.kvs_equal
-                         (Util.rev_apply (Util.rev_apply t_fo Tree.tree_to_kvs)
-                           (Key_value.kvs_insert k_ord (k, v)))
-                         (Util.rev_apply t1 Tree.tree_to_kvs @
-                           Util.rev_apply t2 Tree.tree_to_kvs))))));;
 
 let rec step_up
   ps1 store_ops u =
@@ -1660,13 +1792,6 @@ let rec insert_step
               (Monad.fmap (fun a -> Insert_state.I_up a)))
       | Insert_state.I_finished _ -> Monad.return s);;
 
-let rec wellformed_insert_state
-  cs k_ord r2t t0 s k v is =
-    Util.assert_true
-      (match is with Insert_state.I_down a -> wf_d k_ord r2t t0 s a
-        | Insert_state.I_up a -> wf_u r2t k_ord t0 s k v a
-        | Insert_state.I_finished a -> wf_f cs k_ord r2t t0 s k v a);;
-
 end;; (*struct Insert*)
 
 module Delete2 : sig
@@ -1677,93 +1802,7 @@ module Delete2 : sig
           ('b list -> (unit, 'd) Monad.mm)) ->
         ('a, 'c, 'b) Delete_state.delete_state ->
           (('a, 'c, 'b) Delete_state.delete_state, 'd) Monad.mm
-  val wellformed_delete_state :
-    unit Prelude.constants_ext ->
-      ('a -> 'a -> Arith.int) ->
-        ('b -> 'c -> ('a, 'd) Tree.tree option) ->
-          ('a, 'd) Tree.tree ->
-            'b -> 'a -> ('a, 'd, 'c) Delete_state.delete_state -> bool
 end = struct
-
-let rec wf_d
-  k_ord r2f t0 s d =
-    Util.assert_true
-      (let (fs, _) = d in
-       Util.assert_true (Find.wellformed_find_state k_ord r2f t0 s fs));;
-
-let rec wf_f
-  constants k_ord r2t t0 s k r =
-    Util.assert_true
-      (let t = Util.rev_apply (r2t s r) Util.dest_Some in
-       Util.assert_true
-         (Tree.wellformed_tree constants (Some Prelude.Small_root_node_or_leaf)
-           k_ord t) &&
-         Util.assert_true
-           (Key_value.kvs_equal
-             (Util.rev_apply (Util.rev_apply t0 Tree.tree_to_kvs)
-               (Key_value.kvs_delete k_ord k))
-             (Util.rev_apply t Tree.tree_to_kvs)));;
-
-let rec wf_u
-  constants k_ord r2t t0 s k u =
-    Util.assert_true
-      (let (fo, stk) = u in
-       let check_stack =
-         (fun rstk tstk ->
-           Tree_stack.rstack_equal
-             (Util.rev_apply
-               (Util.rev_apply rstk (Tree_stack.rstack_map (r2t s)))
-               Tree_stack.no_focus)
-             (Util.rev_apply
-               (Util.rev_apply tstk (Tree_stack.rstack_map (fun a -> Some a)))
-               Tree_stack.no_focus))
-         in
-       let check_wf = (fun ms -> Tree.wellformed_tree constants ms k_ord) in
-       let check_focus =
-         (fun foa ->
-           Key_value.kvs_equal
-             (Util.rev_apply (Util.rev_apply foa Tree.tree_to_kvs)
-               (Key_value.kvs_delete k_ord k)))
-         in
-       (match fo
-         with Delete_state.D_small_leaf kvs ->
-           let (t_fo, t_stk) =
-             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
-           let ms =
-             (match stk with [] -> Some Prelude.Small_root_node_or_leaf
-               | _ :: _ -> Some Prelude.Small_leaf)
-             in
-           Util.assert_true (check_stack stk t_stk) &&
-             (Util.assert_true (check_wf ms (Tree.Leaf kvs)) &&
-               Util.assert_true (check_focus t_fo kvs))
-         | Delete_state.D_small_node (ks, rs) ->
-           let (t_fo, t_stk) =
-             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
-           let ms =
-             (match stk with [] -> Some Prelude.Small_root_node_or_leaf
-               | _ :: _ -> Some Prelude.Small_node)
-             in
-           let t =
-             Tree.Node
-               (ks, Util.rev_apply (Util.rev_apply rs (List.map (r2t s)))
-                      (List.map Util.dest_Some))
-             in
-           Util.assert_true (check_stack stk t_stk) &&
-             (Util.assert_true (check_wf ms t) &&
-               Util.assert_true
-                 (check_focus t_fo (Util.rev_apply t Tree.tree_to_kvs)))
-         | Delete_state.D_updated_subtree r ->
-           let (t_fo, t_stk) =
-             Tree_stack.tree_to_rstack k_ord k t0 (List.size_list stk) in
-           let ms =
-             (match stk with [] -> Some Prelude.Small_root_node_or_leaf
-               | _ :: _ -> None)
-             in
-           let t = Util.rev_apply (Util.rev_apply r (r2t s)) Util.dest_Some in
-           Util.assert_true (check_stack stk t_stk) &&
-             (Util.assert_true (check_wf ms t) &&
-               Util.assert_true
-                 (check_focus t_fo (Util.rev_apply t Tree.tree_to_kvs)))));;
 
 let rec node_steal_right
   store_ops p c1 c2 =
@@ -2196,15 +2235,6 @@ let rec delete_step
                 (fun (fa, stka) -> Delete_state.D_up (fa, (stka, r0)))))
       | Delete_state.D_finished _ -> Monad.return s);;
 
-let rec wellformed_delete_state
-  constants k_ord r2t t0 s k ds =
-    Util.assert_true
-      (match ds with Delete_state.D_down a -> wf_d k_ord r2t t0 s a
-        | Delete_state.D_up (fo, (stk, r)) ->
-          wf_u constants k_ord r2t t0 s k (fo, stk) &&
-            (match r2t s r with None -> false | Some t -> Tree.tree_equal t t0)
-        | Delete_state.D_finished a -> wf_f constants k_ord r2t t0 s k a);;
-
 end;; (*struct Delete2*)
 
 module Insert_many : sig
@@ -2400,9 +2430,6 @@ module Leaf_stream : sig
           ('b list -> (unit, 'd) Monad.mm)) ->
         ('a, 'c, 'b) Leaf_stream_state.ls_state ->
           (('a, 'c, 'b) Leaf_stream_state.ls_state, 'd) Monad.mm
-  val dest_LS_leaf :
-    ('a, 'b, 'c) Leaf_stream_state.ls_state -> (('a * 'b) list) option
-  val lss_is_finished : ('a, 'b, 'c) Leaf_stream_state.ls_state -> bool
 end = struct
 
 let rec step_up
@@ -2446,17 +2473,6 @@ let rec lss_step
     (match lss with Leaf_stream_state.LS_down a -> step_down ps1 store_ops a
       | Leaf_stream_state.LS_leaf x -> Monad.return (step_leaf x)
       | Leaf_stream_state.LS_up x -> Monad.return (step_up x));;
-
-let rec dest_LS_leaf
-  x = (match x with Leaf_stream_state.LS_down _ -> None
-        | Leaf_stream_state.LS_leaf (kvs, _) -> Some kvs
-        | Leaf_stream_state.LS_up _ -> None);;
-
-let rec lss_is_finished
-  lss = (match lss with Leaf_stream_state.LS_down _ -> false
-          | Leaf_stream_state.LS_leaf _ -> false
-          | Leaf_stream_state.LS_up [] -> true
-          | Leaf_stream_state.LS_up (_ :: _) -> false);;
 
 end;; (*struct Leaf_stream*)
 

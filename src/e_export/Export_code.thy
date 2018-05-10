@@ -53,17 +53,26 @@ Params.dummy
 Params.Ps1
 (* Params.store_ops_ext *)
 
+mk_find_state
+dest_f_finished
+wellformed_find_state 
+Find_state.wf_trans
+
 Insert_state.mk_insert_state
 Insert_state.dest_i_finished
 Insert_state.I1 Insert_state.I2 Insert_state.I_down Insert_state.I_up Insert_state.I_finished
+Insert_state.wellformed_insert_state
+
+mk_delete_state
+dest_d_finished
+D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
+wellformed_delete_state
 
 Insert_many_state.mk_im_state
 Insert_many_state.dest_im_finished
 Insert_many_state.IM1 Insert_many_state.IM_down
 
-mk_delete_state
-dest_d_finished
-D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
+
 
 mk_ls_state lss_is_finished dest_LS_leaf 
 
@@ -71,25 +80,19 @@ mk_ls_state lss_is_finished dest_LS_leaf
 (* Monad.dest_MM *) Monad.dummy fmap  bind
 
 (* store *) 
-Store_ops.store_alloc store_read store_free wf_store_ops
+store_alloc store_read store_free wf_store_ops
 
 (* find *)
-mk_find_state
-dest_f_finished
 find_step
-wellformed_find_state 
 
 (* insert *)
 Insert.insert_step
-Insert.wellformed_insert_state
 
 (* insert_many *)
 Insert_many.insert_step
 
-
 (* delete2 *)
 Delete2.delete_step
-wellformed_delete_state
 
 (* leaf_stream *)
 lss_step

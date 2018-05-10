@@ -56,7 +56,7 @@ n2+=delta
 n1-=delta
 
 *)
-
+(* FIXME isn't this duplicated elsewhere? *)
 definition split_leaf :: "constants \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s * 'k * ('k*'v)s" where
 "split_leaf cs0 kvs = (
   let n = List.length kvs in
