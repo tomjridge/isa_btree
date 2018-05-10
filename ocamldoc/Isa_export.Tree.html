@@ -13,6 +13,7 @@
 <link title="Index of modules" rel=Appendix href="index_modules.html">
 <link title="Index of module types" rel=Appendix href="index_module_types.html">
 <link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Constants" rel="Chapter" href="Constants.html">
 <link title="Isa_btree" rel="Chapter" href="Isa_btree.html"><title>Isa_export.Tree</title>
 </head>
 <body>
@@ -42,6 +43,8 @@
 
 
 
+<pre><span id="VALtree_to_yojson"><span class="keyword">val</span> tree_to_yojson</span> : <code class="type">'a 'b.<br>         ('a -> Yojson.Safe.json) -><br>         ('b -> Yojson.Safe.json) -><br>         ('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> -> Yojson.Safe.json</code></pre>
+<pre><span id="VALtree_of_yojson"><span class="keyword">val</span> tree_of_yojson</span> : <code class="type">'a 'b.<br>         (Yojson.Safe.json -> 'a Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'b Ppx_deriving_yojson_runtime.error_or) -><br>         Yojson.Safe.json -><br>         ('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> Ppx_deriving_yojson_runtime.error_or</code></pre>
 <pre><span id="VALheight"><span class="keyword">val</span> height</span> : <code class="type">('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> -> <a href="Isa_export.Arith.html#TYPEnat">Isa_export.Arith.nat</a></code></pre>
 <pre><span id="VALdest_Node"><span class="keyword">val</span> dest_Node</span> : <code class="type">('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> -> 'a list * ('a, 'b) <a href="Isa_export.Tree.html#TYPEtree">tree</a> list</code></pre>
 <pre><span id="VALtree_equal"><span class="keyword">val</span> tree_equal</span> : <code class="type">'a -> 'a -> bool</code></pre>

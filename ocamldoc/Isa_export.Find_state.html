@@ -13,6 +13,7 @@
 <link title="Index of modules" rel=Appendix href="index_modules.html">
 <link title="Index of module types" rel=Appendix href="index_module_types.html">
 <link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Constants" rel="Chapter" href="Constants.html">
 <link title="Isa_btree" rel="Chapter" href="Isa_btree.html"><title>Isa_export.Find_state</title>
 </head>
 <body>
@@ -42,6 +43,8 @@
 
 
 
+<pre><span id="VALfind_state_to_yojson"><span class="keyword">val</span> find_state_to_yojson</span> : <code class="type">'a 'b 'c.<br>         ('a -> Yojson.Safe.json) -><br>         ('b -> Yojson.Safe.json) -><br>         ('c -> Yojson.Safe.json) -><br>         ('a, 'b, 'c) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a> -> Yojson.Safe.json</code></pre>
+<pre><span id="VALfind_state_of_yojson"><span class="keyword">val</span> find_state_of_yojson</span> : <code class="type">'a 'b 'c.<br>         (Yojson.Safe.json -> 'a Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'b Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'c Ppx_deriving_yojson_runtime.error_or) -><br>         Yojson.Safe.json -><br>         ('a, 'b, 'c) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a><br>         Ppx_deriving_yojson_runtime.error_or</code></pre>
 <pre><span id="VALdummy"><span class="keyword">val</span> dummy</span> : <code class="type">unit</code></pre>
 <pre><span id="VALwf_trans"><span class="keyword">val</span> wf_trans</span> : <code class="type">'a * ('b, 'c, 'd) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a> -><br>       'e * ('f, 'g, 'h) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a> -> bool</code></pre>
 <pre><span id="VALmk_find_state"><span class="keyword">val</span> mk_find_state</span> : <code class="type">'a -> 'b -> ('a, 'c, 'b) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a></code></pre>

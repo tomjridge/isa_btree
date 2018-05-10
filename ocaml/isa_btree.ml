@@ -3,6 +3,8 @@
 
 open Isa_export
 
+(* no need to introduce a separate type FIXME remove constants.ml *)
+type isa_constants = unit Prelude.constants_ext
 
 module Basic_conversions = struct
 
@@ -19,27 +21,17 @@ module Basic_conversions = struct
   (*  let x_ps0 ~constants ~cmp : 'k IE.Params.ps0 = (
       Ps0(constants|>x_constants, cmp|>x_cmp)) *)
 
-end
-include Basic_conversions
 
-
-module Constants = struct 
-
-  (* no need to introduce a separate type FIXME remove constants.ml *)
-  type constants = unit Prelude.constants_ext
-
-  let mk_constants ~min_leaf_size ~max_leaf_size ~min_node_keys ~max_node_keys : constants =
-    Prelude.Constants_ext(
+  let x_constants (cs:Constants.t) = 
+    Constants.dest_constants cs @@ fun ~min_leaf_size ~max_leaf_size ~min_node_keys ~max_node_keys -> Prelude.Constants_ext(
       min_leaf_size|>int_to_nat,
       max_leaf_size|>int_to_nat,
       min_node_keys|>int_to_nat,
       max_node_keys|>int_to_nat,
       ())
-
-  let x_constants (cs:constants) = cs
-
+                   
 end
-include Constants
+include Basic_conversions
 
 
 let x_ps1 ~constants ~cmp = Params.(Ps1(x_constants constants, x_cmp cmp))

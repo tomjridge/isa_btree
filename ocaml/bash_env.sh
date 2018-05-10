@@ -5,7 +5,7 @@ set -a # export all vars
 # NOTE in toplevel you need to #require "bos.top" and bos.setup;;
 
 libname="isa_btree"
-required_packages="stdlib"  # may want a separate package for lwt 
+required_packages="stdlib,ppx_deriving_yojson"  # may want a separate package for lwt 
 description="$libname, OCaml version of Isabelle B-tree defns"
 
 function clean() {

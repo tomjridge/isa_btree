@@ -13,6 +13,7 @@
 <link title="Index of modules" rel=Appendix href="index_modules.html">
 <link title="Index of module types" rel=Appendix href="index_module_types.html">
 <link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Constants" rel="Chapter" href="Constants.html">
 <link title="Isa_btree" rel="Chapter" href="Isa_btree.html"><title>Isa_export.Disk_node</title>
 </head>
 <body>
@@ -42,6 +43,8 @@
 
 
 
+<pre><span id="VALdnode_to_yojson"><span class="keyword">val</span> dnode_to_yojson</span> : <code class="type">'a 'b 'c.<br>         ('a -> Yojson.Safe.json) -><br>         ('b -> Yojson.Safe.json) -><br>         ('c -> Yojson.Safe.json) -><br>         ('a, 'b, 'c) <a href="Isa_export.Disk_node.html#TYPEdnode">dnode</a> -> Yojson.Safe.json</code></pre>
+<pre><span id="VALdnode_of_yojson"><span class="keyword">val</span> dnode_of_yojson</span> : <code class="type">'a 'b 'c.<br>         (Yojson.Safe.json -> 'a Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'b Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'c Ppx_deriving_yojson_runtime.error_or) -><br>         Yojson.Safe.json -><br>         ('a, 'b, 'c) <a href="Isa_export.Disk_node.html#TYPEdnode">dnode</a><br>         Ppx_deriving_yojson_runtime.error_or</code></pre>
 <pre><span id="VALmk_Disk_node"><span class="keyword">val</span> mk_Disk_node</span> : <code class="type">'a list * 'b list -> ('a, 'c, 'b) <a href="Isa_export.Disk_node.html#TYPEdnode">dnode</a></code></pre>
 <pre><span id="VALdest_Disk_leaf"><span class="keyword">val</span> dest_Disk_leaf</span> : <code class="type">('a, 'b, 'c) <a href="Isa_export.Disk_node.html#TYPEdnode">dnode</a> -> ('a * 'b) list</code></pre>
 <pre><span id="VALdest_Disk_node"><span class="keyword">val</span> dest_Disk_node</span> : <code class="type">('a, 'b, 'c) <a href="Isa_export.Disk_node.html#TYPEdnode">dnode</a> -> 'a list * 'c list</code></pre></body></html>

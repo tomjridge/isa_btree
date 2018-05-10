@@ -5,17 +5,18 @@
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
-<link rel="previous" href="Isa_export.html">
+<link rel="previous" href="Constants.html">
 <link rel="Up" href="index.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
 <link title="Index of values" rel=Appendix href="index_values.html">
 <link title="Index of modules" rel=Appendix href="index_modules.html">
 <link title="Index of module types" rel=Appendix href="index_module_types.html">
 <link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Constants" rel="Chapter" href="Constants.html">
 <link title="Isa_btree" rel="Chapter" href="Isa_btree.html"><title>Isa_btree</title>
 </head>
 <body>
-<div class="navbar"><a class="pre" href="Isa_export.html" title="Isa_export">Previous</a>
+<div class="navbar"><a class="pre" href="Constants.html" title="Constants">Previous</a>
 &nbsp;<a class="up" href="index.html" title="Index">Up</a>
 &nbsp;</div>
 <h1>Module <a href="type_Isa_btree.html">Isa_btree</a></h1>
@@ -25,13 +26,13 @@ Translations between Isabelle types and OCaml native types.<br>
 </div>
 <hr width="100%">
 
+<pre><span id="TYPEisa_constants"><span class="keyword">type</span> <code class="type"></code>isa_constants</span> = <code class="type">unit <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a></code> </pre>
+
+
 <pre><span class="keyword">module</span> <a href="Isa_btree.Basic_conversions.html">Basic_conversions</a>: <code class="code">sig</code> <a href="Isa_btree.Basic_conversions.html">..</a> <code class="code">end</code></pre>
 <pre><span class="keyword">include</span> Basic_conversions</pre>
 
-<pre><span class="keyword">module</span> <a href="Isa_btree.Constants.html">Constants</a>: <code class="code">sig</code> <a href="Isa_btree.Constants.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">include</span> Constants</pre>
-
-<pre><span id="VALx_ps1"><span class="keyword">val</span> x_ps1</span> : <code class="type">constants:constants -> cmp:('a -> 'a -> int) -> 'a <a href="Isa_export.Params.html#TYPEps1">Isa_export.Params.ps1</a></code></pre>
+<pre><span id="VALx_ps1"><span class="keyword">val</span> x_ps1</span> : <code class="type">constants:Constants.t -> cmp:('a -> 'a -> int) -> 'a <a href="Isa_export.Params.html#TYPEps1">Isa_export.Params.ps1</a></code></pre>
 <pre><span id="TYPEdnode"><span class="keyword">type</span> <code class="type">('k, 'v, 'r)</code> dnode</span> = <code class="type">('k, 'v, 'r) <a href="Isa_export.Disk_node.html#TYPEdnode">Isa_export.Disk_node.dnode</a></code> </pre>
 
 
@@ -85,12 +86,12 @@ Wellformedness check. Assumes access to the "spec tree", the
 Result is a reference to the updated B-tree<br>
 </div>
 
-<pre><span id="VALwellformed_insert_state"><span class="keyword">val</span> wellformed_insert_state</span> : <code class="type">cmp:('k -> 'k -> int) -><br>       constants:constants -><br>       r2t:('t -> 'r -> ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -><br>       't -> 'k -> 'v -> ('k, 'v, 'r) <a href="Isa_btree.html#TYPEinsert_state">insert_state</a> -> bool</code></pre>
+<pre><span id="VALwellformed_insert_state"><span class="keyword">val</span> wellformed_insert_state</span> : <code class="type">cmp:('k -> 'k -> int) -><br>       constants:Constants.t -><br>       r2t:('t -> 'r -> ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -><br>       't -> 'k -> 'v -> ('k, 'v, 'r) <a href="Isa_btree.html#TYPEinsert_state">insert_state</a> -> bool</code></pre>
 <pre><span id="VALmk_im_state"><span class="keyword">val</span> mk_im_state</span> : <code class="type">'k -> 'v -> ('k * 'v) list -> 'r -> ('k, 'v, 'r) <a href="Isa_btree.html#TYPEim_state">im_state</a></code></pre>
 <pre><span id="VALdest_im_finished"><span class="keyword">val</span> dest_im_finished</span> : <code class="type">('k, 'v, 'r) <a href="Isa_btree.html#TYPEim_state">im_state</a> -> ('r * ('k * 'v) list) option</code></pre>
 <pre><span id="VALdest_d_finished"><span class="keyword">val</span> dest_d_finished</span> : <code class="type">('a, 'b, 'c) <a href="Isa_btree.html#TYPEdelete_state">delete_state</a> -> 'c option</code></pre>
 <pre><span id="VALmk_delete_state"><span class="keyword">val</span> mk_delete_state</span> : <code class="type">'a -> 'b -> ('a, 'c, 'b) <a href="Isa_export.Delete_state.html#TYPEdelete_state">Isa_export.Delete_state.delete_state</a></code></pre>
-<pre><span id="VALwellformed_delete_state"><span class="keyword">val</span> wellformed_delete_state</span> : <code class="type">constants:constants -><br>       cmp:('k -> 'k -> int) -><br>       r2t:('t -> 'r -> ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       t:('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -><br>       s:'t -> k:'k -> ds:('k, 'v, 'r) <a href="Isa_btree.html#TYPEdelete_state">delete_state</a> -> bool</code></pre>
+<pre><span id="VALwellformed_delete_state"><span class="keyword">val</span> wellformed_delete_state</span> : <code class="type">constants:Constants.t -><br>       cmp:('k -> 'k -> int) -><br>       r2t:('t -> 'r -> ('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       t:('k, 'v) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -><br>       s:'t -> k:'k -> ds:('k, 'v, 'r) <a href="Isa_btree.html#TYPEdelete_state">delete_state</a> -> bool</code></pre>
 <pre><span id="VALmk_delete_state"><span class="keyword">val</span> mk_delete_state</span> : <code class="type">'a -> 'b -> ('a, 'c, 'b) <a href="Isa_export.Delete_state.html#TYPEdelete_state">Isa_export.Delete_state.delete_state</a></code></pre>
 <pre><span id="VALmk_ls_state"><span class="keyword">val</span> mk_ls_state</span> : <code class="type">'r -> ('k, 'v, 'r) <a href="Isa_btree.html#TYPEls_state">ls_state</a></code></pre><div class="info ">
 Given a reference to a B-tree root, construct a stream of leaves<br>

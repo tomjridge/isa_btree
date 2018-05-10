@@ -13,6 +13,7 @@
 <link title="Index of modules" rel=Appendix href="index_modules.html">
 <link title="Index of module types" rel=Appendix href="index_module_types.html">
 <link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Constants" rel="Chapter" href="Constants.html">
 <link title="Isa_btree" rel="Chapter" href="Isa_btree.html"><title>Isa_export.Insert_state</title>
 </head>
 <body>
@@ -42,6 +43,8 @@
 
 
 
+<pre><span id="VALi12_t_to_yojson"><span class="keyword">val</span> i12_t_to_yojson</span> : <code class="type">'a 'b 'c.<br>         ('a -> Yojson.Safe.json) -><br>         ('b -> Yojson.Safe.json) -><br>         ('c -> Yojson.Safe.json) -><br>         ('a, 'b, 'c) <a href="Isa_export.Insert_state.html#TYPEi12_t">i12_t</a> -> Yojson.Safe.json</code></pre>
+<pre><span id="VALi12_t_of_yojson"><span class="keyword">val</span> i12_t_of_yojson</span> : <code class="type">'a 'b 'c.<br>         (Yojson.Safe.json -> 'a Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'b Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'c Ppx_deriving_yojson_runtime.error_or) -><br>         Yojson.Safe.json -><br>         ('a, 'b, 'c) <a href="Isa_export.Insert_state.html#TYPEi12_t">i12_t</a><br>         Ppx_deriving_yojson_runtime.error_or</code></pre>
 <pre><code><span id="TYPEinsert_state"><span class="keyword">type</span> <code class="type">('a, 'b, 'c)</code> insert_state</span> = </code></pre><table class="typetable">
 <tr>
 <td align="left" valign="top" >
@@ -67,6 +70,8 @@
 
 
 
+<pre><span id="VALinsert_state_to_yojson"><span class="keyword">val</span> insert_state_to_yojson</span> : <code class="type">'a 'b 'c.<br>         ('a -> Yojson.Safe.json) -><br>         ('b -> Yojson.Safe.json) -><br>         ('c -> Yojson.Safe.json) -><br>         ('a, 'b, 'c) <a href="Isa_export.Insert_state.html#TYPEinsert_state">insert_state</a> -> Yojson.Safe.json</code></pre>
+<pre><span id="VALinsert_state_of_yojson"><span class="keyword">val</span> insert_state_of_yojson</span> : <code class="type">'a 'b 'c.<br>         (Yojson.Safe.json -> 'a Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'b Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'c Ppx_deriving_yojson_runtime.error_or) -><br>         Yojson.Safe.json -><br>         ('a, 'b, 'c) <a href="Isa_export.Insert_state.html#TYPEinsert_state">insert_state</a><br>         Ppx_deriving_yojson_runtime.error_or</code></pre>
 <pre><span id="VALdummy"><span class="keyword">val</span> dummy</span> : <code class="type">unit</code></pre>
 <pre><span id="VALdest_i_finished"><span class="keyword">val</span> dest_i_finished</span> : <code class="type">('a, 'b, 'c) <a href="Isa_export.Insert_state.html#TYPEinsert_state">insert_state</a> -> 'c option</code></pre>
 <pre><span id="VALmk_insert_state"><span class="keyword">val</span> mk_insert_state</span> : <code class="type">'a -> 'b -> 'c -> ('a, 'b, 'c) <a href="Isa_export.Insert_state.html#TYPEinsert_state">insert_state</a></code></pre>

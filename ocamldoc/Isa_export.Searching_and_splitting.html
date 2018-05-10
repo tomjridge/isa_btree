@@ -13,6 +13,7 @@
 <link title="Index of modules" rel=Appendix href="index_modules.html">
 <link title="Index of module types" rel=Appendix href="index_module_types.html">
 <link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Constants" rel="Chapter" href="Constants.html">
 <link title="Isa_btree" rel="Chapter" href="Isa_btree.html"><title>Isa_export.Searching_and_splitting</title>
 </head>
 <body>
@@ -35,6 +36,8 @@
 
 
 
+<pre><span id="VALrsplit_node_ext_to_yojson"><span class="keyword">val</span> rsplit_node_ext_to_yojson</span> : <code class="type">'a 'b 'c.<br>         ('a -> Yojson.Safe.json) -><br>         ('b -> Yojson.Safe.json) -><br>         ('c -> Yojson.Safe.json) -><br>         ('a, 'b, 'c) <a href="Isa_export.Searching_and_splitting.html#TYPErsplit_node_ext">rsplit_node_ext</a> -><br>         Yojson.Safe.json</code></pre>
+<pre><span id="VALrsplit_node_ext_of_yojson"><span class="keyword">val</span> rsplit_node_ext_of_yojson</span> : <code class="type">'a 'b 'c.<br>         (Yojson.Safe.json -> 'a Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'b Ppx_deriving_yojson_runtime.error_or) -><br>         (Yojson.Safe.json -> 'c Ppx_deriving_yojson_runtime.error_or) -><br>         Yojson.Safe.json -><br>         ('a, 'b, 'c) <a href="Isa_export.Searching_and_splitting.html#TYPErsplit_node_ext">rsplit_node_ext</a><br>         Ppx_deriving_yojson_runtime.error_or</code></pre>
 <pre><span id="VALsplit_leaf"><span class="keyword">val</span> split_leaf</span> : <code class="type">'a <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       ('b * 'c) list -> ('b * 'c) list * ('b * ('b * 'c) list)</code></pre>
 <pre><span id="VALsplit_node"><span class="keyword">val</span> split_node</span> : <code class="type">'a <a href="Isa_export.Prelude.html#TYPEconstants_ext">Isa_export.Prelude.constants_ext</a> -><br>       'b list * 'c list -> ('b list * 'c list) * ('b * ('b list * 'c list))</code></pre>
 <pre><span id="VALr_ts2"><span class="keyword">val</span> r_ts2</span> : <code class="type">('a, 'b, 'c) <a href="Isa_export.Searching_and_splitting.html#TYPErsplit_node_ext">rsplit_node_ext</a> -> 'b list</code></pre>
