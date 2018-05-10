@@ -1,0 +1,22 @@
+<html><head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Isa_export" rel="Chapter" href="Isa_export.html">
+<link title="Isa_btree" rel="Chapter" href="Isa_btree.html"><title>Isa_btree.Constants</title>
+</head>
+<body>
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;constants&nbsp;=&nbsp;unit&nbsp;<span class="constructor">Isa_export</span>.<span class="constructor">Prelude</span>.constants_ext<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;mk_constants&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;min_leaf_size:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;max_leaf_size:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;min_node_keys:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;max_node_keys:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Isa_btree</span>.<span class="constructor">Constants</span>.constants<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;x_constants&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Isa_btree</span>.<span class="constructor">Constants</span>.constants&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Isa_btree</span>.<span class="constructor">Constants</span>.constants<br>
+<span class="keyword">end</span></code></body></html>
