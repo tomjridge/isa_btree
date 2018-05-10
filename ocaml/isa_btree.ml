@@ -47,22 +47,97 @@ let x_ps1 ~constants ~cmp = Params.(Ps1(x_constants constants, x_cmp cmp))
 let _ = x_ps1
 
 
+type ('k,'v,'r) dnode = ('k,'v,'r) Isa_export.Disk_node.dnode
+
+
+type ('k,'v,'r) find_state = ('k,'v,'r) Find_state.find_state
+type ('k,'v,'r) insert_state = ('k,'v,'r) Insert_state.insert_state
+type ('k,'v,'r) im_state = ('k,'v,'r) Insert_many_state.imst
+type ('k,'v,'r) delete_state = ('k,'v,'r) Delete_state.delete_state
+
+(* isa doesn't export type abbrevs *)
+type ('k,'r) rsplit_node = ('k,'r,unit) Searching_and_splitting.rsplit_node_ext
+type ('k,'r) rstack = ('k,'r) rsplit_node list
+type ('k,'r) rstk = ('k,'r) rstack
+
+type ('k,'v) tree = ('k,'v) Isa_export.Tree.tree
+
+type ('k,'v,'r) ls_state = ('k,'v,'r) Leaf_stream_state.ls_state
+
+(* find_state ------------------------------------------------------- *)
+
+
+(** Construct an initial "find state" given a key and a reference to
+    a B-tree root. *)
+let  mk_find_state k r : ('k,'v,'r) find_state = Find_state.mk_find_state k r
+
+(** Check whether we have reached a leaf. Returns the reference to the
+    B-tree root (when [mk_find_state] was called), the key we are
+    looking for (ditto), a reference to a leaf (that may contain the
+    key... if any leaf contains the key, this leaf does) and a the list
+    of (key,values) in that leaf. *)
+let dest_f_finished (fs:('k,'v,'r)find_state) : ('r * 'k * 'r * 'kvs * ('k,'r) rstk) option = (
+  Find_state.dest_f_finished fs 
+  |> (function None -> None | Some  x -> Some (x5 x)))
+
+(*open Params2*)
+
+(* only check if we have access to the relevant r2t and spec_tree *)
+(* ASSUMES r2t ps <> None *)
+(** Wellformedness check. Assumes access to the "spec tree", the
+    global state and the find state.  *)
+let wellformed_find_state ~r2t ~cmp : 'tree -> 't -> ('k,'v,'r) find_state -> bool = (
+  fun t s fs -> 
+    Find_state.wellformed_find_state 
+      (x_cmp cmp) r2t t s fs)
+
+
+
+(* insert_state ----------------------------------------------------- *)
+
+let mk_insert_state: 'k->'v->'r->('k,'v,'r) insert_state = 
+  Insert_state.mk_insert_state
+
+(** Result is a reference to the updated B-tree *)
+let dest_i_finished: ('k,'v,'r)insert_state -> 'r option = 
+  Insert_state.dest_i_finished
+
+let wellformed_insert_state ~cmp ~constants ~r2t :'tree->'t->'k->'v->('k,'v,'r) insert_state->bool = (
+  fun t s k v is ->
+    Insert_state.wellformed_insert_state 
+      (x_constants constants) (x_cmp cmp)
+      r2t t s k v is)
+
+
+(* im_state --------------------------------------------------------- *)
+
+
+let mk_im_state: 'k -> 'v -> ('k*'v) list -> 'r -> ('k,'v,'r) im_state = 
+  Insert_many_state.mk_im_state
+
+let dest_im_finished: ('k,'v,'r)im_state -> ('r*('k*'v)list) option = 
+  Insert_many_state.dest_im_finished
+(* no wf *)
+
+
+
+(* ls_state --------------------------------------------------------- *)
+
+(** Given a reference to a B-tree root, construct a stream of leaves *)
+let mk_ls_state : 'r -> ('k,'v,'r) ls_state = Leaf_stream_state.mk_ls_state
+
+(** Return the (key,value) list at the current leaf in the stream. *)
+let ls_dest_leaf (ls:('k,'v,'r) ls_state) = Leaf_stream_state.dest_LS_leaf ls
+
+let ls_is_finished (lss:('k,'v,'r) ls_state) : bool = (lss |> Leaf_stream_state.lss_is_finished)
+
+
+
+
 module Make(Monad: MONAD) = struct
 
   include Isa_export.Make(Monad)
 
-  type ('k,'v,'r) dnode = ('k,'v,'r) Isa_export.Disk_node.dnode
-
-  
-  type ('k,'v,'r) find_state = ('k,'v,'r) Find_state.find_state
-  type ('k,'v,'r) insert_state = ('k,'v,'r) Insert_state.insert_state
-  type ('k,'v,'r) im_state = ('k,'v,'r) Insert_many_state.imst
-  type ('k,'v,'r) delete_state = ('k,'v,'r) Delete_state.delete_state
-
-  (* isa doesn't export type abbrevs *)
-  type ('k,'r) rsplit_node = ('k,'r,unit) Searching_and_splitting.rsplit_node_ext
-  type ('k,'r) rstack = ('k,'r) rsplit_node list
-  type ('k,'r) rstk = ('k,'r) rstack
 
 
   (** Leaf stream state. Needed early for store_ops *)
@@ -106,34 +181,10 @@ module Make(Monad: MONAD) = struct
 
     (* find ---------------------------------------- *)
 
-    (** Construct an initial "find state" given a key and a reference to
-        a B-tree root. *)
-    let  mk_find_state k r : ('k,'v,'r) find_state = Find_state.mk_find_state k r
-
     (** Small step the find state: take a find state and return an updated
         find state (in the monad). *)
     let find_step ~constants ~cmp ~store_ops : 'fs->('fs,'t) mm = (fun fs -> 
         Find.find_step (x_ps1 ~constants ~cmp) store_ops fs)
-
-    (** Check whether we have reached a leaf. Returns the reference to the
-        B-tree root (when [mk_find_state] was called), the key we are
-        looking for (ditto), a reference to a leaf (that may contain the
-        key... if any leaf contains the key, this leaf does) and a the list
-        of (key,values) in that leaf. *)
-    let dest_f_finished fs: ('r * 'k * 'r * 'kvs * ('k,'r) rstk) option = (
-      Find_state.dest_f_finished fs 
-      |> (function None -> None | Some  x -> Some (x5 x)))
-
-    (*open Params2*)
-
-    (* only check if we have access to the relevant r2t and spec_tree *)
-    (* ASSUMES r2t ps <> None *)
-    (** Wellformedness check. Assumes access to the "spec tree", the
-        global state and the find state.  *)
-    let wellformed_find_state ~r2t ~cmp : 'tree -> 't -> ('k,'v,'r) find_state -> bool = (
-      fun t s fs -> 
-        Find.wellformed_find_state 
-          (x_cmp cmp) r2t t s fs)
 
 
     (* delete ---------------------------------------- *)
@@ -150,46 +201,23 @@ module Make(Monad: MONAD) = struct
 
     let wellformed_delete_state ~cmp ~constants ~r2t : 'tree->'t->'k->('k,'v,'r) delete_state->bool = (
       fun t s k ds -> 
-        Delete2.wellformed_delete_state 
+        Delete_state.wellformed_delete_state 
           (x_constants constants) (x_cmp cmp)
           r2t t s k ds)
 
 
     (* insert ---------------------------------------- *)
 
-    let mk_insert_state: 'k->'v->'r->('k,'v,'r) insert_state = 
-      Insert_state.mk_insert_state
-
     let insert_step ~cmp ~constants ~store_ops : 'is -> ('is,'t) mm = 
       (fun is -> Insert.insert_step (x_ps1 ~cmp ~constants) store_ops is)
 
-    (** Result is a reference to the updated B-tree *)
-    let dest_i_finished: ('k,'v,'r)insert_state -> 'r option = 
-      Insert_state.dest_i_finished
-
-    let wellformed_insert_state ~cmp ~constants ~r2t :'tree->'t->'k->'v->('k,'v,'r) insert_state->bool = (
-      fun t s k v is ->
-        Insert.wellformed_insert_state 
-          (x_constants constants) (x_cmp cmp)
-          r2t t s k v is)
-
     (* insert_many ---------------------------------------- *)
-
-    let mk_im_state: 'k -> 'v -> ('k*'v) list -> 'r -> ('k,'v,'r) im_state = 
-      Insert_many_state.mk_im_state
 
     let im_step ~constants ~cmp ~store_ops : 'im -> ('im,'t) mm = 
       (fun is -> Insert_many.insert_step (x_ps1 ~constants ~cmp) store_ops is)
 
-    let dest_im_finished: ('k,'v,'r)im_state -> ('r*('k*'v)list) option = 
-      Insert_many_state.dest_im_finished
-    (* no wf *)
-
 
     (* leaf stream ---------------------------------------- *)
-
-    (** Given a reference to a B-tree root, construct a stream of leaves *)
-    let mk_ls_state : 'r -> ('k,'v,'r) ls_state = Leaf_stream_state.mk_ls_state
 
     (** Step the leaf stream to the next leaf. If the leaf stream is
         finished (no more leaves), stepping will just return the leaf
@@ -200,11 +228,6 @@ module Make(Monad: MONAD) = struct
       Leaf_stream.lss_step (x_ps1 ~constants ~cmp) store_ops ls
 
     let _ = ls_step
-
-    (** Return the (key,value) list at the current leaf in the stream. *)
-    let ls_dest_leaf ls = Leaf_stream.dest_LS_leaf ls
-
-    let ls_is_finished lss : bool = (lss |> Leaf_stream.lss_is_finished)
 
   end
 

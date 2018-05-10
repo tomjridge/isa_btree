@@ -13,7 +13,7 @@
 <link title="Index of modules" rel=Appendix href="index_modules.html">
 <link title="Index of module types" rel=Appendix href="index_module_types.html">
 <link title="Isa_export" rel="Chapter" href="Isa_export.html">
-<link title="Isa_btree_defns" rel="Chapter" href="Isa_btree_defns.html"><title>Isa_export.Find_state</title>
+<link title="Isa_btree" rel="Chapter" href="Isa_btree.html"><title>Isa_export.Find_state</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Isa_export.Tree_stack.html" title="Isa_export.Tree_stack">Previous</a>
@@ -43,5 +43,8 @@
 
 
 <pre><span id="VALdummy"><span class="keyword">val</span> dummy</span> : <code class="type">unit</code></pre>
+<pre><span id="VALwf_trans"><span class="keyword">val</span> wf_trans</span> : <code class="type">'a * ('b, 'c, 'd) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a> -><br>       'e * ('f, 'g, 'h) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a> -> bool</code></pre>
 <pre><span id="VALmk_find_state"><span class="keyword">val</span> mk_find_state</span> : <code class="type">'a -> 'b -> ('a, 'c, 'b) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a></code></pre>
-<pre><span id="VALdest_f_finished"><span class="keyword">val</span> dest_f_finished</span> : <code class="type">('a, 'b, 'c) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a> -><br>       ('c *<br>        ('a *<br>         ('c *<br>          (('a * 'b) list *<br>           ('a, 'c, unit) <a href="Isa_export.Searching_and_splitting.html#TYPErsplit_node_ext">Isa_export.Searching_and_splitting.rsplit_node_ext</a> list))))<br>       option</code></pre></body></html>
+<pre><span id="VALwf_store_tree"><span class="keyword">val</span> wf_store_tree</span> : <code class="type">('a -> 'b -> ('c, 'd) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       'a -> 'b -> ('c, 'd) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -> bool</code></pre>
+<pre><span id="VALdest_f_finished"><span class="keyword">val</span> dest_f_finished</span> : <code class="type">('a, 'b, 'c) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a> -><br>       ('c *<br>        ('a *<br>         ('c *<br>          (('a * 'b) list *<br>           ('a, 'c, unit) <a href="Isa_export.Searching_and_splitting.html#TYPErsplit_node_ext">Isa_export.Searching_and_splitting.rsplit_node_ext</a> list))))<br>       option</code></pre>
+<pre><span id="VALwellformed_find_state"><span class="keyword">val</span> wellformed_find_state</span> : <code class="type">('a -> 'a -> <a href="Isa_export.Arith.html#TYPEint">Isa_export.Arith.int</a>) -><br>       ('b -> 'c -> ('a, 'd) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> option) -><br>       ('a, 'd) <a href="Isa_export.Tree.html#TYPEtree">Isa_export.Tree.tree</a> -><br>       'b -> ('a, 'e, 'c) <a href="Isa_export.Find_state.html#TYPEfind_state">find_state</a> -> bool</code></pre></body></html>
