@@ -30,6 +30,9 @@ uninstall:
 clean: 
 	clean
 
+real_clean:
+	clean
+
 doc:
 	mk_doc
 	mv *.html ../ocamldoc
