@@ -3,5 +3,6 @@
 
 * Dependencies (for OCaml code)
 
-| ppx_deriving_yojson | 
+| num                 | isa exported code uses Big_int |
+| ppx_deriving_yojson |                                |
 
