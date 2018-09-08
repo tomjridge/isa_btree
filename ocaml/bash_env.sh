@@ -5,6 +5,7 @@ set -a # export all vars
 # NOTE in toplevel you need to #require "bos.top" and bos.setup;;
 
 libname="isa_btree"
+package_name="isa_btree"
 required_packages="num,stdlib,ppx_deriving_yojson"  # may want a separate package for lwt 
 description="$libname, OCaml version of Isabelle B-tree defns"
 
@@ -54,16 +55,17 @@ cmxs="${mls//.ml/.cmx}"
 natives="
 "
 
-branch=`git symbolic-ref --short HEAD` 
-v=`date +'%F'`
-if [ "$branch" = "master" ]; then
-    package_name="${libname}"
-else 
-    package_name="${libname}_${branch}"
-fi
+# branch=`git symbolic-ref --short HEAD` 
+# v=`date +'%F'`
+# if [ "$branch" = "master" ]; then
+#     package_name="${libname}"
+# else 
+#     package_name="${libname}_${branch}"
+# fi
 
 
 function mk_meta() {
+v=`cat ../VERSION`
 cat >META <<EOF
 name="$package_name"
 description="$description"
