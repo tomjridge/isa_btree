@@ -8,7 +8,7 @@ BASH_ENV:=bash_env.sh
 export BASH_ENV
 
 
-all: FORCE
+build: FORCE
 	$$ocamlc -c $$mls
 	$$ocamlopt -c $$mls
 	@echo "NOTE cma contains: $$cmos" # simple check
