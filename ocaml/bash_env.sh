@@ -6,7 +6,7 @@ set -a # export all vars
 
 libname="isa_btree"
 package_name="isa_btree"
-required_packages="num,stdlib,ppx_deriving_yojson"  # may want a separate package for lwt 
+required_packages="num,stdlib,ppx_deriving_yojson,ppx_deriving_yojson.runtime"  # may want a separate package for lwt 
 description="$libname, OCaml version of Isabelle B-tree defns"
 
 function clean() {
