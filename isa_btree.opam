@@ -18,8 +18,8 @@ depends: [
 
 # ----------------------------------------------------------------------
 
-build: [make]
 
-install: [make "install"]
-
-remove: [make "uninstall"]
+build: [
+#  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+]
