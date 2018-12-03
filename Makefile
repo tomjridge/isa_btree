@@ -1,14 +1,22 @@
-build:
-	$(MAKE) -C ocaml
+DUNE:=dune
 
+build:
+	$(DUNE) build @install
 
 install:
-	$(MAKE) -C ocaml install
-
+	$(DUNE) install
 
 uninstall:
-	$(MAKE) -C ocaml uninstall
-
+	$(DUNE) uninstall
 
 clean:
-	$(MAKE) -C ocaml real_clean
+	$(DUNE) clean
+
+doc: FORCE
+	$(DUNE) build @doc
+
+doc_install: doc
+	rm -rf ocamldoc/*
+	cp -R _build/default/_doc/_html/* ocamldoc
+
+FORCE:
