@@ -11,3 +11,4 @@ docs/pics/*.ps
 /ocaml/META
 /dune-project
 /isa_btree.install
+/ocaml/.merlin
