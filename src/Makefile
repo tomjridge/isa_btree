@@ -16,4 +16,8 @@ doc: FORCE
 #
 # Also html likely in dir like ~/.isabelle/Isabelle2015/browser_info/Unsorted/isa_btree
 
+
+tjr_list_files:
+	find . -maxdepth 2 \( -name "*.thy" \) -a -not -path "*/old*" -not -name "tmp.md" | sort | munge_find_to_tree.py 
+
 FORCE:

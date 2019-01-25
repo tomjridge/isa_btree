@@ -1,5 +1,6 @@
 cd ../src
-export SRC=/tmp/l/github/isa_btree/src
+# obviously change this to wherever you have checked out to
+export SRC=/tmp/l/github/an_imp/b_isa_btree/src
 isabelle jedit Tmp.thy
 
 # note that this will pull Lem theory files from the LEM heap,
