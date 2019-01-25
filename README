@@ -1,4 +1,8 @@
+-*- org -*-
+
 * Isabelle formalization of B-tree correctness using tree stacks
+
+You can browse the Isabelle html at <http://tomjridge.github.io/isa_btree/isabelle_generated_html/>
 
 
 * Dependencies (for OCaml code)
