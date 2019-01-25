@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Util (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Util</h1>
+
+<span class="command">theory</span> <span class="name">Util</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Util
+<span class="keyword2">imports</span> Main
+<span class="keyword2">begin</span>
+
+
+<span class="keyword1">lemma</span> FIXME<span class="delimiter">:</span> <span class="string">&quot;P&quot;</span> <span class="keyword1">sorry</span>
+
+<span class="keyword1">definition</span> rev_apply <span class="delimiter">::</span> <span class="string">&quot;&#39;a =&gt; (&#39;a =&gt; &#39;b) =&gt; &#39;b&quot;</span> <span class="delimiter">(</span><span class="keyword2">infixl</span> <span class="string">&quot;|&gt;&quot;</span> 100<span class="delimiter">)</span> <span class="keyword2">where</span>
+  <span class="string">&quot;rev_apply x f = f x&quot;</span>
+
+
+<span class="comment">(* failwith --------------------------------------------------------- *)</span>
+
+<span class="comment">(* patch following in generated ocaml *)</span>
+
+
+<span class="comment">(* failwith is for errors that are not expected; such an error should
+never arise *)</span>
+
+<span class="keyword1">definition</span> failwith <span class="delimiter">::</span> <span class="string">&quot;String.literal =&gt; &#39;b&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;failwith x = (STR &#39;&#39;FIXME patch&#39;&#39;) |&gt; (% _. undefined)&quot;</span>
+
+
+<span class="comment">(* impossible1 marks cases that are impossible; the 1 suffix is needed
+because impossible is reserved (FIXME in OCaml?) *)</span>
+
+<span class="keyword1">definition</span> impossible1 <span class="delimiter">::</span> <span class="string">&quot;String.literal =&gt; &#39;a&quot;</span> <span class="keyword2">where</span>
+  <span class="string">&quot;impossible1 x = failwith x&quot;</span>  
+
+
+
+<span class="comment">(* debugging, asserts ----------------------------------------------- *)</span>
+
+
+<span class="comment">(* assert_true always evaluates argument; this is useful for debugging
+OCaml code; FIXME replaced with simple assert in OCaml? *)</span>
+
+<span class="keyword1">definition</span> assert_true <span class="delimiter">::</span> <span class="string">&quot;bool =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;assert_true b = (if b then b else failwith (STR &#39;&#39;assert_true&#39;&#39;))&quot;</span>
+
+
+<span class="comment">(* check_true is patched in OCaml; may evaluate its argument, but can
+be disabled by setting a flag; used during debugging to check various
+conditions; should be disabled in production *)</span>
+
+<span class="keyword1">definition</span> check_true <span class="delimiter">::</span> <span class="string">&quot;(unit =&gt; bool) =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;check_true f = (STR &#39;&#39;FIXME patch&#39;&#39;) |&gt; (% _. undefined)&quot;</span>
+
+
+
+<span class="comment">(* a single error type, for all proof-relevant errors --------------- *)</span>
+
+<span class="comment">(* errors are for cases that are expected, and which the code should
+handle; at the moment they are just strings *)</span>
+
+<span class="keyword1">datatype</span> error <span class="delimiter">=</span> String_error <span class="string">&quot;String.literal&quot;</span>
+
+<span class="keyword1">definition</span> mk_err <span class="delimiter">::</span> <span class="string">&quot;String.literal =&gt; error&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;mk_err s = String_error s&quot;</span>
+
+<span class="keyword1">type_synonym</span> e <span class="delimiter">=</span> error
+
+
+
+<span class="comment">(* misc ------------------------------------------------------------- *)</span>
+  
+
+<span class="comment">(* is_Some also in Quickcheck_Examples/Completeness.thy - should be in
+Main? simpler defn here*)</span>
+
+<span class="keyword1">definition</span> is_Some <span class="delimiter">::</span> <span class="string">&quot;&#39;a option =&gt; bool&quot;</span> <span class="keyword2">where</span>
+  <span class="string">&quot;is_Some x = (x ~= None)&quot;</span>
+
+<span class="comment">(* FIXME dest_Some None should never happen - so use failwith *)</span>
+<span class="keyword1">primrec</span> dest_Some <span class="comment">(* :: &quot;&#39;a option =&gt; &#39;a&quot; *)</span> <span class="keyword2">where</span> 
+  <span class="string">&quot;dest_Some (Some x) = x&quot;</span>
+  <span class="delimiter">|</span> <span class="string">&quot;dest_Some None = undefined&quot;</span>
+
+
+<span class="keyword1">definition</span> is_None <span class="delimiter">::</span> <span class="string">&quot;&#39;a option =&gt; bool&quot;</span> <span class="keyword2">where</span> 
+<span class="string">&quot;is_None x = (x = None)&quot;</span>
+
+
+
+<span class="keyword1">definition</span> dest_list <span class="delimiter">::</span> <span class="string">&quot;&#39;a list =&gt; (&#39;a * &#39;a list)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_list xs = (case xs of x#xs =&gt; (x,xs) | _ =&gt; failwith (STR &#39;&#39;dest_list&#39;&#39;))&quot;</span>
+
+<span class="keyword1">definition</span> dest_list&#39; <span class="delimiter">::</span> <span class="string">&quot;&#39;a list =&gt; (&#39;a list * &#39;a)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_list&#39; xs = (case xs of [] =&gt; failwith (STR &#39;&#39;dest_list&#39; &#39;&#39;) | _ =&gt; (butlast xs,last xs))&quot;</span>
+
+
+<span class="comment">(* FIXME inefficient *)</span>
+
+<span class="keyword1">definition</span> unzip <span class="delimiter">::</span> <span class="string">&quot;(&#39;a*&#39;b) list =&gt; (&#39;a list * &#39;b list)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;unzip xs = (xs|&gt;List.map fst, xs|&gt;List.map snd)&quot;</span>
+
+  
+<span class="keyword1">definition</span> is_Nil&#39; <span class="delimiter">::</span> <span class="string">&quot;&#39;a list =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;is_Nil&#39; x = (case x of [] =&gt; True | _ =&gt; False)&quot;</span>
+
+
+<span class="comment">(* res -------------------------------------------------------------- *)</span>
+  
+<span class="comment">(* This is similar to the result type from OCaml *)</span>
+
+<span class="keyword1">datatype</span> <span class="tfree">&#39;a</span> res <span class="delimiter">=</span> Ok <span class="tfree">&#39;a</span> <span class="delimiter">|</span> Error e 
+
+<span class="keyword1">definition</span> is_Ok <span class="delimiter">::</span> <span class="string">&quot;&#39;a res =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;is_Ok x = (case x of Ok _ =&gt; True | _ =&gt; False)&quot;</span>
+
+<span class="keyword1">definition</span> dest_Ok <span class="delimiter">::</span> <span class="string">&quot;&#39;a res =&gt; &#39;a&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_Ok x = (case x of Ok x =&gt; x | _ =&gt; failwith (STR &#39;&#39;dest_Ok&#39;&#39;))&quot;</span>
+
+
+
+<span class="comment">(* various list defs, split_at etc ---------------------------------- *)</span>
+
+<span class="comment">(* FIXME take and drop used separately is inefficient *)</span>
+
+<span class="keyword1">definition</span> split_at <span class="delimiter">::</span> <span class="string">&quot;nat =&gt; &#39;a list =&gt; &#39;a list * &#39;a list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;split_at n xs = (
+  let _ = check_true (% _. n &le; List.length xs) in
+  take n xs,drop n xs)&quot;</span>
+
+<span class="keyword1">definition</span> split_at_tests <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;split_at_tests = (
+  let _ = assert_true (split_at 3 [(0::nat),1,2,3,4] = ([0,1,2],[3,4])) in
+  let _ = assert_true (split_at 3 [(0::nat),1,2] = ([0,1,2],[])) in
+  ())&quot;</span>
+
+
+<span class="keyword1">definition</span> split_at_3 <span class="delimiter">::</span> <span class="string">&quot;nat =&gt; &#39;a list =&gt; &#39;a list * &#39;a * &#39;a list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;split_at_3 n xs = (
+  let _ = check_true (% _. n &lt; List.length xs) in
+  (take n xs,xs!n,drop (n+1) xs))&quot;</span>
+
+<span class="keyword1">definition</span> split_at_3_tests <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;split_at_3_tests = (
+  let _ = assert_true (split_at_3 3 [(0::nat),1,2,3,4] = ([0,1,2],3,[4])) in
+  let _ = assert_true (split_at_3 3 [(0::nat),1,2,3] = ([0,1,2],3,[])) in
+  ())&quot;</span>
+
+
+
+<span class="keyword1">definition</span> from_to <span class="delimiter">::</span> <span class="string">&quot;nat =&gt; nat =&gt; nat list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;from_to x y = upt x (Suc y)&quot;</span>
+
+<span class="keyword1">definition</span> from_to_tests <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;from_to_tests = (
+  let _ = assert_true (from_to 3 5 = [3,4,5]) in
+  let _ = assert_true (from_to 3 3 = [3]) in
+  let _ = assert_true (from_to 3 2 = []) in
+  ())&quot;</span>
+
+
+
+<span class="keyword1">definition</span> while_not_nil <span class="delimiter">::</span> <span class="string">&quot;(&#39;a =&gt; &#39;b =&gt; &#39;b) =&gt; &#39;b =&gt; &#39;a list =&gt; &#39;b&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;while_not_nil f init xs = (List.foldr f xs init)&quot;</span>
+
+
+<span class="keyword1">definition</span> max_of_list <span class="delimiter">::</span> <span class="string">&quot;nat list =&gt; nat&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;max_of_list xs = foldr max xs 0&quot;</span>
+
+
+<span class="comment">(* iterate f:&#39;a -&gt; &#39;a option ---------------------------------------- *)</span>
+
+<span class="comment">(*no termination proof for the following*)</span>
+<span class="comment">(*begin iterator*)</span>
+<span class="keyword1">function</span> iter_step <span class="delimiter">::</span> <span class="string">&quot;(&#39;a =&gt; &#39;a option) =&gt; &#39;a =&gt; &#39;a&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;iter_step f x = (
+  let r = f x in
+  case r of
+    None =&gt; x
+  | Some x =&gt; iter_step f x)&quot;</span>
+<span class="comment">(*end iterator*)</span>
+<span class="keyword1"><span class="improper">apply</span></span> <span class="delimiter">(</span>force<span class="delimiter">)</span><span class="delimiter">+</span> <span class="keyword1"><span class="improper">done</span></span>
+<span class="keyword1">termination</span> iter_step
+ <span class="keyword1">by</span> <span class="delimiter">(</span>force intro<span class="delimiter">:</span>FIXME<span class="delimiter">)</span>
+
+  
+ 
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Store_ops (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Store_ops</h1>
+
+<span class="command">theory</span> <span class="name">Store_ops</span><br/>
+<span class="keyword">imports</span> <a href="Monad.html"><span class="name">Monad</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Store_ops
+<span class="keyword2">imports</span> Monad
+<span class="keyword2">begin</span>
+
+<span class="comment">(*
+(* FIXME why is store_ops here?  FIXME eliminate in favour of a tuple *)
+record (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =
+  store_read :: &quot;(&#39;r =&gt; ((&#39;k,&#39;v,&#39;r) dnode,&#39;t) MM)&quot;
+  store_alloc :: &quot;((&#39;k,&#39;v,&#39;r) dnode =&gt; (&#39;r,&#39;t) MM)&quot;
+  store_free :: &quot;(&#39;r list =&gt; (unit,&#39;t) MM)&quot;
+*)</span>
+
+<span class="comment">(* FIXME pass store_ops explicitly ? *)</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">,</span><span class="tfree">&#39;t</span><span class="delimiter">)</span> store_ops <span class="delimiter">=</span> <span class="string">&quot;
+  (&#39;r =&gt; ((&#39;k,&#39;v,&#39;r) dnode,&#39;t) MM) *
+  ((&#39;k,&#39;v,&#39;r) dnode =&gt; (&#39;r,&#39;t) MM) *
+  (&#39;r list =&gt; (unit,&#39;t) MM)&quot;</span>
+
+<span class="keyword1">definition</span> wf_store_ops <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; bool&quot;</span> <span class="keyword2">where</span> 
+<span class="string">&quot;wf_store_ops s = True&quot;</span>
+
+<span class="keyword1">definition</span> store_read <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;r =&gt; ((&#39;k,&#39;v,&#39;r) dnode,&#39;t) MM)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;store_read raf = (let (r,a,f) = raf in r)&quot;</span>
+
+<span class="keyword1">definition</span> store_alloc <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; ((&#39;k,&#39;v,&#39;r) dnode =&gt; (&#39;r,&#39;t) MM)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;store_alloc raf = (let (r,a,f) = raf in a)&quot;</span>
+
+<span class="keyword1">definition</span> store_free <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt;  (&#39;r list =&gt; (unit,&#39;t) MM)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;store_free raf = (let (r,a,f) = raf in f)&quot;</span>
+
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

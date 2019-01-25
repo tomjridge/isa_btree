@@ -1,0 +1,303 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Delete{\isadigit{2}}}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Delete{\isadigit{2}}\isanewline
+\isakeyword{imports}\ Find\ {\isachardoublequoteopen}{\isachardollar}SRC{\isacharslash}c{\isacharunderscore}monad{\isacharslash}Delete{\isacharunderscore}state{\isachardoublequoteclose}\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ fo\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ del{\isacharunderscore}t{\isachardoublequoteclose}\ \ \isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}u\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}fo\ {\isacharasterisk}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rstk{\isachardoublequoteclose}\ \ \isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}d\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}find{\isacharunderscore}state\ {\isacharasterisk}\ {\isacharprime}r{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ node{\isacharunderscore}steal{\isacharunderscore}right\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rsplit{\isacharunderscore}node\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}node{\isacharunderscore}steal{\isacharunderscore}right\ store{\isacharunderscore}ops\ p\ c{\isadigit{1}}\ c{\isadigit{2}}\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ case\ c{\isadigit{1}}\ of\ {\isacharparenleft}ks{\isadigit{1}}{\isacharcomma}rs{\isadigit{1}}{\isacharparenright}\ {\isasymRightarrow}\ \isanewline
+\ \ case\ c{\isadigit{2}}\ of\ {\isacharparenleft}k{\isadigit{2}}{\isacharhash}rest{\isacharcomma}r{\isadigit{2}}{\isacharhash}rest{\isacharprime}{\isacharparenright}\ {\isasymRightarrow}\ \isanewline
+\ \ case\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{2}}{\isacharcomma}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{2}}{\isacharparenright}\ of\ {\isacharparenleft}k{\isadigit{1}}{\isacharhash}ks{\isadigit{2}}{\isacharcomma}{\isacharunderscore}{\isacharhash}rs{\isadigit{2}}{\isacharparenright}\ {\isasymRightarrow}\ \ \ \isanewline
+\ \ {\isacharparenleft}ks{\isadigit{1}}{\isacharat}{\isacharbrackleft}k{\isadigit{1}}{\isacharbrackright}{\isacharcomma}rs{\isadigit{1}}{\isacharat}{\isacharbrackleft}r{\isadigit{2}}{\isacharbrackright}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{3}}{\isachardot}\isanewline
+\ \ {\isacharparenleft}rest{\isacharcomma}rest{\isacharprime}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{4}}{\isachardot}\isanewline
+\ \ p\ {\isasymlparr}\ r{\isacharunderscore}t{\isacharcolon}{\isacharequal}r{\isadigit{3}}{\isacharcomma}\ r{\isacharunderscore}ks{\isadigit{2}}{\isacharcolon}{\isacharequal}k{\isadigit{2}}{\isacharhash}ks{\isadigit{2}}{\isacharcomma}\ r{\isacharunderscore}ts{\isadigit{2}}{\isacharcolon}{\isacharequal}r{\isadigit{4}}{\isacharhash}rs{\isadigit{2}}\ {\isasymrparr}\isanewline
+\ \ {\isacharbar}{\isachargreater}\ unsplit{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ p{\isachardot}\isanewline
+\ \ return\ p{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ node{\isacharunderscore}steal{\isacharunderscore}left\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rsplit{\isacharunderscore}node\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}node{\isacharunderscore}steal{\isacharunderscore}left\ store{\isacharunderscore}ops\ p\ c{\isadigit{1}}\ c{\isadigit{2}}\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ let\ c{\isadigit{1}}\ {\isacharequal}\ {\isacharparenleft}c{\isadigit{1}}\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}{\isacharpercent}\ {\isacharparenleft}x{\isacharcomma}y{\isacharparenright}{\isachardot}\ {\isacharparenleft}rev\ x{\isacharcomma}\ rev\ y{\isacharparenright}{\isacharparenright}{\isacharparenright}\ in\isanewline
+\ \ case\ c{\isadigit{1}}\ of\ {\isacharparenleft}k{\isadigit{1}}{\isacharhash}rest{\isacharcomma}r{\isadigit{1}}{\isacharhash}rest{\isacharprime}{\isacharparenright}\ {\isasymRightarrow}\isanewline
+\ \ case\ c{\isadigit{2}}\ of\ {\isacharparenleft}ks{\isadigit{2}}{\isacharcomma}rs{\isadigit{2}}{\isacharparenright}\ {\isasymRightarrow}\isanewline
+\ \ case\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{1}}{\isacharcomma}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{1}}{\isacharparenright}\ of\ {\isacharparenleft}k{\isadigit{2}}{\isacharhash}ks{\isadigit{1}}{\isacharcomma}{\isacharunderscore}{\isacharhash}rs{\isadigit{1}}{\isacharparenright}\ {\isasymRightarrow}\isanewline
+\ \ {\isacharparenleft}rev\ rest{\isacharcomma}rev\ rest{\isacharprime}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{3}}{\isachardot}\isanewline
+\ \ {\isacharparenleft}k{\isadigit{2}}{\isacharhash}ks{\isadigit{2}}{\isacharcomma}r{\isadigit{1}}{\isacharhash}rs{\isadigit{2}}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{4}}{\isachardot}\isanewline
+\ \ p\ {\isasymlparr}\ r{\isacharunderscore}ks{\isadigit{1}}{\isacharcolon}{\isacharequal}k{\isadigit{1}}{\isacharhash}ks{\isadigit{1}}{\isacharcomma}\ r{\isacharunderscore}ts{\isadigit{1}}{\isacharcolon}{\isacharequal}r{\isadigit{3}}{\isacharhash}rs{\isadigit{1}}{\isacharcomma}\ r{\isacharunderscore}t{\isacharcolon}{\isacharequal}r{\isadigit{4}}\ {\isasymrparr}\isanewline
+\ \ {\isacharbar}{\isachargreater}\ unsplit{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ p{\isachardot}\isanewline
+\ \ return\ p{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ node{\isacharunderscore}merge{\isacharunderscore}right\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}constants\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rsplit{\isacharunderscore}node\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}node{\isacharunderscore}merge{\isacharunderscore}right\ cs\ store{\isacharunderscore}ops\ p\ c{\isadigit{1}}\ c{\isadigit{2}}\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ case\ c{\isadigit{1}}\ of\ {\isacharparenleft}ks{\isadigit{1}}{\isacharcomma}rs{\isadigit{1}}{\isacharparenright}\ {\isasymRightarrow}\ \isanewline
+\ \ case\ c{\isadigit{2}}\ of\ {\isacharparenleft}ks{\isadigit{2}}{\isacharcomma}rs{\isadigit{2}}{\isacharparenright}\ {\isasymRightarrow}\ \isanewline
+\ \ case\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{2}}{\isacharcomma}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{2}}{\isacharparenright}\ of\ {\isacharparenleft}k{\isadigit{2}}{\isacharhash}p{\isacharunderscore}ks{\isadigit{2}}{\isacharcomma}{\isacharunderscore}{\isacharhash}p{\isacharunderscore}rs{\isadigit{2}}{\isacharparenright}\ {\isasymRightarrow}\ \ \ \isanewline
+\ \ {\isacharparenleft}ks{\isadigit{1}}{\isacharat}{\isacharbrackleft}k{\isadigit{2}}{\isacharbrackright}{\isacharat}ks{\isadigit{2}}{\isacharcomma}rs{\isadigit{1}}{\isacharat}rs{\isadigit{2}}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{4}}{\isachardot}\ \isanewline
+\ \ p\ {\isasymlparr}\ r{\isacharunderscore}t{\isacharcolon}{\isacharequal}r{\isadigit{4}}{\isacharcomma}\ r{\isacharunderscore}ks{\isadigit{2}}{\isacharcolon}{\isacharequal}p{\isacharunderscore}ks{\isadigit{2}}{\isacharcomma}\ r{\isacharunderscore}ts{\isadigit{2}}{\isacharcolon}{\isacharequal}p{\isacharunderscore}rs{\isadigit{2}}\ {\isasymrparr}\ {\isacharbar}{\isachargreater}\ unsplit{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}{\isacharpercent}\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isachardot}\ return\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ node{\isacharunderscore}merge{\isacharunderscore}left\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}constants\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rsplit{\isacharunderscore}node\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharparenright}\ {\isasymRightarrow}\ \isanewline
+\ \ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}node{\isacharunderscore}merge{\isacharunderscore}left\ cs\ store{\isacharunderscore}ops\ p\ c{\isadigit{1}}\ c{\isadigit{2}}\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ case\ c{\isadigit{1}}\ of\ {\isacharparenleft}ks{\isadigit{1}}{\isacharcomma}rs{\isadigit{1}}{\isacharparenright}\ {\isasymRightarrow}\ \isanewline
+\ \ case\ c{\isadigit{2}}\ of\ {\isacharparenleft}ks{\isadigit{2}}{\isacharcomma}rs{\isadigit{2}}{\isacharparenright}\ {\isasymRightarrow}\ \isanewline
+\ \ case\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{1}}{\isacharcomma}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{1}}{\isacharparenright}\ of\ {\isacharparenleft}k{\isadigit{2}}{\isacharhash}p{\isacharunderscore}ks{\isadigit{1}}{\isacharcomma}{\isacharunderscore}{\isacharhash}p{\isacharunderscore}rs{\isadigit{1}}{\isacharparenright}\ {\isasymRightarrow}\ \ \ \isanewline
+\ \ {\isacharparenleft}ks{\isadigit{1}}{\isacharat}{\isacharbrackleft}k{\isadigit{2}}{\isacharbrackright}{\isacharat}ks{\isadigit{2}}{\isacharcomma}rs{\isadigit{1}}{\isacharat}rs{\isadigit{2}}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{4}}{\isachardot}\ \isanewline
+\ \ p\ {\isasymlparr}\ r{\isacharunderscore}t{\isacharcolon}{\isacharequal}r{\isadigit{4}}{\isacharcomma}\ r{\isacharunderscore}ks{\isadigit{1}}{\isacharcolon}{\isacharequal}p{\isacharunderscore}ks{\isadigit{1}}{\isacharcomma}\ r{\isacharunderscore}ts{\isadigit{1}}{\isacharcolon}{\isacharequal}p{\isacharunderscore}rs{\isadigit{1}}\ {\isasymrparr}\ {\isacharbar}{\isachargreater}\ unsplit{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}{\isacharpercent}\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isachardot}\ return\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharparenright}\ leaf\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k\ {\isacharasterisk}\ {\isacharprime}v{\isacharparenright}\ list{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}a{\isacharparenright}\ l{\isadigit{3}}\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}a{\isacharparenright}\ rsplit{\isacharunderscore}node\ {\isacharasterisk}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}a{\isacharparenright}\ leaf\ {\isacharasterisk}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}a{\isacharparenright}\ leaf{\isachardoublequoteclose}\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}a{\isacharparenright}\ l{\isadigit{2}}\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}a{\isacharparenright}\ rsplit{\isacharunderscore}node\ {\isacharasterisk}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}a{\isacharparenright}\ leaf{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ leaf{\isacharunderscore}steal{\isacharunderscore}right\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rsplit{\isacharunderscore}node\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \ \isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}leaf{\isacharunderscore}steal{\isacharunderscore}right\ store{\isacharunderscore}ops\ p\ c{\isadigit{1}}\ c{\isadigit{2}}\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ case\ c{\isadigit{2}}\ of\ k{\isadigit{3}}{\isacharhash}k{\isadigit{4}}{\isacharhash}kvs{\isadigit{2}}\ {\isasymRightarrow}\ \isanewline
+\ \ case\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{2}}{\isacharcomma}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{2}}{\isacharparenright}\ of\ {\isacharparenleft}k{\isadigit{2}}{\isacharhash}ks{\isadigit{2}}{\isacharcomma}{\isacharunderscore}{\isacharhash}p{\isacharunderscore}rs{\isadigit{2}}{\isacharparenright}\ {\isasymRightarrow}\ \ \ \isanewline
+\ \ {\isacharparenleft}c{\isadigit{1}}{\isacharat}{\isacharbrackleft}k{\isadigit{3}}{\isacharbrackright}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ Disk{\isacharunderscore}leaf\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{1}}{\isachardot}\isanewline
+\ \ {\isacharparenleft}k{\isadigit{4}}{\isacharhash}kvs{\isadigit{2}}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ Disk{\isacharunderscore}leaf\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{2}}{\isachardot}\isanewline
+\ \ p\ {\isasymlparr}\ r{\isacharunderscore}t{\isacharcolon}{\isacharequal}r{\isadigit{1}}{\isacharcomma}\ r{\isacharunderscore}ks{\isadigit{2}}{\isacharcolon}{\isacharequal}{\isacharparenleft}fst\ k{\isadigit{4}}{\isacharparenright}{\isacharhash}ks{\isadigit{2}}{\isacharcomma}\ r{\isacharunderscore}ts{\isadigit{2}}{\isacharcolon}{\isacharequal}r{\isadigit{2}}{\isacharhash}p{\isacharunderscore}rs{\isadigit{2}}\ {\isasymrparr}\isanewline
+\ \ {\isacharbar}{\isachargreater}\ unsplit{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ p{\isachardot}\isanewline
+\ \ return\ p{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ leaf{\isacharunderscore}steal{\isacharunderscore}left\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rsplit{\isacharunderscore}node\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \ \isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}leaf{\isacharunderscore}steal{\isacharunderscore}left\ store{\isacharunderscore}ops\ p\ c{\isadigit{1}}\ c{\isadigit{2}}\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ let\ c{\isadigit{1}}\ {\isacharequal}\ rev\ c{\isadigit{1}}\ in\isanewline
+\ \ case\ c{\isadigit{1}}\ of\ k{\isadigit{2}}{\isacharhash}kvs{\isadigit{1}}\ {\isasymRightarrow}\isanewline
+\ \ case\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{1}}{\isacharcomma}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{1}}{\isacharparenright}\ of\ {\isacharparenleft}k{\isadigit{3}}{\isacharhash}ks{\isadigit{1}}{\isacharcomma}{\isacharunderscore}{\isacharhash}p{\isacharunderscore}rs{\isadigit{1}}{\isacharparenright}\ {\isasymRightarrow}\ \ \ \isanewline
+\ \ rev\ kvs{\isadigit{1}}\ {\isacharbar}{\isachargreater}\ Disk{\isacharunderscore}leaf\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{1}}{\isachardot}\isanewline
+\ \ {\isacharparenleft}k{\isadigit{2}}{\isacharhash}c{\isadigit{2}}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ Disk{\isacharunderscore}leaf\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{2}}{\isachardot}\isanewline
+\ \ p\ {\isasymlparr}\ r{\isacharunderscore}t{\isacharcolon}{\isacharequal}r{\isadigit{2}}{\isacharcomma}\ r{\isacharunderscore}ks{\isadigit{1}}{\isacharcolon}{\isacharequal}{\isacharparenleft}fst\ k{\isadigit{2}}{\isacharparenright}{\isacharhash}ks{\isadigit{1}}{\isacharcomma}\ r{\isacharunderscore}ts{\isadigit{1}}{\isacharcolon}{\isacharequal}r{\isadigit{1}}{\isacharhash}p{\isacharunderscore}rs{\isadigit{1}}\ {\isasymrparr}\isanewline
+\ \ {\isacharbar}{\isachargreater}\ unsplit{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ p{\isachardot}\isanewline
+\ \ return\ p{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ leaf{\isacharunderscore}merge{\isacharunderscore}right\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}constants\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rsplit{\isacharunderscore}node\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s\ {\isasymRightarrow}\ \isanewline
+\ \ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \ \isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}leaf{\isacharunderscore}merge{\isacharunderscore}right\ cs\ store{\isacharunderscore}ops\ p\ c{\isadigit{1}}\ c{\isadigit{2}}\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ case\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{2}}{\isacharcomma}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{2}}{\isacharparenright}\ of\ {\isacharparenleft}k{\isadigit{2}}{\isacharhash}ks{\isadigit{2}}{\isacharcomma}{\isacharunderscore}{\isacharhash}p{\isacharunderscore}rs{\isadigit{2}}{\isacharparenright}\ {\isasymRightarrow}\ \ \ \isanewline
+\ \ {\isacharparenleft}c{\isadigit{1}}{\isacharat}c{\isadigit{2}}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ Disk{\isacharunderscore}leaf\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{1}}{\isachardot}\isanewline
+\ \ p\ {\isasymlparr}\ r{\isacharunderscore}t{\isacharcolon}{\isacharequal}r{\isadigit{1}}{\isacharcomma}\ r{\isacharunderscore}ks{\isadigit{2}}{\isacharcolon}{\isacharequal}ks{\isadigit{2}}{\isacharcomma}\ r{\isacharunderscore}ts{\isadigit{2}}{\isacharcolon}{\isacharequal}p{\isacharunderscore}rs{\isadigit{2}}\ {\isasymrparr}\ {\isacharbar}{\isachargreater}\ unsplit{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}{\isacharpercent}\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isachardot}\ return\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ leaf{\isacharunderscore}merge{\isacharunderscore}left\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}constants\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rsplit{\isacharunderscore}node\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s\ \isanewline
+\ \ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \ \isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}leaf{\isacharunderscore}merge{\isacharunderscore}left\ cs\ store{\isacharunderscore}ops\ p\ c{\isadigit{1}}\ c{\isadigit{2}}\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ case\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{1}}{\isacharcomma}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{1}}{\isacharparenright}\ of\ {\isacharparenleft}k{\isadigit{2}}{\isacharhash}ks{\isadigit{1}}{\isacharcomma}{\isacharunderscore}{\isacharhash}p{\isacharunderscore}rs{\isadigit{1}}{\isacharparenright}\ {\isasymRightarrow}\ \ \ \isanewline
+\ \ {\isacharparenleft}c{\isadigit{1}}{\isacharat}c{\isadigit{2}}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ Disk{\isacharunderscore}leaf\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ r{\isadigit{1}}{\isachardot}\isanewline
+\ \ p\ {\isasymlparr}\ r{\isacharunderscore}t{\isacharcolon}{\isacharequal}r{\isadigit{1}}{\isacharcomma}\ r{\isacharunderscore}ks{\isadigit{1}}{\isacharcolon}{\isacharequal}ks{\isadigit{1}}{\isacharcomma}\ r{\isacharunderscore}ts{\isadigit{1}}{\isacharcolon}{\isacharequal}p{\isacharunderscore}rs{\isadigit{1}}\ {\isasymrparr}\ {\isacharbar}{\isachargreater}\ unsplit{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}{\isacharpercent}\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isachardot}\ return\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ post{\isacharunderscore}merge\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}constants\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ s\ {\isacharasterisk}\ {\isacharprime}r\ s{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}fo{\isacharcomma}{\isacharprime}t{\isacharparenright}MM{\isachardoublequoteclose}\isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}post{\isacharunderscore}merge\ cs\ store{\isacharunderscore}ops\ krs\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ let\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}\ {\isacharequal}\ krs\ in\isanewline
+\ \ case\ List{\isachardot}length\ ks\ {\isacharless}\ cs{\isacharbar}{\isachargreater}min{\isacharunderscore}node{\isacharunderscore}keys\ of\ \isanewline
+\ \ True\ {\isasymRightarrow}\ {\isacharparenleft}return\ {\isacharparenleft}D{\isacharunderscore}small{\isacharunderscore}node{\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ {\isacharbar}\ False\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isacharbar}{\isachargreater}mk{\isacharunderscore}Disk{\isacharunderscore}node{\isacharbar}{\isachargreater}{\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharparenright}{\isacharbar}{\isachargreater}bind\ {\isacharparenleft}{\isacharpercent}\ r{\isachardot}\isanewline
+\ \ \ \ return\ {\isacharparenleft}D{\isacharunderscore}updated{\isacharunderscore}subtree{\isacharparenleft}r{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ step{\isacharunderscore}up\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}k\ ps{\isadigit{1}}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}\ store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}u\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}u{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}step{\isacharunderscore}up\ ps{\isadigit{1}}\ store{\isacharunderscore}ops\ du\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ let\ {\isacharparenleft}f{\isacharcomma}stk{\isacharparenright}\ {\isacharequal}\ du\ in\isanewline
+\ \ {\isacharparenleft}{\isacharasterisk}\ let\ store{\isacharunderscore}ops\ {\isacharequal}\ ps{\isadigit{1}}{\isacharbar}{\isachargreater}dot{\isacharunderscore}store{\isacharunderscore}ops\ in\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ let\ {\isacharparenleft}alloc{\isacharcomma}read{\isacharparenright}\ {\isacharequal}\ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc{\isacharcomma}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}read{\isacharparenright}\ in\isanewline
+\ \ let\ cs\ {\isacharequal}\ ps{\isadigit{1}}{\isacharbar}{\isachargreater}dot{\isacharunderscore}constants\ in\isanewline
+\ \ let\ post{\isacharunderscore}merge\ {\isacharequal}\ post{\isacharunderscore}merge\ cs\ store{\isacharunderscore}ops\ in\isanewline
+\ \ case\ stk\ of\ {\isacharbrackleft}{\isacharbrackright}\ {\isasymRightarrow}\ {\isacharparenleft}impossible{\isadigit{1}}\ {\isacharparenleft}STR\ {\isacharprime}{\isacharprime}delete{\isacharcomma}\ step{\isacharunderscore}up{\isacharprime}{\isacharprime}{\isacharparenright}{\isacharparenright}\ {\isacharbar}\ p{\isacharhash}stk{\isacharprime}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ {\isacharparenleft}{\isacharasterisk}\ NOTE\ p\ is\ the\ parent\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ {\isacharparenleft}{\isacharasterisk}\ take\ the\ result\ of\ what\ follows{\isacharcomma}\ and\ add\ the\ stk{\isacharprime}\ component\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ {\isacharparenleft}{\isacharpercent}\ x{\isachardot}\ x\ {\isacharbar}{\isachargreater}\ fmap\ {\isacharparenleft}{\isacharpercent}\ y{\isachardot}\ {\isacharparenleft}y{\isacharcomma}stk{\isacharprime}{\isacharparenright}{\isacharparenright}{\isacharparenright}\ {\isacharparenleft}case\ f\ of\ \ \ \isanewline
+\ \ D{\isacharunderscore}updated{\isacharunderscore}subtree\ r\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ unsplit{\isacharunderscore}node\ {\isacharparenleft}p{\isasymlparr}r{\isacharunderscore}t{\isacharcolon}{\isacharequal}r{\isasymrparr}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharbar}{\isachargreater}\ alloc\ {\isacharbar}{\isachargreater}\ fmap\ D{\isacharunderscore}updated{\isacharunderscore}subtree{\isacharparenright}\isanewline
+\ \ {\isacharbar}\ D{\isacharunderscore}small{\isacharunderscore}leaf{\isacharparenleft}kvs{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ let\ no{\isacharunderscore}right{\isacharunderscore}sibling\ {\isacharequal}\ is{\isacharunderscore}Nil{\isacharprime}\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{2}}{\isacharparenright}\ in\isanewline
+\ \ \ \ case\ no{\isacharunderscore}right{\isacharunderscore}sibling\ of\ \isanewline
+\ \ \ \ True\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ {\isacharparenleft}{\isacharasterisk}\ steal\ or\ merge\ from\ left\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ \ \ \ \ let\ ks{\isadigit{1}}\ {\isacharequal}\ p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{1}}\ in\isanewline
+\ \ \ \ \ \ let\ {\isacharunderscore}\ {\isacharequal}\ check{\isacharunderscore}true\ {\isacharparenleft}{\isacharpercent}\ {\isacharunderscore}{\isachardot}\ case\ ks{\isadigit{1}}\ of\ {\isacharbrackleft}{\isacharbrackright}\ {\isasymRightarrow}\ False\ {\isacharbar}\ {\isacharunderscore}\ {\isasymRightarrow}\ True{\isacharparenright}\ in\isanewline
+\ \ \ \ \ \ let\ r\ {\isacharequal}\ List{\isachardot}hd\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{1}}{\isacharparenright}\ in\isanewline
+\ \ \ \ \ \ r\ {\isacharbar}{\isachargreater}\ read\ {\isacharbar}{\isachargreater}\ fmap\ {\isacharparenleft}{\isacharpercent}\ frm{\isachardot}\ dest{\isacharunderscore}Disk{\isacharunderscore}leaf\ frm{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ left{\isacharunderscore}kvs{\isachardot}\ \isanewline
+\ \ \ \ \ \ case\ List{\isachardot}length\ left{\isacharunderscore}kvs\ {\isacharequal}\ cs{\isacharbar}{\isachargreater}min{\isacharunderscore}leaf{\isacharunderscore}size\ of\isanewline
+\ \ \ \ \ \ True\ {\isasymRightarrow}\ leaf{\isacharunderscore}merge{\isacharunderscore}left\ cs\ store{\isacharunderscore}ops\ p\ left{\isacharunderscore}kvs\ kvs\ {\isacharbar}{\isachargreater}\ bind\ post{\isacharunderscore}merge\isanewline
+\ \ \ \ \ \ {\isacharbar}\ False\ {\isasymRightarrow}\ leaf{\isacharunderscore}steal{\isacharunderscore}left\ store{\isacharunderscore}ops\ p\ left{\isacharunderscore}kvs\ kvs\ {\isacharbar}{\isachargreater}\ fmap\ D{\isacharunderscore}updated{\isacharunderscore}subtree{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ {\isacharbar}\ False\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ {\isacharparenleft}{\isacharasterisk}\ steal\ or\ merge\ from\ right\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ \ \ \ \ let\ r\ {\isacharequal}\ List{\isachardot}hd\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{2}}{\isacharparenright}\ in\isanewline
+\ \ \ \ \ \ r\ {\isacharbar}{\isachargreater}\ read\ {\isacharbar}{\isachargreater}\ fmap\ {\isacharparenleft}{\isacharpercent}\ frm{\isachardot}\ dest{\isacharunderscore}Disk{\isacharunderscore}leaf\ frm{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ right{\isacharunderscore}kvs{\isachardot}\ \isanewline
+\ \ \ \ \ \ case\ List{\isachardot}length\ right{\isacharunderscore}kvs\ {\isacharequal}\ cs{\isacharbar}{\isachargreater}min{\isacharunderscore}leaf{\isacharunderscore}size\ of\isanewline
+\ \ \ \ \ \ True\ {\isasymRightarrow}\ leaf{\isacharunderscore}merge{\isacharunderscore}right\ cs\ store{\isacharunderscore}ops\ p\ kvs\ right{\isacharunderscore}kvs\ {\isacharbar}{\isachargreater}\ bind\ post{\isacharunderscore}merge\isanewline
+\ \ \ \ \ \ {\isacharbar}\ False\ {\isasymRightarrow}\ leaf{\isacharunderscore}steal{\isacharunderscore}right\ store{\isacharunderscore}ops\ p\ kvs\ right{\isacharunderscore}kvs\ {\isacharbar}{\isachargreater}\ fmap\ D{\isacharunderscore}updated{\isacharunderscore}subtree{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ {\isacharbar}\ D{\isacharunderscore}small{\isacharunderscore}node{\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ let\ no{\isacharunderscore}right{\isacharunderscore}sibling\ {\isacharequal}\ is{\isacharunderscore}Nil{\isacharprime}\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{2}}{\isacharparenright}\ in\isanewline
+\ \ \ \ case\ no{\isacharunderscore}right{\isacharunderscore}sibling\ of\ \isanewline
+\ \ \ \ True\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ {\isacharparenleft}{\isacharasterisk}\ steal\ or\ merge\ from\ left\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ \ \ \ \ let\ ks{\isadigit{1}}\ {\isacharequal}\ p{\isacharbar}{\isachargreater}r{\isacharunderscore}ks{\isadigit{1}}\ in\isanewline
+\ \ \ \ \ \ let\ {\isacharunderscore}\ {\isacharequal}\ check{\isacharunderscore}true\ {\isacharparenleft}{\isacharpercent}\ {\isacharunderscore}{\isachardot}\ case\ ks{\isadigit{1}}\ of\ {\isacharbrackleft}{\isacharbrackright}\ {\isasymRightarrow}\ False\ {\isacharbar}\ {\isacharunderscore}\ {\isasymRightarrow}\ True{\isacharparenright}\ in\isanewline
+\ \ \ \ \ \ let\ r\ {\isacharequal}\ List{\isachardot}hd\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{1}}{\isacharparenright}\ in\isanewline
+\ \ \ \ \ \ r\ {\isacharbar}{\isachargreater}\ read\ {\isacharbar}{\isachargreater}\ fmap\ {\isacharparenleft}{\isacharpercent}\ frm{\isachardot}\ dest{\isacharunderscore}Disk{\isacharunderscore}node\ frm{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ {\isacharparenleft}l{\isacharunderscore}ks{\isacharcomma}l{\isacharunderscore}rs{\isacharparenright}{\isachardot}\ \isanewline
+\ \ \ \ \ \ case\ List{\isachardot}length\ l{\isacharunderscore}ks\ {\isacharequal}\ cs{\isacharbar}{\isachargreater}min{\isacharunderscore}node{\isacharunderscore}keys\ of\isanewline
+\ \ \ \ \ \ True\ {\isasymRightarrow}\ node{\isacharunderscore}merge{\isacharunderscore}left\ cs\ store{\isacharunderscore}ops\ p\ {\isacharparenleft}l{\isacharunderscore}ks{\isacharcomma}l{\isacharunderscore}rs{\isacharparenright}\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ post{\isacharunderscore}merge\isanewline
+\ \ \ \ \ \ {\isacharbar}\ False\ {\isasymRightarrow}\ node{\isacharunderscore}steal{\isacharunderscore}left\ store{\isacharunderscore}ops\ p\ {\isacharparenleft}l{\isacharunderscore}ks{\isacharcomma}l{\isacharunderscore}rs{\isacharparenright}\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}\ {\isacharbar}{\isachargreater}\ fmap\ D{\isacharunderscore}updated{\isacharunderscore}subtree{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ {\isacharbar}\ False\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ {\isacharparenleft}{\isacharasterisk}\ steal\ or\ merge\ from\ right\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ \ \ \ \ let\ r\ {\isacharequal}\ List{\isachardot}hd\ {\isacharparenleft}p{\isacharbar}{\isachargreater}r{\isacharunderscore}ts{\isadigit{2}}{\isacharparenright}\ in\isanewline
+\ \ \ \ \ \ r\ {\isacharbar}{\isachargreater}\ read\ {\isacharbar}{\isachargreater}\ fmap\ {\isacharparenleft}{\isacharpercent}\ frm{\isachardot}\ dest{\isacharunderscore}Disk{\isacharunderscore}node\ frm{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ {\isacharparenleft}r{\isacharunderscore}ks{\isacharcomma}r{\isacharunderscore}rs{\isacharparenright}{\isachardot}\ \isanewline
+\ \ \ \ \ \ case\ List{\isachardot}length\ r{\isacharunderscore}ks\ {\isacharequal}\ cs{\isacharbar}{\isachargreater}min{\isacharunderscore}node{\isacharunderscore}keys\ of\isanewline
+\ \ \ \ \ \ True\ {\isasymRightarrow}\ node{\isacharunderscore}merge{\isacharunderscore}right\ cs\ store{\isacharunderscore}ops\ p\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}\ {\isacharparenleft}r{\isacharunderscore}ks{\isacharcomma}r{\isacharunderscore}rs{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ post{\isacharunderscore}merge\isanewline
+\ \ \ \ \ \ {\isacharbar}\ False\ {\isasymRightarrow}\ node{\isacharunderscore}steal{\isacharunderscore}right\ store{\isacharunderscore}ops\ p\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}\ {\isacharparenleft}r{\isacharunderscore}ks{\isacharcomma}r{\isacharunderscore}rs{\isacharparenright}\ {\isacharbar}{\isachargreater}\ fmap\ D{\isacharunderscore}updated{\isacharunderscore}subtree{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ delete{\isacharunderscore}step\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}{\isacharprime}k\ ps{\isadigit{1}}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}\ store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}delete{\isacharunderscore}state\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}delete{\isacharunderscore}state{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}delete{\isacharunderscore}step\ ps{\isadigit{1}}\ store{\isacharunderscore}ops\ s\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ {\isacharparenleft}{\isacharasterisk}\ let\ store{\isacharunderscore}ops\ {\isacharequal}\ ps{\isadigit{1}}{\isacharbar}{\isachargreater}dot{\isacharunderscore}store{\isacharunderscore}ops\ in\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ let\ alloc\ {\isacharequal}\ store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}alloc\ in\isanewline
+\ \ case\ s\ of\ \isanewline
+\ \ D{\isacharunderscore}down{\isacharparenleft}f{\isacharcomma}r{\isadigit{0}}{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ case\ {\isacharparenleft}dest{\isacharunderscore}f{\isacharunderscore}finished\ f{\isacharparenright}\ of\isanewline
+\ \ \ \ None\ {\isasymRightarrow}\ {\isacharparenleft}find{\isacharunderscore}step\ ps{\isadigit{1}}\ store{\isacharunderscore}ops\ f\ {\isacharbar}{\isachargreater}\ fmap\ {\isacharparenleft}{\isacharpercent}\ f{\isacharprime}{\isachardot}\ D{\isacharunderscore}down{\isacharparenleft}f{\isacharprime}{\isacharcomma}r{\isadigit{0}}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ {\isacharbar}\ Some\ x\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ let\ {\isacharparenleft}r{\isadigit{0}}{\isacharcomma}k{\isacharcomma}r{\isacharcomma}kvs{\isacharcomma}stk{\isacharparenright}\ {\isacharequal}\ x\ in\isanewline
+\ \ \ \ \ \ {\isacharparenleft}{\isacharasterisk}\ FIXME\ don{\isacharprime}t\ free\ r{\isadigit{0}}\ if\ nothing\ to\ delete\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ \ \ \ \ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}free{\isacharparenright}\ {\isacharparenleft}r{\isadigit{0}}{\isacharhash}{\isacharparenleft}r{\isacharunderscore}stk{\isacharunderscore}to{\isacharunderscore}rs\ stk{\isacharparenright}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ bind\ {\isacharparenleft}{\isacharpercent}\ {\isacharunderscore}{\isachardot}\isanewline
+\ \ \ \ \ \ let\ something{\isacharunderscore}to{\isacharunderscore}delete\ {\isacharequal}\ {\isacharparenleft}{\isacharquery}\ x\ {\isacharcolon}\ set\ {\isacharparenleft}kvs{\isacharbar}{\isachargreater}List{\isachardot}map\ fst{\isacharparenright}{\isachardot}\ key{\isacharunderscore}eq\ {\isacharparenleft}ps{\isadigit{1}}{\isacharbar}{\isachargreater}dot{\isacharunderscore}cmp{\isacharparenright}\ x\ k{\isacharparenright}\ in\isanewline
+\ \ \ \ \ \ case\ something{\isacharunderscore}to{\isacharunderscore}delete\ of\isanewline
+\ \ \ \ \ \ True\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ \ \ let\ kvs{\isacharprime}\ {\isacharequal}\ kvs{\isacharbar}{\isachargreater}List{\isachardot}filter\ {\isacharparenleft}{\isacharpercent}\ x{\isachardot}\ {\isachartilde}\ {\isacharparenleft}key{\isacharunderscore}eq\ {\isacharparenleft}ps{\isadigit{1}}{\isacharbar}{\isachargreater}dot{\isacharunderscore}cmp{\isacharparenright}\ {\isacharparenleft}fst\ x{\isacharparenright}\ k{\isacharparenright}{\isacharparenright}\ in\isanewline
+\ \ \ \ \ \ \ \ case\ {\isacharparenleft}List{\isachardot}length\ kvs{\isacharprime}\ {\isacharless}\ ps{\isadigit{1}}{\isacharbar}{\isachargreater}dot{\isacharunderscore}constants{\isacharbar}{\isachargreater}min{\isacharunderscore}leaf{\isacharunderscore}size{\isacharparenright}\ of\isanewline
+\ \ \ \ \ \ \ \ True\ {\isasymRightarrow}\ {\isacharparenleft}return\ {\isacharparenleft}D{\isacharunderscore}up{\isacharparenleft}D{\isacharunderscore}small{\isacharunderscore}leaf{\isacharparenleft}kvs{\isacharprime}{\isacharparenright}{\isacharcomma}stk{\isacharcomma}r{\isadigit{0}}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \ \ {\isacharbar}\ False\ {\isasymRightarrow}\ {\isacharparenleft}Disk{\isacharunderscore}leaf{\isacharparenleft}kvs{\isacharprime}{\isacharparenright}\ {\isacharbar}{\isachargreater}\ alloc\ {\isacharbar}{\isachargreater}\ fmap\ {\isacharparenleft}{\isacharpercent}\ r{\isachardot}\ D{\isacharunderscore}up{\isacharparenleft}D{\isacharunderscore}updated{\isacharunderscore}subtree{\isacharparenleft}r{\isacharparenright}{\isacharcomma}stk{\isacharcomma}r{\isadigit{0}}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ {\isacharbar}\ False\ {\isasymRightarrow}\ {\isacharparenleft}return\ {\isacharparenleft}D{\isacharunderscore}finished\ r{\isadigit{0}}{\isacharparenright}\ {\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ {\isacharbar}\ D{\isacharunderscore}up{\isacharparenleft}f{\isacharcomma}stk{\isacharcomma}r{\isadigit{0}}{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ case\ is{\isacharunderscore}Nil{\isacharprime}\ stk\ of\isanewline
+\ \ \ \ True\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ case\ f\ of\isanewline
+\ \ \ \ \ \ D{\isacharunderscore}small{\isacharunderscore}leaf\ kvs\ {\isasymRightarrow}\ {\isacharparenleft}Disk{\isacharunderscore}leaf{\isacharparenleft}kvs{\isacharparenright}{\isacharbar}{\isachargreater}alloc{\isacharbar}{\isachargreater}fmap\ D{\isacharunderscore}finished{\isacharparenright}\isanewline
+\ \ \ \ \ \ {\isacharbar}\ D{\isacharunderscore}small{\isacharunderscore}node\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ \ \ case\ List{\isachardot}length\ ks\ {\isacharequal}\ {\isadigit{0}}\ of\isanewline
+\ \ \ \ \ \ \ \ True\ {\isasymRightarrow}\ return\ {\isacharparenleft}D{\isacharunderscore}finished\ {\isacharparenleft}List{\isachardot}hd\ rs{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ \ \ {\isacharbar}\ False\ {\isasymRightarrow}\ {\isacharparenleft}mk{\isacharunderscore}Disk{\isacharunderscore}node{\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}{\isacharbar}{\isachargreater}alloc{\isacharbar}{\isachargreater}fmap\ D{\isacharunderscore}finished{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ {\isacharbar}\ D{\isacharunderscore}updated{\isacharunderscore}subtree{\isacharparenleft}r{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}return\ {\isacharparenleft}D{\isacharunderscore}finished\ r{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ {\isacharbar}\ False\ {\isasymRightarrow}\ {\isacharparenleft}step{\isacharunderscore}up\ ps{\isadigit{1}}\ store{\isacharunderscore}ops\ {\isacharparenleft}f{\isacharcomma}stk{\isacharparenright}\ {\isacharbar}{\isachargreater}\ fmap\ {\isacharparenleft}{\isacharpercent}\ {\isacharparenleft}f{\isacharcomma}stk{\isacharparenright}{\isachardot}\ D{\isacharunderscore}up{\isacharparenleft}f{\isacharcomma}stk{\isacharcomma}r{\isadigit{0}}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ {\isacharbar}\ D{\isacharunderscore}finished{\isacharparenleft}r{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}return\ s{\isacharparenright}\ \ {\isacharparenleft}{\isacharasterisk}\ stutter\ {\isacharasterisk}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+\end{isabellebody}%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

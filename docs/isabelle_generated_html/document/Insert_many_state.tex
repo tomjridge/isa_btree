@@ -1,0 +1,75 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Insert{\isacharunderscore}many{\isacharunderscore}state}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Insert{\isacharunderscore}many{\isacharunderscore}state\isanewline
+\isakeyword{imports}\ Find{\isacharunderscore}state\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dummy\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}unit{\isachardoublequoteclose}\ \isakeyword{where}\ {\isachardoublequoteopen}dummy{\isacharequal}{\isacharparenleft}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{datatype}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ im{\isacharunderscore}fo\ \ {\isacharequal}\ IM{\isadigit{1}}\ {\isachardoublequoteopen}{\isacharprime}r{\isacharasterisk}{\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s{\isachardoublequoteclose}\ {\isacharbar}\ IM{\isadigit{2}}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}r{\isacharasterisk}{\isacharprime}k{\isacharasterisk}{\isacharprime}r{\isacharparenright}\ {\isacharasterisk}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ fo\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ im{\isacharunderscore}fo{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ d\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}fs\ {\isacharasterisk}\ {\isacharparenleft}{\isacharprime}v\ {\isacharasterisk}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ u\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}fo{\isacharasterisk}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rstk{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{datatype}\isamarkupfalse%
+\ {\isacharparenleft}dead\ {\isacharprime}k{\isacharcomma}dead\ {\isacharprime}v{\isacharcomma}dead\ {\isacharprime}r{\isacharparenright}\ imst\ \ {\isacharequal}\ \isanewline
+\ \ IM{\isacharunderscore}down\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}d{\isachardoublequoteclose}\isanewline
+\ \ {\isacharbar}\ IM{\isacharunderscore}up\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}u{\isachardoublequoteclose}\isanewline
+\ \ {\isacharbar}\ IM{\isacharunderscore}finished\ {\isachardoublequoteopen}{\isacharprime}r\ {\isacharasterisk}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ mk{\isacharunderscore}im{\isacharunderscore}state\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}k\ {\isasymRightarrow}\ {\isacharprime}v\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s\ {\isasymRightarrow}\ {\isacharprime}r\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}imst{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}mk{\isacharunderscore}im{\isacharunderscore}state\ k\ v\ kvs\ r\ {\isacharequal}\ {\isacharparenleft}IM{\isacharunderscore}down\ {\isacharparenleft}mk{\isacharunderscore}find{\isacharunderscore}state\ k\ r{\isacharcomma}{\isacharparenleft}v{\isacharcomma}kvs{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dest{\isacharunderscore}im{\isacharunderscore}finished\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ imst\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}r\ {\isacharasterisk}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s{\isacharparenright}\ option{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}dest{\isacharunderscore}im{\isacharunderscore}finished\ s\ {\isacharequal}\ {\isacharparenleft}case\ s\ of\ IM{\isacharunderscore}finished\ {\isacharparenleft}r{\isacharcomma}kvs{\isacharparenright}\ {\isasymRightarrow}\ Some\ {\isacharparenleft}r{\isacharcomma}kvs{\isacharparenright}\ {\isacharbar}\ {\isacharunderscore}\ {\isasymRightarrow}\ None{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+\end{isabellebody}%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

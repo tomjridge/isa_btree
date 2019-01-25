@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Delete2 (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Delete2</h1>
+
+<span class="command">theory</span> <span class="name">Delete2</span><br/>
+<span class="keyword">imports</span> <a href="Find.html"><span class="name">Find</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Delete2
+<span class="keyword2">imports</span> Find <span class="string">&quot;$SRC/c_monad/Delete_state&quot;</span>
+<span class="keyword2">begin</span>
+
+<span class="comment">(* FIXME merge in documentation from Delete *)</span>
+
+<span class="comment">(* new version with less attempt at treating all cases uniformly *)</span>
+
+
+<span class="comment">(* NOTE these are repeated from Delete_state, because otherwise they are shadowed by eg insert.fo *)</span>
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> fo <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) del_t&quot;</span>  <span class="comment">(* focus *)</span>
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span>u <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r)fo * (&#39;k,&#39;r)rstk&quot;</span>  
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span>d <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r)find_state * &#39;r&quot;</span>
+
+
+
+<span class="comment">(* steal or merge --------------------------------------------------- *)</span>
+
+
+
+
+
+<span class="comment">(* node steal -------------- *)</span>
+
+<span class="comment">(* args are left split node context, focus, right sib; returns updated parent *)</span>
+<span class="keyword1">definition</span> node_steal_right <span class="delimiter">::</span> 
+  <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; (&#39;k,&#39;r)rsplit_node =&gt; (&#39;k s * &#39;r s) =&gt; (&#39;k s * &#39;r s) =&gt; (&#39;r,&#39;t) MM&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;node_steal_right store_ops p c1 c2 = (
+  case c1 of (ks1,rs1) =&gt; 
+  case c2 of (k2#rest,r2#rest&#39;) =&gt; 
+  case (p|&gt;r_ks2,p|&gt;r_ts2) of (k1#ks2,_#rs2) =&gt;   
+  (ks1@[k1],rs1@[r2]) |&gt; mk_Disk_node |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r3.
+  (rest,rest&#39;) |&gt; mk_Disk_node |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r4.
+  p (| r_t:=r3, r_ks2:=k2#ks2, r_ts2:=r4#rs2 |)),
+  |&gt; unsplit_node |&gt; mk_Disk_node |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% p.
+  return p))))&quot;</span>
+
+
+<span class="keyword1">definition</span> node_steal_left <span class="delimiter">::</span> 
+  <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; (&#39;k,&#39;r)rsplit_node =&gt; (&#39;k s * &#39;r s) =&gt; (&#39;k s * &#39;r s) =&gt; (&#39;r,&#39;t) MM&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;node_steal_left store_ops p c1 c2 = (
+  let c1 = (c1 |&gt; (% (x,y). (rev x, rev y))) in
+  case c1 of (k1#rest,r1#rest&#39;) =&gt;
+  case c2 of (ks2,rs2) =&gt;
+  case (p|&gt;r_ks1,p|&gt;r_ts1) of (k2#ks1,_#rs1) =&gt;
+  (rev rest,rev rest&#39;) |&gt; mk_Disk_node |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r3.
+  (k2#ks2,r1#rs2) |&gt; mk_Disk_node |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r4.
+  p (| r_ks1:=k1#ks1, r_ts1:=r3#rs1, r_t:=r4 |)),
+  |&gt; unsplit_node |&gt; mk_Disk_node |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% p.
+  return p))))&quot;</span>
+
+
+
+<span class="comment">(* node merge ----------------- *)</span>
+
+<span class="keyword1">definition</span> node_merge_right <span class="delimiter">::</span> 
+  <span class="string">&quot;constants =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; (&#39;k,&#39;r)rsplit_node =&gt; (&#39;k s * &#39;r s) =&gt; (&#39;k s * &#39;r s) =&gt; (&#39;k s * &#39;r s,&#39;t) MM&quot;</span>
+<span class="keyword2">where</span>
+<span class="string">&quot;node_merge_right cs store_ops p c1 c2 = (
+  case c1 of (ks1,rs1) =&gt; 
+  case c2 of (ks2,rs2) =&gt; 
+  case (p|&gt;r_ks2,p|&gt;r_ts2) of (k2#p_ks2,_#p_rs2) =&gt;   
+  (ks1@[k2]@ks2,rs1@rs2) |&gt; mk_Disk_node |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r4. 
+  p (| r_t:=r4, r_ks2:=p_ks2, r_ts2:=p_rs2 |)), |&gt; unsplit_node |&gt; (% (ks,rs). return (ks,rs))))&quot;</span>
+
+
+<span class="keyword1">definition</span> node_merge_left <span class="delimiter">::</span> 
+  <span class="string">&quot;constants =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; (&#39;k,&#39;r)rsplit_node =&gt; (&#39;k s * &#39;r s) =&gt; 
+  (&#39;k s * &#39;r s) =&gt; (&#39;k s * &#39;r s,&#39;t) MM&quot;</span>
+<span class="keyword2">where</span>
+<span class="string">&quot;node_merge_left cs store_ops p c1 c2 = (
+  case c1 of (ks1,rs1) =&gt; 
+  case c2 of (ks2,rs2) =&gt; 
+  case (p|&gt;r_ks1,p|&gt;r_ts1) of (k2#p_ks1,_#p_rs1) =&gt;   
+  (ks1@[k2]@ks2,rs1@rs2) |&gt; mk_Disk_node |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r4. 
+  p (| r_t:=r4, r_ks1:=p_ks1, r_ts1:=p_rs1 |)), |&gt; unsplit_node |&gt; (% (ks,rs). return (ks,rs))))&quot;</span>
+
+
+<span class="comment">(* leaf steal --------------------- *)</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">)</span> leaf <span class="delimiter">=</span> <span class="string">&quot;(&#39;k * &#39;v) list&quot;</span>
+
+<span class="comment">(* parent, left, right *)</span>
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;a</span><span class="delimiter">)</span> l3 <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;a) rsplit_node * (&#39;k,&#39;a) leaf * (&#39;k,&#39;a) leaf&quot;</span>
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;a</span><span class="delimiter">)</span> l2 <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;a) rsplit_node * (&#39;k,&#39;a) leaf&quot;</span>
+
+
+<span class="keyword1">definition</span> leaf_steal_right <span class="delimiter">::</span> 
+  <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; (&#39;k,&#39;r)rsplit_node =&gt; (&#39;k*&#39;v)s =&gt; (&#39;k*&#39;v)s =&gt; (&#39;r,&#39;t) MM&quot;</span>  
+<span class="keyword2">where</span>
+<span class="string">&quot;leaf_steal_right store_ops p c1 c2 = (
+  case c2 of k3#k4#kvs2 =&gt; 
+  case (p|&gt;r_ks2,p|&gt;r_ts2) of (k2#ks2,_#p_rs2) =&gt;   
+  (c1@[k3]) |&gt; Disk_leaf |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r1.
+  (k4#kvs2) |&gt; Disk_leaf |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r2.
+  p (| r_t:=r1, r_ks2:=(fst k4)#ks2, r_ts2:=r2#p_rs2 |)),
+  |&gt; unsplit_node |&gt; mk_Disk_node |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% p.
+  return p))))&quot;</span>
+
+
+<span class="keyword1">definition</span> leaf_steal_left <span class="delimiter">::</span> 
+  <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; (&#39;k,&#39;r)rsplit_node =&gt; (&#39;k*&#39;v)s =&gt; (&#39;k*&#39;v)s =&gt; (&#39;r,&#39;t) MM&quot;</span>  
+<span class="keyword2">where</span>
+<span class="string">&quot;leaf_steal_left store_ops p c1 c2 = (
+  let c1 = rev c1 in
+  case c1 of k2#kvs1 =&gt;
+  case (p|&gt;r_ks1,p|&gt;r_ts1) of (k3#ks1,_#p_rs1) =&gt;   
+  rev kvs1 |&gt; Disk_leaf |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r1.
+  (k2#c2) |&gt; Disk_leaf |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r2.
+  p (| r_t:=r2, r_ks1:=(fst k2)#ks1, r_ts1:=r1#p_rs1 |)),
+  |&gt; unsplit_node |&gt; mk_Disk_node |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% p.
+  return p))))&quot;</span>
+
+
+
+<span class="comment">(* leaf merge -------------------------- *)</span>
+
+<span class="keyword1">definition</span> leaf_merge_right <span class="delimiter">::</span> 
+  <span class="string">&quot;constants =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; (&#39;k,&#39;r)rsplit_node =&gt; (&#39;k*&#39;v)s =&gt; (&#39;k*&#39;v)s =&gt; 
+  (&#39;k s * &#39;r s,&#39;t) MM&quot;</span>  
+<span class="keyword2">where</span>
+<span class="string">&quot;leaf_merge_right cs store_ops p c1 c2 = (
+  case (p|&gt;r_ks2,p|&gt;r_ts2) of (k2#ks2,_#p_rs2) =&gt;   
+  (c1@c2) |&gt; Disk_leaf |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r1.
+  p (| r_t:=r1, r_ks2:=ks2, r_ts2:=p_rs2 |)), |&gt; unsplit_node |&gt; (% (ks,rs). return (ks,rs))))&quot;</span>
+
+<span class="keyword1">definition</span> leaf_merge_left <span class="delimiter">::</span> 
+  <span class="string">&quot;constants =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; (&#39;k,&#39;r)rsplit_node =&gt; (&#39;k*&#39;v)s =&gt; (&#39;k*&#39;v)s 
+  =&gt; (&#39;k s * &#39;r s,&#39;t) MM&quot;</span>  
+<span class="keyword2">where</span>
+<span class="string">&quot;leaf_merge_left cs store_ops p c1 c2 = (
+  case (p|&gt;r_ks1,p|&gt;r_ts1) of (k2#ks1,_#p_rs1) =&gt;   
+  (c1@c2) |&gt; Disk_leaf |&gt; (store_ops|&gt;store_alloc) |&gt; bind (% r1.
+  p (| r_t:=r1, r_ks1:=ks1, r_ts1:=p_rs1 |)), |&gt; unsplit_node |&gt; (% (ks,rs). return (ks,rs))))&quot;</span>
+
+
+
+<span class="comment">(* fixup empty parent --------------- *)</span>
+
+<span class="comment">(* it may be the case that we merge two children, and the parent root has just one key, 
+which is then removed as well, leaving a potentially malformed tree; 
+this code fixes that problem *)</span>
+
+<span class="comment">(* fo is the alternative focus in case root is empty *)</span>
+<span class="comment">(*
+definition maybe_fixup_empty_parent_after_merge :: 
+  &quot;constants =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; (&#39;k s * &#39;r s) =&gt; ((&#39;k,&#39;v,&#39;r)fo,&#39;t)MM&quot;
+where
+&quot;maybe_fixup_empty_parent_after_merge cs store_ops krs = (
+  let (ks,rs) = krs in
+  let n = List.length ks in
+  let (c::nat) = if n = 0 then 0 else if n &lt; cs|&gt;min_node_keys then 1 else 2 in
+  case c of 
+  0 =&gt; (
+    case List.hd rs of
+    
+    return (List.hd rs))
+  | Suc 0 =&gt; (return (D_small_node(ks,rs)))
+  | _ =&gt; (
+    (ks,rs)|&gt;mk_Disk_node|&gt;(store_ops|&gt;store_alloc)|&gt;bind (% r.
+    return (D_updated_subtree(r)))))&quot;
+*)</span>
+
+<span class="comment">(* delete ----------------------------------------------------------  *)</span>
+
+<span class="keyword1">definition</span> post_merge <span class="delimiter">::</span> 
+  <span class="string">&quot;constants =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; (&#39;k s * &#39;r s) =&gt; ((&#39;k,&#39;v,&#39;r)fo,&#39;t)MM&quot;</span>
+<span class="keyword2">where</span>
+<span class="string">&quot;post_merge cs store_ops krs = (
+  let (ks,rs) = krs in
+  case List.length ks &lt; cs|&gt;min_node_keys of 
+  True =&gt; (return (D_small_node(ks,rs)))
+  | False =&gt; (
+    (ks,rs)|&gt;mk_Disk_node|&gt;(store_ops|&gt;store_alloc)|&gt;bind (% r.
+    return (D_updated_subtree(r)))))&quot;</span>
+
+
+<span class="keyword1">definition</span> step_up <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r)u =&gt; ((&#39;k,&#39;v,&#39;r)u,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;step_up ps1 store_ops du = (
+  let (f,stk) = du in
+  (* let store_ops = ps1|&gt;dot_store_ops in *)
+  let (alloc,read) = (store_ops|&gt;store_alloc,store_ops|&gt;store_read) in
+  let cs = ps1|&gt;dot_constants in
+  let post_merge = post_merge cs store_ops in
+  case stk of [] =&gt; (impossible1 (STR &#39;&#39;delete, step_up&#39;&#39;)) | p#stk&#39; =&gt; (
+  (* NOTE p is the parent *)
+  (* take the result of what follows, and add the stk&#39; component *)
+  (% x. x |&gt; fmap (% y. (y,stk&#39;))) (case f of   
+  D_updated_subtree r =&gt; (
+    unsplit_node (p(|r_t:=r|)),) |&gt; mk_Disk_node |&gt; alloc |&gt; fmap D_updated_subtree)
+  | D_small_leaf(kvs) =&gt; (
+    let no_right_sibling = is_Nil&#39; (p|&gt;r_ks2) in
+    case no_right_sibling of 
+    True =&gt; (
+      (* steal or merge from left *)
+      let ks1 = p|&gt;r_ks1 in
+      let _ = check_true (% _. case ks1 of [] =&gt; False | _ =&gt; True) in
+      let r = List.hd (p|&gt;r_ts1) in
+      r |&gt; read |&gt; fmap (% frm. dest_Disk_leaf frm) |&gt; bind (% left_kvs. 
+      case List.length left_kvs = cs|&gt;min_leaf_size of
+      True =&gt; leaf_merge_left cs store_ops p left_kvs kvs |&gt; bind post_merge
+      | False =&gt; leaf_steal_left store_ops p left_kvs kvs |&gt; fmap D_updated_subtree))
+    | False =&gt; (
+      (* steal or merge from right *)
+      let r = List.hd (p|&gt;r_ts2) in
+      r |&gt; read |&gt; fmap (% frm. dest_Disk_leaf frm) |&gt; bind (% right_kvs. 
+      case List.length right_kvs = cs|&gt;min_leaf_size of
+      True =&gt; leaf_merge_right cs store_ops p kvs right_kvs |&gt; bind post_merge
+      | False =&gt; leaf_steal_right store_ops p kvs right_kvs |&gt; fmap D_updated_subtree)))
+  | D_small_node(ks,rs) =&gt; (
+    let no_right_sibling = is_Nil&#39; (p|&gt;r_ks2) in
+    case no_right_sibling of 
+    True =&gt; (
+      (* steal or merge from left *)
+      let ks1 = p|&gt;r_ks1 in
+      let _ = check_true (% _. case ks1 of [] =&gt; False | _ =&gt; True) in
+      let r = List.hd (p|&gt;r_ts1) in
+      r |&gt; read |&gt; fmap (% frm. dest_Disk_node frm) |&gt; bind (% (l_ks,l_rs). 
+      case List.length l_ks = cs|&gt;min_node_keys of
+      True =&gt; node_merge_left cs store_ops p (l_ks,l_rs) (ks,rs) |&gt; bind post_merge
+      | False =&gt; node_steal_left store_ops p (l_ks,l_rs) (ks,rs) |&gt; fmap D_updated_subtree))
+    | False =&gt; (
+      (* steal or merge from right *)
+      let r = List.hd (p|&gt;r_ts2) in
+      r |&gt; read |&gt; fmap (% frm. dest_Disk_node frm) |&gt; bind (% (r_ks,r_rs). 
+      case List.length r_ks = cs|&gt;min_node_keys of
+      True =&gt; node_merge_right cs store_ops p (ks,rs) (r_ks,r_rs) |&gt; bind post_merge
+      | False =&gt; node_steal_right store_ops p (ks,rs) (r_ks,r_rs) |&gt; fmap D_updated_subtree))))))&quot;</span>
+
+
+<span class="keyword1">definition</span> delete_step <span class="delimiter">::</span> 
+  <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r)delete_state =&gt; ((&#39;k,&#39;v,&#39;r)delete_state,&#39;t) MM&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;delete_step ps1 store_ops s = (
+  (* let store_ops = ps1|&gt;dot_store_ops in *)
+  let alloc = store_ops|&gt;store_alloc in
+  case s of 
+  D_down(f,r0) =&gt; (
+    case (dest_f_finished f) of
+    None =&gt; (find_step ps1 store_ops f |&gt; fmap (% f&#39;. D_down(f&#39;,r0)))
+    | Some x =&gt; (
+      let (r0,k,r,kvs,stk) = x in
+      (* FIXME don&#39;t free r0 if nothing to delete *)
+      (store_ops|&gt;store_free) (r0#(r_stk_to_rs stk)) |&gt; bind (% _.
+      let something_to_delete = (? x : set (kvs|&gt;List.map fst). key_eq (ps1|&gt;dot_cmp) x k) in
+      case something_to_delete of
+      True =&gt; (
+        let kvs&#39; = kvs|&gt;List.filter (% x. ~ (key_eq (ps1|&gt;dot_cmp) (fst x) k)) in
+        case (List.length kvs&#39; &lt; ps1|&gt;dot_constants|&gt;min_leaf_size) of
+        True =&gt; (return (D_up(D_small_leaf(kvs&#39;),stk,r0)))
+        | False =&gt; (Disk_leaf(kvs&#39;) |&gt; alloc |&gt; fmap (% r. D_up(D_updated_subtree(r),stk,r0))))
+      | False =&gt; (return (D_finished r0) ))))
+  | D_up(f,stk,r0) =&gt; (
+    case is_Nil&#39; stk of
+    True =&gt; (
+      case f of
+      D_small_leaf kvs =&gt; (Disk_leaf(kvs)|&gt;alloc|&gt;fmap D_finished)
+      | D_small_node (ks,rs) =&gt; (
+        case List.length ks = 0 of
+        True =&gt; return (D_finished (List.hd rs))
+        | False =&gt; (mk_Disk_node(ks,rs)|&gt;alloc|&gt;fmap D_finished))
+      | D_updated_subtree(r) =&gt; (return (D_finished r)))
+    | False =&gt; (step_up ps1 store_ops (f,stk) |&gt; fmap (% (f,stk). D_up(f,stk,r0))))
+  | D_finished(r) =&gt; (return s)  (* stutter *))&quot;</span>
+
+
+
+<span class="keyword2">end</span>
+
+
+</pre>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,79 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Find}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Find\ \isanewline
+\isakeyword{imports}\ {\isachardoublequoteopen}Pre{\isacharunderscore}find{\isachardoublequoteclose}\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharprime}a\ s\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharprime}a\ list{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ find{\isacharunderscore}step\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}k\ ps{\isadigit{1}}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}\ store{\isacharunderscore}ops\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}fs\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}fs{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}find{\isacharunderscore}step\ ps{\isadigit{1}}\ store{\isacharunderscore}ops\ fs\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ {\isacharparenleft}{\isacharasterisk}\ let\ store{\isacharunderscore}ops\ {\isacharequal}\ ps{\isadigit{1}}\ {\isacharbar}{\isachargreater}\ dot{\isacharunderscore}store{\isacharunderscore}ops\ in\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ case\ fs\ of\ \isanewline
+\ \ F{\isacharunderscore}finished\ {\isacharunderscore}\ {\isasymRightarrow}\ {\isacharparenleft}return\ fs{\isacharparenright}\ \ {\isacharparenleft}{\isacharasterisk}\ FIXME\ impossible{\isacharcomma}\ or\ return\ none{\isacharquery}\ or\ have\ a\ finished\ error{\isacharquery}\ or\ stutter{\isacharquery}\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ {\isacharbar}\ F{\isacharunderscore}down{\isacharparenleft}r{\isadigit{0}}{\isacharcomma}k{\isacharcomma}r{\isacharcomma}stk{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ {\isacharparenleft}store{\isacharunderscore}ops{\isacharbar}{\isachargreater}store{\isacharunderscore}read{\isacharparenright}\ r\ {\isacharbar}{\isachargreater}fmap\ {\isacharparenleft}{\isacharpercent}\ f{\isachardot}\ \isanewline
+\ \ \ \ case\ f\ of\ \isanewline
+\ \ \ \ Disk{\isacharunderscore}node\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ let\ {\isacharparenleft}stk{\isacharprime}{\isacharcomma}r{\isacharprime}{\isacharparenright}\ {\isacharequal}\ add{\isacharunderscore}new{\isacharunderscore}stack{\isacharunderscore}frame\ {\isacharparenleft}ps{\isadigit{1}}{\isacharbar}{\isachargreater}dot{\isacharunderscore}cmp{\isacharparenright}\ k\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}\ stk\ in\isanewline
+\ \ \ \ \ \ F{\isacharunderscore}down{\isacharparenleft}r{\isadigit{0}}{\isacharcomma}k{\isacharcomma}r{\isacharprime}{\isacharcomma}stk{\isacharprime}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ {\isacharbar}\ Disk{\isacharunderscore}leaf\ kvs\ {\isasymRightarrow}\ {\isacharparenleft}F{\isacharunderscore}finished{\isacharparenleft}r{\isadigit{0}}{\isacharcomma}k{\isacharcomma}r{\isacharcomma}kvs{\isacharcomma}stk{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}\ {\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\end{isabellebody}%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

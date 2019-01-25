@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Prelude (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Prelude</h1>
+
+<span class="command">theory</span> <span class="name">Prelude</span><br/>
+<span class="keyword">imports</span> <a href="Util.html"><span class="name">Util</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Prelude 
+<span class="keyword2">imports</span> Main Util 
+<span class="keyword2">begin</span>
+
+
+<span class="comment">(* min/max size constants ------------------------------------------- *)</span>
+
+
+<span class="comment">(* `constants` record type, which is used to record min and max bounds
+for leaves and nodes *)</span>
+
+<span class="keyword1">record</span> constants <span class="delimiter">=</span> 
+  min_leaf_size <span class="delimiter">::</span> nat
+  max_leaf_size <span class="delimiter">::</span> nat
+  min_node_keys <span class="delimiter">::</span> nat
+  max_node_keys <span class="delimiter">::</span> nat
+
+<span class="comment">(* FIXME add wf constraint following docs $l&#39;&gt;=2l-1$ and $m&#39; &gt;= 2m$ *)</span>
+
+
+<span class="comment">(* small node or leaf ----------------------------------------------- *)</span>
+
+<span class="comment">(* `min_size_t` is a datatype which flags whether nodes and leaves
+are small or not; a small root can potentially have no children *)</span>
+
+<span class="keyword1">datatype</span> min_size_t <span class="delimiter">=</span> 
+  Small_root_node_or_leaf
+  <span class="delimiter">|</span> Small_node
+  <span class="delimiter">|</span> Small_leaf
+
+<span class="keyword1">type_synonym</span> ms_t <span class="delimiter">=</span> <span class="string">&quot;min_size_t option&quot;</span>
+
+ 
+<span class="comment">(* transition systems ----------------------------------------------- *)</span>
+
+<span class="comment">(* transition system basic definitions *)</span>
+
+<span class="keyword1">type_synonym</span> <span class="tfree">&#39;s</span> trans_t <span class="delimiter">=</span> <span class="string">&quot;(&#39;s * &#39;s) set&quot;</span>
+
+<span class="keyword1">definition</span> trace_set <span class="delimiter">::</span> <span class="string">&quot;(&#39;s * &#39;s) set =&gt; (nat =&gt; &#39;s) set&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;trace_set trns = { f .  (! (n::nat). (f n, f(n+1)) : trns) }&quot;</span>
+
+<span class="keyword1">definition</span> invariant <span class="delimiter">::</span> <span class="string">&quot;(&#39;s * &#39;s) set =&gt; (&#39;s =&gt; bool) =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;invariant trns P = (! s s&#39;. (s,s&#39;) : trns --&gt; P s --&gt; P s&#39;)&quot;</span>
+
+<span class="comment">(* the main lemma about invariants FIXME prove this *)</span>  
+<span class="keyword1">definition</span> invariant_thm <span class="delimiter">::</span> <span class="string">&quot;&#39;s trans_t =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;invariant_thm trns = (! P f.
+  invariant trns P &amp; 
+  f : trace_set trns &amp;
+  P(f 0) --&gt; (! n. P (f n)) 
+)&quot;</span>
+
+
+<span class="comment">(* Q is invariant, assuming P holds always; allows staging of the proof of various invariants *)</span>
+<span class="keyword1">definition</span> invariant_assuming <span class="delimiter">::</span> <span class="string">&quot;(&#39;s * &#39;s) set =&gt; (&#39;s =&gt; bool) =&gt; (&#39;s =&gt; bool) =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;invariant_assuming trns P Q = (
+  let trns = { (s,s&#39;). (s,s&#39;) : trns &amp; P s &amp; P s&#39; } in
+  invariant trns Q)
+&quot;</span>
+
+<span class="keyword1">definition</span> invariant_assuming_thm <span class="delimiter">::</span> <span class="string">&quot;&#39;s trans_t =&gt;  (&#39;s =&gt; bool) =&gt; (&#39;s =&gt; bool) =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;invariant_assuming_thm trns P Q = (
+  invariant trns P &amp;
+  invariant_assuming trns P Q 
+  --&gt; invariant trns (% x. P x &amp; Q x)
+)&quot;</span>
+
+
+
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Tree_stack (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Tree_stack</h1>
+
+<span class="command">theory</span> <span class="name">Tree_stack</span><br/>
+<span class="keyword">imports</span> <a href="Tree.html"><span class="name">Tree</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Tree_stack 
+<span class="keyword2">imports</span> Tree 
+<span class="keyword2">begin</span>
+
+<span class="comment">(* FIXME needs more documentation *)</span>
+
+<span class="comment">(* some of these defns could be parametric, but polytypes were getting
+a bit clunky, and the defns aren&#39;t exposed to the user so we don&#39;t
+need polymorphism *)</span>
+
+
+
+<span class="comment">(* node_stack, a stack of frames -------------------------------------------------- *)</span>
+
+<span class="comment">(* FIXME rename to stack; FIXME change to use rsplit_node *)</span>
+<span class="comment">(* type_synonym (&#39;k,&#39;a) node_stack = &quot;((&#39;k,&#39;a) rsplit_node list)&quot;    *)</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;a</span><span class="delimiter">)</span> rstack <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;a) rsplit_node list&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> rstk <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;r) rstack&quot;</span>
+
+
+<span class="comment">(* map a function over the non-&#39;k component *)</span>
+<span class="keyword1">definition</span> rstack_map <span class="delimiter">::</span> <span class="string">&quot;(&#39;a =&gt; &#39;b) =&gt; (&#39;k,&#39;a) rstack =&gt; (&#39;k,&#39;b) rstack&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;rstack_map f stk = (
+  stk |&gt; List.map (rsplit_node_map f))&quot;</span>
+
+<span class="keyword1">definition</span> rstack_equal <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;a) rstack =&gt; (&#39;k,&#39;a) rstack =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;rstack_equal s1 s2 = failwith (STR &#39;&#39;FIXME patch&#39;&#39;)&quot;</span>
+
+
+<span class="comment">(* tree_stack --------------------- *)</span>
+
+<span class="comment">(* a tree_stack has &#39;a = (&#39;k,&#39;v)tree *)</span>
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">)</span> tree_rstack <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,(&#39;k,&#39;v)tree) rstack&quot;</span>
+
+
+
+<span class="comment">(* stack_to_lu_of_child (get bounds of focus) ----------------------- *)</span>
+
+<span class="comment">(* FIXME align this with other splitting/bounds code *)</span>
+
+<span class="comment">(* get the bound surrounding the focus, via rsplit_get_bounds *)</span>
+<span class="keyword1">primrec</span> rstack_get_bounds <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;a) rstack =&gt; &#39;k option * &#39;k option&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;rstack_get_bounds [] = (None,None)&quot;</span>
+<span class="delimiter">|</span> <span class="string">&quot;rstack_get_bounds (x#stk&#39;) = (
+    let (l&#39;,u&#39;) = rsplit_get_bounds x in
+    let (l,u) = (
+      case (l&#39;,u&#39;) of
+      (Some l,Some u) =&gt; (Some l,Some u)
+      | _ =&gt; (
+        let (l,u) = rstack_get_bounds stk&#39; in
+        ((if l&#39;=None then l else l&#39;), if u&#39;=None then u else u&#39;)))
+    in
+    (l,u))&quot;</span>
+
+
+<span class="comment">(* tree_to_rstack, rstack_to_tree, no_focus --------------------------- *)</span>
+
+<span class="comment">(* the n argument ensures the stack has length n; we assume we only call this with n&le;height t *)</span>
+<span class="comment">(* FIXME why is focus returned separately? *)</span>
+<span class="keyword1">primrec</span> tree_to_rstack <span class="delimiter">::</span> 
+  <span class="string">&quot;&#39;k ord =&gt; &#39;k =&gt; (&#39;k,&#39;v)tree =&gt; nat =&gt; ((&#39;k,&#39;v)tree * (&#39;k,&#39;v)tree_rstack)&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;tree_to_rstack ord k t 0 = (t,[])&quot;</span>
+<span class="delimiter">|</span> <span class="string">&quot;tree_to_rstack ord k t (Suc n) = (
+    let (fo,stk) = tree_to_rstack ord k t n in
+    case fo of 
+    Leaf kvs =&gt; (failwith (STR &#39;&#39;tree_to_stack&#39;&#39;))
+    | Node(ks,ts) =&gt; (
+      let frm = mk_rsplit_node ord k (ks,ts) in
+      (frm|&gt;r_t,frm#stk)))&quot;</span>
+
+<span class="comment">(* when converting a stack to a tree we may provide a new focus *)</span>
+<span class="comment">(* FIXME have to reveal PRIVATE here *)</span>
+<span class="keyword1">fun</span> rstack_to_tree <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; (&#39;k,&#39;v)tree_rstack =&gt; (&#39;k,&#39;v)tree&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;rstack_to_tree fo ts = (
+  case ts of 
+  [] =&gt; fo
+  | x#ts&#39; =&gt; (rstack_to_tree (Node(unsplit_node x)) ts&#39; ))&quot;</span>
+
+
+<span class="comment">(* remove &quot;focus&quot;; NOTE &#39;a option is always None FIXME so why not use unit? *)</span>
+<span class="keyword1">definition</span> no_focus <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;a) rstack =&gt; (&#39;k,&#39;a option) rstack&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;no_focus stk = (
+  stk |&gt; rstack_map Some |&gt; (% stk. 
+  case stk of [] =&gt; [] | frm#stk&#39; =&gt; (frm(|r_t:=None |)),)#stk&#39;))&quot;</span>
+
+
+
+<span class="comment">(* add_new_stk_frame; r_stk_to_rs ----------------------------------- *)</span>
+
+<span class="keyword1">definition</span> add_new_stack_frame <span class="delimiter">::</span> 
+  <span class="string">&quot;&#39;k ord =&gt; &#39;k =&gt; (&#39;k list * &#39;a list) =&gt; (&#39;k,&#39;a) rstack =&gt; ((&#39;k,&#39;a) rstack * &#39;a)&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;add_new_stack_frame cmp k ks_rs stk = (
+  let (ks,rs) = ks_rs in
+  let r = mk_rsplit_node cmp k (ks,rs) in
+  (r#stk,r|&gt;r_t) )&quot;</span>  <span class="comment">(* FIXME why return r&#39; explicitly? why not get from f_t? *)</span>
+
+
+<span class="keyword1">definition</span> r_stk_to_rs <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;r) rstack =&gt; &#39;r list&quot;</span> <span class="keyword2">where</span> 
+<span class="string">&quot;r_stk_to_rs xs = (xs|&gt;List.map r_t)&quot;</span>
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

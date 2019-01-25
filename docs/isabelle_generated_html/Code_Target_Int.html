@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Code_Target_Int (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Code_Target_Int</h1>
+
+<span class="command">theory</span> <span class="name">Code_Target_Int</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="comment">(*  Title:      HOL/Library/Code_Target_Int.thy
+    Author:     Florian Haftmann, TU Muenchen
+*)</span>
+
+<span class="keyword1">section</span> <span class="verbatim">{* Implementation of integer numbers by target-language integers *}</span>
+
+<span class="keyword1">theory</span> Code_Target_Int
+<span class="keyword2">imports</span> Main
+<span class="keyword2">begin</span>
+
+<span class="keyword1">code_datatype</span> int_of_integer
+
+<span class="keyword1">declare</span> <span class="delimiter">[</span><span class="delimiter">[</span>code drop<span class="delimiter">:</span> integer_of_int<span class="delimiter">]</span><span class="delimiter">]</span>
+
+<span class="keyword1">context</span>
+<span class="keyword2">includes</span> integer.lifting
+<span class="keyword2">begin</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_int (int_of_integer k) = k&quot;</span>
+  <span class="keyword1">by</span> transfer rule
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;Int.Pos = int_of_integer o integer_of_num&quot;</span>
+  <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> fun_eq_iff<span class="delimiter">)</span> 
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;Int.Neg = int_of_integer o uminus o integer_of_num&quot;</span>
+  <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> fun_eq_iff<span class="delimiter">)</span> 
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code_abbrev<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;int_of_integer (numeral k) = Int.Pos k&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code_abbrev<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;int_of_integer (- numeral k) = Int.Neg k&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+  
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">,</span> symmetric<span class="delimiter">,</span> code_post<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;0 = int_of_integer 0&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">,</span> symmetric<span class="delimiter">,</span> code_post<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;1 = int_of_integer 1&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code_post<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;int_of_integer (- 1) = - 1&quot;</span>
+  <span class="keyword1">by</span> simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;k + l = int_of_integer (of_int k + of_int l)&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;- k = int_of_integer (- of_int k)&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;k - l = int_of_integer (of_int k - of_int l)&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;Int.dup k = int_of_integer (Code_Numeral.dup (of_int k))&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">declare</span> <span class="delimiter">[</span><span class="delimiter">[</span>code drop<span class="delimiter">:</span> Int.sub<span class="delimiter">]</span><span class="delimiter">]</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;k * l = int_of_integer (of_int k * of_int l)&quot;</span>
+  <span class="keyword1">by</span> simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;Divides.divmod_abs k l = map_prod int_of_integer int_of_integer
+    (Code_Numeral.divmod_abs (of_int k) (of_int l))&quot;</span>
+  <span class="keyword1">by</span> <span class="delimiter">(</span>simp add<span class="delimiter">:</span> prod_eq_iff<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;k div l = int_of_integer (of_int k div of_int l)&quot;</span>
+  <span class="keyword1">by</span> simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;k mod l = int_of_integer (of_int k mod of_int l)&quot;</span>
+  <span class="keyword1">by</span> simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;HOL.equal k l = HOL.equal (of_int k :: integer) (of_int l)&quot;</span>
+  <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> equal<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;k &le; l &lt;-&gt; (of_int k :: integer) &le; of_int l&quot;</span>
+  <span class="keyword1">by</span> transfer rule
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;k &lt; l &lt;-&gt; (of_int k :: integer) &lt; of_int l&quot;</span>
+  <span class="keyword1">by</span> transfer rule
+<span class="keyword2">end</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">(</span><span class="keyword2">in</span> ring_1<span class="delimiter">)</span> of_int_code_if<span class="delimiter">:</span>
+  <span class="string">&quot;of_int k = (if k = 0 then 0
+     else if k &lt; 0 then - of_int (- k)
+     else let
+       (l, j) = divmod_int k 2;
+       l&#39; = 2 * of_int l
+     in if j = 0 then l&#39; else l&#39; + 1)&quot;</span>
+<span class="keyword1">proof</span> -
+  <span class="keyword1">from</span> mod_div_equality <span class="keyword1">have</span> *<span class="delimiter">:</span> <span class="string">&quot;of_int k = of_int (k div 2 * 2 + k mod 2)&quot;</span> <span class="keyword1">by</span> simp
+  <span class="keyword3">show</span> <span class="var">?thesis</span>
+    <span class="keyword1">by</span> <span class="delimiter">(</span>simp add<span class="delimiter">:</span> Let_def divmod_int_mod_div of_int_add <span class="delimiter">[</span>symmetric<span class="delimiter">]</span><span class="delimiter">)</span>
+      <span class="delimiter">(</span>simp add<span class="delimiter">:</span> * mult.commute<span class="delimiter">)</span>
+<span class="keyword1">qed</span>
+
+<span class="keyword1">declare</span> of_int_code_if <span class="delimiter">[</span>code<span class="delimiter">]</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;nat = nat_of_integer o of_int&quot;</span>
+  <span class="keyword1">including</span> integer.lifting <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> fun_eq_iff<span class="delimiter">)</span>
+
+<span class="keyword1">code_identifier</span>
+  <span class="keyword2">code_module</span> Code_Target_Int <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> Arith <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> Arith <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> Arith
+
+<span class="keyword2">end</span>
+
+</pre>
+
+</div>
+</body>
+</html>

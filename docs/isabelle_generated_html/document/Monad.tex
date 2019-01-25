@@ -1,0 +1,82 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Monad}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Monad\isanewline
+\isakeyword{imports}\ Pre{\isacharunderscore}monad\ Find{\isacharunderscore}state\ Delete{\isacharunderscore}state\ Insert{\isacharunderscore}many{\isacharunderscore}state\ Insert{\isacharunderscore}state\ Leaf{\isacharunderscore}stream{\isacharunderscore}state\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dummy\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}unit{\isachardoublequoteclose}\ \isakeyword{where}\ {\isachardoublequoteopen}dummy{\isacharequal}\isanewline
+\ \ {\isacharparenleft}Find{\isacharunderscore}state{\isachardot}dummy{\isacharcomma}Delete{\isacharunderscore}state{\isachardot}dummy{\isacharcomma}Insert{\isacharunderscore}many{\isacharunderscore}state{\isachardot}dummy{\isacharcomma}Insert{\isacharunderscore}state{\isachardot}dummy{\isacharcomma}Leaf{\isacharunderscore}stream{\isacharunderscore}state{\isachardot}dummy{\isacharparenright}\isanewline
+\ \ {\isacharbar}{\isachargreater}\ {\isacharparenleft}{\isacharpercent}\ x{\isachardot}\ Params{\isachardot}dummy{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{typedecl}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}a{\isacharcomma}{\isacharprime}b{\isacharparenright}\ MM\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ fmap\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}a\ {\isasymRightarrow}\ {\isacharprime}b{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}a{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}b{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}fmap\ x\ y\ {\isacharequal}\ undefined{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ bind\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}a\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}b{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}a{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}b{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}bind\ b\ a\ {\isacharequal}\ undefined{\isachardoublequoteclose}\isanewline
+\ \ \isanewline
+\isacommand{definition}\isamarkupfalse%
+\ return\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}a\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}a{\isacharcomma}{\isacharprime}t{\isacharparenright}\ MM{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}return\ x\ {\isacharequal}\ undefined{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+\end{isabellebody}%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

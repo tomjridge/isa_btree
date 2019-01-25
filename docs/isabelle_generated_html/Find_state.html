@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Find_state (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Find_state</h1>
+
+<span class="command">theory</span> <span class="name">Find_state</span><br/>
+<span class="keyword">imports</span> <a href="Pre_monad.html"><span class="name">Pre_monad</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Find_state
+<span class="keyword2">imports</span> Pre_monad
+<span class="keyword2">begin</span>
+
+
+<span class="comment">(* this to force dependency order in exported code? *)</span>
+<span class="keyword1">definition</span> dummy <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span> <span class="string">&quot;dummy=()&quot;</span>
+
+
+<span class="comment">(* we put all the types that we want &quot;outside&quot; the monad, but which really belong with Find, 
+Insert, etc., here *)</span>
+
+<span class="comment">(* we use a small-step style; we reify the state of the algorithm at every
+step as the following state type *)</span>
+
+<span class="comment">(* find ----------------------------------------------------------------------- *)</span>
+
+<span class="keyword1">datatype</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> find_state <span class="delimiter">=</span> 
+  F_down <span class="string">&quot;&#39;r * &#39;k * &#39;r * (&#39;k,&#39;r) rstk&quot;</span>  <span class="comment">(* root, search key, current pointer, stack *)</span> 
+  <span class="delimiter">|</span> F_finished <span class="string">&quot;&#39;r * &#39;k * &#39;r * (&#39;k*&#39;v)s * (&#39;k,&#39;r)rstk&quot;</span>
+
+
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> f_down <span class="delimiter">=</span> <span class="string">&quot;&#39;r * &#39;k * &#39;r * (&#39;k,&#39;r)rstk&quot;</span>
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> f_finished <span class="delimiter">=</span> <span class="string">&quot;&#39;r * &#39;k * &#39;r * (&#39;k*&#39;v)s * (&#39;k,&#39;r)rstk&quot;</span>
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> fs <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) find_state&quot;</span>
+
+<span class="comment">(* type_synonym (&#39;k,&#39;r) fo_unused = &quot;&#39;k*&#39;r&quot;  (* focus *) *)</span>
+
+  
+  
+<span class="keyword1">definition</span> dest_f_finished <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r)fs =&gt; (&#39;k,&#39;v,&#39;r)f_finished option&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_f_finished fs = (
+  case fs of
+  F_down _ =&gt; None
+  | F_finished (r0,k,r,kvs,stk) =&gt; Some(r0,k,r,kvs,stk) )&quot;</span>
+
+
+
+<span class="keyword1">definition</span> mk_find_state <span class="delimiter">::</span> <span class="string">&quot;&#39;k =&gt; &#39;r =&gt; (&#39;k,&#39;v,&#39;r)fs&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;mk_find_state k r = F_down(r,k,r,[])&quot;</span>
+
+
+<span class="comment">(* wellformedness --------------------------------------------------- *)</span>
+
+<span class="comment">(* like to have this in a &quot;programmatic&quot; style; so convert a store
+into a map from r * nat to tree option, then check the r with a t ,
+given t height *)</span>
+
+<span class="comment">(* given a store s, a block ref r, and a tree t, return true if the store 
+from r represents the tree t *)</span>
+
+<span class="keyword1">definition</span> wf_store_tree <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t)r2t =&gt; &#39;t =&gt; &#39;r =&gt; (&#39;k,&#39;v)tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;wf_store_tree r2t s r t = assert_true (
+  case r2t s r of
+  None =&gt; False
+  | Some t&#39; =&gt; (tree_equal t t&#39;))&quot;</span>
+
+
+
+<span class="comment">(* given an expected tree t0, a store s, and a find state fs,
+check that the find state is wellformed and consistent with the
+store *)</span>
+<span class="keyword1">definition</span> wellformed_find_state <span class="delimiter">::</span> 
+  <span class="string">&quot;&#39;k ord =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)r2t =&gt; (&#39;k,&#39;v)tree =&gt; &#39;t =&gt; (&#39;k,&#39;v,&#39;r)fs =&gt; bool&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;wellformed_find_state k_ord r2t t0 s fs = assert_true (
+  let n = height t0 in
+  (* need to check the stack and the focus *)
+  let check_focus = % r t. wf_store_tree r2t s r t in
+  let check_stack = 
+    % rstk tstk. rstack_equal (tstk |&gt; rstack_map Some) (rstk |&gt; rstack_map (r2t s)) in 
+  case fs of 
+  F_finished (r0,k,r,kvs,stk) =&gt; (
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
+    assert_true (check_focus r t_fo) &amp;
+    assert_true (check_stack stk t_stk))
+  | F_down (r0,k,r,stk) =&gt; (
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
+    assert_true (check_focus r t_fo) &amp;
+    assert_true (check_stack stk t_stk) ))&quot;</span>
+
+
+
+<span class="comment">(* testing ---------------------------------------------------------- *)</span>
+
+<span class="comment">(* really wf_trans is trivial, but for testing we check some obvious properties *)</span>
+
+<span class="comment">(* FIXME probably not worth doing *)</span>
+<span class="keyword1">definition</span> wf_trans <span class="delimiter">::</span> <span class="string">&quot;&#39;t * (&#39;k,&#39;v,&#39;r)fs =&gt; &#39;t * (&#39;k,&#39;v,&#39;r)fs =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;wf_trans s1 s2 = assert_true (
+  let (s1,fs1) = s1 in
+  let (s2,fs2) = s2 in
+  (* FIXME don&#39;t want to force equality check of the store (s2=s1) &amp; *)
+  case (fs1,fs2) of
+  (F_down(r0,k,r,stk),F_down(r0&#39;,k&#39;,r&#39;,stk&#39;)) =&gt; (List.length stk&#39; = 1+List.length stk)
+  | (F_down _,F_finished _) =&gt; True
+  | _ =&gt; False)&quot;</span>
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

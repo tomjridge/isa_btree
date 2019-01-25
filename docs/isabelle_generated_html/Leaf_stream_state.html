@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Leaf_stream_state (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Leaf_stream_state</h1>
+
+<span class="command">theory</span> <span class="name">Leaf_stream_state</span><br/>
+<span class="keyword">imports</span> <a href="Find_state.html"><span class="name">Find_state</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Leaf_stream_state
+<span class="keyword2">imports</span> Find_state
+<span class="keyword2">begin</span>
+
+
+<span class="comment">(* this to force dependency order in exported code? *)</span>
+<span class="keyword1">definition</span> dummy <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span> <span class="string">&quot;dummy=()&quot;</span>
+
+<span class="comment">(* leaf stream types ------------------------------------------------ *)</span>
+
+<span class="comment">(* we need these exposed outside functor body in ML *)</span>
+
+<span class="keyword1">datatype</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> ls_state <span class="delimiter">=</span> 
+  LS_down <span class="string">&quot;&#39;r*(&#39;k,&#39;r) rstack&quot;</span> 
+  <span class="delimiter">|</span> LS_leaf <span class="string">&quot;(&#39;k*&#39;v) list * (&#39;k,&#39;r) rstack&quot;</span> 
+  <span class="delimiter">|</span> LS_up <span class="string">&quot;(&#39;k,&#39;r) rstack&quot;</span>
+  
+<span class="comment">(* working with a F_finished find state, enumerate the leaves *)</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> leaf_ref <span class="delimiter">=</span> <span class="string">&quot;(&#39;k*&#39;v)s*(&#39;k,&#39;r)rstk&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> lss <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) ls_state&quot;</span>
+
+<span class="keyword1">definition</span> mk_ls_state <span class="delimiter">::</span> <span class="string">&quot;&#39;r =&gt; (&#39;k,&#39;v,&#39;r)ls_state&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;mk_ls_state r = LS_down (r,[])&quot;</span>
+
+<span class="comment">(* detect when we are finished *)</span>
+<span class="keyword1">definition</span> lss_is_finished <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) lss =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;lss_is_finished lss = (
+  case lss of
+  LS_up [] =&gt; True
+  | _ =&gt; False)&quot;</span>
+
+<span class="comment">(* detect when we are at the next leaf *)</span>
+<span class="keyword1">definition</span> dest_LS_leaf <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) lss =&gt; (&#39;k*&#39;v)s option&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_LS_leaf x = (
+  case x of 
+  LS_leaf (kvs,_) =&gt; Some kvs
+  | _ =&gt; None
+)&quot;</span>
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

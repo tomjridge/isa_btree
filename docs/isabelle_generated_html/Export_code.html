@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Export_code (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Export_code</h1>
+
+<span class="command">theory</span> <span class="name">Export_code</span><br/>
+<span class="keyword">imports</span> <a href="Delete2.html"><span class="name">Delete2</span></a> <a href="Insert.html"><span class="name">Insert</span></a> <a href="Insert_many.html"><span class="name">Insert_many</span></a> <a href="Leaf_stream.html"><span class="name">Leaf_stream</span></a> <a href="Code_Target_Numeral.html"><span class="name">Code_Target_Numeral</span></a> <a href="Code_Char.html"><span class="name">Code_Char</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Export_code
+<span class="keyword2">imports</span> 
+<span class="string">&quot;$SRC/d_find_ins_del/Find&quot;</span>
+<span class="string">&quot;$SRC/d_find_ins_del/Delete2&quot;</span>
+<span class="string">&quot;$SRC/d_find_ins_del/Insert&quot;</span>
+<span class="string">&quot;$SRC/d_find_ins_del/Insert_many&quot;</span>
+<span class="string">&quot;$SRC/d_find_ins_del/Leaf_stream&quot;</span>
+Code_Numeral 
+<span class="string">&quot;~~/src/HOL/Library/Code_Target_Numeral&quot;</span>
+<span class="string">&quot;~~/src/HOL/Library/Code_Char&quot;</span>
+<span class="keyword2">begin</span>
+
+
+<span class="keyword1">export_code</span> <span class="string">&quot;Code_Numeral.nat_of_integer&quot;</span> <span class="string">&quot;Code_Numeral.int_of_integer&quot;</span> 
+
+Util.is_Ok
+Util.from_to
+Util.String_error
+Util.split_at_tests  <span class="comment">(* FIXME remove tests in production *)</span>
+Util.split_at_3_tests
+Util.from_to_tests
+
+Prelude.constants_ext
+
+Key_value.key_lt
+
+<span class="comment">(* FIXME remove tests in production code *)</span>
+Key_value.okl_tests
+Key_value.ck_tests
+Key_value.ck2_tests
+Key_value.kvs_insert_tests
+
+<span class="comment">(* Searching_and_splitting.sk2i_tests *)</span>
+
+<span class="comment">(* frame_types *)</span>
+Disk_node.Disk_node
+
+Searching_and_splitting.dest_rsplit_node
+
+<span class="comment">(* tree *)</span>
+Tree.dest_Node
+<span class="comment">(* Tree_stack.stack_to_lu_of_child *)</span>
+tree_to_leaves 
+wellformed_tree
+
+
+<span class="comment">(* pre_params *)</span>
+Pre_params.dummy
+Pre_params.mk_r2t
+
+<span class="comment">(* params *)</span>
+Params.dummy
+Params.Ps1
+<span class="comment">(* Params.store_ops_ext *)</span>
+
+mk_find_state
+dest_f_finished
+wellformed_find_state 
+Find_state.wf_trans
+
+Insert_state.mk_insert_state
+Insert_state.dest_i_finished
+Insert_state.I1 Insert_state.I2 Insert_state.I_down Insert_state.I_up Insert_state.I_finished
+Insert_state.wellformed_insert_state
+
+mk_delete_state
+dest_d_finished
+D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
+wellformed_delete_state
+
+Insert_many_state.mk_im_state
+Insert_many_state.dest_im_finished
+Insert_many_state.IM1 Insert_many_state.IM_down
+
+
+
+mk_ls_state lss_is_finished dest_LS_leaf 
+
+<span class="comment">(* monad *)</span>
+<span class="comment">(* Monad.dest_MM *)</span> Monad.dummy fmap  bind
+
+<span class="comment">(* store *)</span> 
+store_alloc store_read store_free wf_store_ops
+
+<span class="comment">(* find *)</span>
+find_step
+
+<span class="comment">(* insert *)</span>
+Insert.insert_step
+
+<span class="comment">(* insert_many *)</span>
+Insert_many.insert_step
+
+<span class="comment">(* delete2 *)</span>
+Delete2.delete_step
+
+<span class="comment">(* leaf_stream *)</span>
+lss_step
+
+
+<span class="keyword2">in</span> OCaml <span class="keyword2">file</span> <span class="string">&quot;/tmp/isa_export.ml&quot;</span>
+
+
+<span class="comment">(*
+
+*)</span>
+
+
+<span class="comment">(* tree stack versions
+
+
+
+
+
+
+
+Tree_stack.dest_core
+
+key_ord
+
+tree_to_leaves wellformed_tree
+
+(* find *)
+mk_fts_state step_fts dest_fts_state 
+  wellformed_fts wf_fts_trans Find_tree_stack.focus_to_leaves
+
+(* insert *)
+Inserting_one Inserting_two
+Its_down Its_up
+mk_its_state step_its dest_its_state  
+  wellformed_its_state wf_its_trans Insert_tree_stack.focus_to_leaves
+ 
+(* delete *)
+D_small_leaf D_small_node D_updated_subtree
+Dts_down Dts_up Dts_finished  
+mk_dts_state step_dts dest_dts_state
+  wellformed_dts_state wf_dts_trans Delete_tree_stack.focus_to_leaves
+
+  *)</span>
+
+
+
+<span class="comment">(*
+print_codesetup
+
+print_codeproc
+*)</span>
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

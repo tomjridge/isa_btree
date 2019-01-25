@@ -1,0 +1,139 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Insert{\isacharunderscore}state}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Insert{\isacharunderscore}state\isanewline
+\isakeyword{imports}\ Find{\isacharunderscore}state\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dummy\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}unit{\isachardoublequoteclose}\ \isakeyword{where}\ {\isachardoublequoteopen}dummy{\isacharequal}{\isacharparenleft}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{datatype}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ i{\isadigit{1}}{\isadigit{2}}{\isacharunderscore}t\ {\isacharequal}\ I{\isadigit{1}}\ {\isacharprime}r\ {\isacharbar}\ I{\isadigit{2}}\ {\isachardoublequoteopen}{\isacharprime}r{\isacharasterisk}{\isacharprime}k{\isacharasterisk}{\isacharprime}r{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ fo\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}i{\isadigit{1}}{\isadigit{2}}{\isacharunderscore}t{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ d\ \ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}fs{\isacharasterisk}{\isacharprime}v{\isachardoublequoteclose}\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ u\ \ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}fo{\isacharasterisk}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rstk{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{datatype}\isamarkupfalse%
+\ {\isacharparenleft}dead\ {\isacharprime}k{\isacharcomma}dead\ {\isacharprime}v{\isacharcomma}dead\ {\isacharprime}r{\isacharparenright}\ insert{\isacharunderscore}state\ {\isacharequal}\ \isanewline
+\ \ I{\isacharunderscore}down\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ d{\isachardoublequoteclose}\isanewline
+\ \ {\isacharbar}\ I{\isacharunderscore}up\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ u{\isachardoublequoteclose}\isanewline
+\ \ {\isacharbar}\ I{\isacharunderscore}finished\ {\isacharprime}r\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ ist\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ insert{\isacharunderscore}state{\isachardoublequoteclose}\ \ \isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ mk{\isacharunderscore}insert{\isacharunderscore}state\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}k\ {\isasymRightarrow}\ {\isacharprime}v\ {\isasymRightarrow}\ {\isacharprime}r\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ insert{\isacharunderscore}state{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}mk{\isacharunderscore}insert{\isacharunderscore}state\ k\ v\ r\ {\isacharequal}\ {\isacharparenleft}I{\isacharunderscore}down\ {\isacharparenleft}mk{\isacharunderscore}find{\isacharunderscore}state\ k\ r{\isacharcomma}v{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dest{\isacharunderscore}i{\isacharunderscore}finished\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ ist\ {\isasymRightarrow}\ {\isacharprime}r\ option{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}dest{\isacharunderscore}i{\isacharunderscore}finished\ s\ {\isacharequal}\ {\isacharparenleft}case\ s\ of\ I{\isacharunderscore}finished\ r\ {\isasymRightarrow}\ Some\ r\ {\isacharbar}\ {\isacharunderscore}\ {\isasymRightarrow}\ None{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ wf{\isacharunderscore}d\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}k\ ord\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}\ r{\isadigit{2}}t\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharparenright}tree\ {\isasymRightarrow}\ {\isacharprime}t\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}d\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}wf{\isacharunderscore}d\ k{\isacharunderscore}ord\ r{\isadigit{2}}t\ t{\isadigit{0}}\ s\ d\ {\isacharequal}\ \ assert{\isacharunderscore}true\ {\isacharparenleft}\isanewline
+\ \ let\ {\isacharparenleft}fs{\isacharcomma}v{\isacharparenright}\ {\isacharequal}\ d\ in\isanewline
+\ \ wellformed{\isacharunderscore}find{\isacharunderscore}state\ k{\isacharunderscore}ord\ r{\isadigit{2}}t\ t{\isadigit{0}}\ s\ fs{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ wf{\isacharunderscore}u\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}\ r{\isadigit{2}}t\ {\isasymRightarrow}\ {\isacharprime}k\ ord\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharparenright}tree\ {\isasymRightarrow}\ {\isacharprime}t\ {\isasymRightarrow}\ {\isacharprime}k\ {\isasymRightarrow}\ {\isacharprime}v\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}u\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}wf{\isacharunderscore}u\ r{\isadigit{2}}t\ k{\isacharunderscore}ord\ t{\isadigit{0}}\ s\ k\ v\ u\ {\isacharequal}\ \ assert{\isacharunderscore}true\ {\isacharparenleft}\isanewline
+\ \ {\isacharparenleft}{\isacharasterisk}\ need\ to\ check\ the\ stack\ and\ the\ focus\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ let\ check{\isacharunderscore}focus\ {\isacharequal}\ {\isacharpercent}\ r\ t{\isachardot}\ wf{\isacharunderscore}store{\isacharunderscore}tree\ r{\isadigit{2}}t\ s\ r\ t\ in\isanewline
+\ \ let\ check{\isacharunderscore}stack\ {\isacharequal}\ {\isacharpercent}\ rstk\ tstk{\isachardot}\ \isanewline
+\ \ \ \ rstack{\isacharunderscore}equal\ {\isacharparenleft}rstk{\isacharbar}{\isachargreater}rstack{\isacharunderscore}map\ {\isacharparenleft}r{\isadigit{2}}t\ s{\isacharparenright}{\isacharbar}{\isachargreater}no{\isacharunderscore}focus{\isacharparenright}\ {\isacharparenleft}tstk{\isacharbar}{\isachargreater}rstack{\isacharunderscore}map\ Some{\isacharbar}{\isachargreater}no{\isacharunderscore}focus{\isacharparenright}\ \isanewline
+\ \ in\isanewline
+\ \ let\ {\isacharparenleft}fo{\isacharcomma}stk{\isacharparenright}\ {\isacharequal}\ u\ in\isanewline
+\ \ case\ fo\ of\isanewline
+\ \ I{\isadigit{1}}\ r\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ let\ {\isacharparenleft}t{\isacharunderscore}fo{\isacharcomma}t{\isacharunderscore}stk{\isacharparenright}\ {\isacharequal}\ tree{\isacharunderscore}to{\isacharunderscore}rstack\ k{\isacharunderscore}ord\ k\ t{\isadigit{0}}\ {\isacharparenleft}List{\isachardot}length\ stk{\isacharparenright}\ in\isanewline
+\ \ \ \ assert{\isacharunderscore}true\ {\isacharparenleft}check{\isacharunderscore}stack\ stk\ t{\isacharunderscore}stk{\isacharparenright}\ {\isacharampersand}\isanewline
+\ \ \ \ {\isacharparenleft}{\isacharasterisk}\ FIXME\ need\ wf{\isacharunderscore}tree\ r\ {\isacharcomma}\ and\ below\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ \ \ {\isacharparenleft}case\ {\isacharparenleft}r{\isadigit{2}}t\ s\ r{\isacharparenright}\ of\ \isanewline
+\ \ \ \ None\ {\isasymRightarrow}\ assert{\isacharunderscore}true\ {\isacharparenleft}False{\isacharparenright}\isanewline
+\ \ \ \ {\isacharbar}\ Some\ t{\isacharprime}\ {\isasymRightarrow}\ assert{\isacharunderscore}true\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ kvs{\isacharunderscore}equal\ {\isacharparenleft}t{\isacharprime}\ {\isacharbar}{\isachargreater}\ tree{\isacharunderscore}to{\isacharunderscore}kvs{\isacharparenright}\ {\isacharparenleft}t{\isacharunderscore}fo{\isacharbar}{\isachargreater}tree{\isacharunderscore}to{\isacharunderscore}kvs{\isacharbar}{\isachargreater}kvs{\isacharunderscore}insert\ k{\isacharunderscore}ord\ {\isacharparenleft}k{\isacharcomma}v{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ {\isacharbar}\ I{\isadigit{2}}\ {\isacharparenleft}r{\isadigit{1}}{\isacharcomma}k{\isacharprime}{\isacharcomma}r{\isadigit{2}}{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ let\ {\isacharparenleft}t{\isacharunderscore}fo{\isacharcomma}t{\isacharunderscore}stk{\isacharparenright}\ {\isacharequal}\ tree{\isacharunderscore}to{\isacharunderscore}rstack\ k{\isacharunderscore}ord\ k\ t{\isadigit{0}}\ {\isacharparenleft}List{\isachardot}length\ stk{\isacharparenright}\ in\isanewline
+\ \ \ \ assert{\isacharunderscore}true\ {\isacharparenleft}check{\isacharunderscore}stack\ stk\ t{\isacharunderscore}stk{\isacharparenright}\ {\isacharampersand}\isanewline
+\ \ \ \ {\isacharparenleft}case\ {\isacharparenleft}r{\isadigit{2}}t\ s\ r{\isadigit{1}}{\isacharcomma}\ r{\isadigit{2}}t\ s\ r{\isadigit{2}}{\isacharparenright}\ of\isanewline
+\ \ \ \ \ \ {\isacharparenleft}Some\ t{\isadigit{1}}{\isacharcomma}\ Some\ t{\isadigit{2}}{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ \ \ \ \ let\ {\isacharparenleft}l{\isacharcomma}u{\isacharparenright}\ {\isacharequal}\ rstack{\isacharunderscore}get{\isacharunderscore}bounds\ t{\isacharunderscore}stk\ in\isanewline
+\ \ \ \ \ \ \ \ let\ {\isacharparenleft}ks{\isadigit{1}}{\isacharcomma}ks{\isadigit{2}}{\isacharparenright}\ {\isacharequal}\ {\isacharparenleft}t{\isadigit{1}}{\isacharbar}{\isachargreater}tree{\isacharunderscore}to{\isacharunderscore}keys{\isacharcomma}t{\isadigit{2}}{\isacharbar}{\isachargreater}tree{\isacharunderscore}to{\isacharunderscore}keys{\isacharparenright}\ in\isanewline
+\ \ \ \ \ \ \ \ assert{\isacharunderscore}true\ {\isacharparenleft}check{\isacharunderscore}keys\ k{\isacharunderscore}ord\ l\ ks{\isadigit{1}}\ {\isacharparenleft}Some\ k{\isacharprime}{\isacharparenright}{\isacharparenright}\ {\isacharampersand}\isanewline
+\ \ \ \ \ \ \ \ assert{\isacharunderscore}true\ {\isacharparenleft}check{\isacharunderscore}keys\ k{\isacharunderscore}ord\ {\isacharparenleft}Some\ k{\isacharprime}{\isacharparenright}\ ks{\isadigit{2}}\ u{\isacharparenright}\ {\isacharampersand}\isanewline
+\ \ \ \ \ \ \ \ assert{\isacharunderscore}true\ {\isacharparenleft}kvs{\isacharunderscore}equal\ {\isacharparenleft}t{\isacharunderscore}fo{\isacharbar}{\isachargreater}tree{\isacharunderscore}to{\isacharunderscore}kvs{\isacharbar}{\isachargreater}kvs{\isacharunderscore}insert\ k{\isacharunderscore}ord\ {\isacharparenleft}k{\isacharcomma}v{\isacharparenright}{\isacharparenright}\ {\isacharparenleft}t{\isadigit{1}}{\isacharbar}{\isachargreater}tree{\isacharunderscore}to{\isacharunderscore}kvs\ {\isacharat}\ {\isacharparenleft}t{\isadigit{2}}{\isacharbar}{\isachargreater}tree{\isacharunderscore}to{\isacharunderscore}kvs{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isacharparenright}\isanewline
+\ \ \ \ \ \ {\isacharbar}{\isacharparenleft}{\isacharunderscore}{\isacharcomma}{\isacharunderscore}{\isacharparenright}\ {\isasymRightarrow}\ False\ {\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ wf{\isacharunderscore}f\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}constants\ {\isasymRightarrow}\ {\isacharprime}k\ ord\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}r{\isadigit{2}}t\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharparenright}tree\ {\isasymRightarrow}\ {\isacharprime}t\ {\isasymRightarrow}\ {\isacharprime}k\ {\isasymRightarrow}\ {\isacharprime}v\ {\isasymRightarrow}\ {\isacharprime}r\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}wf{\isacharunderscore}f\ cs\ k{\isacharunderscore}ord\ r{\isadigit{2}}t\ t{\isadigit{0}}\ s\ k\ v\ r\ {\isacharequal}\ \ assert{\isacharunderscore}true\ {\isacharparenleft}\isanewline
+\ \ case\ r{\isadigit{2}}t\ s\ r\ of\isanewline
+\ \ None\ {\isasymRightarrow}\ False\isanewline
+\ \ {\isacharbar}\ Some\ t{\isacharprime}\ {\isasymRightarrow}\ {\isacharparenleft}\isanewline
+\ \ \ \ wellformed{\isacharunderscore}tree\ cs\ {\isacharparenleft}Some{\isacharparenleft}Small{\isacharunderscore}root{\isacharunderscore}node{\isacharunderscore}or{\isacharunderscore}leaf{\isacharparenright}{\isacharparenright}\ k{\isacharunderscore}ord\ t{\isacharprime}\ {\isacharampersand}\isanewline
+\ \ \ \ kvs{\isacharunderscore}equal\ {\isacharparenleft}\ {\isacharparenleft}t{\isadigit{0}}{\isacharbar}{\isachargreater}tree{\isacharunderscore}to{\isacharunderscore}kvs{\isacharbar}{\isachargreater}kvs{\isacharunderscore}insert\ k{\isacharunderscore}ord\ {\isacharparenleft}k{\isacharcomma}v{\isacharparenright}{\isacharparenright}{\isacharparenright}\ {\isacharparenleft}t{\isacharprime}{\isacharbar}{\isachargreater}tree{\isacharunderscore}to{\isacharunderscore}kvs{\isacharparenright}\ {\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ wellformed{\isacharunderscore}insert{\isacharunderscore}state\ {\isacharcolon}{\isacharcolon}\ \isanewline
+\ \ {\isachardoublequoteopen}constants\ {\isasymRightarrow}\ {\isacharprime}k\ ord\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharcomma}{\isacharprime}t{\isacharparenright}r{\isadigit{2}}t\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharparenright}tree\ {\isasymRightarrow}\ {\isacharprime}t\ {\isasymRightarrow}\ {\isacharprime}k\ {\isasymRightarrow}\ {\isacharprime}v\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}ist\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\ \isanewline
+\isakeyword{where}\isanewline
+{\isachardoublequoteopen}wellformed{\isacharunderscore}insert{\isacharunderscore}state\ cs\ k{\isacharunderscore}ord\ r{\isadigit{2}}t\ t{\isadigit{0}}\ s\ k\ v\ is\ {\isacharequal}\ assert{\isacharunderscore}true\ {\isacharparenleft}\isanewline
+\ \ case\ is\ of\ \isanewline
+\ \ I{\isacharunderscore}down\ d\ {\isasymRightarrow}\ {\isacharparenleft}wf{\isacharunderscore}d\ k{\isacharunderscore}ord\ r{\isadigit{2}}t\ t{\isadigit{0}}\ s\ d{\isacharparenright}\isanewline
+\ \ {\isacharbar}\ I{\isacharunderscore}up\ u\ {\isasymRightarrow}\ {\isacharparenleft}wf{\isacharunderscore}u\ r{\isadigit{2}}t\ k{\isacharunderscore}ord\ t{\isadigit{0}}\ s\ k\ v\ u{\isacharparenright}\isanewline
+\ \ {\isacharbar}\ I{\isacharunderscore}finished\ r\ {\isasymRightarrow}\ {\isacharparenleft}wf{\isacharunderscore}f\ cs\ k{\isacharunderscore}ord\ r{\isadigit{2}}t\ t{\isadigit{0}}\ s\ k\ v\ r{\isacharparenright}\ {\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+\end{isabellebody}%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

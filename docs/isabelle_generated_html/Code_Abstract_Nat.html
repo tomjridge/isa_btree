@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Code_Abstract_Nat (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Code_Abstract_Nat</h1>
+
+<span class="command">theory</span> <span class="name">Code_Abstract_Nat</span><br/>
+<span class="keyword">imports</span> <a href="../../HOL/HOL/Main.html"><span class="name">Main</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="comment">(*  Title:      HOL/Library/Code_Abstract_Nat.thy
+    Author:     Stefan Berghofer, Florian Haftmann, TU Muenchen
+*)</span>
+
+<span class="keyword1">section</span> <span class="verbatim">{* Avoidance of pattern matching on natural numbers *}</span>
+
+<span class="keyword1">theory</span> Code_Abstract_Nat
+<span class="keyword2">imports</span> Main
+<span class="keyword2">begin</span>
+
+<span class="keyword1">text</span> <span class="verbatim">{*
+  When natural numbers are implemented in another than the
+  conventional inductive @{term &quot;0::nat&quot;}/@{term Suc} representation,
+  it is necessary to avoid all pattern matching on natural numbers
+  altogether.  This is accomplished by this theory (up to a certain
+  extent).
+*}</span>
+
+<span class="keyword1">subsection</span> <span class="verbatim">{* Case analysis *}</span>
+
+<span class="keyword1">text</span> <span class="verbatim">{*
+  Case analysis on natural numbers is rephrased using a conditional
+  expression:
+*}</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">,</span> code_unfold<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;case_nat = (&lambda;f g n. if n = 0 then f else g (n - 1))&quot;</span>
+  <span class="keyword1">by</span> <span class="delimiter">(</span>auto simp add<span class="delimiter">:</span> fun_eq_iff dest<span class="delimiter">!</span><span class="delimiter">:</span> gr0_implies_Suc<span class="delimiter">)</span>
+
+
+<span class="keyword1">subsection</span> <span class="verbatim">{* Preprocessors *}</span>
+
+<span class="keyword1">text</span> <span class="verbatim">{*
+  The term @{term &quot;Suc n&quot;} is no longer a valid pattern.  Therefore,
+  all occurrences of this term in a position where a pattern is
+  expected (i.e.~on the left-hand side of a code equation) must be
+  eliminated.  This can be accomplished -- as far as possible -- by
+  applying the following transformation rule:
+*}</span>
+
+<span class="keyword1">lemma</span> Suc_if_eq<span class="delimiter">:</span>
+  <span class="keyword2">assumes</span> <span class="string">&quot;!!n. f (Suc n) &equiv; h n&quot;</span>
+  <span class="keyword2">assumes</span> <span class="string">&quot;f 0 &equiv; g&quot;</span>
+  <span class="keyword2">shows</span> <span class="string">&quot;f n &equiv; if n = 0 then g else h (n - 1)&quot;</span>
+  <span class="keyword1">by</span> <span class="delimiter">(</span>rule eq_reflection<span class="delimiter">)</span> <span class="delimiter">(</span>cases n<span class="delimiter">,</span> insert assms<span class="delimiter">,</span> simp_all<span class="delimiter">)</span>
+
+<span class="keyword1">text</span> <span class="verbatim">{*
+  The rule above is built into a preprocessor that is plugged into
+  the code generator.
+*}</span>
+
+<span class="keyword1">setup</span> <span class="verbatim">{*
+let
+
+val Suc_if_eq = Thm.incr_indexes 1 @{thm Suc_if_eq};
+
+fun remove_suc ctxt thms =
+  let
+    val vname = singleton (Name.variant_list (map fst
+      (fold (Term.add_var_names o Thm.full_prop_of) thms []))) &quot;n&quot;;
+    val cv = Thm.cterm_of ctxt (Var ((vname, 0), HOLogic.natT));
+    val lhs_of = snd o Thm.dest_comb o fst o Thm.dest_comb o Thm.cprop_of;
+    val rhs_of = snd o Thm.dest_comb o Thm.cprop_of;
+    fun find_vars ct = (case Thm.term_of ct of
+        (Const (@{const_name Suc}, _) $ Var _) =&gt; [(cv, snd (Thm.dest_comb ct))]
+      | _ $ _ =&gt;
+        let val (ct1, ct2) = Thm.dest_comb ct
+        in 
+          map (apfst (fn ct =&gt; Thm.apply ct ct2)) (find_vars ct1) @
+          map (apfst (Thm.apply ct1)) (find_vars ct2)
+        end
+      | _ =&gt; []);
+    val eqs = maps
+      (fn thm =&gt; map (pair thm) (find_vars (lhs_of thm))) thms;
+    fun mk_thms (thm, (ct, cv&#39;)) =
+      let
+        val thm&#39; =
+          Thm.implies_elim
+           (Conv.fconv_rule (Thm.beta_conversion true)
+             (Drule.instantiate&#39;
+               [SOME (Thm.ctyp_of_cterm ct)] [SOME (Thm.lambda cv ct),
+                 SOME (Thm.lambda cv&#39; (rhs_of thm)), NONE, SOME cv&#39;]
+               Suc_if_eq)) (Thm.forall_intr cv&#39; thm)
+      in
+        case map_filter (fn thm&#39;&#39; =&gt;
+            SOME (thm&#39;&#39;, singleton
+              (Variable.trade (K (fn [thm&#39;&#39;&#39;] =&gt; [thm&#39;&#39;&#39; RS thm&#39;]))
+                (Variable.declare_thm thm&#39;&#39; ctxt)) thm&#39;&#39;)
+          handle THM _ =&gt; NONE) thms of
+            [] =&gt; NONE
+          | thmps =&gt;
+              let val (thms1, thms2) = split_list thmps
+              in SOME (subtract Thm.eq_thm (thm :: thms1) thms @ thms2) end
+      end
+  in get_first mk_thms eqs end;
+
+fun eqn_suc_base_preproc ctxt thms =
+  let
+    val dest = fst o Logic.dest_equals o Thm.prop_of;
+    val contains_suc = exists_Const (fn (c, _) =&gt; c = @{const_name Suc});
+  in
+    if forall (can dest) thms andalso exists (contains_suc o dest) thms
+      then thms |&gt; perhaps_loop (remove_suc ctxt) |&gt; (Option.map o map) Drule.zero_var_indexes
+       else NONE
+  end;
+
+val eqn_suc_preproc = Code_Preproc.simple_functrans eqn_suc_base_preproc;
+
+in
+
+  Code_Preproc.add_functrans (&quot;eqn_Suc&quot;, eqn_suc_preproc)
+
+end;
+*}</span>
+
+<span class="keyword2">end</span>
+</pre>
+
+</div>
+</body>
+</html>

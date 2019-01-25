@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Insert_many (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Insert_many</h1>
+
+<span class="command">theory</span> <span class="name">Insert_many</span><br/>
+<span class="keyword">imports</span> <a href="Find.html"><span class="name">Find</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Insert_many
+<span class="keyword2">imports</span> Find <span class="string">&quot;$SRC/c_monad/Insert_many_state&quot;</span>
+<span class="keyword2">begin</span>
+
+<span class="comment">(* NOTE following synonymys copied from Insert_many_state *)</span>
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> fo <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) im_fo&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> d <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r)fs * (&#39;v * (&#39;k*&#39;v)s)&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> u <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r)fo*(&#39;k,&#39;r)rstk&quot;</span>
+
+
+<span class="comment">(* defns ------------------------------------------------------------ *)</span>
+
+<span class="keyword1">definition</span> step_down <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r)d =&gt; ((&#39;k,&#39;v,&#39;r) d,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;step_down ps1 store_ops d = (
+  let (fs,v) = d in
+  find_step ps1 store_ops fs |&gt; fmap (% d&#39;. (d&#39;,v))
+)&quot;</span>
+
+<span class="comment">(* insert kv, and as many from new as possible subject to lu bound and max size of 2*max_leaf_size; 
+kv&lt;new, and new are sorted in order; return the remaining new that were not inserted
+*)</span>
+<span class="keyword1">definition</span> kvs_insert_2 <span class="delimiter">::</span> 
+  <span class="string">&quot;constants =&gt; &#39;k ord =&gt; &#39;k option =&gt; (&#39;k*&#39;v) =&gt; (&#39;k*&#39;v)s =&gt; (&#39;k*&#39;v)s =&gt; (&#39;k*&#39;v)s * (&#39;k*&#39;v)s&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;kvs_insert_2 cs&#39; k_ord u kv new existing = (
+  let cs = cs&#39; in
+  let step = (% s. 
+    let (acc,new&#39;) = s in
+    case (length acc &ge; 2 * cs|&gt;max_leaf_size) of
+    True =&gt; None
+    | False =&gt; (
+      case new&#39; of
+      [] =&gt; None
+      | (k,v)#new&#39;&#39; =&gt; (
+        let test = % k u.
+          (* (check_keys (Params.the_kv_ops|&gt;compare_k) None {k} u) *) (* FIXME equality on keys in generated code :( *)
+          case u of None =&gt; True | Some u =&gt; key_lt k_ord k u
+        in
+        case test k u of  
+        True =&gt; (Some(kvs_insert k_ord (k,v) acc,new&#39;&#39;))
+        | False =&gt; (None))))
+  in
+  iter_step step (existing,new))&quot;</span>
+
+<span class="comment">(* how to split a leaf where there are n &gt; max_leaf_size and &le; 2*max_leaf_size elts?
+
+we want the first leaf ge the second leaf, and 2nd leaf to have at least min_leaf_size
+
+for second leaf, we want n2=min_leaf_size+delta, where delta is minimal such that n1+n2=n and n1 &le; max_leaf_size
+
+so n2 = min_leaf_size; n1 = n - min_leaf_size
+then delta = n1 - max_leaf_size
+n2+=delta
+n1-=delta
+
+*)</span>
+<span class="comment">(* FIXME isn&#39;t this duplicated elsewhere? *)</span>
+<span class="keyword1">definition</span> split_leaf <span class="delimiter">::</span> <span class="string">&quot;constants =&gt; (&#39;k*&#39;v)s =&gt; (&#39;k*&#39;v)s * &#39;k * (&#39;k*&#39;v)s&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;split_leaf cs0 kvs = (
+  let n = List.length kvs in
+  let n1 = n in
+  let n2 = 0 in
+  let delta = cs0|&gt;min_leaf_size in
+  let n1 = n1 - delta in
+  let n2 = n2 + delta in
+  let delta = (n1 - cs0|&gt;max_leaf_size) in
+  let n1 = n1 - delta in
+  let n2 = n2 + delta in
+  let (l,r) = split_at n1 kvs in
+  let k = (case r of [] =&gt; impossible1 (STR &#39;&#39;insert_many: split_leaf&#39;&#39;) | (k,v)#_ =&gt; k) in
+  (l,k,r)
+)&quot;</span>
+
+
+<span class="keyword1">definition</span> step_bottom <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r) d =&gt; ((&#39;k,&#39;v,&#39;r) u,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;step_bottom ps1 store_ops d = (
+  let (cs,k_ord) = (ps1|&gt;dot_constants,ps1|&gt;dot_cmp) in
+  (* let store_ops = ps1|&gt;dot_store_ops in *)
+  let (fs,(v,kvs0)) = d in
+  case dest_f_finished fs of 
+  None =&gt; impossible1 (STR &#39;&#39;insert, step_bottom&#39;&#39;)
+  | Some(r0,k,r,kvs,stk) =&gt; (
+    (store_ops|&gt;store_free) (r0#(r_stk_to_rs stk)) |&gt; bind 
+    (% _.
+    let (l,u) = rstack_get_bounds stk in
+    let (kvs&#39;,kvs0&#39;) = kvs_insert_2 cs k_ord u (k,v) kvs0 kvs in
+    let fo = (
+      case (length kvs&#39; &le; cs|&gt;max_leaf_size) of
+      True =&gt; (Disk_leaf kvs&#39; |&gt; (store_ops|&gt;store_alloc) |&gt; fmap (% r&#39;. IM1(r&#39;,kvs0&#39;)))
+      | False =&gt; (
+        let (kvs1,k&#39;,kvs2) = split_leaf cs kvs&#39; in
+        Disk_leaf kvs1 |&gt; (store_ops|&gt;store_alloc) |&gt; bind
+        (% r1. Disk_leaf kvs2 |&gt; (store_ops|&gt;store_alloc) |&gt; fmap (% r2. IM2((r1,k&#39;,r2),kvs0&#39;)))) )
+    in
+    fo |&gt; fmap (% fo. (fo,stk))))
+)&quot;</span>
+
+<span class="keyword1">definition</span> step_up <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r) u =&gt; ((&#39;k,&#39;v,&#39;r) u,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;step_up ps1 store_ops u = (
+  let (cs,k_ord) = (ps1|&gt;dot_constants,ps1|&gt;dot_cmp) in
+  (* let store_ops = ps1|&gt;dot_store_ops in *)
+  let (fo,stk) = u in
+  case stk of 
+  [] =&gt; impossible1 (STR &#39;&#39;insert, step_up&#39;&#39;) (* FIXME what about trace? can&#39;t have arb here; or just stutter on I_finished in step? *)
+  | x#stk&#39; =&gt; (
+    case fo of
+    IM1 (r,kvs0) =&gt; (
+      let (ks,rs) = unsplit_node (x(|r_t:=r|)),) in
+      mk_Disk_node(ks,rs) |&gt; (store_ops|&gt;store_alloc) |&gt; fmap (% r. (IM1 (r,kvs0),stk&#39;)))
+    | IM2 ((r1,k,r2),kvs0) =&gt; (
+      let (ks2,rs2) = (x|&gt;r_ks2,x|&gt;r_ts2) in
+      let (ks&#39;,rs&#39;) = unsplit_node (x(|r_ks2:=k#ks2, r_ts2:=[r1,r2]@rs2|)),) in
+      case (List.length ks&#39; &le; cs|&gt;max_node_keys) of
+      True =&gt; (
+        mk_Disk_node(ks&#39;,rs&#39;) |&gt; (store_ops|&gt;store_alloc) |&gt; fmap (% r. (IM1 (r,kvs0),stk&#39;)))
+      | False =&gt; (
+        let (ks_rs1,k,ks_rs2) = split_node cs (ks&#39;,rs&#39;) in  (* FIXME move split_node et al to this file *)
+        mk_Disk_node(ks_rs1) |&gt; (store_ops|&gt;store_alloc) |&gt; bind
+        (% r1. mk_Disk_node (ks_rs2) |&gt; (store_ops|&gt;store_alloc) |&gt; fmap 
+        (% r2. (IM2((r1,k,r2),kvs0),stk&#39;))))
+    )
+  )
+)&quot;</span>
+
+<span class="keyword1">definition</span> insert_step <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r) imst =&gt; ((&#39;k,&#39;v,&#39;r) imst, &#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;insert_step ps1 store_ops s = (
+  let (cs,k_ord) = (ps1|&gt;dot_constants,ps1|&gt;dot_cmp) in
+  (* let store_ops = ps1|&gt;dot_store_ops in *)
+  case s of 
+  IM_down d =&gt; (
+    let (fs,(v,kvs0)) = d in
+    case (dest_f_finished fs) of 
+    None =&gt; (step_down ps1 store_ops d |&gt; fmap (% d. IM_down d))
+    | Some _ =&gt; step_bottom ps1 store_ops d |&gt; fmap (% u. IM_up u))
+  | IM_up u =&gt; (
+    let (fo,stk) = u in
+    case stk of
+    [] =&gt; (
+      case fo of 
+      IM1 (r,kvs0) =&gt; return (IM_finished (r,kvs0))
+      | IM2((r1,k,r2),kvs0) =&gt; (
+        (* create a new frame *)
+        (mk_Disk_node([k],[r1,r2]) |&gt; (store_ops|&gt;store_alloc) |&gt; fmap (% r. IM_finished (r,kvs0)))))
+    | _ =&gt; (step_up ps1 store_ops u |&gt; fmap (% u. IM_up u)))
+  | IM_finished f =&gt; (return s)  (* stutter *)
+)&quot;</span>
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

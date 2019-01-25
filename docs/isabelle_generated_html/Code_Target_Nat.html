@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Code_Target_Nat (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Code_Target_Nat</h1>
+
+<span class="command">theory</span> <span class="name">Code_Target_Nat</span><br/>
+<span class="keyword">imports</span> <a href="Code_Abstract_Nat.html"><span class="name">Code_Abstract_Nat</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="comment">(*  Title:      HOL/Library/Code_Target_Nat.thy
+    Author:     Florian Haftmann, TU Muenchen
+*)</span>
+
+<span class="keyword1">section</span> <span class="verbatim">{* Implementation of natural numbers by target-language integers *}</span>
+
+<span class="keyword1">theory</span> Code_Target_Nat
+<span class="keyword2">imports</span> Code_Abstract_Nat
+<span class="keyword2">begin</span>
+
+<span class="keyword1">subsection</span> <span class="verbatim">{* Implementation for @{typ nat} *}</span>
+
+<span class="keyword1">context</span>
+<span class="keyword2">includes</span> natural.lifting integer.lifting
+<span class="keyword2">begin</span>
+
+<span class="keyword1">lift_definition</span> Nat <span class="delimiter">::</span> <span class="string">&quot;integer =&gt; nat&quot;</span>
+  <span class="keyword2">is</span> nat
+  <span class="keyword1">.</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code_post<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;Nat 0 = 0&quot;</span>
+  <span class="string">&quot;Nat 1 = 1&quot;</span>
+  <span class="string">&quot;Nat (numeral k) = numeral k&quot;</span>
+  <span class="keyword1">by</span> <span class="delimiter">(</span>transfer<span class="delimiter">,</span> simp<span class="delimiter">)</span><span class="delimiter">+</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code_abbrev<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat = of_nat&quot;</span>
+  <span class="keyword1">by</span> transfer rule
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code_unfold<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;Int.nat (int_of_integer k) = nat_of_integer k&quot;</span>
+  <span class="keyword1">by</span> transfer rule
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstype<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;Code_Target_Nat.Nat (integer_of_nat n) = n&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstract<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat (nat_of_integer k) = max 0 k&quot;</span>
+  <span class="keyword1">by</span> transfer auto
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code_abbrev<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;nat_of_integer (numeral k) = nat_of_num k&quot;</span>
+  <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> nat_of_num_numeral<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstract<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat (nat_of_num n) = integer_of_num n&quot;</span>
+  <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> nat_of_num_numeral<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstract<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat 0 = 0&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstract<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat 1 = 1&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;Suc n = n + 1&quot;</span>
+  <span class="keyword1">by</span> simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstract<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat (m + n) = of_nat m + of_nat n&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstract<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat (m - n) = max 0 (of_nat m - of_nat n)&quot;</span>
+  <span class="keyword1">by</span> transfer simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstract<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat (m * n) = of_nat m * of_nat n&quot;</span>
+  <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> of_nat_mult<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstract<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat (m div n) = of_nat m div of_nat n&quot;</span>
+  <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> zdiv_int<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstract<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat (m mod n) = of_nat m mod of_nat n&quot;</span>
+  <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> zmod_int<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;Divides.divmod_nat m n = (m div n, m mod n)&quot;</span>
+  <span class="keyword1">by</span> <span class="delimiter">(</span>fact divmod_nat_div_mod<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;HOL.equal m n = HOL.equal (of_nat m :: integer) (of_nat n)&quot;</span>
+  <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> equal<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;m &le; n &lt;-&gt; (of_nat m :: integer) &le; of_nat n&quot;</span>
+  <span class="keyword1">by</span> simp
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;m &lt; n &lt;-&gt; (of_nat m :: integer) &lt; of_nat n&quot;</span>
+  <span class="keyword1">by</span> simp
+
+<span class="keyword1">lemma</span> num_of_nat_code <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;num_of_nat = num_of_integer o of_nat&quot;</span>
+  <span class="keyword1">by</span> transfer <span class="delimiter">(</span>simp add<span class="delimiter">:</span> fun_eq_iff<span class="delimiter">)</span>
+
+<span class="keyword2">end</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">(</span><span class="keyword2">in</span> semiring_1<span class="delimiter">)</span> of_nat_code_if<span class="delimiter">:</span>
+  <span class="string">&quot;of_nat n = (if n = 0 then 0
+     else let
+       (m, q) = divmod_nat n 2;
+       m&#39; = 2 * of_nat m
+     in if q = 0 then m&#39; else m&#39; + 1)&quot;</span>
+<span class="keyword1">proof</span> -
+  <span class="keyword1">from</span> mod_div_equality <span class="keyword1">have</span> *<span class="delimiter">:</span> <span class="string">&quot;of_nat n = of_nat (n div 2 * 2 + n mod 2)&quot;</span> <span class="keyword1">by</span> simp
+  <span class="keyword3">show</span> <span class="var">?thesis</span>
+    <span class="keyword1">by</span> <span class="delimiter">(</span>simp add<span class="delimiter">:</span> Let_def divmod_nat_div_mod of_nat_add <span class="delimiter">[</span>symmetric<span class="delimiter">]</span><span class="delimiter">)</span>
+      <span class="delimiter">(</span>simp add<span class="delimiter">:</span> * mult.commute of_nat_mult add.commute<span class="delimiter">)</span>
+<span class="keyword1">qed</span>
+
+<span class="keyword1">declare</span> of_nat_code_if <span class="delimiter">[</span>code<span class="delimiter">]</span>
+
+<span class="keyword1">definition</span> int_of_nat <span class="delimiter">::</span> <span class="string">&quot;nat =&gt; int&quot;</span> <span class="keyword2">where</span>
+  <span class="delimiter">[</span>code_abbrev<span class="delimiter">]</span><span class="delimiter">:</span> <span class="string">&quot;int_of_nat = of_nat&quot;</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;int_of_nat n = int_of_integer (of_nat n)&quot;</span>
+  <span class="keyword1">by</span> <span class="delimiter">(</span>simp add<span class="delimiter">:</span> int_of_nat_def<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code abstract<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;integer_of_nat (nat k) = max 0 (integer_of_int k)&quot;</span>
+  <span class="keyword1">including</span> integer.lifting <span class="keyword1">by</span> transfer auto
+
+<span class="keyword1">lemma</span> term_of_nat_code <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="delimiter">--</span> <span class="verbatim">{* Use @{term Code_Numeral.nat_of_integer} in term reconstruction
+        instead of @{term Code_Target_Nat.Nat} such that reconstructed
+        terms can be fed back to the code generator *}</span>
+  <span class="string">&quot;term_of_class.term_of n =
+   Code_Evaluation.App
+     (Code_Evaluation.Const (STR &#39;&#39;Code_Numeral.nat_of_integer&#39;&#39;)
+        (typerep.Typerep (STR &#39;&#39;fun&#39;&#39;)
+           [typerep.Typerep (STR &#39;&#39;Code_Numeral.integer&#39;&#39;) [],
+         typerep.Typerep (STR &#39;&#39;Nat.nat&#39;&#39;) []]))
+     (term_of_class.term_of (integer_of_nat n))&quot;</span>
+  <span class="keyword1">by</span> <span class="delimiter">(</span>simp add<span class="delimiter">:</span> term_of_anything<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> nat_of_integer_code_post <span class="delimiter">[</span>code_post<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;nat_of_integer 0 = 0&quot;</span>
+  <span class="string">&quot;nat_of_integer 1 = 1&quot;</span>
+  <span class="string">&quot;nat_of_integer (numeral k) = numeral k&quot;</span>
+  <span class="keyword1">including</span> integer.lifting <span class="keyword1">by</span> <span class="delimiter">(</span>transfer<span class="delimiter">,</span> simp<span class="delimiter">)</span><span class="delimiter">+</span>
+
+<span class="keyword1">code_identifier</span>
+  <span class="keyword2">code_module</span> Code_Target_Nat <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> Arith <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> Arith <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> Arith
+
+<span class="keyword2">end</span>
+</pre>
+
+</div>
+</body>
+</html>

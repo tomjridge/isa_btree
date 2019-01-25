@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Params (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Params</h1>
+
+<span class="command">theory</span> <span class="name">Params</span><br/>
+<span class="keyword">imports</span> <a href="Pre_params.html"><span class="name">Pre_params</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Params
+<span class="keyword2">imports</span> Pre_params
+<span class="keyword2">begin</span>
+
+<span class="comment">(* this to force dependency order in exported code? *)</span>
+<span class="keyword1">definition</span> dummy <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span> <span class="string">&quot;dummy=Pre_params.dummy&quot;</span>
+
+<span class="comment">(* params ----------------------------------------------------------- *)</span>
+
+<span class="comment">(* The B-tree functions are heavily parameterized; rather than pass
+round many parameters individually, we package them up as follows. *)</span>
+
+
+<span class="keyword1">datatype</span> <span class="tfree">&#39;k</span> ps1 <span class="delimiter">=</span> Ps1 <span class="string">&quot;constants * &#39;k ord&quot;</span>
+
+<span class="keyword1">definition</span> dest_ps1 <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; constants * &#39;k ord&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_ps1 ps1 = (case ps1 of Ps1 (x,y) =&gt; (x,y))&quot;</span>
+
+<span class="comment">(* NOTE dot_xxx are named after record projections *)</span>
+
+<span class="comment">(* FIXME the following just lifts the ps0 projections, and is confusing *)</span>
+<span class="comment">(* FIXME cs is normally reserved as a var *)</span>
+<span class="keyword1">definition</span> dot_constants <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; constants&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dot_constants ps1 = ps1 |&gt; dest_ps1 |&gt; (% (x,y). x)&quot;</span>
+
+<span class="keyword1">definition</span> dot_cmp <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; &#39;k ord&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dot_cmp ps1 = ps1 |&gt; dest_ps1 |&gt; (% (x,y). y)&quot;</span>
+
+<span class="comment">(*
+definition dot_store_ops :: &quot;(&#39;k,&#39;v,&#39;r,&#39;t) ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops&quot; where
+&quot;dot_store_ops ps1 = ps1 |&gt; dest_ps1 |&gt; (% (x,y,z). z)&quot;
+*)</span>
+
+
+<span class="keyword2">end</span>
+</pre>
+
+</div>
+</body>
+</html>

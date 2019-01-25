@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Code_Char (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Code_Char</h1>
+
+<span class="command">theory</span> <span class="name">Code_Char</span><br/>
+<span class="keyword">imports</span> <a href="Char_ord.html"><span class="name">Char_ord</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="comment">(*  Title:      HOL/Library/Code_Char.thy
+    Author:     Florian Haftmann
+*)</span>
+
+<span class="keyword1">section</span> <span class="verbatim">{* Code generation of pretty characters (and strings) *}</span>
+
+<span class="keyword1">theory</span> Code_Char
+<span class="keyword2">imports</span> Main Char_ord
+<span class="keyword2">begin</span>
+
+<span class="keyword1">code_printing</span>
+  <span class="keyword2">type_constructor</span> char <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> <span class="string">&quot;char&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> <span class="string">&quot;char&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> <span class="string">&quot;Prelude.Char&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Scala<span class="delimiter">)</span> <span class="string">&quot;Char&quot;</span>
+
+<span class="keyword1">setup</span> <span class="verbatim">{*
+  fold String_Code.add_literal_char [&quot;SML&quot;, &quot;OCaml&quot;, &quot;Haskell&quot;, &quot;Scala&quot;] 
+  #&gt; String_Code.add_literal_list_string &quot;Haskell&quot;
+*}</span>
+
+<span class="keyword1">code_printing</span>
+  <span class="keyword2">class_instance</span> char <span class="delimiter">::</span> equal <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> -
+<span class="delimiter">|</span> <span class="keyword2">constant</span> <span class="string">&quot;HOL.equal :: char =&gt; char =&gt; bool&quot;</span> <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> <span class="string">&quot;!((_ : char) = _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> <span class="string">&quot;!((_ : char) = _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> <span class="keyword2">infix</span> 4 <span class="string">&quot;==&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Scala<span class="delimiter">)</span> <span class="keyword2">infixl</span> 5 <span class="string">&quot;==&quot;</span>
+<span class="delimiter">|</span> <span class="keyword2">constant</span> <span class="string">&quot;Code_Evaluation.term_of :: char =&gt; term&quot;</span> <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>Eval<span class="delimiter">)</span> <span class="string">&quot;HOLogic.mk&#39;_char/ (IntInf.fromInt/ (Char.ord/ _))&quot;</span>
+
+<span class="keyword1">code_reserved</span> SML
+  char
+
+<span class="keyword1">code_reserved</span> OCaml
+  char
+
+<span class="keyword1">code_reserved</span> Scala
+  char
+
+<span class="keyword1">code_reserved</span> SML String
+
+<span class="keyword1">code_printing</span>
+  <span class="keyword2">constant</span> String.implode <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> <span class="string">&quot;String.implode&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> <span class="string">&quot;!(let l = _ in let res = String.create (List.length l) in let rec imp i = function | [] -&gt; res | c :: l -&gt; String.set res i c; imp (i + 1) l in imp 0 l)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> <span class="string">&quot;_&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Scala<span class="delimiter">)</span> <span class="string">&quot;!(\&quot;\&quot; ++/ _)&quot;</span>
+<span class="delimiter">|</span> <span class="keyword2">constant</span> String.explode <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> <span class="string">&quot;String.explode&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> <span class="string">&quot;!(let s = _ in let rec exp i l = if i &lt; 0 then l else exp (i - 1) (String.get s i :: l) in exp (String.length s - 1) [])&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> <span class="string">&quot;_&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Scala<span class="delimiter">)</span> <span class="string">&quot;!(_.toList)&quot;</span>
+
+
+<span class="keyword1">definition</span> integer_of_char <span class="delimiter">::</span> <span class="string">&quot;char =&gt; integer&quot;</span>
+<span class="keyword2">where</span>
+  <span class="string">&quot;integer_of_char = integer_of_nat o nat_of_char&quot;</span>
+
+<span class="keyword1">definition</span> char_of_integer <span class="delimiter">::</span> <span class="string">&quot;integer =&gt; char&quot;</span>
+<span class="keyword2">where</span>
+  <span class="string">&quot;char_of_integer = char_of_nat o nat_of_integer&quot;</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;nat_of_char = nat_of_integer o integer_of_char&quot;</span>
+  <span class="keyword1">by</span> <span class="delimiter">(</span>simp add<span class="delimiter">:</span> integer_of_char_def fun_eq_iff<span class="delimiter">)</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;char_of_nat = char_of_integer o integer_of_nat&quot;</span>
+  <span class="keyword1">by</span> <span class="delimiter">(</span>simp add<span class="delimiter">:</span> char_of_integer_def fun_eq_iff<span class="delimiter">)</span>
+
+<span class="keyword1">lemmas</span> integer_of_char_code <span class="delimiter">[</span>code<span class="delimiter">]</span> <span class="delimiter">=</span>
+  nat_of_char_simps<span class="delimiter">[</span>
+    THEN arg_cong<span class="delimiter">[</span><span class="keyword2">where</span> f<span class="delimiter">=</span><span class="string">&quot;integer_of_nat&quot;</span><span class="delimiter">]</span><span class="delimiter">,</span>
+    unfolded integer_of_nat_numeral integer_of_nat_1 integer_of_nat_0<span class="delimiter">,</span>
+    folded fun_cong<span class="delimiter">[</span>OF integer_of_char_def<span class="delimiter">,</span> unfolded o_apply<span class="delimiter">]</span><span class="delimiter">]</span>
+
+<span class="keyword1">lemma</span> char_of_integer_code <span class="delimiter">[</span>code<span class="delimiter">]</span><span class="delimiter">:</span>
+  <span class="string">&quot;char_of_integer n = enum_class.enum ! (nat_of_integer n mod 256)&quot;</span>
+<span class="keyword1">by</span><span class="delimiter">(</span>simp add<span class="delimiter">:</span> char_of_integer_def char_of_nat_def<span class="delimiter">)</span>
+
+<span class="keyword1">code_printing</span>
+  <span class="keyword2">constant</span> integer_of_char <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> <span class="string">&quot;!(IntInf.fromInt o Char.ord)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> <span class="string">&quot;Big&#39;_int.big&#39;_int&#39;_of&#39;_int (Char.code _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> <span class="string">&quot;Prelude.toInteger (Prelude.fromEnum (_ :: Prelude.Char))&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Scala<span class="delimiter">)</span> <span class="string">&quot;BigInt(_.toInt)&quot;</span>
+<span class="delimiter">|</span> <span class="keyword2">constant</span> char_of_integer <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> <span class="string">&quot;!(Char.chr o IntInf.toInt)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> <span class="string">&quot;Char.chr (Big&#39;_int.int&#39;_of&#39;_big&#39;_int _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> <span class="string">&quot;!(let chr k | (0 &lt;= k &amp;&amp; k &lt; 256) = Prelude.toEnum k :: Prelude.Char in chr . Prelude.fromInteger)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Scala<span class="delimiter">)</span> <span class="string">&quot;!((k: BigInt) =&gt; if (BigInt(0) &lt;= k &amp;&amp; k &lt; BigInt(256)) k.charValue else error(\&quot;character value out of range\&quot;))&quot;</span>
+<span class="delimiter">|</span> <span class="keyword2">constant</span> <span class="string">&quot;Orderings.less_eq :: char =&gt; char =&gt; bool&quot;</span> <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> <span class="string">&quot;!((_ : char) &lt;= _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> <span class="string">&quot;!((_ : char) &lt;= _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> <span class="keyword2">infix</span> 4 <span class="string">&quot;&lt;=&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Scala<span class="delimiter">)</span> <span class="keyword2">infixl</span> 4 <span class="string">&quot;&lt;=&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Eval<span class="delimiter">)</span> <span class="keyword2">infixl</span> 6 <span class="string">&quot;&lt;=&quot;</span>
+<span class="delimiter">|</span> <span class="keyword2">constant</span> <span class="string">&quot;Orderings.less :: char =&gt; char =&gt; bool&quot;</span> <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> <span class="string">&quot;!((_ : char) &lt; _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> <span class="string">&quot;!((_ : char) &lt; _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> <span class="keyword2">infix</span> 4 <span class="string">&quot;&lt;&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Scala<span class="delimiter">)</span> <span class="keyword2">infixl</span> 4 <span class="string">&quot;&lt;&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Eval<span class="delimiter">)</span> <span class="keyword2">infixl</span> 6 <span class="string">&quot;&lt;&quot;</span>
+<span class="delimiter">|</span>  <span class="keyword2">constant</span> <span class="string">&quot;Orderings.less_eq :: String.literal =&gt; String.literal =&gt; bool&quot;</span> <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> <span class="string">&quot;!((_ : string) &lt;= _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> <span class="string">&quot;!((_ : string) &lt;= _)&quot;</span>
+    <span class="delimiter">--</span> <span class="verbatim">{* Order operations for @{typ String.literal} work in Haskell only 
+          if no type class instance needs to be generated, because String = [Char] in Haskell
+          and @{typ &quot;char list&quot;} need not have the same order as @{typ String.literal}. *}</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> <span class="keyword2">infix</span> 4 <span class="string">&quot;&lt;=&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Scala<span class="delimiter">)</span> <span class="keyword2">infixl</span> 4 <span class="string">&quot;&lt;=&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Eval<span class="delimiter">)</span> <span class="keyword2">infixl</span> 6 <span class="string">&quot;&lt;=&quot;</span>
+<span class="delimiter">|</span> <span class="keyword2">constant</span> <span class="string">&quot;Orderings.less :: String.literal =&gt; String.literal =&gt; bool&quot;</span> <span class="delimiter">\&lt;rightharpoonup&gt;</span>
+    <span class="delimiter">(</span>SML<span class="delimiter">)</span> <span class="string">&quot;!((_ : string) &lt; _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>OCaml<span class="delimiter">)</span> <span class="string">&quot;!((_ : string) &lt; _)&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Haskell<span class="delimiter">)</span> <span class="keyword2">infix</span> 4 <span class="string">&quot;&lt;&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Scala<span class="delimiter">)</span> <span class="keyword2">infixl</span> 4 <span class="string">&quot;&lt;&quot;</span>
+    <span class="keyword2">and</span> <span class="delimiter">(</span>Eval<span class="delimiter">)</span> <span class="keyword2">infixl</span> 6 <span class="string">&quot;&lt;&quot;</span>
+
+<span class="keyword2">end</span>
+
+</pre>
+
+</div>
+</body>
+</html>

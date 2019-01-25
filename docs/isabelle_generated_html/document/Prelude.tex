@@ -1,0 +1,114 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Prelude}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Prelude\ \isanewline
+\isakeyword{imports}\ Main\ Util\ \isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{record}\isamarkupfalse%
+\ constants\ {\isacharequal}\ \isanewline
+\ \ min{\isacharunderscore}leaf{\isacharunderscore}size\ {\isacharcolon}{\isacharcolon}\ nat\isanewline
+\ \ max{\isacharunderscore}leaf{\isacharunderscore}size\ {\isacharcolon}{\isacharcolon}\ nat\isanewline
+\ \ min{\isacharunderscore}node{\isacharunderscore}keys\ {\isacharcolon}{\isacharcolon}\ nat\isanewline
+\ \ max{\isacharunderscore}node{\isacharunderscore}keys\ {\isacharcolon}{\isacharcolon}\ nat\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{datatype}\isamarkupfalse%
+\ min{\isacharunderscore}size{\isacharunderscore}t\ {\isacharequal}\ \isanewline
+\ \ Small{\isacharunderscore}root{\isacharunderscore}node{\isacharunderscore}or{\isacharunderscore}leaf\isanewline
+\ \ {\isacharbar}\ Small{\isacharunderscore}node\isanewline
+\ \ {\isacharbar}\ Small{\isacharunderscore}leaf\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ ms{\isacharunderscore}t\ {\isacharequal}\ {\isachardoublequoteopen}min{\isacharunderscore}size{\isacharunderscore}t\ option{\isachardoublequoteclose}\isanewline
+\isanewline
+\ \isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharprime}s\ trans{\isacharunderscore}t\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}s\ {\isacharasterisk}\ {\isacharprime}s{\isacharparenright}\ set{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ trace{\isacharunderscore}set\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}s\ {\isacharasterisk}\ {\isacharprime}s{\isacharparenright}\ set\ {\isasymRightarrow}\ {\isacharparenleft}nat\ {\isasymRightarrow}\ {\isacharprime}s{\isacharparenright}\ set{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}trace{\isacharunderscore}set\ trns\ {\isacharequal}\ {\isacharbraceleft}\ f\ {\isachardot}\ \ {\isacharparenleft}{\isacharbang}\ {\isacharparenleft}n{\isacharcolon}{\isacharcolon}nat{\isacharparenright}{\isachardot}\ {\isacharparenleft}f\ n{\isacharcomma}\ f{\isacharparenleft}n{\isacharplus}{\isadigit{1}}{\isacharparenright}{\isacharparenright}\ {\isacharcolon}\ trns{\isacharparenright}\ {\isacharbraceright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ invariant\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}s\ {\isacharasterisk}\ {\isacharprime}s{\isacharparenright}\ set\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}s\ {\isasymRightarrow}\ bool{\isacharparenright}\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}invariant\ trns\ P\ {\isacharequal}\ {\isacharparenleft}{\isacharbang}\ s\ s{\isacharprime}{\isachardot}\ {\isacharparenleft}s{\isacharcomma}s{\isacharprime}{\isacharparenright}\ {\isacharcolon}\ trns\ {\isasymlongrightarrow}\ P\ s\ {\isasymlongrightarrow}\ P\ s{\isacharprime}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\ \ \isanewline
+\isacommand{definition}\isamarkupfalse%
+\ invariant{\isacharunderscore}thm\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}s\ trans{\isacharunderscore}t\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}invariant{\isacharunderscore}thm\ trns\ {\isacharequal}\ {\isacharparenleft}{\isacharbang}\ P\ f{\isachardot}\isanewline
+\ \ invariant\ trns\ P\ {\isacharampersand}\ \isanewline
+\ \ f\ {\isacharcolon}\ trace{\isacharunderscore}set\ trns\ {\isacharampersand}\isanewline
+\ \ P{\isacharparenleft}f\ {\isadigit{0}}{\isacharparenright}\ {\isasymlongrightarrow}\ {\isacharparenleft}{\isacharbang}\ n{\isachardot}\ P\ {\isacharparenleft}f\ n{\isacharparenright}{\isacharparenright}\ \isanewline
+{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ invariant{\isacharunderscore}assuming\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}s\ {\isacharasterisk}\ {\isacharprime}s{\isacharparenright}\ set\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}s\ {\isasymRightarrow}\ bool{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}s\ {\isasymRightarrow}\ bool{\isacharparenright}\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}invariant{\isacharunderscore}assuming\ trns\ P\ Q\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ let\ trns\ {\isacharequal}\ {\isacharbraceleft}\ {\isacharparenleft}s{\isacharcomma}s{\isacharprime}{\isacharparenright}{\isachardot}\ {\isacharparenleft}s{\isacharcomma}s{\isacharprime}{\isacharparenright}\ {\isacharcolon}\ trns\ {\isacharampersand}\ P\ s\ {\isacharampersand}\ P\ s{\isacharprime}\ {\isacharbraceright}\ in\isanewline
+\ \ invariant\ trns\ Q{\isacharparenright}\isanewline
+{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ invariant{\isacharunderscore}assuming{\isacharunderscore}thm\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}s\ trans{\isacharunderscore}t\ {\isasymRightarrow}\ \ {\isacharparenleft}{\isacharprime}s\ {\isasymRightarrow}\ bool{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}s\ {\isasymRightarrow}\ bool{\isacharparenright}\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}invariant{\isacharunderscore}assuming{\isacharunderscore}thm\ trns\ P\ Q\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ invariant\ trns\ P\ {\isacharampersand}\isanewline
+\ \ invariant{\isacharunderscore}assuming\ trns\ P\ Q\ \isanewline
+\ \ {\isasymlongrightarrow}\ invariant\ trns\ {\isacharparenleft}{\isacharpercent}\ x{\isachardot}\ P\ x\ {\isacharampersand}\ Q\ x{\isacharparenright}\isanewline
+{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+\end{isabellebody}%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

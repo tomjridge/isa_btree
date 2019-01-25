@@ -1,0 +1,84 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Leaf{\isacharunderscore}stream{\isacharunderscore}state}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Leaf{\isacharunderscore}stream{\isacharunderscore}state\isanewline
+\isakeyword{imports}\ Find{\isacharunderscore}state\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dummy\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}unit{\isachardoublequoteclose}\ \isakeyword{where}\ {\isachardoublequoteopen}dummy{\isacharequal}{\isacharparenleft}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{datatype}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ ls{\isacharunderscore}state\ {\isacharequal}\ \isanewline
+\ \ LS{\isacharunderscore}down\ {\isachardoublequoteopen}{\isacharprime}r{\isacharasterisk}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}\ rstack{\isachardoublequoteclose}\ \isanewline
+\ \ {\isacharbar}\ LS{\isacharunderscore}leaf\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}\ list\ {\isacharasterisk}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}\ rstack{\isachardoublequoteclose}\ \isanewline
+\ \ {\isacharbar}\ LS{\isacharunderscore}up\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}\ rstack{\isachardoublequoteclose}\isanewline
+\ \ \isanewline
+\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ leaf{\isacharunderscore}ref\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s{\isacharasterisk}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}r{\isacharparenright}rstk{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{type{\isacharunderscore}synonym}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ lss\ {\isacharequal}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ ls{\isacharunderscore}state{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ mk{\isacharunderscore}ls{\isacharunderscore}state\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}r\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}ls{\isacharunderscore}state{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}mk{\isacharunderscore}ls{\isacharunderscore}state\ r\ {\isacharequal}\ LS{\isacharunderscore}down\ {\isacharparenleft}r{\isacharcomma}{\isacharbrackleft}{\isacharbrackright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ lss{\isacharunderscore}is{\isacharunderscore}finished\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ lss\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}lss{\isacharunderscore}is{\isacharunderscore}finished\ lss\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ case\ lss\ of\isanewline
+\ \ LS{\isacharunderscore}up\ {\isacharbrackleft}{\isacharbrackright}\ {\isasymRightarrow}\ True\isanewline
+\ \ {\isacharbar}\ {\isacharunderscore}\ {\isasymRightarrow}\ False{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dest{\isacharunderscore}LS{\isacharunderscore}leaf\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ lss\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}s\ option{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}dest{\isacharunderscore}LS{\isacharunderscore}leaf\ x\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ case\ x\ of\ \isanewline
+\ \ LS{\isacharunderscore}leaf\ {\isacharparenleft}kvs{\isacharcomma}{\isacharunderscore}{\isacharparenright}\ {\isasymRightarrow}\ Some\ kvs\isanewline
+\ \ {\isacharbar}\ {\isacharunderscore}\ {\isasymRightarrow}\ None\isanewline
+{\isacharparenright}{\isachardoublequoteclose}\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+\end{isabellebody}%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Pre_params (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Pre_params</h1>
+
+<span class="command">theory</span> <span class="name">Pre_params</span><br/>
+<span class="keyword">imports</span> <a href="Tree_stack.html"><span class="name">Tree_stack</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Pre_params
+<span class="keyword2">imports</span>  <span class="string">&quot;$SRC/a_tree/Tree_stack&quot;</span>
+<span class="keyword2">begin</span>
+
+<span class="comment">(* this to force dependency order in exported code? *)</span>
+<span class="keyword1">definition</span> dummy <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span> <span class="string">&quot;dummy=()&quot;</span>
+
+
+<span class="comment">(* mk_r2t ----------------------------------------------------------- *)</span>
+
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">,</span><span class="tfree">&#39;t</span><span class="delimiter">)</span> r2f <span class="delimiter">=</span> <span class="string">&quot;(&#39;t =&gt; &#39;r =&gt; (&#39;k,&#39;v,&#39;r) dnode option)&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">,</span><span class="tfree">&#39;t</span><span class="delimiter">)</span> r2t <span class="delimiter">=</span> <span class="string">&quot;(&#39;t =&gt; &#39;r =&gt; (&#39;k,&#39;v) tree option)&quot;</span>
+
+<span class="comment">(* n is fuel (the height of the tree); t is not needed FIXME? *)</span>
+<span class="keyword1">fun</span> mk_r2t&#39; <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t) r2f =&gt; nat =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) r2t&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;mk_r2t&#39; r2f n t r = (
+  case n of 
+  0 =&gt; None
+  | Suc n =&gt; (
+    case r2f t r of
+    None =&gt; None
+    | Some frm =&gt; (
+      case frm of
+      Disk_leaf kvs =&gt; Some(Leaf(kvs))
+      | Disk_node(ks,rs) =&gt; (
+        let ts = List.map (mk_r2t&#39; r2f n t) rs in
+        case (List.filter is_None ts) of
+        [] =&gt; Some(Node(ks,ts|&gt;List.map dest_Some))
+        | _ =&gt; None ))))&quot;</span>
+
+<span class="comment">(* map a blocks-and-pointers tree to an ADT tree *)</span>
+<span class="keyword1">definition</span> mk_r2t <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r,&#39;t) r2f =&gt; nat =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) r2t&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;mk_r2t = mk_r2t&#39;&quot;</span>
+
+
+
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Key_value (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Key_value</h1>
+
+<span class="command">theory</span> <span class="name">Key_value</span><br/>
+<span class="keyword">imports</span> <a href="Prelude.html"><span class="name">Prelude</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Key_value
+<span class="keyword2">imports</span> Prelude
+<span class="keyword2">begin</span>
+
+<span class="comment">(* NOTE definitions are polymorphic in the key type *)</span>
+
+<span class="comment">(* FIXME what does this mean? equality is just hol equality, so we use
+this rather than a compare function *)</span>
+
+<span class="comment">(* &#39;k ord, kv ops --------------------------------------------------- *)</span>
+
+
+<span class="comment">(* keys are ordered *)</span>
+<span class="keyword1">type_synonym</span> <span class="tfree">&#39;k</span> ord <span class="delimiter">=</span> <span class="string">&quot;&#39;k =&gt; &#39;k =&gt; int&quot;</span>
+  
+<span class="comment">(* NOTE variables of type &#39;k ord are typically called ord, or (better) cmp *)</span>
+
+<span class="comment">(* operations on keys and values (in fact, just a key comparison function) *)</span>
+<span class="keyword1">record</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">)</span> kv_ops <span class="delimiter">=</span>
+  compare_k <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord&quot;</span>
+  
+
+<span class="comment">(* check two lists of kv for equality; patched because values may have
+some non-standard equality *)</span>
+
+<span class="keyword1">definition</span> kvs_equal <span class="delimiter">::</span> <span class="string">&quot;(&#39;k*&#39;v) list =&gt; (&#39;k*&#39;v) list =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;kvs_equal = failwith (STR &#39;&#39;FIXME patch&#39;&#39;)&quot;</span>
+
+
+<span class="comment">(* NOTE &#39;v is only compared for equality in wf checks; we assume these
+are only tested for simple &#39;v for which ocaml&#39;s = is satisfactory; in
+fact, in the isa code we only compare trees for equality, so we can
+drop this altogether *)</span>
+
+<span class="comment">(*
+definition v_equal :: &quot;&#39;v =&gt; &#39;v =&gt; bool&quot; where
+&quot;v_equal = failwith (STR &#39;&#39;FIXME patch&#39;&#39;)&quot;
+*)</span>
+
+
+<span class="comment">(* key ordering, generic defns key_lt etc --------------------------- *)</span>
+
+<span class="keyword1">definition</span> key_lt <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; &#39;k =&gt; &#39;k =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;key_lt ord k1 k2 = ( ord k1 k2 &lt; 0)&quot;</span>
+
+<span class="keyword1">definition</span> key_eq <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; &#39;k =&gt; &#39;k =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;key_eq ord k1 k2 = ( ord k1 k2 = 0)&quot;</span>
+
+<span class="keyword1">definition</span> key_le <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; &#39;k =&gt; &#39;k =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;key_le ord k1 k2 = ( ord k1 k2 &lt;= 0)&quot;</span>
+
+<span class="comment">(* simple abbrev - no need to mention in axioms *)</span>
+<span class="keyword1">definition</span> key_gt <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; &#39;k =&gt; &#39;k =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;key_gt ord k1 k2 = (~ ( key_le ord k1 k2))&quot;</span>
+
+<span class="comment">(* FIXME this is horrible - we require merely that it is a total order *)</span>
+<span class="keyword1">definition</span> wf_key_ord <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;wf_key_ord ord = (
+  let le = key_le ord in
+  (! k1 k2. le k1 k2 = (key_lt ord k1 k2 | key_eq ord k1 k2)) &amp;  (* true by defn *)
+  (! k1. le k1 k1) &amp;
+  (! k1 k2 k3. le k1 k2 &amp; le k2 k3 --&gt; le k1 k3) &amp;
+  (! k1 k2. le k1 k2 | le k2 k1) &amp;
+  (! k1 k2. key_eq ord k1 k2 --&gt; (k1=k2))  (* FIXME may need this? *)
+)&quot;</span>
+
+<span class="comment">(* lt on kv pair is just lt on k components *)</span>
+<span class="keyword1">definition</span> kv_lt <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; (&#39;k*&#39;v) =&gt; (&#39;k*&#39;v) =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;kv_lt ord kv1 kv2 = (key_lt ord (fst kv1) (fst kv2))&quot;</span>
+
+
+<span class="comment">(* ordererd key list ------------------------------------------------ *)</span>
+
+<span class="comment">(* ordered key list, defined pointwise rather than inductively *)</span>
+<span class="keyword1">definition</span> ordered_key_list <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; &#39;k list =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;ordered_key_list ord ks = (
+  (List.length ks &lt; 2) |  
+  (! i : set(from_to 0 (length ks -2)). key_lt ord (ks!i) (ks!(i+1))))&quot;</span>
+
+<span class="keyword1">definition</span> nat_ord <span class="delimiter">::</span> <span class="string">&quot;nat =&gt; nat =&gt; int&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;nat_ord x y = (
+  let n2i = Int.int in
+  (n2i x)-(n2i y))&quot;</span>
+
+<span class="keyword1">definition</span> okl_tests <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;okl_tests = (
+  let _ = assert_true(ordered_key_list nat_ord [0,1,2,3]) in
+  let _ = assert_true(~(ordered_key_list nat_ord [0,1,1,3])) in
+  ())&quot;</span>
+
+
+<span class="comment">(* check keys ------------------------------------------------------- *)</span>
+
+<span class="comment">(* check key set is bounded *)</span>
+<span class="keyword1">definition</span> check_keys <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; &#39;k option =&gt; &#39;k set =&gt; &#39;k option =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;check_keys cmp kl ks kr = (
+  let b1 = (case kl of None =&gt; True | Some kl =&gt; (! k : ks. key_le cmp kl k)) in
+  let b2 = (case kr of None =&gt; True | Some kr =&gt; (! k : ks. key_lt cmp k kr)) in
+  b1 &amp; b2)&quot;</span>
+
+<span class="keyword1">definition</span> ck_tests <span class="delimiter">::</span> unit <span class="keyword2">where</span>
+<span class="string">&quot;ck_tests = (
+  let _ = assert_true (check_keys nat_ord (Some 1) (set[1,2,3]) (Some 4)) in
+  let _ = assert_true (~(check_keys nat_ord (Some 1) (set[1,2,3]) (Some 3))) in
+  ())&quot;</span>
+
+<span class="comment">(* FIXME following looks a bit strange for l,u=None; what is the semantics of this function? *)</span>
+<span class="comment">(* xs &lt; l &le; ks &lt; u &le; zs; an extended version of the above *)</span>
+<span class="keyword1">definition</span> check_keys_2 <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; &#39;k set =&gt; &#39;k option =&gt; &#39;k set =&gt; &#39;k option =&gt; &#39;k set =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;check_keys_2 cmp xs l ks u zs = (
+  (case l=None of True =&gt; xs={} | _ =&gt; True) &amp;
+  (case u=None of True =&gt; zs={} | _ =&gt; True) &amp;
+  (check_keys cmp None xs l) &amp;
+  (check_keys cmp l ks u) &amp;
+  (check_keys cmp u zs None)
+)&quot;</span>
+
+<span class="keyword1">definition</span> ck2_tests <span class="delimiter">::</span> unit <span class="keyword2">where</span>
+<span class="string">&quot;ck2_tests = (
+  let _ = assert_true (check_keys_2 nat_ord (set[0]) (Some 1) (set[1,2,3]) (Some 4) (set[4,5])) in
+  ())&quot;</span>
+
+
+<span class="comment">(* insert and delete in list of kv ---------------------------------- *)</span>
+
+<span class="comment">(* FIXME may want to use binary search; but this assumes an array-like implementation *)</span>
+
+<span class="comment">(* insert a new kv into a list of kvs; used to insert new binding into a leaf *)</span>
+<span class="keyword1">primrec</span> kvs_insert <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; &#39;k*&#39;v =&gt; (&#39;k*&#39;v)list =&gt; (&#39;k*&#39;v)list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;kvs_insert cmp kv [] = [kv]&quot;</span>
+<span class="delimiter">|</span> <span class="string">&quot;kvs_insert cmp kv (kv&#39;#kvs&#39;) = (
+  let (k,v) = kv in
+  let (k&#39;,v&#39;) = kv&#39; in
+  if key_lt cmp k&#39; k then (k&#39;,v&#39;)#(kvs_insert cmp kv kvs&#39;)
+  else if (key_eq cmp k k&#39;) then (k,v)#kvs&#39; else
+  (k,v)#(k&#39;,v&#39;)#kvs&#39;
+)&quot;</span>
+
+<span class="keyword1">definition</span> kvs_insert_tests <span class="delimiter">::</span> unit <span class="keyword2">where</span>
+<span class="string">&quot;kvs_insert_tests = (
+  let _ = assert_true (kvs_insert nat_ord (2,2) (List.map (% x. (x,x)) [0,1,3,4]) = 
+    (List.map (% x. (x,x)) [0,1,2,3,4]))
+  in
+  let _ = assert_true (kvs_insert nat_ord (6,6) (List.map (% x. (x,x)) [0,1,3,4]) = 
+    (List.map (% x. (x,x)) [0,1,3,4,6]))
+  in
+  ())&quot;</span>
+
+
+<span class="comment">(* delete a pair with a particular key from a list of pairs *)</span>
+<span class="keyword1">definition</span> kvs_delete <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; &#39;k =&gt; (&#39;k*&#39;v)list =&gt; (&#39;k*&#39;v)list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;kvs_delete ord k kvs = List.filter (% kv. ~ (key_eq ord (fst kv) k)) kvs&quot;</span>
+  
+
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

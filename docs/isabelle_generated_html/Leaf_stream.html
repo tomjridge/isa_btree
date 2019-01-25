@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Leaf_stream (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Leaf_stream</h1>
+
+<span class="command">theory</span> <span class="name">Leaf_stream</span><br/>
+<span class="keyword">imports</span> <a href="Find.html"><span class="name">Find</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Leaf_stream 
+<span class="keyword2">imports</span> Find <span class="string">&quot;$SRC/c_monad/Leaf_stream_state&quot;</span>
+<span class="keyword2">begin</span>
+
+
+<span class="keyword1">definition</span> step_down <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)store_ops =&gt; &#39;r*(&#39;k,&#39;r)rstk =&gt; ((&#39;k,&#39;v,&#39;r)lss,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;step_down ps1 store_ops rfs = (
+  let (r,fs) = rfs in
+  (* let store_ops = ps1|&gt;dot_store_ops in *)
+  (store_ops|&gt;store_read) r |&gt; fmap 
+  (% f. case f of 
+    Disk_node (ks,rs) =&gt; (
+      let r&#39; = List.hd rs in
+      let rs&#39; = List.tl rs in
+      let frm = (| r_ks1=[],r_ts1=[],r_t=r&#39;, r_ks2=ks,r_ts2=rs&#39; |)), in
+      LS_down (r&#39;,frm#fs))  (* r&#39; = f_t of frm *)
+    | Disk_leaf (kvs) =&gt; LS_leaf (kvs,fs))
+)&quot;</span>
+
+<span class="comment">(* don&#39;t have to access disk *)</span>
+<span class="keyword1">definition</span> step_leaf <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) leaf_ref =&gt; (&#39;k,&#39;v,&#39;r) lss&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;step_leaf r = (
+  let (kvs,fs) = r in
+  LS_up fs
+)&quot;</span>
+
+<span class="comment">(* assumes fs &lt;&gt; [] *)</span>
+<span class="keyword1">definition</span> step_up <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;r) rstk =&gt; (&#39;k,&#39;v,&#39;r) lss&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;step_up fs = (
+  let _ = check_true (%_. fs &ne; []) in
+  case fs of 
+  [] =&gt; (failwith (STR &#39;&#39;impossible: Leaf_stream.step_up&#39;&#39;))
+  | f#fs&#39; =&gt; (
+    let (ks1,rs1,r,ks2,rs2) = f|&gt;dest_rsplit_node in
+    case rs2 of
+    [] =&gt; (LS_up fs&#39;)
+    | r&#39;#rs&#39; =&gt; (
+      let f&#39; = (| 
+        (* NOTE r_ks1, r_ts1 stored in reverse *)
+        r_ks1=(List.hd ks2)#ks1,
+        r_ts1=r#rs1,
+        r_t=r&#39;, 
+        r_ks2=(List.tl ks2),
+        r_ts2=rs&#39; |)), 
+      in
+      LS_down (r&#39;,f&#39;#fs&#39;) )))&quot;</span>
+
+  
+<span class="keyword1">definition</span> lss_step <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r) lss =&gt; ((&#39;k,&#39;v,&#39;r) lss,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;lss_step ps1 store_ops lss = (
+  case lss of 
+  LS_down x =&gt; (step_down ps1 store_ops x)
+  | LS_leaf x =&gt; (return (step_leaf x))
+  | LS_up x =&gt; (return (step_up x)) 
+)&quot;</span>
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

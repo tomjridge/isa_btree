@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Tree (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Tree</h1>
+
+<span class="command">theory</span> <span class="name">Tree</span><br/>
+<span class="keyword">imports</span> <a href="Pre.html"><span class="name">Pre</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Tree
+<span class="keyword2">imports</span> <span class="string">&quot;$SRC/a_pre/Pre&quot;</span> 
+<span class="keyword2">begin</span>
+
+<span class="comment">(* We need two models for trees: the algebraic datatype model, and the
+&quot;blocks and pointers&quot; model. This is the ADT model. *)</span>
+
+
+<span class="comment">(* tree algebraic datatype ------------------------------------------ *)</span>
+
+<span class="comment">(*:bc:*)</span>
+<span class="keyword1">datatype</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">)</span> tree <span class="delimiter">=</span> 
+  Node <span class="string">&quot;(&#39;k list * (&#39;k,&#39;v) tree list)&quot;</span> 
+  <span class="delimiter">|</span> Leaf <span class="string">&quot;(&#39;k*&#39;v)list&quot;</span>
+<span class="comment">(*:bd:*)</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">)</span> t <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v) tree&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">)</span> node <span class="delimiter">=</span> <span class="string">&quot;(&#39;k list * (&#39;k,&#39;v) tree list)&quot;</span>
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">)</span> leaf <span class="delimiter">=</span> <span class="string">&quot;(&#39;k*&#39;v)list&quot;</span>
+
+<span class="keyword1">fun</span> dest_Node <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v) tree =&gt; (&#39;k list * (&#39;k,&#39;v) tree list)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_Node (Node(ks,rs)) = (ks,rs)&quot;</span> <span class="delimiter">|</span> 
+<span class="string">&quot;dest_Node (Leaf _) = (failwith (STR &#39;&#39;dest_Node&#39;&#39;))&quot;</span>
+
+<span class="keyword1">fun</span> dest_Leaf <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v) tree =&gt; (&#39;k*&#39;v) list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_Leaf (Leaf(kvs)) = kvs&quot;</span> <span class="delimiter">|</span> 
+<span class="string">&quot;dest_Leaf _ = (failwith (STR &#39;&#39;dest_Leaf&#39;&#39;))&quot;</span>
+
+<span class="keyword1">fun</span> is_Leaf <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;is_Leaf (Leaf l) = True&quot;</span> <span class="delimiter">|</span>
+<span class="string">&quot;is_Leaf (Node _) = False&quot;</span>
+
+<span class="comment">(* patch this in generated ocaml - just use ocaml equality; in isa,
+this defn suppresses the HOL.equal dictionary passing in generated
+OCaml *)</span>
+
+<span class="keyword1">definition</span> tree_equal <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v) tree =&gt; (&#39;k,&#39;v) tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;tree_equal t1 t2 = failwith (STR &#39;&#39;FIXME patch&#39;&#39;)&quot;</span>
+
+
+
+<span class="comment">(* util ------------------------------------------------------------- *)</span>
+
+<span class="keyword1">definition</span> min_child_index  <span class="delimiter">::</span> nat <span class="keyword2">where</span> <span class="string">&quot;min_child_index = 0&quot;</span>
+
+<span class="keyword1">definition</span> ks_to_max_child_index <span class="delimiter">::</span> <span class="string">&quot;&#39;k list =&gt; nat&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;ks_to_max_child_index ks = length ks&quot;</span>
+
+<span class="keyword1">definition</span> subtree_indexes <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)node =&gt; nat list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;subtree_indexes node = (
+  let (ks,rs) = node in 
+  from_to min_child_index (ks_to_max_child_index ks))&quot;</span>
+
+
+<span class="comment">(* perhaps we keep this defn? otherwise painful to state keys_consistent? *)</span>
+<span class="comment">(* FIXME this is a derived operation; where is it used? replace? FIXME this is 
+derived from the splitting code in Key_value *)</span>
+<span class="keyword1">definition</span> index_to_bound <span class="delimiter">::</span> <span class="string">&quot;&#39;k list =&gt; nat =&gt; (&#39;k option * &#39;k option)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;index_to_bound ks i = (
+  let l = if (i=min_child_index) then None else Some(ks!(i-1)) in
+  let u = if (i&ge;ks_to_max_child_index ks) then None else Some(ks!i) in (* really undefined for i&gt; *)
+  (l,u))&quot;</span>
+
+
+<span class="comment">(* height ----------------------------------------------------------- *)</span>
+
+<span class="keyword1">function</span> height <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; nat&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;height t0 = (
+  case t0 of
+  Leaf _ =&gt; (1::nat)
+  | Node(_,cs) =&gt; (1 + max_of_list(List.map height cs)))&quot;</span>
+<span class="keyword1">by</span> auto
+<span class="keyword1">termination</span>
+  <span class="keyword1"><span class="improper">apply</span></span><span class="delimiter">(</span>force intro<span class="delimiter">:</span>FIXME<span class="delimiter">)</span>
+  <span class="keyword1"><span class="improper">done</span></span>
+
+<span class="comment">(* tr: note that height is &quot;special&quot; because replacing a subtree that
+  is wf_tree with another doesn&#39;t preserve balanced property *)</span>
+
+
+
+<span class="comment">(* to subtrees ------------------------------------------------------ *)</span>
+
+<span class="keyword1">fun</span> tree_to_subtrees <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; (&#39;k,&#39;v) tree list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;tree_to_subtrees t0 = (
+  case t0 of Leaf _ =&gt; [t0]
+  | Node(l,cs) =&gt; (
+    t0#((List.map tree_to_subtrees cs) |&gt; List.concat)))&quot;</span>
+
+<span class="keyword1">definition</span> forall_subtrees <span class="delimiter">::</span> <span class="string">&quot;((&#39;k,&#39;v)tree =&gt; bool) =&gt; (&#39;k,&#39;v)tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;forall_subtrees P t = (List.list_all P (t |&gt; tree_to_subtrees))&quot;</span>
+
+
+
+<span class="comment">(* balanced --------------------------------------------------------- *)</span>
+
+<span class="keyword1">definition</span> balanced_1 <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;balanced_1 t0 = (
+  case t0 of Leaf(l) =&gt; True
+  | Node(l,cs) =&gt; (
+  (* FIXME assert cs &lt;&gt; [] *)
+  (cs &ne; []) &amp; (List.list_all (% c. height c = height (cs!0)) cs)))&quot;</span>
+
+<span class="keyword1">definition</span> balanced <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;balanced t = assert_true (forall_subtrees balanced_1 t)&quot;</span>
+
+
+<span class="comment">(* FIXME height and balanced could be combined - might make proofs shorter? *)</span>
+
+
+
+<span class="comment">(* get min size ----------------------------------------------------- *)</span>
+
+<span class="keyword1">definition</span> get_min_size <span class="delimiter">::</span> <span class="string">&quot;constants =&gt; (min_size_t * (&#39;k,&#39;v) tree) =&gt; nat&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;get_min_size c mt = (
+  let min_leaf_size = c|&gt;min_leaf_size in
+  let min_node_keys = c|&gt;min_node_keys in
+  case mt of
+    (Small_root_node_or_leaf,Node _) =&gt; 1
+    | (Small_root_node_or_leaf,Leaf _) =&gt; 0  (* NB this is smaller than just Small_leaf *)
+    | (Small_node, Node _) =&gt; min_node_keys-1
+    | (Small_leaf,Leaf _) =&gt; min_leaf_size-1
+    | (_,_) =&gt; failwith (STR &#39;&#39;get_min_size&#39;&#39;) )&quot;</span>
+
+
+
+<span class="comment">(* wf size, ie respects min/max bounds ------------------------------ *)</span>
+
+<span class="keyword1">definition</span> wf_size_1 <span class="delimiter">::</span> <span class="string">&quot;constants =&gt; (&#39;k,&#39;v) tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;wf_size_1 c t1 = (
+  case t1 of
+  Leaf xs =&gt; (
+    let n = length xs in
+    (n &gt;= c|&gt;min_leaf_size) &amp; ( n &lt;= c|&gt;max_leaf_size))
+  | Node(l,cs) =&gt; (
+    let n = length l in
+    (1 &lt;= n) &amp; (n &gt;= c|&gt;min_node_keys) &amp; (n &lt;= c|&gt;max_node_keys)  
+    (* FIXME 1&le;n not needed since constants enforce this *) ))&quot;</span>
+
+<span class="comment">(* NOTE this treats the root differently, depending on ms; wf_size_1 has no ms *)</span>
+<span class="keyword1">definition</span> wf_size <span class="delimiter">::</span> <span class="string">&quot;constants =&gt; ms_t =&gt; (&#39;k,&#39;v) tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;wf_size c ms t0 = assert_true (
+  case ms of
+  None =&gt; (forall_subtrees (wf_size_1 c) t0)
+  | Some m =&gt; (
+    let min = get_min_size c (m,t0) in
+    case t0 of 
+    Leaf xs =&gt;
+      let n = length xs in
+      (min &lt;= n) &amp; (n &lt;= c|&gt;max_leaf_size)
+    | Node(l,cs) =&gt; (
+      let n = length l in
+      (min &lt;= n) &amp; (n &lt;= c|&gt;max_node_keys) 
+      &amp; (List.list_all (forall_subtrees (wf_size_1 c)) cs)) ))&quot;</span>
+
+
+
+<span class="comment">(* wf_ks_rs, ie |rs|=|ks|+1 ----------------------------------------- *)</span>
+
+<span class="keyword1">definition</span> wf_ks_rs_1 <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;wf_ks_rs_1 t0 = (
+  case t0 of Leaf _ =&gt; True | Node(l,cs) =&gt; ((1+ length l) = (length cs)))&quot;</span>
+
+<span class="keyword1">definition</span> wf_ks_rs <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;wf_ks_rs t0 = assert_true (forall_subtrees wf_ks_rs_1 t0)&quot;</span>
+
+
+
+
+<span class="comment">(* keys in tree (nodes and leaves) ---------------------------------- *)</span>
+
+<span class="comment">(* NOTE we return the keys as a list so that we can use this to check 
+keys_ordered *)</span>
+
+<span class="keyword1">definition</span> keys_1 <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v) tree =&gt; &#39;k list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;keys_1 t0 = (case t0 of Leaf xs =&gt; (List.map fst xs) | Node (l,cs) =&gt; (l))&quot;</span>
+
+<span class="keyword1">definition</span> keys <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v) tree =&gt; &#39;k list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;keys t0 = (t0 |&gt; tree_to_subtrees|&gt; (List.map keys_1) |&gt; List.concat)&quot;</span> 
+
+
+
+<span class="comment">(* keys consistent ie node keys bounds subtrees --------------------- *)</span>
+
+<span class="keyword1">definition</span> keys_consistent_1 <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; (&#39;k,&#39;v) tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;keys_consistent_1 cmp t0 = (
+case t0 of Leaf(l) =&gt; True
+| Node(ks,rs) =&gt; (
+  ! i : set(subtree_indexes (ks,rs)). 
+  let (l,u) = index_to_bound ks i in
+  check_keys cmp l (set (keys(rs!i))) u))&quot;</span>
+
+<span class="comment">(* NOTE this is usually the most difficult part of wf to prove *)</span>
+<span class="keyword1">definition</span> keys_consistent <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; (&#39;k,&#39;v) tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;keys_consistent cmp t = assert_true (forall_subtrees (keys_consistent_1 cmp) t)&quot;</span>
+
+
+
+
+<span class="comment">(* keys_ordered ie in nodes and leaves the keys are sorted ---------- *)</span>
+
+<span class="keyword1">definition</span> keys_ordered_1 <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; (&#39;k,&#39;v) tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;keys_ordered_1 cmp t0 = (t0 |&gt; keys_1 |&gt; ordered_key_list cmp)&quot;</span>
+
+<span class="keyword1">definition</span> keys_ordered <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; (&#39;k,&#39;v)tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;keys_ordered cmp t = assert_true (forall_subtrees (keys_ordered_1 cmp) t)&quot;</span>
+
+
+
+
+<span class="comment">(* wellformed_tree -------------------------------------------------- *)</span>
+
+<span class="comment">(* This is the main wellformedness constraint *)</span>
+
+<span class="keyword1">definition</span> wellformed_tree <span class="delimiter">::</span> <span class="string">&quot;constants =&gt; ms_t =&gt; &#39;k ord =&gt; (&#39;k,&#39;v) tree =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;wellformed_tree c ms cmp t0 = assert_true (
+  let b1 = wf_size c ms t0 in
+  let b2 = wf_ks_rs t0 in
+  let b3 = balanced t0 in
+  let b4 = keys_consistent cmp t0 in
+  let b5 = keys_ordered cmp t0 in
+  let wf = b1&amp;b2&amp;b3&amp;b4&amp;b5 in
+  wf)&quot;</span>
+
+
+
+<span class="comment">(* tree_to_leaves, tree_to_map etc ---------------------------------- *)</span>
+
+<span class="keyword1">fun</span> tree_to_leaves <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; (&#39;k,&#39;v) leaf list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;tree_to_leaves t0 = (
+  case t0 of
+  Node(l,cs) =&gt; ((List.map tree_to_leaves cs) |&gt; List.concat)
+  | Leaf(l) =&gt; [l])&quot;</span>
+  
+  
+<span class="keyword1">declare</span> tree_to_leaves.simps<span class="delimiter">[</span>simp del<span class="delimiter">]</span>
+
+<span class="keyword1">lemma</span> <span class="delimiter">[</span>simp<span class="delimiter">]</span><span class="delimiter">:</span> 
+  <span class="string">&quot;tree_to_leaves (Node(l,cs)) =  ((cs |&gt; (List.map tree_to_leaves)) |&gt; List.concat)&quot;</span> <span class="keyword1">sorry</span>
+
+<span class="comment">(* this property enables easy leaves_to_map manipulation *)</span>
+<span class="comment">(*
+definition nice_leaves :: &quot;leaf_lbl_t list =&gt; bool&quot; where
+&quot;nice_leaves ls = (distinct (ls |&gt; List.concat |&gt; List.map fst))&quot;
+*)</span>
+
+<span class="keyword1">definition</span> tree_to_kvs <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v) tree =&gt; (&#39;k * &#39;v) list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;tree_to_kvs t = (t |&gt; tree_to_leaves |&gt; concat)&quot;</span>
+
+<span class="keyword1">definition</span> tree_to_keys <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; &#39;k set&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;tree_to_keys t =  (t|&gt;tree_to_kvs|&gt;map fst|&gt;set)&quot;</span>
+
+
+<span class="comment">(* FIXME use tree_to_keys? *)</span>
+<span class="keyword1">definition</span> trees_to_keys <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v) tree list =&gt; &#39;k set&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;trees_to_keys ts = ts|&gt;(map tree_to_kvs)|&gt;concat|&gt;map fst|&gt;set&quot;</span>
+
+<span class="keyword1">definition</span> tree_to_map <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v)tree =&gt; (&#39;k,&#39;v) map&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;tree_to_map t = (t|&gt;tree_to_kvs|&gt;map_of)&quot;</span>
+
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

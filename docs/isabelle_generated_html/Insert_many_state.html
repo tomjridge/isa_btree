@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Insert_many_state (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Insert_many_state</h1>
+
+<span class="command">theory</span> <span class="name">Insert_many_state</span><br/>
+<span class="keyword">imports</span> <a href="Find_state.html"><span class="name">Find_state</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Insert_many_state
+<span class="keyword2">imports</span> Find_state
+<span class="keyword2">begin</span>
+
+
+<span class="comment">(* this to force dependency order in exported code? *)</span>
+<span class="keyword1">definition</span> dummy <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span> <span class="string">&quot;dummy=()&quot;</span>
+
+<span class="comment">(* like Insert, but allows to insert many keys during a single traversal to a leaf *)</span>
+
+<span class="keyword1">datatype</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> im_fo <span class="comment">(* i_t*)</span> <span class="delimiter">=</span> IM1 <span class="string">&quot;&#39;r*(&#39;k*&#39;v)s&quot;</span> <span class="delimiter">|</span> IM2 <span class="string">&quot;(&#39;r*&#39;k*&#39;r) * (&#39;k*&#39;v)s&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> fo <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) im_fo&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> d <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r)fs * (&#39;v * (&#39;k*&#39;v)s)&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> u <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r)fo*(&#39;k,&#39;r)rstk&quot;</span>
+
+<span class="keyword1">datatype</span> <span class="delimiter">(</span>dead <span class="tfree">&#39;k</span><span class="delimiter">,</span>dead <span class="tfree">&#39;v</span><span class="delimiter">,</span>dead <span class="tfree">&#39;r</span><span class="delimiter">)</span> imst <span class="comment">(* i_state_t*)</span> <span class="delimiter">=</span> 
+  IM_down <span class="string">&quot;(&#39;k,&#39;v,&#39;r)d&quot;</span>
+  <span class="delimiter">|</span> IM_up <span class="string">&quot;(&#39;k,&#39;v,&#39;r)u&quot;</span>
+  <span class="delimiter">|</span> IM_finished <span class="string">&quot;&#39;r * (&#39;k*&#39;v)s&quot;</span>
+
+<span class="keyword1">definition</span> mk_im_state <span class="delimiter">::</span> <span class="string">&quot;&#39;k =&gt; &#39;v =&gt; (&#39;k*&#39;v)s =&gt; &#39;r =&gt; (&#39;k,&#39;v,&#39;r)imst&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;mk_im_state k v kvs r = (IM_down (mk_find_state k r,(v,kvs)))&quot;</span>
+
+
+<span class="keyword1">definition</span> dest_im_finished <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) imst =&gt; (&#39;r * (&#39;k*&#39;v)s) option&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_im_finished s = (case s of IM_finished (r,kvs) =&gt; Some (r,kvs) | _ =&gt; None)&quot;</span>
+
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

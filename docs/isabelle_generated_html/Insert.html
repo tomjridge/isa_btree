@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Insert (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Insert</h1>
+
+<span class="command">theory</span> <span class="name">Insert</span><br/>
+<span class="keyword">imports</span> <a href="Find.html"><span class="name">Find</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Insert
+<span class="keyword2">imports</span> Find <span class="string">&quot;$SRC/c_monad/Insert_state&quot;</span>
+<span class="keyword2">begin</span>
+
+
+
+<span class="comment">(* defns ------------------------------------------------------------ *)</span>
+
+<span class="keyword1">definition</span> step_down <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r) d =&gt; ((&#39;k,&#39;v,&#39;r) d,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;step_down ps1 store_ops d = (
+  let (fs,v) = d in
+  find_step ps1 store_ops fs |&gt; fmap (% d&#39;. (d&#39;,v))
+)&quot;</span>
+
+<span class="keyword1">definition</span> step_bottom <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r) d =&gt; ((&#39;k,&#39;v,&#39;r) u,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;step_bottom ps1 store_ops d = (
+  let (cs,k_ord) = (ps1|&gt;dot_constants,ps1|&gt;dot_cmp) in
+  (* let store_ops = ps1 |&gt; dot_store_ops in *)
+  let (fs,v) = d in
+  case dest_f_finished fs of 
+  None =&gt; impossible1 (STR &#39;&#39;insert, step_bottom&#39;&#39;)
+  | Some(r0,k,r,kvs,stk) =&gt; (
+    (store_ops|&gt;store_free) (r0#(r_stk_to_rs stk)) |&gt; bind (% _.
+    let kvs&#39; = kvs |&gt; kvs_insert k_ord (k,v) in
+    let fo = (
+      case (length kvs&#39; &le; (cs|&gt;max_leaf_size)) of
+      True =&gt; (Disk_leaf kvs&#39; |&gt; (store_ops|&gt;store_alloc) |&gt; fmap (% r&#39;. I1(r&#39;)))
+      | False =&gt; (
+        let (kvs1,k&#39;,kvs2) = split_leaf cs kvs&#39; in
+        Disk_leaf kvs1 |&gt; (store_ops|&gt;store_alloc) |&gt; bind
+        (% r1. Disk_leaf kvs2 |&gt; (store_ops|&gt;store_alloc) |&gt; fmap (% r2. I2(r1,k&#39;,r2)))) )
+    in
+    fo |&gt; fmap (% fo. (fo,stk)))) )&quot;</span>
+
+
+<span class="keyword1">definition</span> step_up <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r) u =&gt; ((&#39;k,&#39;v,&#39;r) u,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;step_up ps1 store_ops u = (
+  let (cs,k_ord) = (ps1|&gt;dot_constants,ps1|&gt;dot_cmp) in
+  (* let store_ops = ps1 |&gt; dot_store_ops in *)
+  let (fo,stk) = u in
+  case stk of 
+  [] =&gt; 
+    (* FIXME what about trace? can&#39;t have arb here; or just stutter on I_finished in step? *)
+    impossible1 (STR &#39;&#39;insert, step_up&#39;&#39;) 
+  | p#stk&#39; =&gt; (
+    case fo of
+    I1 r =&gt; (
+      let (ks,rs) = unsplit_node (p(|r_t:=r|)),) in
+      mk_Disk_node(ks,rs) |&gt; (store_ops|&gt;store_alloc) |&gt; fmap (% r. (I1 r,stk&#39;)))
+    | I2 (r1,k,r2) =&gt; (
+      let (ks2,rs2) = (p|&gt;r_ks2,p|&gt;r_ts2) in
+      let (ks&#39;,rs&#39;) = unsplit_node (p(| r_t:=r1, r_ks2:=k#ks2, r_ts2:=r2#rs2|)),) in
+      case (List.length ks&#39; &le; cs|&gt;max_node_keys) of
+      True =&gt; (
+        mk_Disk_node(ks&#39;,rs&#39;) |&gt; (store_ops|&gt;store_alloc) |&gt; fmap (% r. (I1 r,stk&#39;)))
+      | False =&gt; (
+        let (ks_rs1,k,ks_rs2) = split_node cs (ks&#39;,rs&#39;) in  
+        mk_Disk_node(ks_rs1) |&gt; (store_ops|&gt;store_alloc) |&gt; bind
+        (% r1. mk_Disk_node (ks_rs2) |&gt; (store_ops|&gt;store_alloc) |&gt; fmap 
+        (% r2. (I2(r1,k,r2),stk&#39;)))) )))&quot;</span>
+
+
+<span class="keyword1">definition</span> insert_step <span class="delimiter">::</span> <span class="string">&quot;&#39;k ps1 =&gt; (&#39;k,&#39;v,&#39;r,&#39;t) store_ops =&gt; (&#39;k,&#39;v,&#39;r) ist =&gt; ((&#39;k,&#39;v,&#39;r) ist,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;insert_step ps1 store_ops s = (
+  (* let store_ops = ps1 |&gt; dot_store_ops in *)
+  case s of 
+  I_down d =&gt; (
+    let (fs,v) = d in
+    case (dest_f_finished fs) of 
+    None =&gt; (step_down ps1 store_ops d |&gt; fmap (% d. I_down d))
+    | Some _ =&gt; step_bottom ps1 store_ops d |&gt; fmap (% u. I_up u))
+  | I_up u =&gt; (
+    let (fo,stk) = u in
+    case stk of
+    [] =&gt; (
+      case fo of 
+      I1 r =&gt; return (I_finished r)
+      | I2(r1,k,r2) =&gt; (
+        (* create a new frame *)
+        (mk_Disk_node([k],[r1,r2]) |&gt; (store_ops|&gt;store_alloc) |&gt; fmap (% r. I_finished r))))
+    | _ =&gt; (step_up ps1 store_ops u |&gt; fmap (% u. I_up u)))
+  | I_finished f =&gt; (return s)  (* stutter *) )&quot;</span>
+
+
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

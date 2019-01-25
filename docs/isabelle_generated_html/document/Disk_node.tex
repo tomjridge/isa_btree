@@ -1,0 +1,88 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Disk{\isacharunderscore}node}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Disk{\isacharunderscore}node\ \ \isanewline
+\isakeyword{imports}\ Prelude\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{datatype}\isamarkupfalse%
+\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ dnode\ {\isacharequal}\ \isanewline
+\ \ Disk{\isacharunderscore}node\ {\isachardoublequoteopen}{\isacharprime}k\ list\ {\isacharasterisk}\ {\isacharprime}r\ list{\isachardoublequoteclose}\ \isanewline
+\ \ {\isacharbar}\ Disk{\isacharunderscore}leaf\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}\ list{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ check{\isacharunderscore}length{\isacharunderscore}ks{\isacharunderscore}rs\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}k\ list\ {\isacharasterisk}\ {\isacharprime}r\ list\ {\isasymRightarrow}\ bool{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}check{\isacharunderscore}length{\isacharunderscore}ks{\isacharunderscore}rs\ ks{\isacharunderscore}rs\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ let\ {\isacharparenleft}ks{\isacharcomma}rs{\isacharparenright}\ {\isacharequal}\ ks{\isacharunderscore}rs\ in\isanewline
+\ \ {\isadigit{1}}{\isacharplus}List{\isachardot}length\ ks\ {\isacharequal}\ List{\isachardot}length\ rs{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\ \ \isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ mk{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}k\ list\ {\isacharasterisk}\ {\isacharprime}r\ list\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharprime}{\isacharcomma}{\isacharprime}r{\isacharparenright}\ dnode{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}mk{\isacharunderscore}Disk{\isacharunderscore}node\ ks{\isacharunderscore}rs\ {\isacharequal}\ {\isacharparenleft}\isanewline
+\ \ {\isacharparenleft}{\isacharasterisk}\ enforce\ a\ wellformedness\ property\ {\isacharasterisk}{\isacharparenright}\isanewline
+\ \ let\ {\isacharunderscore}\ {\isacharequal}\ check{\isacharunderscore}true\ {\isacharparenleft}{\isacharpercent}\ {\isacharunderscore}{\isachardot}\ check{\isacharunderscore}length{\isacharunderscore}ks{\isacharunderscore}rs\ ks{\isacharunderscore}rs{\isacharparenright}\ in\isanewline
+\ \ {\isacharparenleft}Disk{\isacharunderscore}node\ {\isacharparenleft}ks{\isacharunderscore}rs{\isacharparenright}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dest{\isacharunderscore}Disk{\isacharunderscore}node\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ dnode\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k\ list\ {\isacharasterisk}\ {\isacharprime}r\ list{\isacharparenright}{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}dest{\isacharunderscore}Disk{\isacharunderscore}node\ f\ {\isacharequal}\ {\isacharparenleft}case\ f\ of\ Disk{\isacharunderscore}node\ x\ {\isasymRightarrow}\ x\ \ {\isacharbar}\ {\isacharunderscore}\ {\isasymRightarrow}\ failwith\ {\isacharparenleft}STR\ {\isacharprime}{\isacharprime}dest{\isacharunderscore}Disk{\isacharunderscore}node{\isacharprime}{\isacharprime}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dest{\isacharunderscore}Disk{\isacharunderscore}leaf\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharparenleft}{\isacharprime}k{\isacharcomma}{\isacharprime}v{\isacharcomma}{\isacharprime}r{\isacharparenright}\ dnode\ {\isasymRightarrow}\ {\isacharparenleft}{\isacharprime}k{\isacharasterisk}{\isacharprime}v{\isacharparenright}\ list{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}dest{\isacharunderscore}Disk{\isacharunderscore}leaf\ f\ {\isacharequal}\ {\isacharparenleft}case\ f\ of\ Disk{\isacharunderscore}leaf\ x\ {\isasymRightarrow}\ x\ \ {\isacharbar}\ {\isacharunderscore}\ {\isasymRightarrow}\ failwith\ {\isacharparenleft}STR\ {\isacharprime}{\isacharprime}dest{\isacharunderscore}Disk{\isacharunderscore}leaf{\isacharprime}{\isacharprime}{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+\end{isabellebody}%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

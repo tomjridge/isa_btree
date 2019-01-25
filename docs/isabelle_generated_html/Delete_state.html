@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Delete_state (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Delete_state</h1>
+
+<span class="command">theory</span> <span class="name">Delete_state</span><br/>
+<span class="keyword">imports</span> <a href="Find_state.html"><span class="name">Find_state</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Delete_state
+<span class="keyword2">imports</span> Find_state
+<span class="keyword2">begin</span>
+
+
+<span class="comment">(* this to force dependency order in exported code? *)</span>
+<span class="keyword1">definition</span> dummy <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span> <span class="string">&quot;dummy=()&quot;</span>
+
+<span class="comment">(* delete -------------------------------------------------------------------- *)</span>
+
+<span class="keyword1">datatype</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span>del_t <span class="delimiter">=</span>
+  D_small_leaf <span class="string">&quot;(&#39;k*&#39;v)s&quot;</span>
+  <span class="delimiter">|</span> D_small_node <span class="string">&quot;&#39;k s * &#39;r s&quot;</span>
+  <span class="delimiter">|</span> D_updated_subtree <span class="string">&quot;&#39;r&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> fo <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) del_t&quot;</span>  <span class="comment">(* focus *)</span>
+
+<span class="comment">(* dead: https://groups.google.com/forum/#!topic/fa.isabelle/hWGSgu3pSsM *)</span>
+
+<span class="comment">(* D_down: r is the original pointer to root, in case we don&#39;t delete anything *)</span>
+<span class="keyword1">datatype</span> <span class="delimiter">(</span>dead <span class="tfree">&#39;k</span><span class="delimiter">,</span> dead <span class="tfree">&#39;v</span><span class="delimiter">,</span>dead <span class="tfree">&#39;r</span><span class="delimiter">)</span> delete_state <span class="delimiter">=</span> 
+  D_down <span class="string">&quot;(&#39;k,&#39;v,&#39;r) fs * &#39;r&quot;</span>  
+  <span class="delimiter">|</span> D_up <span class="string">&quot;(&#39;k,&#39;v,&#39;r) fo * (&#39;k,&#39;r) rstk * &#39;r&quot;</span>  <span class="comment">(* last &#39;r is the root, for wellformedness check *)</span>
+  <span class="delimiter">|</span> D_finished <span class="string">&quot;&#39;r&quot;</span> 
+  
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span>u <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r)fo * (&#39;k,&#39;r)rstk&quot;</span>  
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span>d <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r)find_state * &#39;r&quot;</span>
+
+<span class="keyword1">type_synonym</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span>dst <span class="delimiter">=</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) delete_state&quot;</span>
+
+<span class="keyword1">definition</span> mk_delete_state <span class="delimiter">::</span> <span class="string">&quot;&#39;k =&gt; &#39;r =&gt; (&#39;k,&#39;v,&#39;r)dst&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;mk_delete_state k r = (D_down(mk_find_state k r,r))&quot;</span>
+
+<span class="keyword1">definition</span> dest_d_finished <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r)dst =&gt; &#39;r option&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_d_finished x = (case x of D_finished r =&gt; Some r | _ =&gt; None)&quot;</span>
+
+<span class="comment">(* wellformedness --------------------------------------------------- *)</span>
+
+<span class="keyword1">definition</span> wf_d <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)r2t =&gt; (&#39;k,&#39;v) tree =&gt; &#39;t =&gt; (&#39;k,&#39;v,&#39;r) d =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;wf_d k_ord r2f t0 s d =  assert_true (
+  let (fs,r) = d in
+  assert_true (wellformed_find_state k_ord r2f t0 s fs)
+)&quot;</span>
+
+<span class="keyword1">definition</span> wf_u <span class="delimiter">::</span> 
+  <span class="string">&quot;constants =&gt; &#39;k ord =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)r2t =&gt; (&#39;k,&#39;v) tree =&gt; &#39;t =&gt; &#39;k =&gt; (&#39;k,&#39;v,&#39;r)u =&gt; bool&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;wf_u constants k_ord r2t t0 s k u =  assert_true (
+  let (fo,stk) = u in
+  let check_stack = % rstk tstk. (rstack_equal (rstk|&gt;rstack_map (r2t s)|&gt;no_focus) (tstk|&gt;rstack_map Some|&gt;no_focus)) in
+  let check_wf = % ms t. (wellformed_tree constants ms k_ord t) in
+  let check_focus = % fo kvs. kvs_equal (fo|&gt; tree_to_kvs |&gt; kvs_delete k_ord k) kvs in
+  case fo of
+  D_small_leaf kvs =&gt; (
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
+    let ms  = (case stk of [] =&gt; Some Small_root_node_or_leaf | _ =&gt; Some Small_leaf) in
+    assert_true (check_stack stk t_stk) &amp; 
+    assert_true (check_wf ms (Leaf kvs)) &amp;
+    assert_true (check_focus t_fo kvs)
+  )
+  | D_small_node (ks,rs) =&gt; (
+    (* FIXME don&#39;t we need some wf on Node(ks,rs)? *)
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
+    let ms  = (case stk of [] =&gt; Some Small_root_node_or_leaf | _ =&gt; Some Small_node) in
+    let t = Node(ks,rs|&gt;List.map (r2t s) |&gt; List.map dest_Some) in  (* FIXME check we can dest_Some *)
+    assert_true (check_stack stk t_stk) &amp;
+    assert_true (check_wf ms t) &amp;
+    assert_true (check_focus t_fo (t|&gt;tree_to_kvs))   
+  )
+  | D_updated_subtree(r) =&gt; (
+    let (t_fo,t_stk) = tree_to_rstack k_ord k t0 (List.length stk) in
+    let ms  = (case stk of [] =&gt; Some Small_root_node_or_leaf | _ =&gt; None) in
+    let t = r|&gt;r2t s|&gt;dest_Some in  (* FIXME check dest *)
+    assert_true (check_stack stk t_stk) &amp;
+    assert_true (check_wf ms t) &amp;
+    assert_true (check_focus t_fo (t|&gt;tree_to_kvs))   ))&quot;</span>
+
+
+<span class="keyword1">definition</span> wf_f <span class="delimiter">::</span> 
+  <span class="string">&quot;constants =&gt; &#39;k ord =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)r2t =&gt; (&#39;k,&#39;v)tree =&gt; &#39;t =&gt; &#39;k =&gt; &#39;r =&gt; bool&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;wf_f constants k_ord r2t t0 s k r =  assert_true (
+  let t&#39; = r2t s r |&gt; dest_Some in  (* check dest_Some *)
+  assert_true (wellformed_tree constants (Some(Small_root_node_or_leaf)) k_ord t&#39;) &amp;
+  assert_true (kvs_equal ( (t0|&gt;tree_to_kvs|&gt;kvs_delete k_ord k)) (t&#39;|&gt;tree_to_kvs)))&quot;</span>
+
+<span class="keyword1">definition</span> wellformed_delete_state <span class="delimiter">::</span> 
+  <span class="string">&quot;constants =&gt; &#39;k ord =&gt; (&#39;k,&#39;v,&#39;r,&#39;t)r2t =&gt; (&#39;k,&#39;v)tree =&gt; &#39;t =&gt; &#39;k =&gt; (&#39;k,&#39;v,&#39;r)delete_state =&gt; bool&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;wellformed_delete_state constants k_ord r2t t0 s k ds =  assert_true (
+  case ds of 
+  D_down d =&gt; (wf_d k_ord r2t t0 s d)
+  | D_up (fo,stk,r) =&gt; (
+    wf_u constants k_ord r2t t0 s k (fo,stk) &amp; 
+    (case r2t s r of None =&gt; False | Some t =&gt; tree_equal t t0))
+  | D_finished r =&gt; (wf_f constants k_ord r2t t0 s k r) )&quot;</span>
+
+
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

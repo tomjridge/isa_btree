@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Monad (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Monad</h1>
+
+<span class="command">theory</span> <span class="name">Monad</span><br/>
+<span class="keyword">imports</span> <a href="Delete_state.html"><span class="name">Delete_state</span></a> <a href="Insert_many_state.html"><span class="name">Insert_many_state</span></a> <a href="Insert_state.html"><span class="name">Insert_state</span></a> <a href="Leaf_stream_state.html"><span class="name">Leaf_stream_state</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Monad
+<span class="keyword2">imports</span> Pre_monad Find_state Delete_state Insert_many_state Insert_state Leaf_stream_state
+<span class="keyword2">begin</span>
+
+<span class="comment">(* this to force dependency order in exported code? *)</span>
+<span class="keyword1">definition</span> dummy <span class="delimiter">::</span> <span class="string">&quot;unit&quot;</span> <span class="keyword2">where</span> <span class="string">&quot;dummy=
+  (Find_state.dummy,Delete_state.dummy,Insert_many_state.dummy,Insert_state.dummy,Leaf_stream_state.dummy)
+  |&gt; (% x. Params.dummy)&quot;</span>
+
+
+<span class="comment">(* NOTE this depends on Util for the concrete defn *)</span>
+
+<span class="comment">(* monad ------------------------------------------------------------ *)</span>
+
+<span class="comment">(* FIXME this could come after Util *)</span>
+
+<span class="comment">(* NOTE naming convention: &#39;t is for the state type (not the &quot;tree&quot; 
+type or something like that *)</span>
+
+<span class="comment">(* NOTE in this monad, ALL errors (even unexpected errors eg disk block read fail) are explicit; 
+in OCaml we may prefer to keep unexpected errors implicit. By making the errors explicit we
+force the proofs to discuss all possible cases... but perhaps if we always just halt on an 
+&quot;unexpected&quot; error, and expected errors are returned in &#39;a, then this is unnecessary?
+*)</span>
+
+
+
+<span class="comment">(*
+
+type_synonym (&#39;a,&#39;t) MM = &quot;&#39;t =&gt; (&#39;t * &#39;a res)&quot;
+definition fmap :: &quot;(&#39;a =&gt; &#39;b) =&gt; (&#39;a,&#39;t) MM =&gt; (&#39;b,&#39;t) MM&quot; where
+&quot;fmap f m = ( % s.
+  m s |&gt; (% (s&#39;,r). (s&#39;,case r of Ok y =&gt; Ok (f y) | Error x =&gt; Error x)))&quot;
+
+definition bind :: &quot;(&#39;a =&gt; (&#39;b,&#39;t) MM) =&gt; (&#39;a,&#39;t) MM =&gt; (&#39;b,&#39;t) MM&quot; where
+&quot;bind f m = (% s. 
+  m s |&gt; (% (s1,r). 
+  case r of 
+  Error x =&gt; (s1,Error x) 
+  | Ok y =&gt; f y s1))&quot;
+  
+definition return :: &quot;&#39;a =&gt; (&#39;a,&#39;t) MM&quot; where
+&quot;return x = (% s. (s,Ok(x)))&quot;
+*)</span>
+
+
+<span class="comment">(* abstract version; NOTE obviously can&#39;t be exported *)</span>
+<span class="comment">(* NOTE undefined is accepted by the code generator and allows these abstract defns to be exported *)</span>
+<span class="keyword1">typedecl</span> <span class="delimiter">(</span><span class="tfree">&#39;a</span><span class="delimiter">,</span><span class="tfree">&#39;b</span><span class="delimiter">)</span> MM
+
+<span class="keyword1">definition</span> fmap <span class="delimiter">::</span> <span class="string">&quot;(&#39;a =&gt; &#39;b) =&gt; (&#39;a,&#39;t) MM =&gt; (&#39;b,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;fmap x y = undefined&quot;</span>
+
+<span class="keyword1">definition</span> bind <span class="delimiter">::</span> <span class="string">&quot;(&#39;a =&gt; (&#39;b,&#39;t) MM) =&gt; (&#39;a,&#39;t) MM =&gt; (&#39;b,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;bind b a = undefined&quot;</span>
+  
+<span class="keyword1">definition</span> return <span class="delimiter">::</span> <span class="string">&quot;&#39;a =&gt; (&#39;a,&#39;t) MM&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;return x = undefined&quot;</span>
+
+
+
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

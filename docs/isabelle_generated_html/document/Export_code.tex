@@ -1,0 +1,148 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Export{\isacharunderscore}code}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Export{\isacharunderscore}code\isanewline
+\isakeyword{imports}\ \isanewline
+{\isachardoublequoteopen}{\isachardollar}SRC{\isacharslash}d{\isacharunderscore}find{\isacharunderscore}ins{\isacharunderscore}del{\isacharslash}Find{\isachardoublequoteclose}\isanewline
+{\isachardoublequoteopen}{\isachardollar}SRC{\isacharslash}d{\isacharunderscore}find{\isacharunderscore}ins{\isacharunderscore}del{\isacharslash}Delete{\isadigit{2}}{\isachardoublequoteclose}\isanewline
+{\isachardoublequoteopen}{\isachardollar}SRC{\isacharslash}d{\isacharunderscore}find{\isacharunderscore}ins{\isacharunderscore}del{\isacharslash}Insert{\isachardoublequoteclose}\isanewline
+{\isachardoublequoteopen}{\isachardollar}SRC{\isacharslash}d{\isacharunderscore}find{\isacharunderscore}ins{\isacharunderscore}del{\isacharslash}Insert{\isacharunderscore}many{\isachardoublequoteclose}\isanewline
+{\isachardoublequoteopen}{\isachardollar}SRC{\isacharslash}d{\isacharunderscore}find{\isacharunderscore}ins{\isacharunderscore}del{\isacharslash}Leaf{\isacharunderscore}stream{\isachardoublequoteclose}\isanewline
+Code{\isacharunderscore}Numeral\ \isanewline
+{\isachardoublequoteopen}{\isachartilde}{\isachartilde}{\isacharslash}src{\isacharslash}HOL{\isacharslash}Library{\isacharslash}Code{\isacharunderscore}Target{\isacharunderscore}Numeral{\isachardoublequoteclose}\isanewline
+{\isachardoublequoteopen}{\isachartilde}{\isachartilde}{\isacharslash}src{\isacharslash}HOL{\isacharslash}Library{\isacharslash}Code{\isacharunderscore}Char{\isachardoublequoteclose}\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isacommand{export{\isacharunderscore}code}\isamarkupfalse%
+\ {\isachardoublequoteopen}Code{\isacharunderscore}Numeral{\isachardot}nat{\isacharunderscore}of{\isacharunderscore}integer{\isachardoublequoteclose}\ {\isachardoublequoteopen}Code{\isacharunderscore}Numeral{\isachardot}int{\isacharunderscore}of{\isacharunderscore}integer{\isachardoublequoteclose}\ \isanewline
+\isanewline
+Util{\isachardot}is{\isacharunderscore}Ok\isanewline
+Util{\isachardot}from{\isacharunderscore}to\isanewline
+Util{\isachardot}String{\isacharunderscore}error\isanewline
+Util{\isachardot}split{\isacharunderscore}at{\isacharunderscore}tests\ \ \isanewline
+Util{\isachardot}split{\isacharunderscore}at{\isacharunderscore}{\isadigit{3}}{\isacharunderscore}tests\isanewline
+Util{\isachardot}from{\isacharunderscore}to{\isacharunderscore}tests\isanewline
+\isanewline
+Prelude{\isachardot}constants{\isacharunderscore}ext\isanewline
+\isanewline
+Key{\isacharunderscore}value{\isachardot}key{\isacharunderscore}lt\isanewline
+\isanewline
+\isanewline
+Key{\isacharunderscore}value{\isachardot}okl{\isacharunderscore}tests\isanewline
+Key{\isacharunderscore}value{\isachardot}ck{\isacharunderscore}tests\isanewline
+Key{\isacharunderscore}value{\isachardot}ck{\isadigit{2}}{\isacharunderscore}tests\isanewline
+Key{\isacharunderscore}value{\isachardot}kvs{\isacharunderscore}insert{\isacharunderscore}tests\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+Disk{\isacharunderscore}node{\isachardot}Disk{\isacharunderscore}node\isanewline
+\isanewline
+Searching{\isacharunderscore}and{\isacharunderscore}splitting{\isachardot}dest{\isacharunderscore}rsplit{\isacharunderscore}node\isanewline
+\isanewline
+\isanewline
+Tree{\isachardot}dest{\isacharunderscore}Node\isanewline
+\isanewline
+tree{\isacharunderscore}to{\isacharunderscore}leaves\ \isanewline
+wellformed{\isacharunderscore}tree\isanewline
+\isanewline
+\isanewline
+\isanewline
+Pre{\isacharunderscore}params{\isachardot}dummy\isanewline
+Pre{\isacharunderscore}params{\isachardot}mk{\isacharunderscore}r{\isadigit{2}}t\isanewline
+\isanewline
+\isanewline
+Params{\isachardot}dummy\isanewline
+Params{\isachardot}Ps{\isadigit{1}}\isanewline
+\isanewline
+\isanewline
+mk{\isacharunderscore}find{\isacharunderscore}state\isanewline
+dest{\isacharunderscore}f{\isacharunderscore}finished\isanewline
+wellformed{\isacharunderscore}find{\isacharunderscore}state\ \isanewline
+Find{\isacharunderscore}state{\isachardot}wf{\isacharunderscore}trans\isanewline
+\isanewline
+Insert{\isacharunderscore}state{\isachardot}mk{\isacharunderscore}insert{\isacharunderscore}state\isanewline
+Insert{\isacharunderscore}state{\isachardot}dest{\isacharunderscore}i{\isacharunderscore}finished\isanewline
+Insert{\isacharunderscore}state{\isachardot}I{\isadigit{1}}\ Insert{\isacharunderscore}state{\isachardot}I{\isadigit{2}}\ Insert{\isacharunderscore}state{\isachardot}I{\isacharunderscore}down\ Insert{\isacharunderscore}state{\isachardot}I{\isacharunderscore}up\ Insert{\isacharunderscore}state{\isachardot}I{\isacharunderscore}finished\isanewline
+Insert{\isacharunderscore}state{\isachardot}wellformed{\isacharunderscore}insert{\isacharunderscore}state\isanewline
+\isanewline
+mk{\isacharunderscore}delete{\isacharunderscore}state\isanewline
+dest{\isacharunderscore}d{\isacharunderscore}finished\isanewline
+D{\isacharunderscore}small{\isacharunderscore}leaf\ D{\isacharunderscore}small{\isacharunderscore}node\ D{\isacharunderscore}updated{\isacharunderscore}subtree\ D{\isacharunderscore}down\ D{\isacharunderscore}up\ D{\isacharunderscore}finished\ \ \isanewline
+wellformed{\isacharunderscore}delete{\isacharunderscore}state\isanewline
+\isanewline
+Insert{\isacharunderscore}many{\isacharunderscore}state{\isachardot}mk{\isacharunderscore}im{\isacharunderscore}state\isanewline
+Insert{\isacharunderscore}many{\isacharunderscore}state{\isachardot}dest{\isacharunderscore}im{\isacharunderscore}finished\isanewline
+Insert{\isacharunderscore}many{\isacharunderscore}state{\isachardot}IM{\isadigit{1}}\ Insert{\isacharunderscore}many{\isacharunderscore}state{\isachardot}IM{\isacharunderscore}down\isanewline
+\isanewline
+\isanewline
+\isanewline
+mk{\isacharunderscore}ls{\isacharunderscore}state\ lss{\isacharunderscore}is{\isacharunderscore}finished\ dest{\isacharunderscore}LS{\isacharunderscore}leaf\ \isanewline
+\isanewline
+\isanewline
+\ Monad{\isachardot}dummy\ fmap\ \ bind\isanewline
+\isanewline
+\ \isanewline
+store{\isacharunderscore}alloc\ store{\isacharunderscore}read\ store{\isacharunderscore}free\ wf{\isacharunderscore}store{\isacharunderscore}ops\isanewline
+\isanewline
+\isanewline
+find{\isacharunderscore}step\isanewline
+\isanewline
+\isanewline
+Insert{\isachardot}insert{\isacharunderscore}step\isanewline
+\isanewline
+\isanewline
+Insert{\isacharunderscore}many{\isachardot}insert{\isacharunderscore}step\isanewline
+\isanewline
+\isanewline
+Delete{\isadigit{2}}{\isachardot}delete{\isacharunderscore}step\isanewline
+\isanewline
+\isanewline
+lss{\isacharunderscore}step\isanewline
+\isanewline
+\isanewline
+\isakeyword{in}\ OCaml\ \isakeyword{file}\ {\isachardoublequoteopen}{\isacharslash}tmp{\isacharslash}isa{\isacharunderscore}export{\isachardot}ml{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+\end{isabellebody}%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Disk_node (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Disk_node</h1>
+
+<span class="command">theory</span> <span class="name">Disk_node</span><br/>
+<span class="keyword">imports</span> <a href="Prelude.html"><span class="name">Prelude</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Disk_node  
+<span class="keyword2">imports</span> Prelude
+<span class="keyword2">begin</span>
+
+<span class="comment">(* blocks on disk correspond to nodes, which are like tree nodes, but
+with pointers rather than children *)</span>
+
+<span class="comment">(* type variable naming conventions:
+
+&#39;k - keys
+&#39;v - values
+&#39;r - references to disk blocks
+
+*)</span>
+
+<span class="keyword1">datatype</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;v</span><span class="delimiter">,</span><span class="tfree">&#39;r</span><span class="delimiter">)</span> dnode <span class="delimiter">=</span> 
+  Disk_node <span class="string">&quot;&#39;k list * &#39;r list&quot;</span> 
+  <span class="delimiter">|</span> Disk_leaf <span class="string">&quot;(&#39;k*&#39;v) list&quot;</span>
+
+
+<span class="comment">(* FIXME do we also want to check wrt size constraints? probably yes *)</span>
+
+<span class="keyword1">definition</span> check_length_ks_rs <span class="delimiter">::</span> <span class="string">&quot;&#39;k list * &#39;r list =&gt; bool&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;check_length_ks_rs ks_rs = (
+  let (ks,rs) = ks_rs in
+  1+List.length ks = List.length rs)&quot;</span>
+  
+
+<span class="keyword1">definition</span> mk_Disk_node <span class="delimiter">::</span> <span class="string">&quot;&#39;k list * &#39;r list =&gt; (&#39;k,&#39;v&#39;,&#39;r) dnode&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;mk_Disk_node ks_rs = (
+  (* enforce a wellformedness property *)
+  let _ = check_true (% _. check_length_ks_rs ks_rs) in
+  (Disk_node (ks_rs)))&quot;</span>
+
+<span class="comment">(* type_synonym pfr = &quot;(key,value_t) t&quot; *)</span>
+
+<span class="keyword1">definition</span> dest_Disk_node <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) dnode =&gt; (&#39;k list * &#39;r list)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_Disk_node f = (case f of Disk_node x =&gt; x  | _ =&gt; failwith (STR &#39;&#39;dest_Disk_node&#39;&#39;))&quot;</span>
+
+<span class="keyword1">definition</span> dest_Disk_leaf <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;v,&#39;r) dnode =&gt; (&#39;k*&#39;v) list&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_Disk_leaf f = (case f of Disk_leaf x =&gt; x  | _ =&gt; failwith (STR &#39;&#39;dest_Disk_leaf&#39;&#39;))&quot;</span>
+
+
+
+
+
+
+
+<span class="comment">(* old ================================== *)</span>
+
+<span class="comment">(* there are local wf constraints relative to some particular
+constants; but prefer to convert to tree and check wf *)</span>
+
+<span class="comment">(*
+definition wf_node_frame :: &quot;constants =&gt; nat =&gt; nat =&gt; bool&quot; where
+&quot;wf_node_frame c kn rn = ((kn + 1 = rn) &amp; (c|&gt;min_node_keys &le; kn) &amp; (kn &le; c|&gt;max_node_keys))&quot;
+
+definition wf_leaf_frame :: &quot;constants =&gt; nat =&gt; bool&quot; where
+&quot;wf_leaf_frame c n = ( c|&gt;min_leaf_size &le; n &amp; n &le; c|&gt;max_leaf_size )&quot;
+*)</span>
+
+<span class="keyword2">end</span></pre>
+
+</div>
+</body>
+</html>

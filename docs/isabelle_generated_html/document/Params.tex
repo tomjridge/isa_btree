@@ -1,0 +1,71 @@
+%
+\begin{isabellebody}%
+\setisabellecontext{Params}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{theory}\isamarkupfalse%
+\ Params\isanewline
+\isakeyword{imports}\ Pre{\isacharunderscore}params\isanewline
+\isakeyword{begin}%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dummy\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}unit{\isachardoublequoteclose}\ \isakeyword{where}\ {\isachardoublequoteopen}dummy{\isacharequal}Pre{\isacharunderscore}params{\isachardot}dummy{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{datatype}\isamarkupfalse%
+\ {\isacharprime}k\ ps{\isadigit{1}}\ {\isacharequal}\ Ps{\isadigit{1}}\ {\isachardoublequoteopen}constants\ {\isacharasterisk}\ {\isacharprime}k\ ord{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dest{\isacharunderscore}ps{\isadigit{1}}\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}k\ ps{\isadigit{1}}\ {\isasymRightarrow}\ constants\ {\isacharasterisk}\ {\isacharprime}k\ ord{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}dest{\isacharunderscore}ps{\isadigit{1}}\ ps{\isadigit{1}}\ {\isacharequal}\ {\isacharparenleft}case\ ps{\isadigit{1}}\ of\ Ps{\isadigit{1}}\ {\isacharparenleft}x{\isacharcomma}y{\isacharparenright}\ {\isasymRightarrow}\ {\isacharparenleft}x{\isacharcomma}y{\isacharparenright}{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dot{\isacharunderscore}constants\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}k\ ps{\isadigit{1}}\ {\isasymRightarrow}\ constants{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}dot{\isacharunderscore}constants\ ps{\isadigit{1}}\ {\isacharequal}\ ps{\isadigit{1}}\ {\isacharbar}{\isachargreater}\ dest{\isacharunderscore}ps{\isadigit{1}}\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}{\isacharpercent}\ {\isacharparenleft}x{\isacharcomma}y{\isacharparenright}{\isachardot}\ x{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isacommand{definition}\isamarkupfalse%
+\ dot{\isacharunderscore}cmp\ {\isacharcolon}{\isacharcolon}\ {\isachardoublequoteopen}{\isacharprime}k\ ps{\isadigit{1}}\ {\isasymRightarrow}\ {\isacharprime}k\ ord{\isachardoublequoteclose}\ \isakeyword{where}\isanewline
+{\isachardoublequoteopen}dot{\isacharunderscore}cmp\ ps{\isadigit{1}}\ {\isacharequal}\ ps{\isadigit{1}}\ {\isacharbar}{\isachargreater}\ dest{\isacharunderscore}ps{\isadigit{1}}\ {\isacharbar}{\isachargreater}\ {\isacharparenleft}{\isacharpercent}\ {\isacharparenleft}x{\isacharcomma}y{\isacharparenright}{\isachardot}\ y{\isacharparenright}{\isachardoublequoteclose}\isanewline
+\isanewline
+\isanewline
+\isanewline
+%
+\isadelimtheory
+\isanewline
+%
+\endisadelimtheory
+%
+\isatagtheory
+\isacommand{end}\isamarkupfalse%
+%
+\endisatagtheory
+{\isafoldtheory}%
+%
+\isadelimtheory
+%
+\endisadelimtheory
+\end{isabellebody}%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "root"
+%%% End:

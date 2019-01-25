@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>Theory Searching_and_splitting (Isabelle2015: May 2015)</title>
+<link media="all" rel="stylesheet" type="text/css" href="isabelle.css"/>
+</head>
+
+<body>
+<div class="head"><h1>Theory Searching_and_splitting</h1>
+
+<span class="command">theory</span> <span class="name">Searching_and_splitting</span><br/>
+<span class="keyword">imports</span> <a href="Key_value.html"><span class="name">Key_value</span></a><br/>
+
+</div>
+<div class="source">
+<pre><span class="keyword1">theory</span> Searching_and_splitting
+<span class="keyword2">imports</span> Key_value
+<span class="keyword2">begin</span>
+
+<span class="comment">(* Various definitions related to searching for a key in an ordered list of kv pairs, or a node
+frame *)</span>
+
+<span class="comment">(* alternative split_node, with reversed ks1,ts1 for efficiency ------------------ *)</span>
+
+<span class="keyword1">type_synonym</span> <span class="tfree">&#39;a</span> s <span class="delimiter">=</span> <span class="string">&quot;&#39;a list&quot;</span>
+
+<span class="keyword1">record</span> <span class="delimiter">(</span><span class="tfree">&#39;k</span><span class="delimiter">,</span><span class="tfree">&#39;a</span><span class="delimiter">)</span> rsplit_node <span class="delimiter">=</span>
+  r_ks1 <span class="delimiter">::</span> <span class="string">&quot;&#39;k list&quot;</span>
+  r_ts1 <span class="delimiter">::</span> <span class="string">&quot;&#39;a list&quot;</span>
+  r_t <span class="delimiter">::</span> <span class="tfree">&#39;a</span>
+  r_ks2 <span class="delimiter">::</span> <span class="string">&quot;&#39;k list&quot;</span>
+  r_ts2 <span class="delimiter">::</span> <span class="string">&quot;&#39;a list&quot;</span>
+
+<span class="comment">(* functional projection a bit clumsy when writing functional update; 
+often better to project to pairs first *)</span>
+<span class="keyword1">definition</span> dest_rsplit_node <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;a) rsplit_node =&gt; &#39;k s * &#39;a s * &#39;a * &#39;k s * &#39;a s&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;dest_rsplit_node r = (r|&gt;r_ks1,r|&gt;r_ts1,r|&gt;r_t,r|&gt;r_ks2,r|&gt;r_ts2)&quot;</span>
+
+<span class="keyword1">definition</span> rsplit_node_map <span class="delimiter">::</span> <span class="string">&quot;(&#39;a =&gt; &#39;b) =&gt; (&#39;k,&#39;a) rsplit_node =&gt; (&#39;k,&#39;b) rsplit_node&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;rsplit_node_map g f = (
+  (|
+    r_ks1=(f|&gt;r_ks1),
+    r_ts1=(f|&gt;r_ts1|&gt;List.map g),
+    r_t=(f|&gt;r_t|&gt;g),
+    r_ks2=(f|&gt;r_ks2),
+    r_ts2=(f|&gt;r_ts2|&gt;List.map g)
+  |)),)&quot;</span>
+
+
+<span class="comment">(* get_lu_bounds for rsplit_node ---------------------------- *)</span>
+
+<span class="keyword1">definition</span> rsplit_get_bounds <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;a) rsplit_node =&gt; (&#39;k option * &#39;k option)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;rsplit_get_bounds rn = (
+  let l = case rn|&gt;r_ks1 of [] =&gt; None | x # xs =&gt; Some x in
+  let u = case rn|&gt;r_ks2 of [] =&gt; None | x # xs =&gt; Some x in
+  (l,u))&quot;</span>
+
+
+<span class="comment">(* split node based on search key ------------------------------ *)</span>
+
+<span class="comment">(* construct an rsplit_node from a node and a search key *)</span>
+
+<span class="comment">(* NB ks_rs1 stored in reverse *)</span>
+<span class="keyword1">function</span> aux&#39; <span class="delimiter">::</span> 
+  <span class="string">&quot;&#39;k ord =&gt; &#39;k =&gt; (&#39;k list * &#39;a list) =&gt; (&#39;k list * &#39;a list) =&gt; 
+    (&#39;k list * &#39;a list) * &#39;a * (&#39;k list * &#39;a list)&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;aux&#39; cmp k0 ks_rs1 ks_rs2 = (
+  let (ks1,rs1) = ks_rs1 in
+  let (ks,rs) = ks_rs2 in
+  let (r,rs&#39;) = (List.hd rs,List.tl rs) in
+  case ks of 
+  [] =&gt; ( (ks1,rs1), 
+          r, 
+          (ks,rs&#39;))
+  | k#ks&#39; =&gt; (
+    if key_lt cmp k0 k then
+      (* reached the right place *)
+      ( (ks1,rs1), 
+        r, 
+        (ks,rs&#39;))
+    else 
+      aux&#39; cmp k0  (k#ks1,r#rs1) (ks&#39;,rs&#39;))
+)&quot;</span>
+<span class="keyword1"><span class="improper">apply</span></span> <span class="delimiter">(</span>force<span class="delimiter">)</span><span class="delimiter">+</span> <span class="keyword1"><span class="improper">done</span></span>
+<span class="keyword1">termination</span> aux&#39;
+<span class="keyword1">by</span> <span class="delimiter">(</span>force intro<span class="delimiter">:</span>FIXME<span class="delimiter">)</span>
+
+
+<span class="keyword1">definition</span> mk_rsplit_node <span class="delimiter">::</span> <span class="string">&quot;&#39;k ord =&gt; &#39;k =&gt; (&#39;k list * &#39;r list) =&gt; (&#39;k,&#39;r)rsplit_node&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;mk_rsplit_node cmp k ks_rs = (
+  let ((ks1,rs1),r,(ks2,rs2)) = aux&#39; cmp k ([],[]) ks_rs in
+  (|
+    r_ks1=ks1,
+    r_ts1=rs1,
+    r_t=r,
+    r_ks2=ks2,
+    r_ts2=rs2
+  |)),)&quot;</span>
+
+
+<span class="comment">(* convert a rsplit_node to a disk node *)</span>
+<span class="keyword1">definition</span> unsplit_node <span class="delimiter">::</span> <span class="string">&quot;(&#39;k,&#39;a) rsplit_node =&gt; (&#39;k list * &#39;a list)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;unsplit_node r = (
+  let ks = (List.rev (r|&gt;r_ks1))@(r|&gt;r_ks2) in
+  let rs = (List.rev (r|&gt;r_ts1))@[r|&gt;r_t]@(r|&gt;r_ts2) in
+  (ks,rs))&quot;</span>
+
+
+  
+
+
+<span class="comment">(* FIXME moved from pre_insert --------------------------------------------------------  *)</span>
+
+
+<span class="comment">(* insert aux funs: split_leaf and split_node ----------------------- *)</span>
+
+<span class="comment">(* FIXME these functions don&#39;t really belong here - they are a different kind
+of splitting, based on size not search key *)</span>
+
+<span class="comment">(* FIXME aren&#39;t these aux funs shared with its? *)</span>
+
+<span class="comment">(* FIXME for insert_many we want to parameterize split_leaf so that it
+results in a full left leaf *)</span>
+
+<span class="comment">(* FIXME document *)</span>
+
+<span class="comment">(* if a leaf is too big, we split it to get two leaves (lists of kv); we also return the separator
+key k such that l &lt; k &le; r *)</span>
+
+<span class="comment">(* FIXME split_at is inefficient *)</span>
+<span class="keyword1">definition</span> split_leaf <span class="delimiter">::</span> <span class="string">&quot;constants =&gt; (&#39;k*&#39;v)list =&gt; ((&#39;k*&#39;v) list * &#39;k * (&#39;k*&#39;v) list)&quot;</span> <span class="keyword2">where</span>
+<span class="string">&quot;split_leaf c kvs = (
+  let _ = check_true (% _. List.length kvs &ge; c|&gt;max_leaf_size+1) in
+  (* FIXME what is the best choice? min is probably too small; could
+  split in two, but what if order is not dense? we may never insert
+  any more keys at this point *)
+  (* FIXME following assumes leaf has size max_leaf_size+1, not anything more? *)
+  let cut_point = (c|&gt;max_leaf_size+1 - c|&gt;min_leaf_size) in  
+  let _ = check_true (% _ . cut_point &le; List.length kvs) in
+  let (l,r) = split_at cut_point kvs in 
+  let _ = check_true (% _. List.length l &ge; c|&gt;min_leaf_size &amp; List.length r &ge; c|&gt;min_leaf_size) in
+  let k = (case r of (k,_)#_ =&gt; k | _ =&gt; impossible1 (STR &#39;&#39;key_value, split_leaf&#39;&#39;)) in
+  (l,k,r)
+)&quot;</span>
+
+<span class="comment">(* let max and min be the relevant bounds; suppose node has max+1
+keys; we could divide by 2 to get max+1/2; but here we try to get the
+most in the left hand tree;
+
+we need min in rhs; 1 for the middle, so we need max+1 -1 -min =
+max-min in left (assumes that the node has max+1 size; obviously we
+need to be more careful otherwise FIXME for bulk insert
+*)</span>
+
+<span class="keyword1">definition</span> split_node <span class="delimiter">::</span> 
+  <span class="string">&quot;constants =&gt; (&#39;k list * &#39;a list) =&gt; (&#39;k list * &#39;a list) * &#39;k * (&#39;k list * &#39;a list)&quot;</span> 
+<span class="keyword2">where</span>
+<span class="string">&quot;split_node c n = (
+  let (ks,rs) = n in
+
+  let cut_point = (c|&gt;max_node_keys-c|&gt;min_node_keys) in  
+  (* FIXME see above; FIXME prefer to split equally even in insert_many case? *)
+
+  let (ks1,k,ks2) = split_at_3 cut_point ks in
+  let _ = check_true (% _. List.length ks2 &ge; c|&gt;min_node_keys) in
+  let (rs1,rs2) = split_at (cut_point+1) rs in
+  (* FIXME check that uses of split_leaf and split_node enforce wellformedness *)
+  ((ks1,rs1),k,(ks2,rs2))
+)&quot;</span>
+
+
+
+<span class="keyword2">end</span>
+</pre>
+
+</div>
+</body>
+</html>
