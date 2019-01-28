@@ -438,6 +438,7 @@ end;; (*struct Util*)
 module Key_value : sig
   val key_eq : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
   val key_le : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
+  val key_gt : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
   val key_lt : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
   val check_keys :
     ('a -> 'a -> Arith.int) -> 'a option -> 'a Set.set -> 'a option -> bool
@@ -456,6 +457,8 @@ end = struct
 let rec key_eq ord k1 k2 = Arith.equal_int (ord k1 k2) Arith.zero_int;;
 
 let rec key_le ord k1 k2 = Arith.less_eq_int (ord k1 k2) Arith.zero_int;;
+
+let rec key_gt ord k1 k2 = not (key_le ord k1 k2);;
 
 let rec key_lt ord k1 k2 = Arith.less_int (ord k1 k2) Arith.zero_int;;
 
@@ -2271,8 +2274,9 @@ let rec step_up
           in
         let (ks, rs) =
           Searching_and_splitting.unsplit_node
-            (Searching_and_splitting.r_ts2_update (fun _ -> [r1; r2] @ rs2)
-              (Searching_and_splitting.r_ks2_update (fun _ -> k :: ks2) x))
+            (Searching_and_splitting.r_ts2_update (fun _ -> r2 :: rs2)
+              (Searching_and_splitting.r_ks2_update (fun _ -> k :: ks2)
+                (Searching_and_splitting.r_t_update (fun _ -> r1) x)))
           in
         (match
           Arith.less_eq_nat (List.size_list ks)
@@ -2304,24 +2308,6 @@ let rec step_down
     Util.rev_apply (Find.find_step ps1 store_ops fs)
       (Monad.fmap (fun da -> (da, v)));;
 
-let rec split_leaf
-  cs0 kvs =
-    let n1 = List.size_list kvs in
-    let n2 = Arith.zero_nat in
-    let delta = Util.rev_apply cs0 Prelude.min_leaf_size in
-    let n1a = Arith.minus_nat n1 delta in
-    let n2a = Arith.plus_nat n2 delta in
-    let deltaa = Arith.minus_nat n1a (Util.rev_apply cs0 Prelude.max_leaf_size)
-      in
-    let n1b = Arith.minus_nat n1a deltaa in
-    let _ = Arith.plus_nat n2a deltaa in
-    let (l, r) = Util.split_at n1b kvs in
-    let k =
-      (match r with [] -> Util.impossible1 "insert_many: split_leaf"
-        | (k, _) :: _ -> k)
-      in
-    (l, (k, r));;
-
 let rec kvs_insert_2
   cs k_ord u kv newa existing =
     let _ =
@@ -2347,7 +2333,7 @@ let rec kvs_insert_2
               in
             let test3 =
               (match existinga with [] -> true
-                | (ka, _) :: _ -> Key_value.key_le k_ord k ka)
+                | (ka, _) :: _ -> Key_value.key_gt k_ord k ka)
               in
             (match test1 || (test2 || test3) with true -> None
               | false ->
@@ -2390,7 +2376,8 @@ let rec step_bottom
                         (Util.rev_apply store_ops Store_ops.store_alloc))
                       (Monad.fmap (fun r -> Insert_many_state.IM1 (r, kvs0a)))
                   | false ->
-                    let (kvs1, (ka, kvs2)) = split_leaf cs kvsa in
+                    let (kvs1, (ka, kvs2)) =
+                      Searching_and_splitting.split_leaf cs kvsa in
                     Util.rev_apply
                       (Util.rev_apply (Disk_node.Disk_leaf kvs1)
                         (Util.rev_apply store_ops Store_ops.store_alloc))

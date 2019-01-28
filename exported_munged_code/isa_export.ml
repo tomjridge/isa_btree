@@ -2274,8 +2274,9 @@ let rec step_up
           in
         let (ks, rs) =
           Searching_and_splitting.unsplit_node
-            (Searching_and_splitting.r_ts2_update (fun _ -> [r1; r2] @ rs2)
-              (Searching_and_splitting.r_ks2_update (fun _ -> k :: ks2) x))
+            (Searching_and_splitting.r_ts2_update (fun _ -> r2 :: rs2)
+              (Searching_and_splitting.r_ks2_update (fun _ -> k :: ks2)
+                (Searching_and_splitting.r_t_update (fun _ -> r1) x)))
           in
         (match
           Arith.less_eq_nat (List.size_list ks)
@@ -2375,7 +2376,8 @@ let rec step_bottom
                         (Util.rev_apply store_ops Store_ops.store_alloc))
                       (Monad.fmap (fun r -> Insert_many_state.IM1 (r, kvs0a)))
                   | false ->
-                    let (kvs1, (ka, kvs2)) = split_leaf cs kvsa in
+                    let (kvs1, (ka, kvs2)) =
+                      Searching_and_splitting.split_leaf cs kvsa in
                     Util.rev_apply
                       (Util.rev_apply (Disk_node.Disk_leaf kvs1)
                         (Util.rev_apply store_ops Store_ops.store_alloc))
