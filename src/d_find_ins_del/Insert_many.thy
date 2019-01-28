@@ -44,16 +44,18 @@ During the insert we track:
 - the result so far (some combination of a prefix of existing and a
   prefix of new, with some entries from existing overwritten);
   probably in reverse order; (called result)
+- the length of result
+- the length of @existing'
 - 
 *)
 definition kvs_insert_2 :: 
   "constants \<Rightarrow> 'k ord \<Rightarrow> 'k option \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s * ('k*'v)s" 
 where
 "kvs_insert_2 cs' k_ord u kv new existing = (
-  let _ = assert_true (ordered_key_list k_ord (List.map fst (kv#new))) in
+  let _ = check_true (% _. ordered_key_list k_ord (List.map fst (kv#new))) in
   let cs = cs' in
   let step = (% s. 
-    let (result,new',existing') = s in
+    let (result,len_result,new',existing',len_existing') = s in
     case new' of
     [] \<Rightarrow> None
     | (k,v)#new'' \<Rightarrow> (
@@ -61,23 +63,25 @@ where
       equal the max *)
       (* NOTE these tests are for the ''bad'' case where we stop *)
       (* NOTE length result = length (List.rev result); FIXME possibly inefficient *)
-      let test1 = length (result@existing') \<ge> 2 * cs|>max_leaf_size in 
-      let test2 = case u of None \<Rightarrow> False | Some u \<Rightarrow> ~ (key_lt k_ord k u) in
-      let test3 = case existing' of [] \<Rightarrow> True | (k',v')#_ \<Rightarrow> key_gt k_ord k k' in
+      let test1 = len_result+len_existing' \<ge> 2 * cs|>max_leaf_size in 
+      let test2 = case u of None \<Rightarrow> False | Some u \<Rightarrow> (key_le k_ord u k) in
+      let test3 = case existing' of [] \<Rightarrow> False | (k',v')#_ \<Rightarrow> key_gt k_ord k k' in
       case test1 \<or> test2 \<or> test3 of
       True \<Rightarrow> None
       | False \<Rightarrow> (
         (* insert or replace? *)
         case existing' of 
-        [] \<Rightarrow> Some((k,v)#result,new'',existing')
+        [] \<Rightarrow> (
+          let _ = assert_true (len_existing' = 0) in
+          Some((k,v)#result,len_result+1,new'',existing',len_existing'))
         | (k',v')#existing'' \<Rightarrow> (
           case key_eq k_ord k k' of
-          True \<Rightarrow> Some((k,v)#result,new'',existing'')  (* replace *)
-          | False \<Rightarrow> Some((k,v)#result,new'',existing') (* insert *)  ))))
+          True \<Rightarrow> Some((k,v)#result,len_result+1,new'',existing'',len_existing' -1)  (* replace *)
+          | False \<Rightarrow> Some((k,v)#result,len_result+1,new'',existing',len_existing') (* insert *)  ))))
   in
-  let (result,not_inserted,existing') = iter_step step ([],(kv#new),existing) in 
+  let (result,_,new',existing',_) = iter_step step ([],0,(kv#new),existing,length existing) in 
   let result = (List.rev result)@existing' in 
-  (result,not_inserted))"
+  (result,new'))"
 
 definition step_bottom :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_bottom ps1 store_ops d = (
@@ -87,8 +91,7 @@ definition step_bottom :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Righta
   case dest_f_finished fs of 
   None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
   | Some(r0,k,r,kvs,stk) \<Rightarrow> (
-    (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind 
-    (% _.
+    (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind (% _.
     let (l,u) = rstack_get_bounds stk in
     let (kvs',kvs0') = kvs_insert_2 cs k_ord u (k,v) kvs0 kvs in
     let fo = (

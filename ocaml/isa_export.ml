@@ -2311,13 +2311,14 @@ let rec step_down
 let rec kvs_insert_2
   cs k_ord u kv newa existing =
     let _ =
-      Util.assert_true
-        (Key_value.ordered_key_list k_ord
-          (List.map Product_Type.fst (kv :: newa)))
+      Util.check_true
+        (fun _ ->
+          Key_value.ordered_key_list k_ord
+            (List.map Product_Type.fst (kv :: newa)))
       in
     let csa = cs in
     let step =
-      (fun (result, (newb, existinga)) ->
+      (fun (result, (len_result, (newb, (existinga, len_existing)))) ->
         (match newb with [] -> None
           | (k, v) :: newc ->
             let test1 =
@@ -2325,27 +2326,42 @@ let rec kvs_insert_2
                 (Arith.times_nat
                   (Arith.nat_of_integer (Big_int.big_int_of_int 2))
                   (Util.rev_apply csa Prelude.max_leaf_size))
-                (List.size_list (result @ existinga))
+                (Arith.plus_nat len_result len_existing)
               in
             let test2 =
               (match u with None -> false
-                | Some ua -> not (Key_value.key_lt k_ord k ua))
+                | Some ua -> Key_value.key_le k_ord ua k)
               in
             let test3 =
-              (match existinga with [] -> true
+              (match existinga with [] -> false
                 | (ka, _) :: _ -> Key_value.key_gt k_ord k ka)
               in
             (match test1 || (test2 || test3) with true -> None
               | false ->
                 (match existinga
-                  with [] -> Some ((k, v) :: result, (newc, existinga))
+                  with [] ->
+                    Some ((k, v) :: result,
+                           (Arith.plus_nat len_result Arith.one_nat,
+                             (newc, (existinga, len_existing))))
                   | (ka, _) :: existingaa ->
                     (match Key_value.key_eq k_ord k ka
-                      with true -> Some ((k, v) :: result, (newc, existingaa))
-                      | false -> Some ((k, v) :: result, (newc, existinga)))))))
+                      with true ->
+                        Some ((k, v) :: result,
+                               (Arith.plus_nat len_result Arith.one_nat,
+                                 (newc,
+                                   (existingaa,
+                                     Arith.minus_nat len_existing
+                                       Arith.one_nat))))
+                      | false ->
+                        Some ((k, v) :: result,
+                               (Arith.plus_nat len_result Arith.one_nat,
+                                 (newc, (existinga, len_existing)))))))))
       in
-    let (result, (not_inserted, existinga)) =
-      Util.iter_step step ([], (kv :: newa, existing)) in
+    let (result, (_, (not_inserted, (existinga, _)))) =
+      Util.iter_step step
+        ([], (Arith.zero_nat,
+               (kv :: newa, (existing, List.size_list existing))))
+      in
     let resulta = List.rev result @ existinga in
     (resulta, not_inserted);;
 
