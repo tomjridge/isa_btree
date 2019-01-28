@@ -68,6 +68,14 @@ definition wf_key_ord :: "'k ord \<Rightarrow> bool" where
 definition kv_lt :: "'k ord \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v) \<Rightarrow> bool" where
 "kv_lt ord kv1 kv2 = (key_lt ord (fst kv1) (fst kv2))"
 
+datatype compare_t = LT | EQ | GT
+
+definition key_compare :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> compare_t" where
+"key_compare ord k1 k2 = (
+   let n = ord k1 k2 in
+   if n < 0 then LT else
+   if n = 0 then EQ else
+   GT)"
 
 (* ordererd key list ------------------------------------------------ *)
 

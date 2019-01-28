@@ -52,7 +52,7 @@ definition kvs_insert_2 ::
   "constants \<Rightarrow> 'k ord \<Rightarrow> 'k option \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s * ('k*'v)s" 
 where
 "kvs_insert_2 cs' k_ord u kv new existing = (
-  let _ = check_true (% _. ordered_key_list k_ord (List.map fst (kv#new))) in
+  (* let _ = check_true (% _. ordered_key_list k_ord (List.map fst (kv#new))) in *)
   let cs = cs' in
   let step = (% s. 
     let (result,len_result,new',existing',len_existing') = s in
@@ -60,13 +60,13 @@ where
     [] \<Rightarrow> None
     | (k,v)#new'' \<Rightarrow> (
       (* NOTE may be able to do better if we are replacing an entry - we can afford the length to 
-      equal the max *)
+      equal the max FIXME and so this code may not work with very small constants *)
       (* NOTE these tests are for the ''bad'' case where we stop *)
       (* NOTE length result = length (List.rev result); FIXME possibly inefficient *)
       let test1 = len_result+len_existing' \<ge> 2 * cs|>max_leaf_size in 
       let test2 = case u of None \<Rightarrow> False | Some u \<Rightarrow> (key_le k_ord u k) in
-      let test3 = case existing' of [] \<Rightarrow> False | (k',v')#_ \<Rightarrow> key_gt k_ord k k' in
-      case test1 \<or> test2 \<or> test3 of
+      (* let test3 = case existing' of [] \<Rightarrow> False | (k',v')#_ \<Rightarrow> key_gt k_ord k k' in *)
+      case test1 \<or> test2 of
       True \<Rightarrow> None
       | False \<Rightarrow> (
         (* insert or replace? *)
@@ -75,9 +75,10 @@ where
           let _ = assert_true (len_existing' = 0) in
           Some((k,v)#result,len_result+1,new'',existing',len_existing'))
         | (k',v')#existing'' \<Rightarrow> (
-          case key_eq k_ord k k' of
-          True \<Rightarrow> Some((k,v)#result,len_result+1,new'',existing'',len_existing' -1)  (* replace *)
-          | False \<Rightarrow> Some((k,v)#result,len_result+1,new'',existing',len_existing') (* insert *)  ))))
+          case key_compare k_ord k k' of
+          LT \<Rightarrow> (Some((k,v)#result,len_result+1,new'',existing',len_existing') (* insert *)  )
+          | EQ \<Rightarrow> (Some((k,v)#result,len_result+1,new'',existing'',len_existing' -1))  (* replace *)
+          | GT \<Rightarrow> (Some((k',v')#result,len_result+1,new',existing'',len_existing' -1))  (* from existing *)))))
   in
   let (result,_,new',existing',_) = iter_step step ([],0,(kv#new),existing,length existing) in 
   let result = (List.rev result)@existing' in 

@@ -424,9 +424,9 @@ let split_at_3_tests : unit
 end;; (*struct Util*)
 
 module Key_value : sig
+  type compare_t = LT | EQ | GT
   val key_eq : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
   val key_le : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
-  val key_gt : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
   val key_lt : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
   val check_keys :
     ('a -> 'a -> Arith.int) -> 'a option -> 'a Set.set -> 'a option -> bool
@@ -439,14 +439,15 @@ module Key_value : sig
     ('a -> 'a -> Arith.int) -> 'a -> ('a * 'b) list -> ('a * 'b) list
   val kvs_insert :
     ('a -> 'a -> Arith.int) -> 'a * 'b -> ('a * 'b) list -> ('a * 'b) list
+  val key_compare : ('a -> 'a -> Arith.int) -> 'a -> 'a -> compare_t
   val kvs_insert_tests : unit
 end = struct
+
+type compare_t = LT | EQ | GT;;
 
 let rec key_eq ord k1 k2 = Arith.equal_int (ord k1 k2) Arith.zero_int;;
 
 let rec key_le ord k1 k2 = Arith.less_eq_int (ord k1 k2) Arith.zero_int;;
-
-let rec key_gt ord k1 k2 = not (key_le ord k1 k2);;
 
 let rec key_lt ord k1 k2 = Arith.less_int (ord k1 k2) Arith.zero_int;;
 
@@ -547,6 +548,12 @@ let rec kvs_insert
         (if key_lt cmp ka k then (ka, va) :: kvs_insert cmp kva kvs
           else (if key_eq cmp k ka then (k, v) :: kvs
                  else (k, v) :: (ka, va) :: kvs));;
+
+let rec key_compare
+  ord k1 k2 =
+    let n = ord k1 k2 in
+    (if Arith.less_int n Arith.zero_int then LT
+      else (if Arith.equal_int n Arith.zero_int then EQ else GT));;
 
 let kvs_insert_tests : unit
   = let _ =
@@ -2291,17 +2298,11 @@ let rec step_down
 
 let rec kvs_insert_2
   cs k_ord u kv newa existing =
-    let _ =
-      Util.check_true
-        (fun _ ->
-          Key_value.ordered_key_list k_ord
-            (List.map Product_Type.fst (kv :: newa)))
-      in
     let csa = cs in
     let step =
       (fun (result, (len_result, (newb, (existinga, len_existing)))) ->
         (match newb with [] -> None
-          | (k, v) :: newc ->
+          | (k, v) :: newaa ->
             let test1 =
               Arith.less_eq_nat
                 (Arith.times_nat
@@ -2313,38 +2314,45 @@ let rec kvs_insert_2
               (match u with None -> false
                 | Some ua -> Key_value.key_le k_ord ua k)
               in
-            let test3 =
-              (match existinga with [] -> false
-                | (ka, _) :: _ -> Key_value.key_gt k_ord k ka)
-              in
-            (match test1 || (test2 || test3) with true -> None
+            (match test1 || test2 with true -> None
               | false ->
                 (match existinga
                   with [] ->
+                    let _ =
+                      Util.assert_true
+                        (Arith.equal_nata len_existing Arith.zero_nat)
+                      in
                     Some ((k, v) :: result,
                            (Arith.plus_nat len_result Arith.one_nat,
-                             (newc, (existinga, len_existing))))
-                  | (ka, _) :: existingaa ->
-                    (match Key_value.key_eq k_ord k ka
-                      with true ->
+                             (newaa, (existinga, len_existing))))
+                  | (ka, va) :: existingaa ->
+                    (match Key_value.key_compare k_ord k ka
+                      with Key_value.LT ->
                         Some ((k, v) :: result,
                                (Arith.plus_nat len_result Arith.one_nat,
-                                 (newc,
+                                 (newaa, (existinga, len_existing))))
+                      | Key_value.EQ ->
+                        Some ((k, v) :: result,
+                               (Arith.plus_nat len_result Arith.one_nat,
+                                 (newaa,
                                    (existingaa,
                                      Arith.minus_nat len_existing
                                        Arith.one_nat))))
-                      | false ->
-                        Some ((k, v) :: result,
+                      | Key_value.GT ->
+                        Some ((ka, va) :: result,
                                (Arith.plus_nat len_result Arith.one_nat,
-                                 (newc, (existinga, len_existing)))))))))
+                                 (newb,
+                                   (existingaa,
+                                     Arith.minus_nat len_existing
+                                       Arith.one_nat)))))))))
       in
-    let (result, (_, (not_inserted, (existinga, _)))) =
+    let (result, (_, (newb, (existinga, _)))) =
       Util.iter_step step
         ([], (Arith.zero_nat,
                (kv :: newa, (existing, List.size_list existing))))
       in
     let resulta = List.rev result @ existinga in
-    (resulta, not_inserted);;
+    (resulta, newb);;
 
 let rec step_bottom
   ps1 store_ops d =
