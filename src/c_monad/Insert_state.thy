@@ -6,7 +6,7 @@ begin
 (* this to force dependency order in exported code? *)
 definition dummy :: "unit" where "dummy=()"
 
-(* insert -------------------------------------------------------------------------- *)
+(* insert ----------------------------------------------------------- *)
 
 datatype ('k,'v,'r) i12_t = I1 'r | I2 "'r*'k*'r"
 

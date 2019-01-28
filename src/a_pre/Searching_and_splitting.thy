@@ -5,7 +5,7 @@ begin
 (* Various definitions related to searching for a key in an ordered list of kv pairs, or a node
 frame *)
 
-(* alternative split_node, with reversed ks1,ts1 for efficiency ------------------ *)
+(* alternative split_node, with reversed ks1,ts1 for efficiency ----- *)
 
 type_synonym 'a s = "'a list"
 
@@ -32,7 +32,7 @@ definition rsplit_node_map :: "('a \<Rightarrow> 'b) \<Rightarrow> ('k,'a) rspli
   \<rparr>)"
 
 
-(* get_lu_bounds for rsplit_node ---------------------------- *)
+(* get_lu_bounds for rsplit_node ------------------------------------ *)
 
 definition rsplit_get_bounds :: "('k,'a) rsplit_node \<Rightarrow> ('k option * 'k option)" where
 "rsplit_get_bounds rn = (
@@ -41,7 +41,7 @@ definition rsplit_get_bounds :: "('k,'a) rsplit_node \<Rightarrow> ('k option * 
   (l,u))"
 
 
-(* split node based on search key ------------------------------ *)
+(* split node based on search key ----------------------------------- *)
 
 (* construct an rsplit_node from a node and a search key *)
 
@@ -95,7 +95,7 @@ definition unsplit_node :: "('k,'a) rsplit_node \<Rightarrow> ('k list * 'a list
   
 
 
-(* FIXME moved from pre_insert --------------------------------------------------------  *)
+(* FIXME moved from pre_insert -------------------------------------  *)
 
 
 (* insert aux funs: split_leaf and split_node ----------------------- *)

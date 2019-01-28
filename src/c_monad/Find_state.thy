@@ -13,7 +13,7 @@ Insert, etc., here *)
 (* we use a small-step style; we reify the state of the algorithm at every
 step as the following state type *)
 
-(* find ----------------------------------------------------------------------- *)
+(* find ------------------------------------------------------------- *)
 
 datatype ('k,'v,'r) find_state = 
   F_down "'r * 'k * 'r * ('k,'r) rstk"  (* root, search key, current pointer, stack *) 

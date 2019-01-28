@@ -6,7 +6,7 @@ begin
 (* this to force dependency order in exported code? *)
 definition dummy :: "unit" where "dummy=()"
 
-(* delete -------------------------------------------------------------------- *)
+(* delete ----------------------------------------------------------- *)
 
 datatype ('k,'v,'r)del_t =
   D_small_leaf "('k*'v)s"

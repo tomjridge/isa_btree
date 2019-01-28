@@ -20,7 +20,7 @@ type_synonym ('k,'v,'r)d = "('k,'v,'r)find_state * 'r"
 
 
 
-(* node steal -------------- *)
+(* node steal ------------------------------------------------------- *)
 
 (* args are left split node context, focus, right sib; returns updated parent *)
 definition node_steal_right :: 
@@ -53,7 +53,7 @@ where
 
 
 
-(* node merge ----------------- *)
+(* node merge ------------------------------------------------------- *)
 
 definition node_merge_right :: 
   "constants \<Rightarrow> ('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s,'t) MM"
@@ -78,7 +78,7 @@ where
   p \<lparr> r_t:=r4, r_ks1:=p_ks1, r_ts1:=p_rs1 \<rparr> |> unsplit_node |> (% (ks,rs). return (ks,rs))))"
 
 
-(* leaf steal --------------------- *)
+(* leaf steal ------------------------------------------------------- *)
 
 type_synonym ('k,'v) leaf = "('k * 'v) list"
 
@@ -115,7 +115,7 @@ where
 
 
 
-(* leaf merge -------------------------- *)
+(* leaf merge ------------------------------------------------------- *)
 
 definition leaf_merge_right :: 
   "constants \<Rightarrow> ('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> 
@@ -137,7 +137,7 @@ where
 
 
 
-(* fixup empty parent --------------- *)
+(* fixup empty parent ----------------------------------------------- *)
 
 (* it may be the case that we merge two children, and the parent root has just one key, 
 which is then removed as well, leaving a potentially malformed tree; 
@@ -268,5 +268,4 @@ where
 
 
 end
-
 

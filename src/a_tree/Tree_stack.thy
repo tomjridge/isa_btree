@@ -10,7 +10,7 @@ need polymorphism *)
 
 
 
-(* node_stack, a stack of frames -------------------------------------------------- *)
+(* node_stack, a stack of frames ------------------------------------ *)
 
 (* FIXME rename to stack; FIXME change to use rsplit_node *)
 (* type_synonym ('k,'a) node_stack = "(('k,'a) rsplit_node list)"    *)
@@ -29,7 +29,7 @@ definition rstack_equal :: "('k,'a) rstack \<Rightarrow> ('k,'a) rstack \<Righta
 "rstack_equal s1 s2 = failwith (STR ''FIXME patch'')"
 
 
-(* tree_stack --------------------- *)
+(* tree_stack ------------------------------------------------------- *)
 
 (* a tree_stack has 'a = ('k,'v)tree *)
 type_synonym ('k,'v) tree_rstack = "('k,('k,'v)tree) rstack"
@@ -55,7 +55,7 @@ primrec rstack_get_bounds :: "('k,'a) rstack \<Rightarrow> 'k option * 'k option
     (l,u))"
 
 
-(* tree_to_rstack, rstack_to_tree, no_focus --------------------------- *)
+(* tree_to_rstack, rstack_to_tree, no_focus ------------------------- *)
 
 (* the n argument ensures the stack has length n; we assume we only call this with n\<le>height t *)
 (* FIXME why is focus returned separately? *)

@@ -44,36 +44,6 @@ where
   in
   iter_step step (existing,new))"
 
-(* how to split a leaf where there are n > max_leaf_size and \<le> 2*max_leaf_size elts?
-
-we want the first leaf ge the second leaf, and 2nd leaf to have at least min_leaf_size
-
-for second leaf, we want n2=min_leaf_size+delta, where delta is minimal such that n1+n2=n and n1 \<le> max_leaf_size
-
-so n2 = min_leaf_size; n1 = n - min_leaf_size
-then delta = n1 - max_leaf_size
-n2+=delta
-n1-=delta
-
-*)
-(* FIXME isn't this duplicated elsewhere? *)
-definition split_leaf :: "constants \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s * 'k * ('k*'v)s" where
-"split_leaf cs0 kvs = (
-  let n = List.length kvs in
-  let n1 = n in
-  let n2 = 0 in
-  let delta = cs0|>min_leaf_size in
-  let n1 = n1 - delta in
-  let n2 = n2 + delta in
-  let delta = (n1 - cs0|>max_leaf_size) in
-  let n1 = n1 - delta in
-  let n2 = n2 + delta in
-  let (l,r) = split_at n1 kvs in
-  let k = (case r of [] \<Rightarrow> impossible1 (STR ''insert_many: split_leaf'') | (k,v)#_ \<Rightarrow> k) in
-  (l,k,r)
-)"
-
-
 definition step_bottom :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_bottom ps1 store_ops d = (
   let (cs,k_ord) = (ps1|>dot_constants,ps1|>dot_cmp) in
@@ -111,7 +81,7 @@ definition step_up :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow
       mk_Disk_node(ks,rs) |> (store_ops|>store_alloc) |> fmap (% r. (IM1 (r,kvs0),stk')))
     | IM2 ((r1,k,r2),kvs0) \<Rightarrow> (
       let (ks2,rs2) = (x|>r_ks2,x|>r_ts2) in
-      let (ks',rs') = unsplit_node (x\<lparr>r_ks2:=k#ks2, r_ts2:=[r1,r2]@rs2\<rparr>) in
+      let (ks',rs') = unsplit_node (x\<lparr> r_t:=r1, r_ks2:=k#ks2, r_ts2:=r2#rs2\<rparr>) in
       case (List.length ks' \<le> cs|>max_node_keys) of
       True \<Rightarrow> (
         mk_Disk_node(ks',rs') |> (store_ops|>store_alloc) |> fmap (% r. (IM1 (r,kvs0),stk')))
