@@ -23,6 +23,7 @@ Util.from_to_tests
 Prelude.constants_ext
 
 Key_value.key_lt
+Key_value.key_le
 
 (* FIXME remove tests in production code *)
 Key_value.okl_tests

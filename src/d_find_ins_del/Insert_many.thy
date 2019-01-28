@@ -18,31 +18,66 @@ definition step_down :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarr
   find_step ps1 store_ops fs |> fmap (% d'. (d',v))
 )"
 
-(* insert kv, and as many from new as possible subject to lu bound and max size of 2*max_leaf_size; 
-kv<new, and new are sorted in order; return the remaining new that were not inserted
+(* 
+
+We have an existing list of kv pairs (ordered by k).
+
+We want to insert kv, and as many additional entries from "new" as
+possible, subject to:
+
+- u bound
+- max size of 2*max_leaf_size
+- existing entries
+
+We assume:
+
+- kv<new
+- new are sorted in order (although we can check this easily enough as
+  we insert) with no duplicates
+
+We return:
+- the remaining new that we could not insert, and the updated kv list
+
+During the insert we track:
+- the suffix of new that we still need to insert (called new')
+- the suffix of existing (called existing')
+- the result so far (some combination of a prefix of existing and a
+  prefix of new, with some entries from existing overwritten);
+  probably in reverse order; (called result)
+- 
 *)
 definition kvs_insert_2 :: 
   "constants \<Rightarrow> 'k ord \<Rightarrow> 'k option \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s * ('k*'v)s" 
 where
 "kvs_insert_2 cs' k_ord u kv new existing = (
+  let _ = assert_true (ordered_key_list k_ord (List.map fst (kv#new))) in
   let cs = cs' in
   let step = (% s. 
-    let (acc,new') = s in
-    case (length acc \<ge> 2 * cs|>max_leaf_size) of
-    True \<Rightarrow> None
-    | False \<Rightarrow> (
-      case new' of
-      [] \<Rightarrow> None
-      | (k,v)#new'' \<Rightarrow> (
-        let test = % k u.
-          (* (check_keys (Params.the_kv_ops|>compare_k) None {k} u) *) (* FIXME equality on keys in generated code :( *)
-          case u of None \<Rightarrow> True | Some u \<Rightarrow> key_lt k_ord k u
-        in
-        case test k u of  
-        True \<Rightarrow> (Some(kvs_insert k_ord (k,v) acc,new''))
-        | False \<Rightarrow> (None))))
+    let (result,new',existing') = s in
+    case new' of
+    [] \<Rightarrow> None
+    | (k,v)#new'' \<Rightarrow> (
+      (* NOTE may be able to do better if we are replacing an entry - we can afford the length to 
+      equal the max *)
+      (* NOTE these tests are for the ''bad'' case where we stop *)
+      (* NOTE length result = length (List.rev result); FIXME possibly inefficient *)
+      let test1 = length (result@existing') \<ge> 2 * cs|>max_leaf_size in 
+      let test2 = case u of None \<Rightarrow> False | Some u \<Rightarrow> ~ (key_lt k_ord k u) in
+      let test3 = case existing' of [] \<Rightarrow> True | (k',v')#_ \<Rightarrow> key_gt k_ord k k' in
+      case test1 \<or> test2 \<or> test3 of
+      True \<Rightarrow> None
+      | False \<Rightarrow> (
+        (* insert or replace? *)
+        case existing' of 
+        [] \<Rightarrow> Some((k,v)#result,new'',existing')
+        | (k',v')#existing'' \<Rightarrow> (
+          case key_eq k_ord k k' of
+          True \<Rightarrow> Some((k,v)#result,new'',existing'')  (* replace *)
+          | False \<Rightarrow> Some((k,v)#result,new'',existing') (* insert *)  ))))
   in
-  iter_step step (existing,new))"
+  let (result,not_inserted,existing') = iter_step step ([],(kv#new),existing) in 
+  let result = (List.rev result)@existing' in 
+  (result,not_inserted))"
 
 definition step_bottom :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r) d \<Rightarrow> (('k,'v,'r) u,'t) MM" where
 "step_bottom ps1 store_ops d = (
