@@ -12,6 +12,7 @@ record ('k,'v,'r,'t) store_ops =
 
 (* FIXME pass store_ops explicitly ? *)
 
+(* read; alloc; free *)
 type_synonym ('k,'v,'r,'t) store_ops = "
   ('r \<Rightarrow> (('k,'v,'r) dnode,'t) MM) *
   (('k,'v,'r) dnode \<Rightarrow> ('r,'t) MM) *

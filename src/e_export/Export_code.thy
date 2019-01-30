@@ -5,9 +5,9 @@ imports
 "$SRC/d_find_ins_del/Insert"
 "$SRC/d_find_ins_del/Insert_many"
 "$SRC/d_find_ins_del/Leaf_stream"
-Code_Numeral 
+(* Code_Numeral *)
 "~~/src/HOL/Library/Code_Target_Numeral"
-"~~/src/HOL/Library/Code_Char"
+(* "~~/src/HOL/Library/Code_Char" *)
 begin
 
 
