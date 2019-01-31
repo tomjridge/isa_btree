@@ -1,6 +1,4 @@
-theory Monad
-imports Main
-begin
+theory Monad imports Main Pre_monad begin
 
 
 (* abstract version; NOTE obviously can't be exported *)

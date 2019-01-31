@@ -1,11 +1,19 @@
---- insert_with_mutation.ml.orig	2019-01-31 14:20:49.467614112 +0000
-+++ insert_with_mutation.ml	2019-01-31 14:21:27.404555330 +0000
-@@ -265,7 +265,7 @@ type ('a, 'b) sum = Inl of 'a | Inr of '
+--- insert_with_mutation.ml.orig	2019-01-31 15:14:50.160015885 +0000
++++ insert_with_mutation.ml	2019-01-31 15:15:43.273333629 +0000
+@@ -363,7 +363,15 @@ let rec make_initial_find_state k r = F_
  
- end;; (*struct Sum_Type*)
+ end;; (*struct Pre_monad*)
  
 -module Insert_with_mutation : sig
-+module Insert_with_mutation(Monad: module type of Monad) : sig
-   type ('a, 'b, 'c) dnode = Disk_node of ('a list * 'c list) |
-     Disk_leaf of ('a * 'b) list
-   type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c))
++module type MONAD = sig
++  type t
++  type ('a,'t) mm = ('a,t) Tjr_monad.Types.m
++  val bind : ('a -> ('b, 'c) mm) -> ('a, 'c) mm -> ('b, 'c) mm
++  val fmap : ('a -> 'b) -> ('a, 'c) mm -> ('b, 'c) mm
++  val return : 'a -> ('a, 'b) mm
++end
++
++module Insert_with_mutation(Monad:MONAD) : sig
+   type ('a, 'b, 'c) blk_ops =
+     Make_blk_ops of
+       ('a -> ('b, 'c) Monad.mm) * ('b -> ('a, 'c) Monad.mm) *

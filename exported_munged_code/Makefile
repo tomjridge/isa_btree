@@ -45,7 +45,10 @@ FORCE:
 # into this directory, then apply patch. Patch is minimal, so
 # hopefully no need to regenerate often.
 
-insert_with_mutation.ml: /tmp/insert_with_mutation.ml
+# diff -u3 -p insert_with_mutation.ml.orig insert_with_mutation.ml >insert_with_mutation.patch
+
+insert_with_mutation.ml: /tmp/insert_with_mutation.ml FORCE
 	cp $< $@.orig
 	patch -i insert_with_mutation.patch $@.orig -o $@
-	ocamlc -c -w -8 $@
+	ocamlfind ocamlc -package tjr_monad -c -w -8 $@
+	cp $@ ../ocaml

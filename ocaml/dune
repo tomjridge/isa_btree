@@ -1,9 +1,9 @@
 (env
-  (dev (flags (:standard -w -8-27-32-39))))
+  (dev (flags (:standard -w -8-26-27-32-37-39))))
 
 (library
   (name isa_btree)
   (public_name isa_btree)
   (preprocess (pps ppx_deriving_yojson))
-  (libraries num yojson ppx_deriving_yojson ppx_deriving_yojson.runtime))
+  (libraries num yojson ppx_deriving_yojson ppx_deriving_yojson.runtime tjr_monad))
 
