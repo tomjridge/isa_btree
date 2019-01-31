@@ -15,6 +15,9 @@ record constants =
   min_node_keys :: nat
   max_node_keys :: nat
 
+definition make_constants :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> constants" where
+"make_constants a b c d = \<lparr> min_leaf_size=a, max_leaf_size=b, min_node_keys=c, max_node_keys=d \<rparr>"
+
 (* FIXME add wf constraint following docs $l'>=2l-1$ and $m' >= 2m$ *)
 
 

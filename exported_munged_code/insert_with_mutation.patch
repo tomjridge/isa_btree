@@ -1,0 +1,11 @@
+--- insert_with_mutation.ml.orig	2019-01-31 14:20:49.467614112 +0000
++++ insert_with_mutation.ml	2019-01-31 14:21:27.404555330 +0000
+@@ -265,7 +265,7 @@ type ('a, 'b) sum = Inl of 'a | Inr of '
+ 
+ end;; (*struct Sum_Type*)
+ 
+-module Insert_with_mutation : sig
++module Insert_with_mutation(Monad: module type of Monad) : sig
+   type ('a, 'b, 'c) dnode = Disk_node of ('a list * 'c list) |
+     Disk_leaf of ('a * 'b) list
+   type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c))
