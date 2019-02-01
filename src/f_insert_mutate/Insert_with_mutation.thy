@@ -34,7 +34,7 @@ type_synonym ('blk,'k,'v,'r) marshal_ops = "(
 (* alloc; free *) 
 datatype_record ('r,'t) alloc_ops = 
 alloc :: "unit \<Rightarrow> ('r,'t) MM"
-free :: "'r s \<Rightarrow> (unit,'t) MM"
+free :: "'r s \<Rightarrow> (unit,'t) MM" 
 
 (*
 type_synonym ('r,'t) alloc_ops = "(
@@ -65,7 +65,7 @@ constants \<Rightarrow>
     read r |>fmap blk2dnode |>fmap (% f. 
     case f of 
     Disk_node (ks,rs) \<Rightarrow> (
-      let (frm,r) = make_frame k_cmp k ks rs in      
+      let (frm,r) = make_frame k_cmp k r ks rs in      
       F_down(r0,k,r,frm#stk))
     | Disk_leaf kvs \<Rightarrow> F_finished(r0,k,r,kvs,stk)))))"
 
@@ -132,7 +132,7 @@ constants \<Rightarrow>
 ('r,'blk,'t) blk_ops \<Rightarrow>
 ('blk,'k,'v,'r) marshal_ops \<Rightarrow> 
 ('r,'t) alloc_ops \<Rightarrow> 
-('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u,'t) MM" where
+('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u + unit,'t) MM" where
 "step_up  cs k_cmp blk_ops marshal_ops alloc_ops u = (
   let (write,rewrite) = (blk_ops|>wrte,blk_ops|>rewrite) in
   let dnode2blk = marshal_ops|>dnode2blk in
@@ -141,27 +141,31 @@ constants \<Rightarrow>
   case stk of 
   [] \<Rightarrow> impossible1 (STR ''insert, step_up'') 
   | frm#stk' \<Rightarrow> (
-    let ((rs1,ks1),_,(ks2,rs2)) = dest_Frm frm in
+    let ((rs1,ks1),_,(ks2,rs2),r_parent) = dest_Frm frm in
     case fo of
     I1 r \<Rightarrow> (
       let (ks,rs) = unsplit_node ((rs1,ks1),([r],[]),(ks2,rs2)) in
       Disk_node(ks,rs) |> dnode2blk |> (% blk.
-      write blk |> bind (% r. 
-      return (I1 r, stk'))))
+      rewrite r_parent blk |> bind (% r2. 
+      case r2 of 
+      None \<Rightarrow> return (Inr ())
+      | Some r2 \<Rightarrow> return (Inl (I1 r2, stk')))))
     | I2 (r1,k,r2) \<Rightarrow> (
       let (ks',rs') = unsplit_node ((rs1,ks1), ([r1,r2],[k]), (ks2,rs2)) in
       case List.length ks' \<le> (cs|>max_node_keys) of
       True \<Rightarrow> (
         Disk_node(ks',rs') |> dnode2blk |> (% blk.
-        write blk |> bind (% r. 
-        return (I1 r, stk'))))
+        rewrite r_parent blk |> bind (% r2. 
+        case r2 of 
+        None \<Rightarrow> return (Inr ())
+        | Some r2 \<Rightarrow> return (Inl (I1 r2, stk')))))
       | False \<Rightarrow> (
         let (ks_rs1,k,ks_rs2) = split_node cs (ks',rs') in  
         Disk_node(ks_rs1) |> dnode2blk |> (% blk.
         write blk |> bind (% r1. 
         Disk_node (ks_rs2) |> dnode2blk |> (% blk.
         write blk |> bind (% r2.
-        return (I2(r1,k,r2),stk')))) )))))"
+        return (Inl (I2(r1,k,r2),stk')))) ))))))"
 
 
 definition insert_step :: "
@@ -198,7 +202,10 @@ constants \<Rightarrow>
         (Disk_node([k],[r1,r2]) |> dnode2blk |> (% blk.
         write blk |> bind (% r.
         return (I_finished r))))))
-    | _ \<Rightarrow> (step_up u |> fmap (% u. I_up u)))
+    | _ \<Rightarrow> (step_up u |> bind (% u. 
+      case u of 
+      Inr () \<Rightarrow> return I_finished_with_mutate
+      | Inl u \<Rightarrow> return (I_up u))))
   | I_finished _ \<Rightarrow> (return s)  \<comment> \<open> stutter \<close> 
   | I_finished_with_mutate \<Rightarrow> (return s)))"
 

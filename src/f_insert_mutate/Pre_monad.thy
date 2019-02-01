@@ -54,6 +54,9 @@ type_synonym 'a s = "'a list"
 definition key_lt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
 "key_lt ord k1 k2 = ( ord k1 k2 < 0)"
 
+definition key_eq ::  "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
+"key_eq ord k1 k2 = ( ord k1 k2 = 0)"
+
 definition kvs_insert :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k*'v) s \<Rightarrow> ('k * 'v) s" where "
 kvs_insert k_cmp k v kvs = (
   iter_step (% (kvs,kvs').
@@ -62,7 +65,10 @@ kvs_insert k_cmp k v kvs = (
     | (k',v')#kvs' \<Rightarrow> (
       case key_lt k_cmp k k' of 
       True \<Rightarrow> None
-      | False \<Rightarrow> Some((k',v')#kvs,kvs')))
+      | False \<Rightarrow> (
+        case key_eq k_cmp k k' of 
+        True \<Rightarrow> Some(kvs,kvs') 
+        | False \<Rightarrow> (Some((k',v')#kvs,kvs')))))
     ([],kvs)
   |> (% (kvs,kvs'). (List.rev ((k,v)#kvs))@kvs'))"
 
@@ -77,16 +83,16 @@ datatype_record constants =
   max_node_keys :: nat
 
 
+(* NOTE the 4th component is the parent root *)
+datatype ('a,'b,'c,'d) stk_frame = Frm "'a * 'b * 'c * 'd"
 
-datatype ('a,'b,'c) stk_frame = Frm "'a * 'b * 'c"
-
-fun dest_Frm :: "('a,'b,'c) stk_frame \<Rightarrow> 'a * 'b * 'c" where "
-dest_Frm (Frm (a,b,c)) = (a,b,c)"
+fun dest_Frm :: "('a,'b,'c,'d) stk_frame \<Rightarrow> 'a * 'b * 'c * 'd" where "
+dest_Frm (Frm (a,b,c,d)) = (a,b,c,d)"
 
 
 (* type_synonym ('a,'b,'c) stk = "('a,'b,'c) stk_frame list" *)
 
-type_synonym ('k,'r) frame = "( ('r list * 'k list), 'r, ('k list * 'r list)) stk_frame"
+type_synonym ('k,'r) frame = "( ('r list * 'k list), 'r, ('k list * 'r list), 'r) stk_frame"
 
 type_synonym ('k,'r) stk = "('k,'r) frame list"
 
@@ -107,8 +113,8 @@ make_initial_find_state k r = F_down (r,k,r,[])"
 (* walk through ks and rs to find the point where ki \<le> k < k(i+1); |ks|+1=|rs|;
 or: find first point where k < ki
  *)
-definition make_frame :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k s \<Rightarrow> 'r s \<Rightarrow> ('k,'r)frame * 'r" where
-"make_frame k_cmp k ks rs = (
+definition make_frame :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'r \<Rightarrow> 'k s \<Rightarrow> 'r s \<Rightarrow> ('k,'r)frame * 'r" where
+"make_frame k_cmp k r_parent ks rs = (
   iter_step (% ((rs,ks),(ks',rs')).
     case ks' of 
     [] \<Rightarrow> None
@@ -121,7 +127,7 @@ definition make_frame :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k s \<Rightarro
     ( ([],[]),(ks,rs))
   |> (% ((rs,ks),(ks',rs')).
      let r' = List.hd rs' in
-     (Frm((rs,ks),r',(ks',List.tl rs')),  r')))"
+     (Frm((rs,ks),r',(ks',List.tl rs'),r_parent),  r')))"
 
 
 

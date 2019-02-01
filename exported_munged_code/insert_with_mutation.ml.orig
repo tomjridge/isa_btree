@@ -44,6 +44,7 @@ module Arith : sig
   val zero_int : int
   val zero_nat : nat
   val nat_of_integer : Big_int.big_int -> nat
+  val equal_int : int -> int -> bool
   val divide_nat : nat -> nat -> nat
 end = struct
 
@@ -116,6 +117,9 @@ let rec divmod_integer
 let rec nat_of_integer
   k = Nat (Orderings.max ord_integer Big_int.zero_big_int k);;
 
+let rec equal_int
+  k l = Big_int.eq_big_int (integer_of_int k) (integer_of_int l);;
+
 let rec divide_integer k l = Product_Type.fst (divmod_integer k l);;
 
 let rec divide_nat
@@ -179,29 +183,31 @@ module Pre_monad : sig
   type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c))
   type constants =
     Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat
-  type ('a, 'b, 'c) stk_frame
+  type ('a, 'b, 'c, 'd) stk_frame
   type ('a, 'b, 'c) find_state =
     F_down of
-      ('c * ('a * ('c * (('c list * 'a list), 'c, ('a list * 'c list))
+      ('c * ('a * ('c * (('c list * 'a list), 'c, ('a list * 'c list), 'c)
                           stk_frame list)))
     | F_finished of
         ('c * ('a * ('c * (('a * 'b) list *
-                            (('c list * 'a list), 'c, ('a list * 'c list))
+                            (('c list * 'a list), 'c, ('a list * 'c list), 'c)
                               stk_frame list))))
   type ('a, 'b, 'c) insert_state = I_down of (('a, 'b, 'c) find_state * 'b) |
     I_up of
       (('a, 'b, 'c) i12_t *
-        (('c list * 'a list), 'c, ('a list * 'c list)) stk_frame list)
+        (('c list * 'a list), 'c, ('a list * 'c list), 'c) stk_frame list)
     | I_finished of 'c | I_finished_with_mutate
-  val dest_Frm : ('a, 'b, 'c) stk_frame -> 'a * ('b * 'c)
+  val dest_Frm : ('a, 'b, 'c, 'd) stk_frame -> 'a * ('b * ('c * 'd))
   val rev_apply : 'a -> ('a -> 'b) -> 'b
   val kvs_insert :
     ('a -> 'a -> Arith.int) -> 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
   val make_frame :
     ('a -> 'a -> Arith.int) ->
-      'a -> 'a list ->
-              'b list ->
-                (('b list * 'a list), 'b, ('a list * 'b list)) stk_frame * 'b
+      'a -> 'b -> 'a list ->
+                    'b list ->
+                      (('b list * 'a list), 'b, ('a list * 'b list), 'b)
+                        stk_frame *
+                        'b
   val impossible1 : string -> 'a
   val split_leaf :
     constants -> ('a * 'b) list -> ('a * 'b) list * ('a * ('a * 'b) list)
@@ -214,7 +220,7 @@ module Pre_monad : sig
   val dest_F_finished :
     ('a, 'b, 'c) find_state ->
       ('c * ('a * ('c * (('a * 'b) list *
-                          (('c list * 'a list), 'c, ('a list * 'c list))
+                          (('c list * 'a list), 'c, ('a list * 'c list), 'c)
                             stk_frame list)))) option
   val max_leaf_size : constants -> Arith.nat
   val max_node_keys : constants -> Arith.nat
@@ -229,26 +235,28 @@ type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c));;
 type constants =
   Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat;;
 
-type ('a, 'b, 'c) stk_frame = Frm of ('a * ('b * 'c));;
+type ('a, 'b, 'c, 'd) stk_frame = Frm of ('a * ('b * ('c * 'd)));;
 
 type ('a, 'b, 'c) find_state =
   F_down of
-    ('c * ('a * ('c * (('c list * 'a list), 'c, ('a list * 'c list))
+    ('c * ('a * ('c * (('c list * 'a list), 'c, ('a list * 'c list), 'c)
                         stk_frame list)))
   | F_finished of
       ('c * ('a * ('c * (('a * 'b) list *
-                          (('c list * 'a list), 'c, ('a list * 'c list))
+                          (('c list * 'a list), 'c, ('a list * 'c list), 'c)
                             stk_frame list))));;
 
 type ('a, 'b, 'c) insert_state = I_down of (('a, 'b, 'c) find_state * 'b) |
   I_up of
     (('a, 'b, 'c) i12_t *
-      (('c list * 'a list), 'c, ('a list * 'c list)) stk_frame list)
+      (('c list * 'a list), 'c, ('a list * 'c list), 'c) stk_frame list)
   | I_finished of 'c | I_finished_with_mutate;;
+
+let rec key_eq ord k1 k2 = Arith.equal_int (ord k1 k2) Arith.zero_int;;
 
 let rec key_lt ord k1 k2 = Arith.less_int (ord k1 k2) Arith.zero_int;;
 
-let rec dest_Frm (Frm (a, (b, c))) = (a, (b, c));;
+let rec dest_Frm (Frm (a, (b, (c, d)))) = (a, (b, (c, d)));;
 
 let rec rev_apply x f = f x;;
 
@@ -265,12 +273,14 @@ let rec kvs_insert
           (match a with (_, []) -> None
             | (kvsb, (ka, va) :: kvsa) ->
               (match key_lt k_cmp k ka with true -> None
-                | false -> Some ((ka, va) :: kvsb, kvsa))))
+                | false ->
+                  (match key_eq k_cmp k ka with true -> Some (kvsb, kvsa)
+                    | false -> Some ((ka, va) :: kvsb, kvsa)))))
         ([], kvs))
       (fun (kvsa, a) -> Lista.rev ((k, v) :: kvsa) @ a);;
 
 let rec make_frame
-  k_cmp k ks rs =
+  k_cmp k r_parent ks rs =
     rev_apply
       (iter_step
         (fun (a, b) ->
@@ -288,7 +298,7 @@ let rec make_frame
         (let (rsa, ksa) = a in
           (fun (ksaa, rsaa) ->
             (let r = Lista.hd rsaa in
-              (Frm ((rsa, ksa), (r, (ksaa, Lista.tl rsaa))), r))))
+              (Frm ((rsa, ksa), (r, ((ksaa, Lista.tl rsaa), r_parent))), r))))
           b);;
 
 let rec min_leaf_size (Make_constants (x1, x2, x3, x4)) = x1;;
@@ -409,7 +419,7 @@ let rec wrte (Make_blk_ops (x1, x2, x3)) = x2;;
 
 let rec step_up
   cs k_cmp blk_ops marshal_ops alloc_ops u =
-    (let (write, _) =
+    (let (write, rewritea) =
        (Pre_monad.rev_apply blk_ops wrte, Pre_monad.rev_apply blk_ops rewrite)
        in
      let dnode2blka = Pre_monad.rev_apply marshal_ops dnode2blk in
@@ -419,53 +429,63 @@ let rec step_up
           (let a = Pre_monad.dest_Frm frm in
            let (aa, b) = a in
             (let (rs1, ks1) = aa in
-              (fun (_, (ks2, rs2)) ->
-                (match fo
-                  with Pre_monad.I1 r ->
-                    (let (ks, rs) =
-                       Pre_monad.unsplit_node
-                         ((rs1, ks1), (([r], []), (ks2, rs2)))
-                       in
-                      Pre_monad.rev_apply
-                        (Pre_monad.rev_apply (Pre_monad.Disk_node (ks, rs))
-                          dnode2blka)
-                        (fun blk ->
-                          Pre_monad.rev_apply (write blk)
-                            (Monad.bind
-                              (fun ra -> Monad.return (Pre_monad.I1 ra, stk)))))
-                  | Pre_monad.I2 (r1, (k, r2)) ->
-                    (let (ks, rs) =
-                       Pre_monad.unsplit_node
-                         ((rs1, ks1), (([r1; r2], [k]), (ks2, rs2)))
-                       in
-                      (match
-                        Arith.less_eq_nat (Lista.size_list ks)
-                          (Pre_monad.rev_apply cs Pre_monad.max_node_keys)
-                        with true ->
-                          Pre_monad.rev_apply
-                            (Pre_monad.rev_apply (Pre_monad.Disk_node (ks, rs))
-                              dnode2blka)
-                            (fun blk ->
-                              Pre_monad.rev_apply (write blk)
-                                (Monad.bind
-                                  (fun r ->
-                                    Monad.return (Pre_monad.I1 r, stk))))
-                        | false ->
-                          (let (ks_rs1, (ka, ks_rs2)) =
-                             Pre_monad.split_node cs (ks, rs) in
+              (fun (_, ab) ->
+                (let (ac, ba) = ab in
+                  (let (ks2, rs2) = ac in
+                    (fun r_parent ->
+                      (match fo
+                        with Pre_monad.I1 r ->
+                          (let (ks, rs) =
+                             Pre_monad.unsplit_node
+                               ((rs1, ks1), (([r], []), (ks2, rs2)))
+                             in
                             Pre_monad.rev_apply
-                              (Pre_monad.rev_apply (Pre_monad.Disk_node ks_rs1)
-                                dnode2blka)
+                              (Pre_monad.rev_apply
+                                (Pre_monad.Disk_node (ks, rs)) dnode2blka)
                               (fun blk ->
-                                Pre_monad.rev_apply (write blk)
+                                Pre_monad.rev_apply (rewritea r_parent blk)
                                   (Monad.bind
-                                    (fun r1a ->
-                                      Pre_monad.rev_apply
-(Pre_monad.rev_apply (Pre_monad.Disk_node ks_rs2) dnode2blka)
-(fun blka ->
-  Pre_monad.rev_apply (write blka)
-    (Monad.bind
-      (fun r2a -> Monad.return (Pre_monad.I2 (r1a, (ka, r2a)), stk)))))))))))))
+                                    (fun ad ->
+                                      (match ad
+with None -> Monad.return (Sum_Type.Inr ())
+| Some r2 -> Monad.return (Sum_Type.Inl (Pre_monad.I1 r2, stk)))))))
+                        | Pre_monad.I2 (r1, (k, r2)) ->
+                          (let (ks, rs) =
+                             Pre_monad.unsplit_node
+                               ((rs1, ks1), (([r1; r2], [k]), (ks2, rs2)))
+                             in
+                            (match
+                              Arith.less_eq_nat (Lista.size_list ks)
+                                (Pre_monad.rev_apply cs Pre_monad.max_node_keys)
+                              with true ->
+                                Pre_monad.rev_apply
+                                  (Pre_monad.rev_apply
+                                    (Pre_monad.Disk_node (ks, rs)) dnode2blka)
+                                  (fun blk ->
+                                    Pre_monad.rev_apply (rewritea r_parent blk)
+                                      (Monad.bind
+(fun ad ->
+  (match ad with None -> Monad.return (Sum_Type.Inr ())
+    | Some r2a -> Monad.return (Sum_Type.Inl (Pre_monad.I1 r2a, stk))))))
+                              | false ->
+                                (let (ks_rs1, (ka, ks_rs2)) =
+                                   Pre_monad.split_node cs (ks, rs) in
+                                  Pre_monad.rev_apply
+                                    (Pre_monad.rev_apply
+                                      (Pre_monad.Disk_node ks_rs1) dnode2blka)
+                                    (fun blk ->
+                                      Pre_monad.rev_apply (write blk)
+(Monad.bind
+  (fun r1a ->
+    Pre_monad.rev_apply
+      (Pre_monad.rev_apply (Pre_monad.Disk_node ks_rs2) dnode2blka)
+      (fun blka ->
+        Pre_monad.rev_apply (write blka)
+          (Monad.bind
+            (fun r2a ->
+              Monad.return
+                (Sum_Type.Inl (Pre_monad.I2 (r1a, (ka, r2a)), stk))))))))))))))
+                    ba)))
               b)));;
 
 let rec blk2dnode (Make_marshal_ops (x1, x2)) = x1;;
@@ -485,7 +505,7 @@ let rec find_step
                 (fun a ->
                   (match a
                     with Pre_monad.Disk_node (ks, rs) ->
-                      (let (frm, ra) = Pre_monad.make_frame k_cmp k ks rs in
+                      (let (frm, ra) = Pre_monad.make_frame k_cmp k r ks rs in
                         Pre_monad.F_down (r0, (k, (ra, frm :: stk))))
                     | Pre_monad.Disk_leaf kvs ->
                       Pre_monad.F_finished (r0, (k, (r, (kvs, stk)))))))
@@ -579,7 +599,12 @@ let rec insert_step
                         (fun r -> Monad.return (Pre_monad.I_finished r))))
               | (_, _ :: _) ->
                 Pre_monad.rev_apply (step_upa u)
-                  (Monad.fmap (fun a -> Pre_monad.I_up a)))
+                  (Monad.bind
+                    (fun a ->
+                      (match a
+                        with Sum_Type.Inl ua -> Monad.return (Pre_monad.I_up ua)
+                        | Sum_Type.Inr () ->
+                          Monad.return Pre_monad.I_finished_with_mutate))))
           | Pre_monad.I_finished _ -> Monad.return s
           | Pre_monad.I_finished_with_mutate -> Monad.return s)));;
 
