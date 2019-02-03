@@ -10,36 +10,37 @@ type_synonym ('k,'v,'r)d = "('k,'v,'r)find_state * 'r"
 
 (* node steal ------------------------------------------------------- *)
 
-(* args are left split node context, focus, right sib; returns updated parent
-
-FIXME maybe it makes more sense to deal with the context in isolation, and return r*k*r
- *)
+(* args are left split node context, focus, right sib; returns updated parent *)
 definition node_steal_right :: 
-  "('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('r s * 'k s) \<Rightarrow> 'k \<Rightarrow> ('r s * 'k s) \<Rightarrow> ('r*'k*'r,'t) MM" 
+  "('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)frame \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('r,'t) MM" 
 where
 "node_steal_right store_ops = (
   let write = store_ops|>wrte in
-  (% c1 k0 c2.
-  case c1 of (rs1,ks1) \<Rightarrow> 
-  case c2 of (r1#rs2,k1#ks2) \<Rightarrow> 
-  (* (rs1,ks1)  k0  (r1#rs2,k1#ks2) *)
-  Disk_node(ks1@[k0],rs1@[r1]) |> write |> bind (% left.
-  Disk_node(ks2,rs2) |> write |> bind (% right.
-  return (left,k1,right)))))"
+  (% p c1 c2.
+  case c1 of (ks1,rs1) \<Rightarrow> 
+  case c2 of (k2#rest,r2#rest') \<Rightarrow> 
+  case (p|>r_ks2,p|>r_ts2) of (k1#ks2,_#rs2) \<Rightarrow>   
+  (ks1@[k1],rs1@[r2]) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r3.
+  (rest,rest') |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r4.
+  p \<lparr> r_t:=r3, r_ks2:=k2#ks2, r_ts2:=r4#rs2 \<rparr>
+  |> unsplit_node |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
+  return p)))))"
 
 
 definition node_steal_left :: 
-  "('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('r s * 'k s) \<Rightarrow> 'k \<Rightarrow> ('r s * 'k s) \<Rightarrow> ('r*'k*'r,'t) MM" 
+  "('k,'v,'r,'t)store_ops \<Rightarrow> ('k,'r)rsplit_node \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('r,'t) MM" 
 where
-"node_steal_left store_ops = (
-  let write = store_ops|>wrte in
-  (% c1 k1 c2.
-  let c1 = c1 |> (% (x,y). (rev x, rev y)) in
-  case c1 of (r1#rs1,k0#ks0) \<Rightarrow>
-  case c2 of (rs2,ks2) \<Rightarrow>
-  Disk_node(ks0,rs1) |> write |> bind (% left.
-  Disk_node(k1#ks2,r1#rs2) |> write |> bind (% right.
-  return (left,k0,right)))))"
+"node_steal_left store_ops p c1 c2 = (
+  let c1 = (c1 |> (% (x,y). (rev x, rev y))) in
+  case c1 of (k1#rest,r1#rest') \<Rightarrow>
+  case c2 of (ks2,rs2) \<Rightarrow>
+  case (p|>r_ks1,p|>r_ts1) of (k2#ks1,_#rs1) \<Rightarrow>
+  (rev rest,rev rest') |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r3.
+  (k2#ks2,r1#rs2) |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% r4.
+  p \<lparr> r_ks1:=k1#ks1, r_ts1:=r3#rs1, r_t:=r4 \<rparr>
+  |> unsplit_node |> mk_Disk_node |> (store_ops|>store_alloc) |> bind (% p.
+  return p))))"
+
 
 
 (* node merge ------------------------------------------------------- *)

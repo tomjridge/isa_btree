@@ -29,4 +29,10 @@ definition make_frame :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'r \<Rightarrow>
      let r' = List.hd rs' in
      (Frm((rs,ks),r',(ks',List.tl rs'),r_parent),  r')))"
 
+(* convert a rsplit_node to a disk node; focus rks has one more r than k *)
+definition unsplit_node :: "('r s * 'k s) * ('r s * 'k s) * ('k s * 'r s) \<Rightarrow> ('k s * 'r s)" where
+"unsplit_node x = (
+  let ((rs1,ks1),(rs2,ks2),(ks3,rs3)) = x in
+  ( (List.rev ks1)@ks2@ks3, (List.rev rs1)@rs2@rs3) )"
+
 end

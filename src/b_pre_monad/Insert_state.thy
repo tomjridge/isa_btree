@@ -29,12 +29,6 @@ split_leaf cs kvs = (
   |> (% (kvs,kvs'). (List.rev kvs,List.hd kvs'|>fst, kvs')))
 "
 
-(* convert a rsplit_node to a disk node; rks has one more r than k *)
-definition unsplit_node :: "('r s * 'k s) * ('r s * 'k s) * ('k s * 'r s) \<Rightarrow> ('k s * 'r s)" where
-"unsplit_node x = (
-  let ((rs1,ks1),(rs2,ks2),(ks3,rs3)) = x in
-  ( (List.rev ks1)@ks2@ks3, (List.rev rs1)@rs2@rs3) )"
-
 (* NOTE for both split_node and split_leaf, we may know the order is dense, and all keys have values; in which case we can split
 with a full left leaf/node *)
 definition split_node :: 

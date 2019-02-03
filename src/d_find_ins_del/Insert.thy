@@ -1,4 +1,4 @@
-theory Insert_with_mutation imports Find "$SRC/b_pre_monad/Insert_state" begin
+theory Insert imports Find "$SRC/b_pre_monad/Insert_state" begin
 
 (* insert ------------------------------------------------------------ *)
 

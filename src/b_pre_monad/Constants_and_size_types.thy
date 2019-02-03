@@ -6,7 +6,7 @@ theory Constants_and_size_types imports A_start_here begin
 (* `constants` record type, which is used to record min and max bounds
 for leaves and nodes *)
 
-record constants = 
+datatype_record constants = 
   min_leaf_size :: nat
   max_leaf_size :: nat
   min_node_keys :: nat
