@@ -1,4 +1,4 @@
-theory Monad imports Main Pre_monad begin
+theory Monad imports Main "$SRC/b_pre_monad/Pre_monad" begin
 
 
 (* abstract version; NOTE obviously can't be exported *)

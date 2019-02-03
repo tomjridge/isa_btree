@@ -1,32 +1,24 @@
-theory Find 
-imports "Pre_find"
-begin
-
-
-type_synonym 'a s = "'a list"
-
+theory Find imports Post_monad "$SRC/b_pre_monad/Find_state" begin
 
 (* find ------------------------------------------------------------- *)
 
-
-
-
-
-definition find_step :: "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r)fs \<Rightarrow> (('k,'v,'r)fs,'t) MM" where
-"find_step ps1 store_ops fs = (
-  (* let store_ops = ps1 |> dot_store_ops in *)
+definition find_step :: "
+constants \<Rightarrow> 
+'k ord \<Rightarrow> 
+('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>  
+('k,'v,'r) find_state \<Rightarrow> (('k,'v,'r) find_state,'t) MM" where
+"find_step cs k_cmp store_ops = (
+  let read = store_ops|>read in
+  (% fs. 
   case fs of 
-  F_finished _ \<Rightarrow> (return fs)  (* FIXME impossible, or return none? or have a finished error? or stutter? *)
+  F_finished _ \<Rightarrow> return fs \<comment> \<open> stutter; or fail? \<close>
   | F_down(r0,k,r,stk) \<Rightarrow> (
-    (store_ops|>store_read) r |>fmap (% f. 
+    read r |>fmap (% f. 
     case f of 
     Disk_node (ks,rs) \<Rightarrow> (
-      let (stk',r') = add_new_stack_frame (ps1|>dot_cmp) k (ks,rs) stk in
-      F_down(r0,k,r',stk'))
-    | Disk_leaf kvs \<Rightarrow> (F_finished(r0,k,r,kvs,stk)))) )"
-
-
-
+      let (frm,r) = make_frame k_cmp k r ks rs in      
+      F_down(r0,k,r,frm#stk))
+    | Disk_leaf kvs \<Rightarrow> F_finished(r0,k,r,kvs,stk)))))"
 
 end
 

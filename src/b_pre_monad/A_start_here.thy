@@ -1,5 +1,5 @@
 theory A_start_here
-imports Main 
+imports Main "~~/src/HOL/Library/Datatype_Records"
 begin
 
 lemma FIXME: "P" sorry
