@@ -157,10 +157,12 @@ export_code
 fmap
 Disk_node
 make_constants
+make_store_ops
 make_initial_find_state
 I1
 I_down
 insert_step
 
 in OCaml file "/tmp/insert_with_mutation.ml"
+
 end

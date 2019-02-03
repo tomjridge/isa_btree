@@ -1,6 +1,6 @@
---- insert_with_mutation.ml.orig	2019-01-31 15:14:50.160015885 +0000
-+++ insert_with_mutation.ml	2019-01-31 15:15:43.273333629 +0000
-@@ -363,7 +363,15 @@ let rec make_initial_find_state k r = F_
+--- insert_with_mutation.ml.orig	2019-02-03 12:31:36.798069584 +0000
++++ insert_with_mutation.ml	2019-02-03 12:32:06.294727924 +0000
+@@ -373,7 +373,15 @@ let rec make_initial_find_state k r = F_
  
  end;; (*struct Pre_monad*)
  
@@ -14,6 +14,6 @@
 +end
 +
 +module Insert_with_mutation(Monad:MONAD) : sig
-   type ('a, 'b, 'c) blk_ops =
-     Make_blk_ops of
+   type ('a, 'b, 'c) store_ops =
+     Make_store_ops of
        ('a -> ('b, 'c) Monad.mm) * ('b -> ('a, 'c) Monad.mm) *

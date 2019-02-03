@@ -374,56 +374,33 @@ let rec make_initial_find_state k r = F_down (r, (k, (r, [])));;
 end;; (*struct Pre_monad*)
 
 module Insert_with_mutation : sig
-  type ('a, 'b, 'c) blk_ops =
-    Make_blk_ops of
+  type ('a, 'b, 'c) store_ops =
+    Make_store_ops of
       ('a -> ('b, 'c) Monad.mm) * ('b -> ('a, 'c) Monad.mm) *
         ('a -> 'b -> (('a option), 'c) Monad.mm)
-  type ('a, 'b) alloc_ops =
-    Make_alloc_ops of
-      (unit -> ('a, 'b) Monad.mm) * ('a list -> (unit, 'b) Monad.mm)
-  type ('a, 'b, 'c, 'd) marshal_ops =
-    Make_marshal_ops of
-      ('a -> ('b, 'c, 'd) Pre_monad.dnode) *
-        (('b, 'c, 'd) Pre_monad.dnode -> 'a)
   val insert_step :
     Pre_monad.constants ->
       ('a -> 'a -> Arith.int) ->
-        ('b, 'c, 'd) blk_ops ->
-          ('c, 'a, 'e, 'b) marshal_ops ->
-            ('b, 'd) alloc_ops ->
-              ('a, 'e, 'b) Pre_monad.insert_state ->
-                (('a, 'e, 'b) Pre_monad.insert_state, 'd) Monad.mm
+        ('b, ('a, 'c, 'b) Pre_monad.dnode, 'd) store_ops ->
+          ('a, 'c, 'b) Pre_monad.insert_state ->
+            (('a, 'c, 'b) Pre_monad.insert_state, 'd) Monad.mm
 end = struct
 
-type ('a, 'b, 'c) blk_ops =
-  Make_blk_ops of
+type ('a, 'b, 'c) store_ops =
+  Make_store_ops of
     ('a -> ('b, 'c) Monad.mm) * ('b -> ('a, 'c) Monad.mm) *
       ('a -> 'b -> (('a option), 'c) Monad.mm);;
 
-type ('a, 'b) alloc_ops =
-  Make_alloc_ops of
-    (unit -> ('a, 'b) Monad.mm) * ('a list -> (unit, 'b) Monad.mm);;
+let rec rewrite (Make_store_ops (x1, x2, x3)) = x3;;
 
-type ('a, 'b, 'c, 'd) marshal_ops =
-  Make_marshal_ops of
-    ('a -> ('b, 'c, 'd) Pre_monad.dnode) *
-      (('b, 'c, 'd) Pre_monad.dnode -> 'a);;
-
-let rec dnode2blk (Make_marshal_ops (x1, x2)) = x2;;
-
-let rec rewrite (Make_blk_ops (x1, x2, x3)) = x3;;
-
-let rec alloc (Make_alloc_ops (x1, x2)) = x1;;
-
-let rec wrte (Make_blk_ops (x1, x2, x3)) = x2;;
+let rec wrte (Make_store_ops (x1, x2, x3)) = x2;;
 
 let rec step_up
-  cs k_cmp blk_ops marshal_ops alloc_ops u =
+  cs k_cmp store_ops u =
     (let (write, rewritea) =
-       (Pre_monad.rev_apply blk_ops wrte, Pre_monad.rev_apply blk_ops rewrite)
+       (Pre_monad.rev_apply store_ops wrte,
+         Pre_monad.rev_apply store_ops rewrite)
        in
-     let dnode2blka = Pre_monad.rev_apply marshal_ops dnode2blk in
-     let _ = Pre_monad.rev_apply alloc_ops alloc in
       (match u with (_, []) -> Pre_monad.impossible1 "insert, step_up"
         | (fo, frm :: stk) ->
           (let a = Pre_monad.dest_Frm frm in
@@ -441,14 +418,15 @@ let rec step_up
                              in
                             Pre_monad.rev_apply
                               (Pre_monad.rev_apply
-                                (Pre_monad.Disk_node (ks, rs)) dnode2blka)
-                              (fun blk ->
-                                Pre_monad.rev_apply (rewritea r_parent blk)
-                                  (Monad.bind
-                                    (fun ad ->
-                                      (match ad
-with None -> Monad.return (Sum_Type.Inr ())
-| Some r2 -> Monad.return (Sum_Type.Inl (Pre_monad.I1 r2, stk)))))))
+                                (Pre_monad.Disk_node (ks, rs))
+                                (rewritea r_parent))
+                              (Monad.bind
+                                (fun ad ->
+                                  (match ad
+                                    with None -> Monad.return (Sum_Type.Inr ())
+                                    | Some r2 ->
+                                      Monad.return
+(Sum_Type.Inl (Pre_monad.I1 r2, stk))))))
                         | Pre_monad.I2 (r1, (k, r2)) ->
                           (let (ks, rs) =
                              Pre_monad.unsplit_node
@@ -460,47 +438,37 @@ with None -> Monad.return (Sum_Type.Inr ())
                               with true ->
                                 Pre_monad.rev_apply
                                   (Pre_monad.rev_apply
-                                    (Pre_monad.Disk_node (ks, rs)) dnode2blka)
-                                  (fun blk ->
-                                    Pre_monad.rev_apply (rewritea r_parent blk)
-                                      (Monad.bind
-(fun ad ->
-  (match ad with None -> Monad.return (Sum_Type.Inr ())
-    | Some r2a -> Monad.return (Sum_Type.Inl (Pre_monad.I1 r2a, stk))))))
+                                    (Pre_monad.Disk_node (ks, rs))
+                                    (rewritea r_parent))
+                                  (Monad.bind
+                                    (fun ad ->
+                                      (match ad
+with None -> Monad.return (Sum_Type.Inr ())
+| Some r2a -> Monad.return (Sum_Type.Inl (Pre_monad.I1 r2a, stk)))))
                               | false ->
                                 (let (ks_rs1, (ka, ks_rs2)) =
                                    Pre_monad.split_node cs (ks, rs) in
                                   Pre_monad.rev_apply
                                     (Pre_monad.rev_apply
-                                      (Pre_monad.Disk_node ks_rs1) dnode2blka)
-                                    (fun blk ->
-                                      Pre_monad.rev_apply (write blk)
-(Monad.bind
-  (fun r1a ->
-    Pre_monad.rev_apply
-      (Pre_monad.rev_apply (Pre_monad.Disk_node ks_rs2) dnode2blka)
-      (fun blka ->
-        Pre_monad.rev_apply (write blka)
-          (Monad.bind
-            (fun r2a ->
-              Monad.return
-                (Sum_Type.Inl (Pre_monad.I2 (r1a, (ka, r2a)), stk))))))))))))))
+                                      (Pre_monad.Disk_node ks_rs1) write)
+                                    (Monad.bind
+                                      (fun r1a ->
+Pre_monad.rev_apply (Pre_monad.rev_apply (Pre_monad.Disk_node ks_rs2) write)
+  (Monad.bind
+    (fun r2a ->
+      Monad.return (Sum_Type.Inl (Pre_monad.I2 (r1a, (ka, r2a)), stk))))))))))))
                     ba)))
               b)));;
 
-let rec blk2dnode (Make_marshal_ops (x1, x2)) = x1;;
-
-let rec read (Make_blk_ops (x1, x2, x3)) = x1;;
+let rec read (Make_store_ops (x1, x2, x3)) = x1;;
 
 let rec find_step
-  cs k_cmp blk_ops marshal_ops alloc_ops =
-    (let reada = Pre_monad.rev_apply blk_ops read in
-     let blk2dnodea = Pre_monad.rev_apply marshal_ops blk2dnode in
+  cs k_cmp store_ops =
+    (let reada = Pre_monad.rev_apply store_ops read in
       (fun fs ->
         (match fs
           with Pre_monad.F_down (r0, (k, (r, stk))) ->
-            Pre_monad.rev_apply
-              (Pre_monad.rev_apply (reada r) (Monad.fmap blk2dnodea))
+            Pre_monad.rev_apply (reada r)
               (Monad.fmap
                 (fun a ->
                   (match a
@@ -512,18 +480,17 @@ let rec find_step
           | Pre_monad.F_finished _ -> Monad.return fs)));;
 
 let rec step_down
-  cs k_cmp blk_ops marshal_ops alloc_ops =
-    (let find_stepa = find_step cs k_cmp blk_ops marshal_ops alloc_ops in
+  cs k_cmp store_ops =
+    (let find_stepa = find_step cs k_cmp store_ops in
       (fun (fs, v) ->
         Pre_monad.rev_apply (find_stepa fs) (Monad.fmap (fun d -> (d, v)))));;
 
 let rec step_bottom
-  cs k_cmp blk_ops marshal_ops alloc_ops d =
+  cs k_cmp store_ops d =
     (let (write, rewritea) =
-       (Pre_monad.rev_apply blk_ops wrte, Pre_monad.rev_apply blk_ops rewrite)
+       (Pre_monad.rev_apply store_ops wrte,
+         Pre_monad.rev_apply store_ops rewrite)
        in
-     let dnode2blka = Pre_monad.rev_apply marshal_ops dnode2blk in
-     let _ = Pre_monad.rev_apply alloc_ops alloc in
      let (fs, v) = d in
       (match Pre_monad.dest_F_finished fs
         with None -> Pre_monad.impossible1 "insert, step_bottom"
@@ -535,41 +502,32 @@ let rec step_bottom
                 (Pre_monad.rev_apply cs Pre_monad.max_leaf_size)
               with true ->
                 Pre_monad.rev_apply
-                  (Pre_monad.rev_apply (Pre_monad.Disk_leaf kvsa) dnode2blka)
-                  (fun blk ->
-                    Pre_monad.rev_apply (rewritea r blk)
-                      (Monad.bind
-                        (fun a ->
-                          (match a with None -> Monad.return (Sum_Type.Inr ())
-                            | Some ra ->
-                              Monad.return
-                                (Sum_Type.Inl (Pre_monad.I1 ra, stk))))))
+                  (Pre_monad.rev_apply (Pre_monad.Disk_leaf kvsa) (rewritea r))
+                  (Monad.bind
+                    (fun a ->
+                      (match a with None -> Monad.return (Sum_Type.Inr ())
+                        | Some ra ->
+                          Monad.return (Sum_Type.Inl (Pre_monad.I1 ra, stk)))))
               | false ->
                 (let (kvs1, (ka, kvs2)) = Pre_monad.split_leaf cs kvsa in
                   Pre_monad.rev_apply
-                    (Pre_monad.rev_apply (Pre_monad.Disk_leaf kvs1) dnode2blka)
-                    (fun blk ->
-                      Pre_monad.rev_apply (write blk)
-                        (Monad.bind
-                          (fun r1 ->
-                            Pre_monad.rev_apply
-                              (Pre_monad.rev_apply (Pre_monad.Disk_leaf kvs2)
-                                dnode2blka)
-                              (fun blka ->
-                                Pre_monad.rev_apply (write blka)
-                                  (Monad.bind
-                                    (fun r2 ->
-                                      Monad.return
-(Sum_Type.Inl (Pre_monad.I2 (r1, (ka, r2)), stk)))))))))))));;
+                    (Pre_monad.rev_apply (Pre_monad.Disk_leaf kvs1) write)
+                    (Monad.bind
+                      (fun r1 ->
+                        Pre_monad.rev_apply
+                          (Pre_monad.rev_apply (Pre_monad.Disk_leaf kvs2) write)
+                          (Monad.bind
+                            (fun r2 ->
+                              Monad.return
+                                (Sum_Type.Inl
+                                  (Pre_monad.I2 (r1, (ka, r2)), stk)))))))))));;
 
 let rec insert_step
-  cs k_cmp blk_ops marshal_ops alloc_ops =
-    (let step_downa = step_down cs k_cmp blk_ops marshal_ops alloc_ops in
-     let step_bottoma = step_bottom cs k_cmp blk_ops marshal_ops alloc_ops in
-     let step_upa = step_up cs k_cmp blk_ops marshal_ops alloc_ops in
-     let write = Pre_monad.rev_apply blk_ops wrte in
-     let dnode2blka = Pre_monad.rev_apply marshal_ops dnode2blk in
-     let _ = Pre_monad.rev_apply alloc_ops alloc in
+  cs k_cmp store_ops =
+    (let step_downa = step_down cs k_cmp store_ops in
+     let step_bottoma = step_bottom cs k_cmp store_ops in
+     let step_upa = step_up cs k_cmp store_ops in
+     let write = Pre_monad.rev_apply store_ops wrte in
       (fun s ->
         (match s
           with Pre_monad.I_down d ->
@@ -592,11 +550,8 @@ let rec insert_step
               | (Pre_monad.I2 (r1, (k, r2)), []) ->
                 Pre_monad.rev_apply
                   (Pre_monad.rev_apply (Pre_monad.Disk_node ([k], [r1; r2]))
-                    dnode2blka)
-                  (fun blk ->
-                    Pre_monad.rev_apply (write blk)
-                      (Monad.bind
-                        (fun r -> Monad.return (Pre_monad.I_finished r))))
+                    write)
+                  (Monad.bind (fun r -> Monad.return (Pre_monad.I_finished r)))
               | (_, _ :: _) ->
                 Pre_monad.rev_apply (step_upa u)
                   (Monad.bind

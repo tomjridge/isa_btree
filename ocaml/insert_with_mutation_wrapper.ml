@@ -17,7 +17,7 @@ let make_insert_step (type t) ~(monad_ops:t monad_ops) =
   end
   in
   let module M = Insert_with_mutation(Monad) in
-  let insert_step ~cs ~k_cmp ~blk_ops ~marshal_ops ~alloc_ops : ('k,'v,'r) insert_state -> (('k,'v,'r) insert_state,t)m =
+  let insert_step ~cs ~k_cmp ~store_ops : ('k,'v,'r) insert_state -> (('k,'v,'r) insert_state,t)m =
     let cs = 
       let (a,b,c,d) = cs in
       let f i = Arith.nat_of_integer (Big_int.big_int_of_int i) in
@@ -26,39 +26,19 @@ let make_insert_step (type t) ~(monad_ops:t monad_ops) =
     let k_cmp x y =
       k_cmp x y |> fun i -> Arith.Int_of_integer (Big_int.big_int_of_int i)
     in
-    let blk_ops = 
-      let (a,b,c) = blk_ops in
-      M.Make_blk_ops(a,b,c)
+    let store_ops = 
+      let (a,b,c) = store_ops in
+      M.Make_store_ops(a,b,c)
     in
-    let marshal_ops = 
-      let (a,b) = marshal_ops in
-      M.Make_marshal_ops(a,b)
-    in
-    let alloc_ops =
-      let (a,b) = alloc_ops in
-      M.Make_alloc_ops(a,b)
-    in
-    M.insert_step cs k_cmp blk_ops marshal_ops alloc_ops
+    M.insert_step cs k_cmp store_ops
   in
   insert_step
 
 
-let _ : monad_ops:'a monad_ops ->
-cs:int * int * int * int ->
-k_cmp:('b -> 'b -> int) ->
-blk_ops:('c -> ('d, 'a) m) * ('d -> ('c, 'a) m) *
-        ('c -> 'd -> ('c option, 'a) m) ->
-marshal_ops:('d -> ('b, 'e, 'c) Pre_monad.dnode) *
-            (('b, 'e, 'c) Pre_monad.dnode -> 'd) ->
-alloc_ops:(unit -> ('c, 'a) m) * ('c list -> (unit, 'a) m) ->
-('b, 'e, 'c) Pre_monad.insert_state ->
-(('b, 'e, 'c) Pre_monad.insert_state, 'a) m
- = make_insert_step
-
-let insert ~(monad_ops:'t monad_ops) ~cs ~k_cmp ~blk_ops ~marshal_ops ~alloc_ops =
+let insert ~(monad_ops:'t monad_ops) ~cs ~k_cmp ~store_ops =
   let ( >>= ) = monad_ops.bind in
   let return = monad_ops.return in
-  let step = make_insert_step ~monad_ops ~cs ~k_cmp ~blk_ops ~marshal_ops ~alloc_ops in
+  let step = make_insert_step ~monad_ops ~cs ~k_cmp ~store_ops in
   fun ~(r:'r) ~(k:'k) ~(v:'v) ->
     let find_state = Pre_monad.make_initial_find_state k r in
     let s = find_state,v in

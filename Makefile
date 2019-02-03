@@ -16,7 +16,7 @@ doc: FORCE
 	$(DUNE) build @doc
 
 doc_install: doc
-	rm -rf ocamldoc/*
-	cp -R _build/default/_doc/_html/* ocamldoc
+	rm -rf docs/ocamldoc/*
+	cp -R _build/default/_doc/_html/* docs/ocamldoc
 
 FORCE:
