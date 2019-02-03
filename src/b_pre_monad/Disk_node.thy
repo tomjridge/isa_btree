@@ -1,5 +1,5 @@
 theory Disk_node  
-imports Prelude
+imports A_start_here
 begin
 
 (* blocks on disk correspond to nodes, which are like tree nodes, but
@@ -18,6 +18,15 @@ datatype ('k,'v,'r) dnode =
   | Disk_leaf "('k*'v) list"
 
 
+end
+
+
+
+
+
+
+
+(*
 (* FIXME do we also want to check wrt size constraints? probably yes *)
 
 definition check_length_ks_rs :: "'k list * 'r list \<Rightarrow> bool" where
@@ -41,8 +50,7 @@ definition dest_Disk_leaf :: "('k,'v,'r) dnode \<Rightarrow> ('k*'v) list" where
 "dest_Disk_leaf f = (case f of Disk_leaf x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Disk_leaf''))"
 
 
-
-
+*)
 
 
 
@@ -59,4 +67,3 @@ definition wf_leaf_frame :: "constants \<Rightarrow> nat \<Rightarrow> bool" whe
 "wf_leaf_frame c n = ( c|>min_leaf_size \<le> n & n \<le> c|>max_leaf_size )"
 *)
 
-end

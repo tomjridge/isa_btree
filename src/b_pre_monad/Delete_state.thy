@@ -2,9 +2,9 @@ theory Delete_state
 imports Find_state
 begin
 
-
 (* this to force dependency order in exported code? *)
 definition dummy :: "unit" where "dummy=()"
+
 
 (* delete ----------------------------------------------------------- *)
 
@@ -20,20 +20,25 @@ type_synonym ('k,'v,'r) fo = "('k,'v,'r) del_t"  (* focus *)
 (* D_down: r is the original pointer to root, in case we don't delete anything *)
 datatype (dead 'k, dead 'v,dead 'r) delete_state = 
   D_down "('k,'v,'r) fs * 'r"  
-  | D_up "('k,'v,'r) fo * ('k,'r) rstk * 'r"  (* last 'r is the root, for wellformedness check *)
+  | D_up "('k,'v,'r) fo * ('k,'r) stk * 'r"  (* last 'r is the root, for wellformedness check *)
   | D_finished "'r" 
   
-type_synonym ('k,'v,'r)u = "('k,'v,'r)fo * ('k,'r)rstk"  
+type_synonym ('k,'v,'r)u = "('k,'v,'r)fo * ('k,'r)stk"  
 type_synonym ('k,'v,'r)d = "('k,'v,'r)find_state * 'r"
 
 type_synonym ('k,'v,'r)dst = "('k,'v,'r) delete_state"
 
-definition mk_delete_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)dst" where
-"mk_delete_state k r = (D_down(mk_find_state k r,r))"
+definition mk_initial_delete_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)delete_state" where
+"mk_initial_delete_state k r = (D_down(make_initial_find_state k r,r))"
 
-definition dest_d_finished :: "('k,'v,'r)dst \<Rightarrow> 'r option" where
+definition dest_d_finished :: "('k,'v,'r)delete_state \<Rightarrow> 'r option" where
 "dest_d_finished x = (case x of D_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
 
+end
+
+
+
+(*
 (* wellformedness --------------------------------------------------- *)
 
 definition wf_d :: "'k ord \<Rightarrow> ('k,'v,'r,'t)r2t \<Rightarrow> ('k,'v) tree \<Rightarrow> 't \<Rightarrow> ('k,'v,'r) d \<Rightarrow> bool" where
@@ -94,7 +99,4 @@ where
     wf_u constants k_ord r2t t0 s k (fo,stk) & 
     (case r2t s r of None \<Rightarrow> False | Some t \<Rightarrow> tree_equal t t0))
   | D_finished r \<Rightarrow> (wf_f constants k_ord r2t t0 s k r) )"
-
-
-
-end
+*)

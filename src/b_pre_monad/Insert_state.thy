@@ -1,7 +1,70 @@
 theory Insert_state
-imports Find_state
+imports Constants_and_size_types Find_state
 begin
 
+datatype ('k,'v,'r) i12_t = I1 'r | I2 "'r*'k*'r"
+
+type_synonym ('k,'v,'r) fo = "('k,'v,'r)i12_t"
+
+type_synonym ('k,'v,'r) d (* down_state *) = "('k,'v,'r)find_state*'v"
+type_synonym ('k,'v,'r) u (* up_state *) = "('k,'v,'r)fo*('k,'r)stk"
+
+datatype (dead 'k,dead 'v,dead 'r) insert_state = 
+  I_down "('k,'v,'r) d"
+  | I_up "('k,'v,'r) u"
+  | I_finished 'r
+  | I_finished_with_mutate
+
+definition split_leaf :: "constants \<Rightarrow> ('k*'v) s \<Rightarrow> ('k*'v)s * 'k * ('k*'v) s" where "
+split_leaf cs kvs = (
+  let _ = assert_true True in
+  iter_step (% (kvs,kvs').
+    case List.length kvs' \<le> cs|>min_leaf_size of
+    True \<Rightarrow> None
+    | False \<Rightarrow> (
+      case kvs' of 
+      [] \<Rightarrow> impossible1 (STR ''split_leaf'')
+      | (k,v)#kvs' \<Rightarrow> Some((k,v)#kvs,kvs')))
+    ([],kvs)
+  |> (% (kvs,kvs'). (List.rev kvs,List.hd kvs'|>fst, kvs')))
+"
+
+(* convert a rsplit_node to a disk node; rks has one more r than k *)
+definition unsplit_node :: "('r s * 'k s) * ('r s * 'k s) * ('k s * 'r s) \<Rightarrow> ('k s * 'r s)" where
+"unsplit_node x = (
+  let ((rs1,ks1),(rs2,ks2),(ks3,rs3)) = x in
+  ( (List.rev ks1)@ks2@ks3, (List.rev rs1)@rs2@rs3) )"
+
+(* NOTE for both split_node and split_leaf, we may know the order is dense, and all keys have values; in which case we can split
+with a full left leaf/node *)
+definition split_node :: 
+  "constants \<Rightarrow> ('k list * 'a list) \<Rightarrow> ('k list * 'a list) * 'k * ('k list * 'a list)" 
+where
+"split_node cs n = (
+  let (ks,rs) = n in
+  let l = List.length ks  div 2 in
+  let l = max (cs|>min_node_keys) l in
+  iter_step (% (ks,rs,ks',rs').
+    case (ks',rs') of 
+    (k'#ks',r'#rs') \<Rightarrow> (
+      case List.length ks < l of
+      True \<Rightarrow> Some(k'#ks,r'#rs,ks',rs')
+      | False \<Rightarrow> None)
+    | _ \<Rightarrow> (impossible1 (STR ''split_node'')))
+    ([],[],ks,rs)
+  |> (% (ks,rs,ks',rs').
+    case (ks',rs') of
+    (k'#ks',r'#rs') \<Rightarrow> (
+      (List.rev ks,List.rev(r'#rs)),
+      k',
+      (ks',rs'))))"
+
+
+
+end
+
+
+(*
 
 (* this to force dependency order in exported code? *)
 definition dummy :: "unit" where "dummy=()"
@@ -88,4 +151,5 @@ where
   | I_finished r \<Rightarrow> (wf_f cs k_ord r2t t0 s k v r) )"
 
 (* don't bother with wf_trans *)
-end
+
+*)

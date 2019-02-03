@@ -1,50 +1,18 @@
 theory Key_value
-imports Prelude
+imports A_start_here
 begin
 
-(* NOTE definitions are polymorphic in the key type *)
+(* k ord ------------------------------- *)
 
-(* FIXME what does this mean? equality is just hol equality, so we use
-this rather than a compare function *)
-
-(* 'k ord, kv ops --------------------------------------------------- *)
-
-
-(* keys are ordered *)
 type_synonym 'k ord = "'k \<Rightarrow> 'k \<Rightarrow> int"
-  
-(* NOTE variables of type 'k ord are typically called ord, or (better) cmp *)
-
-(* operations on keys and values (in fact, just a key comparison function) *)
-record ('k,'v) kv_ops =
-  compare_k :: "'k ord"
-  
-
-(* check two lists of kv for equality; patched because values may have
-some non-standard equality *)
-
-definition kvs_equal :: "('k*'v) list \<Rightarrow> ('k*'v) list \<Rightarrow> bool" where
-"kvs_equal = failwith (STR ''FIXME patch'')"
-
-
-(* NOTE 'v is only compared for equality in wf checks; we assume these
-are only tested for simple 'v for which ocaml's = is satisfactory; in
-fact, in the isa code we only compare trees for equality, so we can
-drop this altogether *)
-
-(*
-definition v_equal :: "'v \<Rightarrow> 'v \<Rightarrow> bool" where
-"v_equal = failwith (STR ''FIXME patch'')"
-*)
-
-
-(* key ordering, generic defns key_lt etc --------------------------- *)
 
 definition key_lt :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
 "key_lt ord k1 k2 = ( ord k1 k2 < 0)"
 
-definition key_eq :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
+definition key_eq ::  "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
 "key_eq ord k1 k2 = ( ord k1 k2 = 0)"
+
+(* key ordering, generic defns key_lt etc --------------------------- *)
 
 definition key_le :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> bool" where
 "key_le ord k1 k2 = ( ord k1 k2 <= 0)"
@@ -76,6 +44,33 @@ definition key_compare :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow
    if n < 0 then LT else
    if n = 0 then EQ else
    GT)"
+
+
+
+
+definition kvs_insert :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k*'v) s \<Rightarrow> ('k * 'v) s" where "
+kvs_insert k_cmp k v kvs = (
+  iter_step (% (kvs,kvs').
+    case kvs' of 
+    [] \<Rightarrow> None
+    | (k',v')#kvs' \<Rightarrow> (
+      case key_lt k_cmp k k' of 
+      True \<Rightarrow> None
+      | False \<Rightarrow> (
+        case key_eq k_cmp k k' of 
+        True \<Rightarrow> Some(kvs,kvs') 
+        | False \<Rightarrow> (Some((k',v')#kvs,kvs')))))
+    ([],kvs)
+  |> (% (kvs,kvs'). (List.rev ((k,v)#kvs))@kvs'))"
+
+
+(* check two lists of kv for equality; patched because values may have
+some non-standard equality; used for debugging *)
+
+definition kvs_equal :: "('k*'v) list \<Rightarrow> ('k*'v) list \<Rightarrow> bool" where
+"kvs_equal = failwith (STR ''FIXME patch'')"
+
+
 
 (* ordererd key list ------------------------------------------------ *)
 
@@ -133,6 +128,7 @@ definition ck2_tests :: unit where
 
 (* FIXME may want to use binary search; but this assumes an array-like implementation *)
 
+(*
 (* insert a new kv into a list of kvs; used to insert new binding into a leaf *)
 primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Rightarrow> ('k*'v)list" where
 "kvs_insert cmp kv [] = [kv]"
@@ -143,13 +139,14 @@ primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Ri
   else if (key_eq cmp k k') then (k,v)#kvs' else
   (k,v)#(k',v')#kvs'
 )"
+*)
 
 definition kvs_insert_tests :: unit where
 "kvs_insert_tests = (
-  let _ = assert_true (kvs_insert nat_ord (2,2) (List.map (% x. (x,x)) [0,1,3,4]) = 
+  let _ = assert_true (kvs_insert nat_ord 2 2 (List.map (% x. (x,x)) [0,1,3,4]) = 
     (List.map (% x. (x,x)) [0,1,2,3,4]))
   in
-  let _ = assert_true (kvs_insert nat_ord (6,6) (List.map (% x. (x,x)) [0,1,3,4]) = 
+  let _ = assert_true (kvs_insert nat_ord 6 6 (List.map (% x. (x,x)) [0,1,3,4]) = 
     (List.map (% x. (x,x)) [0,1,3,4,6]))
   in
   ())"

@@ -1,5 +1,5 @@
 theory Tree
-imports "$SRC/a_pre/Pre" 
+imports A_start_here Constants_and_size_types Key_value
 begin
 
 (* We need two models for trees: the algebraic datatype model, and the

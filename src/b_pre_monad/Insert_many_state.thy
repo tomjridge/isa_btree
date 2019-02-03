@@ -14,15 +14,15 @@ type_synonym ('k,'v,'r) fo = "('k,'v,'r) im_fo"
 
 type_synonym ('k,'v,'r) d = "('k,'v,'r)fs * ('v * ('k*'v)s)"
 
-type_synonym ('k,'v,'r) u = "('k,'v,'r)fo*('k,'r)rstk"
+type_synonym ('k,'v,'r) u = "('k,'v,'r)fo*('k,'r)stk"
 
 datatype (dead 'k,dead 'v,dead 'r) imst (* i_state_t*) = 
   IM_down "('k,'v,'r)d"
   | IM_up "('k,'v,'r)u"
   | IM_finished "'r * ('k*'v)s"
 
-definition mk_im_state :: "'k \<Rightarrow> 'v \<Rightarrow> ('k*'v)s \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)imst" where
-"mk_im_state k v kvs r = (IM_down (mk_find_state k r,(v,kvs)))"
+definition make_initial_im_state :: "'k \<Rightarrow> 'v \<Rightarrow> ('k*'v)s \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)imst" where
+"make_initial_im_state k v kvs r = (IM_down (make_initial_find_state k r,(v,kvs)))"
 
 
 definition dest_im_finished :: "('k,'v,'r) imst \<Rightarrow> ('r * ('k*'v)s) option" where

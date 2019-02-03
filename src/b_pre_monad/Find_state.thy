@@ -1,20 +1,34 @@
 theory Find_state
-imports Pre_monad
+imports Stacks_and_frames
 begin
-
 
 (* this to force dependency order in exported code? *)
 definition dummy :: "unit" where "dummy=()"
 
 
-(* we put all the types that we want "outside" the monad, but which really belong with Find, 
-Insert, etc., here *)
+datatype ('k,'v,'r) find_state = 
+  F_down "'r * 'k * 'r * ('k,'r) stk"  (* root, search key, current pointer, stack *) 
+  | F_finished "'r * 'k * 'r * ('k*'v)s * ('k,'r)stk"
 
-(* we use a small-step style; we reify the state of the algorithm at every
-step as the following state type *)
+definition dest_F_finished :: "('k,'v,'r)find_state \<Rightarrow> ('r*'k*'r*('k*'v) s * ('k,'r)  stk) option" where
+"dest_F_finished fs = (
+  case fs of
+  F_down _ \<Rightarrow> None
+  | F_finished (r0,k,r,kvs,stk) \<Rightarrow> Some(r0,k,r,kvs,stk) )"
 
-(* find ------------------------------------------------------------- *)
+definition make_initial_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r) find_state" where "
+make_initial_find_state k r = F_down (r,k,r,[])"
 
+
+type_synonym ('k,'v,'r) fs = "('k,'v,'r) find_state"
+
+end
+
+
+
+
+
+(*
 datatype ('k,'v,'r) find_state = 
   F_down "'r * 'k * 'r * ('k,'r) rstk"  (* root, search key, current pointer, stack *) 
   | F_finished "'r * 'k * 'r * ('k*'v)s * ('k,'r)rstk"
@@ -96,5 +110,4 @@ definition wf_trans :: "'t * ('k,'v,'r)fs \<Rightarrow> 't * ('k,'v,'r)fs \<Righ
   (F_down(r0,k,r,stk),F_down(r0',k',r',stk')) \<Rightarrow> (List.length stk' = 1+List.length stk)
   | (F_down _,F_finished _) \<Rightarrow> True
   | _ \<Rightarrow> False)"
-
-end
+*)

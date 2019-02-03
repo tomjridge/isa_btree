@@ -11,13 +11,13 @@ definition dummy :: "unit" where "dummy=()"
 (* we need these exposed outside functor body in ML *)
 
 datatype ('k,'v,'r) ls_state = 
-  LS_down "'r*('k,'r) rstack" 
-  | LS_leaf "('k*'v) list * ('k,'r) rstack" 
-  | LS_up "('k,'r) rstack"
+  LS_down "'r*('k,'r) stk" 
+  | LS_leaf "('k*'v) list * ('k,'r) stk" 
+  | LS_up "('k,'r) stk"
   
 (* working with a F_finished find state, enumerate the leaves *)
 
-type_synonym ('k,'v,'r) leaf_ref = "('k*'v)s*('k,'r)rstk"
+type_synonym ('k,'v,'r) leaf_ref = "('k*'v)s*('k,'r)stk"
 
 type_synonym ('k,'v,'r) lss = "('k,'v,'r) ls_state"
 
