@@ -10,7 +10,8 @@ definition dummy :: "unit" where "dummy=()"
 
 (* we need these exposed outside functor body in ML *)
 
-datatype ('k,'v,'r) ls_state = 
+(* abbreviate lss = leaf stream state *)
+datatype ('k,'v,'r) lss = 
   LS_down "'r*('k,'r) stk" 
   | LS_leaf "('k*'v) list * ('k,'r) stk" 
   | LS_up "('k,'r) stk"
@@ -19,10 +20,8 @@ datatype ('k,'v,'r) ls_state =
 
 type_synonym ('k,'v,'r) leaf_ref = "('k*'v)s*('k,'r)stk"
 
-type_synonym ('k,'v,'r) lss = "('k,'v,'r) ls_state"
-
-definition mk_ls_state :: "'r \<Rightarrow> ('k,'v,'r)ls_state" where
-"mk_ls_state r = LS_down (r,[])"
+definition make_initial_lss :: "'r \<Rightarrow> ('k,'v,'r)lss" where
+"make_initial_lss r = LS_down (r,[])"
 
 (* detect when we are finished *)
 definition lss_is_finished :: "('k,'v,'r) lss \<Rightarrow> bool" where
@@ -36,7 +35,6 @@ definition dest_LS_leaf :: "('k,'v,'r) lss \<Rightarrow> ('k*'v)s option" where
 "dest_LS_leaf x = (
   case x of 
   LS_leaf (kvs,_) \<Rightarrow> Some kvs
-  | _ \<Rightarrow> None
-)"
+  | _ \<Rightarrow> None)"
 
 end

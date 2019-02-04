@@ -3,9 +3,8 @@ imports
 Find
 Insert
 Delete
-(* "$SRC/d_find_ins_del/Insert_many" *)
-(* "$SRC/d_find_ins_del/Leaf_stream" *)
-(* Code_Numeral *)
+Leaf_stream
+Insert_many
 "~~/src/HOL/Library/Code_Target_Numeral"
 begin
 
@@ -20,69 +19,75 @@ String_error
 from_to_tests
 
 Key_value.key_lt
-Key_value.key_le
-
+key_le
 (* FIXME remove tests in production code *)
-Key_value.okl_tests
-Key_value.ck_tests
-Key_value.ck2_tests
-Key_value.kvs_insert_tests
+okl_tests
+ck_tests
+ck2_tests
+kvs_insert_tests
 
 (* Searching_and_splitting.sk2i_tests *)
 
-(* frame_types *)
+
 Disk_node.Disk_node
 
-(* tree *)
+
+
 Tree.dest_Node
 (* Tree_stack.stack_to_lu_of_child *)
 tree_to_leaves 
 wellformed_tree
 
 
-make_initial_find_state
+
+Find_state.make_initial_find_state
 dest_F_finished
 (* wellformed_find_state *)
 (* Find_state.wf_trans *)
 
+
+
 (* Insert_state.make_initial_insert_state *)
 (* Insert_state.dest_i_finished *)
-Insert_state.I1 Insert_state.I2 Insert_state.I_down Insert_state.I_up Insert_state.I_finished
-(* Insert_state.wellformed_insert_state *)
+Insert_state.I1
+I_down 
+
 
 (* make_initial_delete_state *)
-dest_d_finished
-D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
-(* wellformed_delete_state *)
-
-(* Insert_many_state.mk_im_state *)
-(* Insert_many_state.dest_im_finished *)
-(*Insert_many_state.IM1 Insert_many_state.IM_down *)
+Delete_state.D_small_leaf
+D_down
+make_initial_delete_state
+dest_D_finished
 
 
-(*
-mk_ls_state lss_is_finished dest_LS_leaf 
+Insert_many_state.make_initial_im_state 
 
-(* monad *)
-(* Monad.dest_MM *) Monad.dummy fmap  bind
 
-(* store *) 
-store_alloc store_read store_free wf_store_ops
-*)
+Leaf_stream_state.make_initial_lss
+lss_is_finished 
+dest_LS_leaf 
 
-(* find *)
-find_step
+Monad.fmap 
+bind
+return
 
-(* insert *)
+(* post monad ------------------------------------------------------------------------- *)
+
+Post_monad.read 
+wrte 
+rewrite
+
+Find.find_step
+
 Insert.insert_step
 
-(* insert_many *)
 (* Insert_many.insert_step *)
 
 Delete.delete_step
 
-(* leaf_stream *)
-(* lss_step *)
+Leaf_stream.lss_step
+
+Insert_many.im_step
 
 
 in OCaml file "/tmp/isa_export.ml"

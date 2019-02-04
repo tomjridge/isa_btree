@@ -7,9 +7,6 @@ type_synonym ('k,'v,'r)fo = "('k,'v,'r) del_t"  (* focus *)
 type_synonym ('k,'v,'r)u = "('k,'v,'r)fo * ('k,'r)stk"  
 type_synonym ('k,'v,'r)d = "('k,'v,'r)find_state * 'r"
 
-definition X :: "('a * 'b) \<Rightarrow> ('b * 'a)" where "
-X p = (case p of (a,b) \<Rightarrow> (b,a))"
-
 (* node steal ------------------------------------------------------- *)
 
 (* args are left split node context, focus, right sib; returns updated parent

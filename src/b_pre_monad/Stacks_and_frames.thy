@@ -36,4 +36,18 @@ definition unsplit_node :: "('r s * 'k s) * ('r s * 'k s) * ('k s * 'r s) \<Righ
   let ((rs1,ks1),(rs2,ks2),(ks3,rs3)) = x in
   ( (List.rev ks1)@ks2@ks3, (List.rev rs1)@rs2@rs3) )"
 
+definition get_bounds :: "('k,'r) stk \<Rightarrow> ('k option *  'k option)" where
+"get_bounds stk = (
+  iter_step (% (l,u,stk). 
+    case stk of [] \<Rightarrow> None
+    | frm#stk \<Rightarrow> (
+      case (l,u) of (Some _,Some _) \<Rightarrow> None
+      | _ \<Rightarrow> (
+        let ((_,ks1),_,(ks2,_),_) = dest_Frm frm in
+        let l = (case l of None \<Rightarrow> (case ks1 of [] \<Rightarrow> None | k#_ \<Rightarrow> Some k) | _ \<Rightarrow> l) in
+        let u = (case u of None \<Rightarrow> (case ks2 of [] \<Rightarrow> None | k#_ \<Rightarrow> Some k) | _ \<Rightarrow> u) in
+        Some(l,u,stk))))
+    (None,None,stk)
+  |> (% (l,u,_). (l,u)))"
+
 end

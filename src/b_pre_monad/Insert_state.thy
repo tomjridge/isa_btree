@@ -15,6 +15,13 @@ datatype (dead 'k,dead 'v,dead 'r) insert_state =
   | I_finished 'r
   | I_finished_with_mutate
 
+
+definition make_initial_insert_state :: "'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r) insert_state" where
+"make_initial_insert_state r k v = (
+  let f = make_initial_find_state k r in
+  I_down(f,v))"
+
+
 definition split_leaf :: "constants \<Rightarrow> ('k*'v) s \<Rightarrow> ('k*'v)s * 'k * ('k*'v) s" where "
 split_leaf cs kvs = (
   let _ = assert_true True in
