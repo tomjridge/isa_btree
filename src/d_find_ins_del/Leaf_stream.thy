@@ -33,7 +33,7 @@ definition step_up :: "('k,'r)stk \<Rightarrow> ('k,'v,'r) lss" where
 "step_up fs = (
   let _ = check_true (%_. ~ (is_Nil' fs)) in
   case fs of 
-  [] \<Rightarrow> (failwith (STR ''impossible: Leaf_stream.step_up''))
+  [] \<Rightarrow> (failwith (STR ''Leaf_stream, step_up''))
   | f#fs' \<Rightarrow> (
     let (_,_,krs,r) = f|>dest_Frm in
     case krs of

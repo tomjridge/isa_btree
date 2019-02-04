@@ -213,8 +213,8 @@ definition keys_ordered :: "'k ord \<Rightarrow> ('k,'v)tree => bool" where
 
 (* This is the main wellformedness constraint *)
 
-definition wellformed_tree :: "constants \<Rightarrow> ms_t \<Rightarrow> 'k ord => ('k,'v) tree => bool" where
-"wellformed_tree c ms cmp t0 = assert_true (
+definition wf_tree :: "constants \<Rightarrow> ms_t \<Rightarrow> 'k ord => ('k,'v) tree => bool" where
+"wf_tree c ms cmp t0 = assert_true (
   let b1 = wf_size c ms t0 in
   let b2 = wf_ks_rs t0 in
   let b3 = balanced t0 in

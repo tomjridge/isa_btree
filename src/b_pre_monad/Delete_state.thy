@@ -37,8 +37,8 @@ type_synonym ('k,'v,'r)d = "('k,'v,'r)find_state * 'r"
 
 type_synonym ('k,'v,'r)dst = "('k,'v,'r) delete_state"
 
-definition make_initial_delete_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r)delete_state" where
-"make_initial_delete_state k r = (D_down(make_initial_find_state k r,r))"
+definition make_initial_delete_state :: "'r \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r)delete_state" where
+"make_initial_delete_state r k = (D_down(make_initial_find_state k r,r))"
 
 definition dest_D_finished :: "('k,'v,'r)delete_state \<Rightarrow> 'r option" where
 "dest_D_finished x = (case x of D_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"

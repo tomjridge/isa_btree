@@ -36,7 +36,7 @@ Disk_node.Disk_node
 Tree.dest_Node
 (* Tree_stack.stack_to_lu_of_child *)
 tree_to_leaves 
-wellformed_tree
+wf_tree
 
 
 
@@ -67,74 +67,30 @@ Leaf_stream_state.make_initial_lss
 lss_is_finished 
 dest_LS_leaf 
 
+Pre_monad.dummy
+
 Monad.fmap 
 bind
 return
+Monad.dummy
 
 (* post monad ------------------------------------------------------------------------- *)
 
+Post_monad.dummy
 Post_monad.read 
 wrte 
 rewrite
 
 Find.find_step
 
-Insert.insert_step
+Insert.insert_step insert
 
-(* Insert_many.insert_step *)
-
-Delete.delete_step
+Delete.delete_step delete
 
 Leaf_stream.lss_step
 
 Insert_many.im_step
 
-
 in OCaml file "/tmp/isa_export.ml"
 
-
-(*
-
-*)
-
-
-(* tree stack versions
-
-
-
-
-
-
-
-Tree_stack.dest_core
-
-key_ord
-
-tree_to_leaves wellformed_tree
-
-(* find *)
-mk_fts_state step_fts dest_fts_state 
-  wellformed_fts wf_fts_trans Find_tree_stack.focus_to_leaves
-
-(* insert *)
-Inserting_one Inserting_two
-Its_down Its_up
-mk_its_state step_its dest_its_state  
-  wellformed_its_state wf_its_trans Insert_tree_stack.focus_to_leaves
- 
-(* delete *)
-D_small_leaf D_small_node D_updated_subtree
-Dts_down Dts_up Dts_finished  
-mk_dts_state step_dts dest_dts_state
-  wellformed_dts_state wf_dts_trans Delete_tree_stack.focus_to_leaves
-
-  *)
-
-
-
-(*
-print_codesetup
-
-print_codeproc
-*)
 end

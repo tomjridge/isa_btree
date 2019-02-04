@@ -11,7 +11,7 @@ constants \<Rightarrow>
   let read = store_ops|>read in
   (% fs. 
   case fs of 
-  F_finished _ \<Rightarrow> return fs \<comment> \<open> stutter; or fail? \<close>
+  F_finished _ \<Rightarrow> (failwith (STR ''find_step 1''))
   | F_down(r0,k,r,stk) \<Rightarrow> (
     read r |>fmap (% f. 
     case f of 

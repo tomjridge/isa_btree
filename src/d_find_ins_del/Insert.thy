@@ -1,5 +1,9 @@
 theory Insert imports Find "$SRC/b_pre_monad/Insert_state" begin
 
+type_synonym ('k,'v,'r) fo = "('k,'v,'r)i12_t"
+type_synonym ('k,'v,'r) d (* down_state *) = "('k,'v,'r)find_state*'v"
+type_synonym ('k,'v,'r) u (* up_state *) = "('k,'v,'r)fo*('k,'r)stk"
+
 (* insert ------------------------------------------------------------ *)
 
 
@@ -24,7 +28,7 @@ constants \<Rightarrow>
   let (write,rewrite) = (store_ops|>wrte,store_ops|>rewrite) in
   let (fs,v) = d in
   case dest_F_finished fs of 
-  None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
+  None \<Rightarrow> (failwith (STR ''insert, step_bottom, 1''))
   | Some(r0,k,r,kvs,stk) \<Rightarrow> (
     \<comment> \<open> free here? FIXME \<close>
     let kvs' = kvs |> kvs_insert k_cmp k v in
@@ -54,7 +58,7 @@ constants \<Rightarrow>
   let (write,rewrite) = (store_ops|>wrte,store_ops|>rewrite) in
   let (fo,stk) = u in
   case stk of 
-  [] \<Rightarrow> impossible1 (STR ''insert, step_up'') 
+  [] \<Rightarrow> failwith (STR ''insert, step_up,1'') 
   | frm#stk' \<Rightarrow> (
     let ((rs1,ks1),_,(ks2,rs2),r_parent) = dest_Frm frm in
     case fo of
@@ -112,8 +116,39 @@ constants \<Rightarrow>
       case u of 
       Inr () \<Rightarrow> return I_finished_with_mutate
       | Inl u \<Rightarrow> return (I_up u))))
-  | I_finished _ \<Rightarrow> (return s)  \<comment> \<open> stutter \<close> 
-  | I_finished_with_mutate \<Rightarrow> (return s)))"
+  | I_finished _ \<Rightarrow> (failwith (STR ''insert_step 1'')) 
+  | I_finished_with_mutate \<Rightarrow> (failwith (STR ''insert_step 2''))))"
+
+definition insert_big_step :: "
+constants \<Rightarrow> 
+'k ord \<Rightarrow> 
+('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>
+('k,'v,'r) insert_state \<Rightarrow> (('k,'v,'r) insert_state,'t) MM" where
+"insert_big_step cs k_cmp store_ops = (
+  let insert_step = insert_step cs k_cmp store_ops in
+  (% i.
+  iter_m (% i. case i of
+    I_finished r \<Rightarrow> (return None)
+    | I_finished_with_mutate \<Rightarrow> (return None)
+    | _ \<Rightarrow> (insert_step i |> fmap Some))
+    i))"
+
+definition insert :: "
+constants \<Rightarrow> 
+'k ord \<Rightarrow>
+('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>
+'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('r option,'t) MM" where
+"insert cs k_cmp store_ops r k v = (
+  let check_tree_at_r = check_tree_at_r cs k_cmp store_ops in
+  let i = make_initial_insert_state r k v in
+  insert_big_step cs k_cmp store_ops i |> bind (% i.
+  case i of
+  I_finished r \<Rightarrow> (check_tree_at_r r |> bind (% _. return (Some r)))
+  | I_finished_with_mutate \<Rightarrow> (check_tree_at_r r |> bind (% _. return None))
+  | _ \<Rightarrow> failwith (STR ''insert 1'')
+))"
+
+
 
 end
 

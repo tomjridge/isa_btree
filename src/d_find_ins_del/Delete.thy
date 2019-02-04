@@ -130,7 +130,7 @@ definition step_up ::
   let (f,stk) = du in
   let (read,write) = (store_ops|>read,store_ops|>wrte) in
   let post_merge = post_merge cs store_ops in
-  case stk of [] \<Rightarrow> (impossible1 (STR ''delete, step_up'')) | p#stk' \<Rightarrow> (
+  case stk of [] \<Rightarrow> (failwith (STR ''delete, step_up'')) | p#stk' \<Rightarrow> (
   \<comment> \<open>(* NOTE p is the parent *)\<close>
   \<comment> \<open>(* take the result of what follows, and add the stk' component *)\<close>
   (% x. x |> fmap (% y. (y,stk'))) (case f of   
@@ -238,7 +238,35 @@ where
         | False \<Rightarrow> (Disk_node(ks,rs)|>write|>fmap D_finished))
       | D_updated_subtree(r) \<Rightarrow> (return (D_finished r)))
     | False \<Rightarrow> (step_up cs store_ops (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
-  | D_finished(r) \<Rightarrow> (return s)  \<comment> \<open> (* stutter *)\<close>))"
+  | D_finished(r) \<Rightarrow> (failwith (STR ''delete_step 1''))))"
+
+
+definition delete_big_step :: "
+constants \<Rightarrow> 
+'k ord \<Rightarrow> 
+('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>
+('k,'v,'r) delete_state \<Rightarrow> (('k,'v,'r) delete_state,'t) MM" where
+"delete_big_step cs k_cmp store_ops = (
+  let delete_step = delete_step cs k_cmp store_ops in
+  (% d.
+  iter_m (% d. case d of
+    D_finished _ \<Rightarrow> return None
+    | _ \<Rightarrow> (delete_step d |> fmap Some))
+    d))"
+
+
+definition delete :: "
+constants \<Rightarrow> 
+'k ord \<Rightarrow> 
+('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>
+'r \<Rightarrow> 'k  \<Rightarrow> ('r,'t) MM" where
+"delete cs k_cmp store_ops r k = (
+  let check_tree_at_r = check_tree_at_r cs k_cmp store_ops in
+  let d = make_initial_delete_state r k in
+  delete_big_step cs k_cmp store_ops d |> bind (% d.
+  case d of
+  D_finished r \<Rightarrow> (check_tree_at_r r |> bind (% _. return r))
+  | _ \<Rightarrow> (failwith (STR ''delete, impossible''))))"
 
 end
 
