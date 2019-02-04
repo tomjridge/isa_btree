@@ -1,26 +1,23 @@
 theory Export_code
 imports 
-"$SRC/d_find_ins_del/Find"
-"$SRC/d_find_ins_del/Delete2"
-"$SRC/d_find_ins_del/Insert"
-"$SRC/d_find_ins_del/Insert_many"
-"$SRC/d_find_ins_del/Leaf_stream"
+Find
+Insert
+Delete
+(* "$SRC/d_find_ins_del/Insert_many" *)
+(* "$SRC/d_find_ins_del/Leaf_stream" *)
 (* Code_Numeral *)
 "~~/src/HOL/Library/Code_Target_Numeral"
-(* "~~/src/HOL/Library/Code_Char" *)
 begin
 
 
 export_code "Code_Numeral.nat_of_integer" "Code_Numeral.int_of_integer" 
 
-Util.is_Ok
-Util.from_to
-Util.String_error
-Util.split_at_tests  (* FIXME remove tests in production *)
-Util.split_at_3_tests
-Util.from_to_tests
-
-Prelude.constants_ext
+is_Ok
+from_to
+String_error
+(* split_at_tests *) (* FIXME remove tests in production *)
+(* split_at_3_tests *)
+from_to_tests
 
 Key_value.key_lt
 Key_value.key_le
@@ -36,8 +33,6 @@ Key_value.kvs_insert_tests
 (* frame_types *)
 Disk_node.Disk_node
 
-Searching_and_splitting.dest_rsplit_node
-
 (* tree *)
 Tree.dest_Node
 (* Tree_stack.stack_to_lu_of_child *)
@@ -45,36 +40,27 @@ tree_to_leaves
 wellformed_tree
 
 
-(* pre_params *)
-Pre_params.dummy
-Pre_params.mk_r2t
+make_initial_find_state
+dest_F_finished
+(* wellformed_find_state *)
+(* Find_state.wf_trans *)
 
-(* params *)
-Params.dummy
-Params.Ps1
-(* Params.store_ops_ext *)
-
-mk_find_state
-dest_f_finished
-wellformed_find_state 
-Find_state.wf_trans
-
-Insert_state.mk_insert_state
-Insert_state.dest_i_finished
+(* Insert_state.make_initial_insert_state *)
+(* Insert_state.dest_i_finished *)
 Insert_state.I1 Insert_state.I2 Insert_state.I_down Insert_state.I_up Insert_state.I_finished
-Insert_state.wellformed_insert_state
+(* Insert_state.wellformed_insert_state *)
 
-mk_delete_state
+(* make_initial_delete_state *)
 dest_d_finished
 D_small_leaf D_small_node D_updated_subtree D_down D_up D_finished  
-wellformed_delete_state
+(* wellformed_delete_state *)
 
-Insert_many_state.mk_im_state
-Insert_many_state.dest_im_finished
-Insert_many_state.IM1 Insert_many_state.IM_down
+(* Insert_many_state.mk_im_state *)
+(* Insert_many_state.dest_im_finished *)
+(*Insert_many_state.IM1 Insert_many_state.IM_down *)
 
 
-
+(*
 mk_ls_state lss_is_finished dest_LS_leaf 
 
 (* monad *)
@@ -82,6 +68,7 @@ mk_ls_state lss_is_finished dest_LS_leaf
 
 (* store *) 
 store_alloc store_read store_free wf_store_ops
+*)
 
 (* find *)
 find_step
@@ -90,13 +77,12 @@ find_step
 Insert.insert_step
 
 (* insert_many *)
-Insert_many.insert_step
+(* Insert_many.insert_step *)
 
-(* delete2 *)
-Delete2.delete_step
+Delete.delete_step
 
 (* leaf_stream *)
-lss_step
+(* lss_step *)
 
 
 in OCaml file "/tmp/isa_export.ml"

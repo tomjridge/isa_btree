@@ -208,43 +208,40 @@ definition step_up ::
 "
 
 
-(*
-definition delete_step :: 
-  "'k ps1 \<Rightarrow> ('k,'v,'r,'t) store_ops \<Rightarrow> ('k,'v,'r)delete_state \<Rightarrow> (('k,'v,'r)delete_state,'t) MM" 
+definition delete_step :: "constants \<Rightarrow> 'k ord \<Rightarrow> ('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow>
+  ('k,'v,'r)delete_state \<Rightarrow> (('k,'v,'r)delete_state,'t) MM" 
 where
-"delete_step ps1 store_ops s = (
-  (* let store_ops = ps1|>dot_store_ops in *)
-  let alloc = store_ops|>store_alloc in
+"delete_step cs k_cmp store_ops = (
+  let write = store_ops|>wrte in
+  (% s.
   case s of 
   D_down(f,r0) \<Rightarrow> (
-    case (dest_f_finished f) of
-    None \<Rightarrow> (find_step ps1 store_ops f |> fmap (% f'. D_down(f',r0)))
+    case dest_F_finished f of
+    None \<Rightarrow> (find_step cs k_cmp store_ops f |> fmap (% f'. D_down(f',r0)))
     | Some x \<Rightarrow> (
       let (r0,k,r,kvs,stk) = x in
-      (* FIXME don't free r0 if nothing to delete *)
-      (store_ops|>store_free) (r0#(r_stk_to_rs stk)) |> bind (% _.
-      let something_to_delete = (? x : set (kvs|>List.map fst). key_eq (ps1|>dot_cmp) x k) in
+      \<comment> \<open> (* (store_ops|>free) (r0#(r_stk_to_rs stk)) FIXME *)\<close>
+      let something_to_delete = (? x : set (kvs|>List.map fst). key_eq k_cmp x k) in
       case something_to_delete of
       True \<Rightarrow> (
-        let kvs' = kvs|>List.filter (% x. ~ (key_eq (ps1|>dot_cmp) (fst x) k)) in
-        case (List.length kvs' < ps1|>dot_constants|>min_leaf_size) of
+        let kvs' = kvs|>List.filter (% x. ~ (key_eq k_cmp (fst x) k)) in
+        case List.length kvs' < cs|>min_leaf_size of
         True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
-        | False \<Rightarrow> (Disk_leaf(kvs') |> alloc |> fmap (% r. D_up(D_updated_subtree(r),stk,r0))))
-      | False \<Rightarrow> (return (D_finished r0) ))))
+        | False \<Rightarrow> (Disk_leaf(kvs') |> write 
+          |> fmap (% r. D_up(D_updated_subtree(r),stk,r0))))
+      | False \<Rightarrow> (return (D_finished r0) )))
   | D_up(f,stk,r0) \<Rightarrow> (
     case is_Nil' stk of
     True \<Rightarrow> (
       case f of
-      D_small_leaf kvs \<Rightarrow> (Disk_leaf(kvs)|>alloc|>fmap D_finished)
+      D_small_leaf kvs \<Rightarrow> (Disk_leaf(kvs)|>write|>fmap D_finished)
       | D_small_node (ks,rs) \<Rightarrow> (
         case List.length ks = 0 of
         True \<Rightarrow> return (D_finished (List.hd rs))
-        | False \<Rightarrow> (mk_Disk_node(ks,rs)|>alloc|>fmap D_finished))
+        | False \<Rightarrow> (Disk_node(ks,rs)|>write|>fmap D_finished))
       | D_updated_subtree(r) \<Rightarrow> (return (D_finished r)))
-    | False \<Rightarrow> (step_up ps1 store_ops (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
-  | D_finished(r) \<Rightarrow> (return s)  (* stutter *))"
-
-*)
+    | False \<Rightarrow> (step_up cs store_ops (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
+  | D_finished(r) \<Rightarrow> (return s)  \<comment> \<open> (* stutter *)\<close>))"
 
 end
 
