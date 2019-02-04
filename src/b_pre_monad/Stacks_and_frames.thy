@@ -9,6 +9,7 @@ dest_Frm (Frm (a,b,c,d)) = (a,b,c,d)"
 
 (* type_synonym ('a,'b,'c) stk = "('a,'b,'c) stk_frame list" *)
 
+(* NOTE the first component has the lists reversed *)
 type_synonym ('k,'r) frame = "( ('r list * 'k list), 'r, ('k list * 'r list), 'r) stk_frame"
 
 type_synonym ('k,'r) stk = "('k,'r) frame list"

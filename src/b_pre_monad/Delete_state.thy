@@ -8,6 +8,15 @@ definition dummy :: "unit" where "dummy=()"
 
 (* delete ----------------------------------------------------------- *)
 
+(*
+
+- D_small_leaf: assuming there is a parent, and thus at least one sibling, the 
+  small leaf has size (min_leaf_size-1); if a root, then may have 0 entries or more
+- D_small_node: assuming there is a parent, and thus at least one sibling, the
+  small node has size (min_node_keys-1)
+
+*)
+
 datatype ('k,'v,'r)del_t =
   D_small_leaf "('k*'v)s"
   | D_small_node "'k s * 'r s"

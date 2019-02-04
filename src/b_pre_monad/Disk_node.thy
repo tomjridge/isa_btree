@@ -17,6 +17,11 @@ datatype ('k,'v,'r) dnode =
   Disk_node "'k list * 'r list" 
   | Disk_leaf "('k*'v) list"
 
+definition dest_Disk_node :: "('k,'v,'r) dnode \<Rightarrow> ('k list * 'r list)" where
+"dest_Disk_node f = (case f of Disk_node x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Disk_node''))"
+
+definition dest_Disk_leaf :: "('k,'v,'r) dnode \<Rightarrow> ('k*'v) list" where
+"dest_Disk_leaf f = (case f of Disk_leaf x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Disk_leaf''))"
 
 end
 
