@@ -139,8 +139,7 @@ definition step_up ::
   (% x. x |> fmap (% y. (y,stk'))) (case f of   
   D_updated_subtree r \<Rightarrow> (
     let (rks,_,krs,_) = dest_Frm p in
-    unsplit_node (rks, ([r],[]), krs) |> (% (ks,rs). Disk_node(ks,rs)) |> write 
-    |> fmap D_updated_subtree)
+    unsplit_node (rks, ([r],[]), krs) |> Disk_node |> write |> fmap D_updated_subtree)
   | D_small_leaf(kvs) \<Rightarrow> (
     \<comment> \<open>NOTE stack is not empty, so at least one sibling; then a small leaf is expected to
       have min_leaf_size-1 entries \<close>
@@ -151,7 +150,7 @@ definition step_up ::
       \<comment> \<open>steal or merge from left\<close>
       let _ = check_true (% _. case snd rks of [] \<Rightarrow> False | _ \<Rightarrow> True) in
       case rks of 
-      (r1#rs1,k1#ks1) \<Rightarrow> 
+      (r1#rs1,_#ks1) \<Rightarrow> 
       r1 |> read |> fmap dest_Disk_leaf |> bind (% left_kvs. 
       case List.length left_kvs = cs|>min_leaf_size of
       True \<Rightarrow> (
@@ -159,13 +158,13 @@ definition step_up ::
         unsplit_node ( (rs1,ks1),([r],[]),krs) |> post_merge))
       | False \<Rightarrow> (
         leaf_steal_left store_ops left_kvs kvs |> bind (% (r1,k1,r2).
-        unsplit_node ( (rs1,ks1), ([r1,r2],[k1]), krs) |> (% (ks,rs). Disk_node(ks,rs))
-        |> write |> bind (% r. return (D_updated_subtree r))))))
+        unsplit_node ((rs1,ks1), ([r1,r2],[k1]), krs) |> Disk_node
+        |> write |> fmap D_updated_subtree))))
     | False \<Rightarrow> (
       \<comment> \<open>steal or merge from right\<close>
       let _ = check_true (% _. case fst krs of [] \<Rightarrow> False | _ \<Rightarrow> True) in
       case krs of
-      (k1#ks1,r1#rs1) \<Rightarrow>       
+      (_#ks1,r1#rs1) \<Rightarrow>       
       r1 |> read |> fmap dest_Disk_leaf |> bind (% right_kvs. 
       case List.length right_kvs = cs|>min_leaf_size of
       True \<Rightarrow> (
@@ -173,8 +172,8 @@ definition step_up ::
         unsplit_node (rks,([r],[]),(ks1,rs1)) |> post_merge))
       | False \<Rightarrow> (
         leaf_steal_right store_ops kvs right_kvs |> bind (% (r1,k1,r2). 
-        unsplit_node ( rks, ([r1,r2],[k1]), (ks1,rs1)) |> (% (ks,rs). Disk_node(ks,rs))
-        |> write |> bind (% r. return (D_updated_subtree r)))))))
+        unsplit_node ( rks, ([r1,r2],[k1]), (ks1,rs1)) |> Disk_node
+        |> write |> fmap D_updated_subtree)))))
   | D_small_node(ks,rs) \<Rightarrow> (
     let (rks,_,krs,_) = dest_Frm p in
     let no_right_sibling = is_Nil' (fst krs) in
@@ -183,28 +182,28 @@ definition step_up ::
       \<comment> \<open>steal or merge from left\<close>
       let _ = check_true (% _. case snd rks of [] \<Rightarrow> False | _ \<Rightarrow> True) in
       case rks of 
-      (r#rs1,k#ks1) \<Rightarrow> 
-      r |> read |> fmap dest_Disk_node |> bind (% (l_ks,l_rs). 
+      (r1#rs1,k1#ks1) \<Rightarrow> 
+      r1 |> read |> fmap dest_Disk_node |> bind (% (l_ks,l_rs). 
       case List.length l_ks = cs|>min_node_keys of
       True \<Rightarrow> (
-        node_merge_left store_ops (l_ks,l_rs) k (ks,rs) |> bind ( % r.
+        node_merge_left store_ops (l_ks,l_rs) k1 (ks,rs) |> bind ( % r.
         unsplit_node ( (rs1,ks1), ([r],[]), krs ) |> post_merge))
       | False \<Rightarrow> (
-        node_steal_left store_ops (l_rs,l_ks) k (rs,ks) |> bind (% (r1,k,r2). 
-        unsplit_node ( (rs1,ks1), ([r1,r2],[k]), krs ) |> (% (ks,rs). Disk_node(ks,rs))
-        |> write |> bind (% r. return (D_updated_subtree(r)))))))
+        node_steal_left store_ops (l_rs,l_ks) k1 (rs,ks) |> bind (% (r1,k1,r2). 
+        unsplit_node ( (rs1,ks1), ([r1,r2],[k1]), krs ) |>Disk_node
+        |> write |> fmap D_updated_subtree))))
     | False \<Rightarrow> (
       \<comment> \<open>steal or merge from right\<close>
       case krs of 
-      (k#ks1,r#rs1) \<Rightarrow> 
-      r |> read |> fmap dest_Disk_node |> bind (% (r_ks,r_rs). 
+      (k1#ks1,r1#rs1) \<Rightarrow> 
+      r1 |> read |> fmap dest_Disk_node |> bind (% (r_ks,r_rs). 
       case List.length r_ks = cs|>min_node_keys of
       True \<Rightarrow> (
-        node_merge_right store_ops (ks,rs) k (r_ks,r_rs) |> bind (% r. 
+        node_merge_right store_ops (ks,rs) k1 (r_ks,r_rs) |> bind (% r. 
         unsplit_node ( rks, ([r],[]), (ks1,rs1)) |> post_merge))
       | False \<Rightarrow> (
-        node_steal_right store_ops (rs,ks) k (r_rs,r_ks) |> bind (% (r1,k,r2).
-        unsplit_node ( rks, ([r1,r2],[k]), (ks1,rs1)) |> (% (ks,rs). Disk_node(ks,rs))
+        node_steal_right store_ops (rs,ks) k1 (r_rs,r_ks) |> bind (% (r1,k1,r2).
+        unsplit_node ( rks, ([r1,r2],[k1]), (ks1,rs1)) |> (% (ks,rs). Disk_node(ks,rs))
         |> write |> fmap D_updated_subtree))))))))
 "
 
