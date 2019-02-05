@@ -86,11 +86,11 @@ definition nat_ord :: "nat \<Rightarrow> nat \<Rightarrow> int" where
   let n2i = Int.int in
   (n2i x)-(n2i y))"
 
-definition okl_tests :: "unit" where
-"okl_tests = (
+definition okl_tests :: "bool" where
+"okl_tests = check_true (% _.
   let _ = assert_true(ordered_key_list nat_ord [0,1,2,3]) in
   let _ = assert_true(~(ordered_key_list nat_ord [0,1,1,3])) in
-  ())"
+  True)"
 
 
 (* check keys ------------------------------------------------------- *)
@@ -102,11 +102,11 @@ definition check_keys :: "'k ord \<Rightarrow> 'k option => 'k set => 'k option 
   let b2 = (case kr of None => True | Some kr => (! k : ks. key_lt cmp k kr)) in
   b1 & b2)"
 
-definition ck_tests :: unit where
-"ck_tests = (
+definition ck_tests :: bool where
+"ck_tests = check_true (% _.
   let _ = assert_true (check_keys nat_ord (Some 1) (set[1,2,3]) (Some 4)) in
   let _ = assert_true (~(check_keys nat_ord (Some 1) (set[1,2,3]) (Some 3))) in
-  ())"
+  True)"
 
 (* FIXME following looks a bit strange for l,u=None; what is the semantics of this function? *)
 (* xs < l \<le> ks < u \<le> zs; an extended version of the above *)
@@ -119,11 +119,10 @@ definition check_keys_2 :: "'k ord \<Rightarrow> 'k set \<Rightarrow> 'k option 
   (check_keys cmp u zs None)
 )"
 
-definition ck2_tests :: unit where
-"ck2_tests = (
+definition ck2_tests :: bool where
+"ck2_tests = check_true (% _.
   let _ = assert_true (check_keys_2 nat_ord (set[0]) (Some 1) (set[1,2,3]) (Some 4) (set[4,5])) in
-  ())"
-
+  True)"
 
 (* insert and delete in list of kv ---------------------------------- *)
 
@@ -142,15 +141,15 @@ primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Ri
 )"
 *)
 
-definition kvs_insert_tests :: unit where
-"kvs_insert_tests = (
+definition kvs_insert_tests :: bool where
+"kvs_insert_tests = check_true (% _.
   let _ = assert_true (kvs_insert nat_ord 2 2 (List.map (% x. (x,x)) [0,1,3,4]) = 
     (List.map (% x. (x,x)) [0,1,2,3,4]))
   in
   let _ = assert_true (kvs_insert nat_ord 6 6 (List.map (% x. (x,x)) [0,1,3,4]) = 
     (List.map (% x. (x,x)) [0,1,3,4,6]))
   in
-  ())"
+  True)"
 
 
 (* delete a pair with a particular key from a list of pairs *)

@@ -11,12 +11,16 @@ begin
 
 export_code "Code_Numeral.nat_of_integer" "Code_Numeral.int_of_integer" 
 
-is_Ok
 from_to
 String_error
 (* split_at_tests *) (* FIXME remove tests in production *)
 (* split_at_3_tests *)
 from_to_tests
+
+Constants_and_size_types.min_leaf_size
+Small_leaf
+constants.make_constants
+make_constants
 
 Key_value.key_lt
 key_le
@@ -72,14 +76,17 @@ Pre_monad.dummy
 Monad.fmap 
 bind
 return
-Monad.dummy
+
 
 (* post monad ------------------------------------------------------------------------- *)
 
-Post_monad.dummy
 Post_monad.read 
-wrte 
+store_ops.make_store_ops
+make_store_ops
+read
+wrte
 rewrite
+free
 
 Find.find_step
 

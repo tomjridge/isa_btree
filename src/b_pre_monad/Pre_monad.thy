@@ -15,7 +15,7 @@ Leaf_stream_state
 begin
 
 definition dummy :: "unit" where "dummy = (
-  let _ = (% xs. (Disk_node(xs,xs) :: (int,int,int) dnode)) in
+  let _ = (% x :: (int,int,int) dnode. x) in
   let _ = (% x :: (int,int,int)find_state. x) in
   let _ = (% x :: (int,int,int)insert_state. x) in
   let _ = (% x :: (int,int,int)delete_state. x) in

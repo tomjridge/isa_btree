@@ -44,6 +44,9 @@ definition assert_true :: "bool \<Rightarrow> bool" where
 be disabled by setting a flag; used during debugging to check various
 conditions; should be disabled in production *)
 
+definition get_check_flag :: "(unit \<Rightarrow> bool)" where
+"get_check_flag _ = failwith (STR ''FIXME patch'')"
+
 definition check_true :: "(unit \<Rightarrow> bool) \<Rightarrow> bool" where
 "check_true f = (STR ''FIXME patch'') |> (% _. undefined)"
 
@@ -100,60 +103,16 @@ definition is_Nil' :: "'a list \<Rightarrow> bool" where
 definition from_to :: "nat \<Rightarrow> nat \<Rightarrow> nat list" where
 "from_to x y = upt x (Suc y)"
 
-definition from_to_tests :: "unit" where
-"from_to_tests = (
+definition from_to_tests :: "bool" where
+"from_to_tests = check_true (% _.
   let _ = assert_true (from_to 3 5 = [3,4,5]) in
   let _ = assert_true (from_to 3 3 = [3]) in
   let _ = assert_true (from_to 3 2 = []) in
-  ())"
+  True)"
 
 
 definition max_of_list :: "nat list \<Rightarrow> nat" where
 "max_of_list xs = foldr max xs 0"
-
-
-(* res -------------------------------------------------------------- *)
-  
-(* This is similar to the result type from OCaml *)
-
-datatype 'a res = Ok 'a | Error e 
-
-definition is_Ok :: "'a res \<Rightarrow> bool" where
-"is_Ok x = (case x of Ok _ \<Rightarrow> True | _ \<Rightarrow> False)"
-
-definition dest_Ok :: "'a res \<Rightarrow> 'a" where
-"dest_Ok x = (case x of Ok x \<Rightarrow> x | _ \<Rightarrow> failwith (STR ''dest_Ok''))"
-
-
-
-(* split_at etc ---------------------------------- *)
-
-(* FIXME take and drop used separately is inefficient *)
-(*
-definition split_at :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a list" where
-"split_at n xs = (
-  let _ = check_true (% _. n \<le> List.length xs) in
-  take n xs,drop n xs)"
-
-definition split_at_tests :: "unit" where
-"split_at_tests = (
-  let _ = assert_true (split_at 3 [(0::nat),1,2,3,4] = ([0,1,2],[3,4])) in
-  let _ = assert_true (split_at 3 [(0::nat),1,2] = ([0,1,2],[])) in
-  ())"
-
-
-definition split_at_3 :: "nat \<Rightarrow> 'a list \<Rightarrow> 'a list * 'a * 'a list" where
-"split_at_3 n xs = (
-  let _ = check_true (% _. n < List.length xs) in
-  (take n xs,xs!n,drop (n+1) xs))"
-
-definition split_at_3_tests :: "unit" where
-"split_at_3_tests = (
-  let _ = assert_true (split_at_3 3 [(0::nat),1,2,3,4] = ([0,1,2],3,[4])) in
-  let _ = assert_true (split_at_3 3 [(0::nat),1,2,3] = ([0,1,2],3,[])) in
-  ())"
-
-*)
 
 
 
@@ -161,10 +120,6 @@ definition split_at_3_tests :: "unit" where
 
 (* iterate f:'a -> 'a option ---------------------------------------- *)
 
-(*
-definition while_not_nil :: "('a \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'b \<Rightarrow> 'a list \<Rightarrow> 'b" where
-"while_not_nil f init xs = (List.foldr f xs init)"
-*)
 
 (*no termination proof for the following*)
 (*begin iterator*)

@@ -1,6 +1,5 @@
 theory Post_monad imports "$SRC/c_monad/Monad" begin
 
-definition dummy :: "unit" where "dummy=Monad.dummy"
 
 (* ops types -------------------------------------------- *)
 
@@ -9,6 +8,17 @@ datatype_record ('r,'dnode,'t) store_ops =
   wrte :: "'dnode \<Rightarrow> ('r,'t) MM"
   rewrite :: "'r \<Rightarrow> 'dnode \<Rightarrow> ('r option,'t) MM"
   free :: "'r s \<Rightarrow> (unit,'t) MM"
+
+definition make_store_ops ::  "
+('r \<Rightarrow> ('dnode,'t) MM) \<Rightarrow>
+('dnode \<Rightarrow> ('r,'t) MM) \<Rightarrow> 
+('r \<Rightarrow> 'dnode \<Rightarrow> ('r option,'t) MM) \<Rightarrow> 
+('r s \<Rightarrow> (unit,'t) MM) \<Rightarrow> 
+ ('r,'dnode,'t) store_ops" where
+"make_store_ops r w rw f = \<lparr> read=r, wrte=w, rewrite=rw, free=f \<rparr>"
+
+
+
 
 function iter_m :: "('a \<Rightarrow> ('a option,'t) MM) \<Rightarrow> 'a \<Rightarrow> ('a,'t) MM" where
 "iter_m f x = (
@@ -45,9 +55,11 @@ constants \<Rightarrow>
 ('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>
 'r \<Rightarrow> (unit,'t)MM" where
 "check_tree_at_r cs k_cmp store_ops r = (
-check_m (
+  case get_check_flag () of
+  False \<Rightarrow> return ()
+  | True \<Rightarrow> 
     get_tree store_ops r |> bind (% t.
     let _ = check_true (% _. wf_tree cs None k_cmp t) in
-    return ())))"
+    return ()))"
 
 end
