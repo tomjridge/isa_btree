@@ -26,7 +26,7 @@ let cs1136 = mk_cs 1 1 3 6
 
 let cs2312 = mk_cs 2 3 1 2
 let cs2324 = mk_cs 2 3 2 4
-let cs2336 = mk_cs 2 3 3 5
+let cs2336 = mk_cs 2 3 3 5  (* FIXME should be 6??? *)
 
 
 let cs3512 = mk_cs 3 5 1 2

@@ -48,7 +48,8 @@ apply (force)+ done
 termination get_tree
   by (force intro:FIXME)
 
-(* check tree wellformedness from a given root *)
+(* check tree wellformedness from a given root; note that the "min_size_t" argument may be
+overly permissive *)
 definition check_tree_at_r :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow>
@@ -59,7 +60,7 @@ constants \<Rightarrow>
   False \<Rightarrow> return ()
   | True \<Rightarrow> 
     get_tree store_ops r |> bind (% t.
-    let _ = check_true (% _. wf_tree cs None k_cmp t) in
+    let _ = check_true (% _. wf_tree cs (Some Small_root_node_or_leaf) k_cmp t) in
     return ()))"
 
 end

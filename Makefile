@@ -1,3 +1,4 @@
+SHELL:=bash
 DUNE:=dune
 
 build:
@@ -11,6 +12,9 @@ uninstall:
 
 clean:
 	$(DUNE) clean
+
+test: build
+	cd test && dune exec test_main
 
 doc: FORCE
 	$(DUNE) build @doc

@@ -1194,7 +1194,11 @@ let rec check_tree_at_r
           (Monad.bind
             (fun t ->
               (let _ =
-                 A_start_here.check_true (fun _ -> Tree.wf_tree cs None k_cmp t)
+                 A_start_here.check_true
+                   (fun _ ->
+                     Tree.wf_tree cs
+                       (Some Constants_and_size_types.Small_root_node_or_leaf)
+                       k_cmp t)
                  in
                 Monad.return ())))
       | false -> Monad.return ());;

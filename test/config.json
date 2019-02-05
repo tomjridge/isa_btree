@@ -1,0 +1,42 @@
+[
+{
+  "range_min":1,
+  "range_max":6,
+  "min_leaf_size":1,
+  "max_leaf_size":1,
+  "min_node_keys":1,
+  "max_node_keys":2
+},
+{
+  "range_min":1,
+  "range_max":6,
+  "min_leaf_size":1,
+  "max_leaf_size":1,
+  "min_node_keys":2,
+  "max_node_keys":4
+},
+{
+  "range_min":1,
+  "range_max":6,
+  "min_leaf_size":2,
+  "max_leaf_size":3,
+  "min_node_keys":1,
+  "max_node_keys":2
+},
+{
+  "range_min":1,
+  "range_max":6,
+  "min_leaf_size":3,
+  "max_leaf_size":5,
+  "min_node_keys":3,
+  "max_node_keys":6
+},
+{
+  "range_min":1,
+  "range_max":8,
+  "min_leaf_size":2,
+  "max_leaf_size":3,
+  "min_node_keys":1,
+  "max_node_keys":2
+}
+]

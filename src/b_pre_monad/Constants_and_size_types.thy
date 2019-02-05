@@ -21,7 +21,7 @@ definition make_constants :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarr
 (* small node or leaf ----------------------------------------------- *)
 
 (* `min_size_t` is a datatype which flags whether nodes and leaves
-are small or not; a small root can potentially have no children *)
+are small or not; a small root can potentially have no children; see `get_min_size` in Tree *)
 
 datatype min_size_t = 
   Small_root_node_or_leaf
