@@ -8,7 +8,6 @@ module type MONAD = sig
    type ('a, 'b) mm
    val bind : ('a -> ('b, 'c) mm) -> ('a, 'c) mm -> ('b, 'c) mm
    val fmap : ('a -> 'b) -> ('a, 'c) mm -> ('b, 'c) mm
-   val dummy : unit
    val return : 'a -> ('a, 'b) mm
 end
 
@@ -286,7 +285,7 @@ end;; (*struct Set*)
 
 module Constants_and_size_types : sig
   type constants =
-    Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat [@@deriving yojson]
+    Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat
   type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf [@@deriving yojson]
   val make_constants :
     Arith.nat -> Arith.nat -> Arith.nat -> Arith.nat -> constants
@@ -297,7 +296,7 @@ module Constants_and_size_types : sig
 end = struct
 
 type constants =
-  Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat [@@deriving yojson];;
+  Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat;;
 
 type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf [@@deriving yojson];;
 
@@ -1145,7 +1144,7 @@ module Post_monad : sig
     Make_store_ops of
       ('a -> ('b, 'c) Monad.mm) * ('b -> ('a, 'c) Monad.mm) *
         ('a -> 'b -> (('a option), 'c) Monad.mm) *
-        ('a list -> (unit, 'c) Monad.mm) [@@deriving yojson]
+        ('a list -> (unit, 'c) Monad.mm)
   val iter_m : ('a -> (('a option), 'b) Monad.mm) -> 'a -> ('a, 'b) Monad.mm
   val read : ('a, 'b, 'c) store_ops -> 'a -> ('b, 'c) Monad.mm
   val make_store_ops :
@@ -1167,7 +1166,7 @@ type ('a, 'b, 'c) store_ops =
   Make_store_ops of
     ('a -> ('b, 'c) Monad.mm) * ('b -> ('a, 'c) Monad.mm) *
       ('a -> 'b -> (('a option), 'c) Monad.mm) *
-      ('a list -> (unit, 'c) Monad.mm) [@@deriving yojson];;
+      ('a list -> (unit, 'c) Monad.mm);;
 
 let rec iter_m
   f x = A_start_here.rev_apply (f x)
@@ -1228,6 +1227,16 @@ module Find : sig
         ('b, ('a, 'c, 'b) Disk_node.dnode, 'd) Post_monad.store_ops ->
           ('a, 'c, 'b) Find_state.find_state ->
             (('a, 'c, 'b) Find_state.find_state, 'd) Monad.mm
+  val find :
+    Constants_and_size_types.constants ->
+      ('a -> 'a -> Arith.int) ->
+        ('b, ('a, 'c, 'b) Disk_node.dnode, 'd) Post_monad.store_ops ->
+          'b -> 'a -> (('b * (('a * 'c) list *
+                               (('b list * 'a list), 'b, ('a list * 'b list),
+                                 'b)
+                                 Stacks_and_frames.stk_frame list)),
+                        'd)
+                        Monad.mm
 end = struct
 
 let rec find_step
@@ -1247,6 +1256,26 @@ let rec find_step
                     | Disk_node.Disk_leaf kvs ->
                       Find_state.F_finished (r0, (k, (r, (kvs, stk)))))))
           | Find_state.F_finished _ -> A_start_here.failwitha "find_step 1")));;
+
+let rec find_big_step
+  cs k_cmp store_ops =
+    (let step = find_step cs k_cmp store_ops in
+      Post_monad.iter_m
+        (fun i ->
+          (match i
+            with Find_state.F_down _ ->
+              A_start_here.rev_apply (step i) (Monad.fmap (fun a -> Some a))
+            | Find_state.F_finished _ -> Monad.return None)));;
+
+let rec find
+  cs k_cmp store_ops r k =
+    (let s = Find_state.make_initial_find_state k r in
+      A_start_here.rev_apply (find_big_step cs k_cmp store_ops s)
+        (Monad.bind
+          (fun a ->
+            (match a with Find_state.F_down _ -> A_start_here.failwitha "find 1"
+              | Find_state.F_finished (_, (_, (ra, (kvs, stk)))) ->
+                Monad.return (ra, (kvs, stk))))));;
 
 end;; (*struct Find*)
 

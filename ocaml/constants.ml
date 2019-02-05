@@ -1,17 +1,3 @@
-module Constants_type = struct
-
-  (** B-tree constants: minimum leaf size etc. These constants should be
-      chosen so that nodes and leaves fit in a block. Clearly this
-      depends on the block size, the size of keys and values, the
-      on-disk format etc. *)
-  type t = {
-    min_leaf_size: int;
-    max_leaf_size: int;
-    min_node_keys: int;
-    max_node_keys: int
-  }  [@@deriving yojson]
-
-end
 include Constants_type
 
 let mk_constants ~min_leaf_size ~max_leaf_size ~min_node_keys ~max_node_keys 
@@ -21,7 +7,7 @@ let dest_constants c = fun k ->
   let { min_leaf_size; max_leaf_size; min_node_keys; max_node_keys } = c in
   k ~min_leaf_size ~max_leaf_size ~min_node_keys ~max_node_keys 
 
-let cs2s c = c |> to_yojson |> Yojson.Safe.pretty_to_string
+let cs2s c = c |> constants_to_yojson |> Yojson.Safe.pretty_to_string
 
 (* l'>=2l-1; m' >= 2m *)
 
@@ -73,6 +59,7 @@ let make_constants ~page_size ~tag_len ~k_len ~v_len = (
 
 
 (* FIXME move this elsewhere? *)
+(*
 module Isabelle_conversions' = struct
   open Isa_export
 
@@ -92,3 +79,4 @@ module Isabelle_conversions' = struct
       ())
 end
 include Isabelle_conversions'
+*)

@@ -1,6 +1,6 @@
---- isa_export.ml.orig	2019-02-05 09:26:24.819299046 +0000
-+++ isa_export.ml.patched	2019-02-05 09:34:07.746784305 +0000
-@@ -1,3 +1,20 @@
+--- isa_export.ml.orig	2019-02-05 10:24:50.282269792 +0000
++++ isa_export.ml	2019-02-05 10:24:55.222392358 +0000
+@@ -1,3 +1,19 @@
 +(** This file is exported from Isabelle, and lightly patched (eg to
 +   include this comment!). The OCaml interfaces wrap this basic
 +   functionality. *)
@@ -11,7 +11,6 @@
 +   type ('a, 'b) mm
 +   val bind : ('a -> ('b, 'c) mm) -> ('a, 'c) mm -> ('b, 'c) mm
 +   val fmap : ('a -> 'b) -> ('a, 'c) mm -> ('b, 'c) mm
-+   val dummy : unit
 +   val return : 'a -> ('a, 'b) mm
 +end
 +
@@ -21,30 +20,25 @@
  module Fun : sig
    val id : 'a -> 'a
    val comp : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
-@@ -269,8 +286,8 @@ end;; (*struct Set*)
- 
+@@ -270,7 +286,7 @@ end;; (*struct Set*)
  module Constants_and_size_types : sig
    type constants =
--    Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat
+     Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat
 -  type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf
-+    Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat [@@deriving yojson]
 +  type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf [@@deriving yojson]
    val make_constants :
      Arith.nat -> Arith.nat -> Arith.nat -> Arith.nat -> constants
    val max_leaf_size : constants -> Arith.nat
-@@ -280,9 +297,9 @@ module Constants_and_size_types : sig
- end = struct
- 
+@@ -282,7 +298,7 @@ end = struct
  type constants =
--  Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat;;
-+  Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat [@@deriving yojson];;
+   Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat;;
  
 -type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf;;
 +type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf [@@deriving yojson];;
  
  let rec make_constants a b c d = Make_constants (a, b, c, d);;
  
-@@ -306,7 +323,7 @@ let rec is_none = function Some x -> fal
+@@ -306,7 +322,7 @@ let rec is_none = function Some x -> fal
  end;; (*struct Option*)
  
  module A_start_here : sig
@@ -53,7 +47,7 @@
    val from_to : Arith.nat -> Arith.nat -> Arith.nat list
    val is_Nil : 'a list -> bool
    val rev_apply : 'a -> ('a -> 'b) -> 'b
-@@ -320,7 +337,7 @@ module A_start_here : sig
+@@ -320,7 +336,7 @@ module A_start_here : sig
    val get_check_flag : unit -> bool
  end = struct
  
@@ -62,7 +56,7 @@
  
  let rec from_to x y = Lista.upt x (Arith.suc y);;
  
-@@ -328,12 +345,12 @@ let rec is_Nil x = (match x with [] -> t
+@@ -328,12 +344,12 @@ let rec is_Nil x = (match x with [] -> t
  
  let rec rev_apply x f = f x;;
  
@@ -77,7 +71,7 @@
  
  let rec assert_true b = (if b then b else failwitha "assert_true");;
  
-@@ -369,12 +386,12 @@ let from_to_tests : bool
+@@ -369,12 +385,12 @@ let from_to_tests : bool
             in
            true));;
  
@@ -92,7 +86,7 @@
    val key_eq : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
    val key_le : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
    val key_lt : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
-@@ -390,7 +407,7 @@ module Key_value : sig
+@@ -390,7 +406,7 @@ module Key_value : sig
    val kvs_insert_tests : bool
  end = struct
  
@@ -101,7 +95,7 @@
  
  let rec key_eq ord k1 k2 = Arith.equal_int (ord k1 k2) Arith.zero_int;;
  
-@@ -552,7 +569,7 @@ let kvs_insert_tests : bool
+@@ -552,7 +568,7 @@ let kvs_insert_tests : bool
  end;; (*struct Key_value*)
  
  module Stacks_and_frames : sig
@@ -110,7 +104,7 @@
    val dest_Frm : ('a, 'b, 'c, 'd) stk_frame -> 'a * ('b * ('c * 'd))
    val get_bounds :
      (('a list * 'b list), 'a, ('b list * 'a list), 'a) stk_frame list ->
-@@ -569,7 +586,7 @@ module Stacks_and_frames : sig
+@@ -569,7 +585,7 @@ module Stacks_and_frames : sig
        'b list * 'a list
  end = struct
  
@@ -119,7 +113,7 @@
  
  let rec dest_Frm (Frm (a, (b, (c, d)))) = (a, (b, (c, d)));;
  
-@@ -667,13 +684,13 @@ end;; (*struct Stacks_and_frames*)
+@@ -667,13 +683,13 @@ end;; (*struct Stacks_and_frames*)
  
  module Disk_node : sig
    type ('a, 'b, 'c) dnode = Disk_node of ('a list * 'c list) |
@@ -135,7 +129,7 @@
  
  let rec dest_Disk_leaf
    f = (match f with Disk_node _ -> A_start_here.failwitha "dest_Disk_leaf"
-@@ -696,7 +713,7 @@ module Leaf_stream_state : sig
+@@ -696,7 +712,7 @@ module Leaf_stream_state : sig
              Stacks_and_frames.stk_frame list)
      | LS_up of
          (('c list * 'a list), 'c, ('a list * 'c list), 'c)
@@ -144,7 +138,7 @@
    val dest_LS_leaf : ('a, 'b, 'c) lss -> (('a * 'b) list) option
    val lss_is_finished : ('a, 'b, 'c) lss -> bool
    val make_initial_lss : 'a -> ('b, 'c, 'a) lss
-@@ -712,7 +729,7 @@ type ('a, 'b, 'c) lss =
+@@ -712,7 +728,7 @@ type ('a, 'b, 'c) lss =
            Stacks_and_frames.stk_frame list)
    | LS_up of
        (('c list * 'a list), 'c, ('a list * 'c list), 'c)
@@ -153,7 +147,7 @@
  
  let rec dest_LS_leaf
    x = (match x with LS_down _ -> None | LS_leaf (kvs, _) -> Some kvs
-@@ -734,7 +751,7 @@ module Find_state : sig
+@@ -734,7 +750,7 @@ module Find_state : sig
      | F_finished of
          ('c * ('a * ('c * (('a * 'b) list *
                              (('c list * 'a list), 'c, ('a list * 'c list), 'c)
@@ -162,7 +156,7 @@
    val dest_F_finished :
      ('a, 'b, 'c) find_state ->
        ('c * ('a * ('c * (('a * 'b) list *
-@@ -750,7 +767,7 @@ type ('a, 'b, 'c) find_state =
+@@ -750,7 +766,7 @@ type ('a, 'b, 'c) find_state =
    | F_finished of
        ('c * ('a * ('c * (('a * 'b) list *
                            (('c list * 'a list), 'c, ('a list * 'c list), 'c)
@@ -171,7 +165,7 @@
  
  let rec dest_F_finished
    fs = (match fs with F_down _ -> None
-@@ -762,14 +779,14 @@ let rec make_initial_find_state k r = F_
+@@ -762,14 +778,14 @@ let rec make_initial_find_state k r = F_
  end;; (*struct Find_state*)
  
  module Insert_state : sig
@@ -188,7 +182,7 @@
    val split_leaf :
      Constants_and_size_types.constants ->
        ('a * 'b) list -> ('a * 'b) list * ('a * ('a * 'b) list)
-@@ -779,7 +796,7 @@ module Insert_state : sig
+@@ -779,7 +795,7 @@ module Insert_state : sig
    val make_initial_insert_state : 'a -> 'b -> 'c -> ('b, 'c, 'a) insert_state
  end = struct
  
@@ -197,7 +191,7 @@
  
  type ('a, 'b, 'c) insert_state =
    I_down of (('a, 'b, 'c) Find_state.find_state * 'b) |
-@@ -787,7 +804,7 @@ type ('a, 'b, 'c) insert_state =
+@@ -787,7 +803,7 @@ type ('a, 'b, 'c) insert_state =
      (('a, 'b, 'c) i12_t *
        (('c list * 'a list), 'c, ('a list * 'c list), 'c)
          Stacks_and_frames.stk_frame list)
@@ -206,7 +200,7 @@
  
  let rec split_leaf
    cs kvs =
-@@ -856,7 +873,7 @@ end;; (*struct Insert_many_state*)
+@@ -856,7 +872,7 @@ end;; (*struct Insert_many_state*)
  
  module Delete_state : sig
    type ('a, 'b, 'c) del_t = D_small_leaf of ('a * 'b) list |
@@ -215,7 +209,7 @@
    type ('a, 'b, 'c) delete_state =
      D_down of (('a, 'b, 'c) Find_state.find_state * 'c) |
      D_up of
-@@ -864,13 +881,13 @@ module Delete_state : sig
+@@ -864,13 +880,13 @@ module Delete_state : sig
          ((('c list * 'a list), 'c, ('a list * 'c list), 'c)
             Stacks_and_frames.stk_frame list *
            'c))
@@ -231,7 +225,7 @@
  
  type ('a, 'b, 'c) delete_state =
    D_down of (('a, 'b, 'c) Find_state.find_state * 'c) |
-@@ -879,7 +896,7 @@ type ('a, 'b, 'c) delete_state =
+@@ -879,7 +895,7 @@ type ('a, 'b, 'c) delete_state =
        ((('c list * 'a list), 'c, ('a list * 'c list), 'c)
           Stacks_and_frames.stk_frame list *
          'c))
@@ -240,7 +234,7 @@
  
  let rec dest_D_finished
    x = (match x with D_down _ -> None | D_up _ -> None
-@@ -900,7 +917,7 @@ end;; (*struct Sum_Type*)
+@@ -900,7 +916,7 @@ end;; (*struct Sum_Type*)
  
  module Tree : sig
    type ('a, 'b) tree = Node of ('a list * ('a, 'b) tree list) |
@@ -249,7 +243,7 @@
    val wf_tree :
      Constants_and_size_types.constants ->
        Constants_and_size_types.min_size_t option ->
-@@ -910,7 +927,7 @@ module Tree : sig
+@@ -910,7 +926,7 @@ module Tree : sig
  end = struct
  
  type ('a, 'b) tree = Node of ('a list * ('a, 'b) tree list) |
@@ -258,7 +252,7 @@
  
  let rec tree_to_subtrees
    t0 = (match t0
-@@ -1122,12 +1139,13 @@ let rec return x = failwith "undefined";
+@@ -1122,6 +1138,7 @@ let rec return x = failwith "undefined";
  
  end;; (*struct Monad*)
  
@@ -266,23 +260,7 @@
  module Post_monad : sig
    type ('a, 'b, 'c) store_ops =
      Make_store_ops of
-       ('a -> ('b, 'c) Monad.mm) * ('b -> ('a, 'c) Monad.mm) *
-         ('a -> 'b -> (('a option), 'c) Monad.mm) *
--        ('a list -> (unit, 'c) Monad.mm)
-+        ('a list -> (unit, 'c) Monad.mm) [@@deriving yojson]
-   val iter_m : ('a -> (('a option), 'b) Monad.mm) -> 'a -> ('a, 'b) Monad.mm
-   val read : ('a, 'b, 'c) store_ops -> 'a -> ('b, 'c) Monad.mm
-   val make_store_ops :
-@@ -1149,7 +1167,7 @@ type ('a, 'b, 'c) store_ops =
-   Make_store_ops of
-     ('a -> ('b, 'c) Monad.mm) * ('b -> ('a, 'c) Monad.mm) *
-       ('a -> 'b -> (('a option), 'c) Monad.mm) *
--      ('a list -> (unit, 'c) Monad.mm);;
-+      ('a list -> (unit, 'c) Monad.mm) [@@deriving yojson];;
- 
- let rec iter_m
-   f x = A_start_here.rev_apply (f x)
-@@ -2005,3 +2023,5 @@ let rec lss_step
+@@ -2035,3 +2052,5 @@ let rec lss_step
        | Leaf_stream_state.LS_up x -> Monad.return (step_up x));;
  
  end;; (*struct Leaf_stream*)

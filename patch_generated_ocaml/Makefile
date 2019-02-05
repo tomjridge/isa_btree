@@ -4,8 +4,8 @@ ORIG:=isa_export.ml.orig
 
 PATCH:=isa_export.patch
 
-# manually patched
-PATCHED:=isa_export.ml.patched
+# manually patched - just edit isa_export.ml in place
+PATCHED:=isa_export.ml
 
 GENERATED_PATCHED:=isa_export.ml
 
@@ -29,7 +29,7 @@ generated_patched: $(GENERATED_PATCHED)
 	ocamlc -c -w -8-20 $(GENERATED_PATCHED) # check builds
 	cp $(GENERATED_PATCHED) ../ocaml 
 
-$(PATCH): $(ORIG) $(PATCHED)
+$(PATCH): $(ORIG) FORCE
 	diff -u3 -p $(ORIG) $(PATCHED) >$@ 
 # this fails if there are changes?
 

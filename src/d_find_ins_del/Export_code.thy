@@ -89,6 +89,7 @@ rewrite
 free
 
 Find.find_step
+find
 
 Insert.insert_step insert
 
