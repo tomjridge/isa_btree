@@ -61,7 +61,8 @@ let execute_tests ~cs ~range ~fuel =
     range|>List.map (fun x -> Delete x) |> fun ys -> 
     xs@ys
   in
-  let rec depth n r =
+  (* s is the spec... a map *)
+  let rec depth n (r, (s:(int,int)Tjr_polymap.t) ) =
     if n = 0 then () else
     ops |> List.iter (fun op ->
         Logger.log(Tree_store.t2s r);
@@ -69,12 +70,16 @@ let execute_tests ~cs ~range ~fuel =
         match op with
         | Insert (k,v) -> (
             insert ~r ~k ~v |> Imperative.from_m |> function (Some r) ->
-              depth (n-1) r)
+              let s = Tjr_polymap.add k v s in
+              assert(Tjr_polymap.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat));
+              depth (n-1) (r,s))
         | Delete k -> (
             delete ~r ~k |> Imperative.from_m |> fun r -> 
-            depth (n-1) r))
+            let s = Tjr_polymap.remove k s in
+            assert(Tjr_polymap.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat));
+            depth (n-1) (r,s)))
   in
-  depth fuel (Leaf[])
+  depth fuel (Leaf[],Tjr_polymap.empty_int_map ())
   
 ;;
 
