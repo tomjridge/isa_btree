@@ -28,8 +28,6 @@ module Logger = Tjr_fs_shared.Logger
 
 (* test config ------------------------------------------------------ *)
 
-(* FIXME prefer a generic lib eg tjr_config *)
-
 module C = struct
   type pre_config = {
     range_min:int;
@@ -99,9 +97,32 @@ let main ~pre_config:c =
   main' ~range_min:c.range_min ~range_max:c.range_max ~constants
 
 let _ = 
-  Logger.logger := Some (Tjr_log.mk_log_ops());
-  Logger.at_exit ~print:true;
-  Printf.printf "%s: tests begin\n%!" __MODULE__;
-  List.iter (fun pre_config -> main ~pre_config) config;
-  Printf.printf "%s: tests OK\n%!" __MODULE__;
-  Logger.at_exit ~print:false
+  match List.tl (Array.to_list (Sys.argv)) with
+  | [] -> (
+      Logger.logger := Some (Tjr_log.mk_log_ops());
+      Logger.at_exit ~print:true;
+      Printf.printf "%s: tests begin\n%!" __MODULE__;
+      List.iter (fun pre_config -> main ~pre_config) config;
+      Printf.printf "%s: tests OK\n%!" __MODULE__;
+      Logger.at_exit ~print:false)
+  | ["seq_insert"] -> (
+      let cs = Constants.mk_constants 
+                 ~min_leaf_size:500
+                 ~max_leaf_size:1000
+                 ~min_node_keys:500
+                 ~max_node_keys:1000
+      in
+      let store_ops = Tree_store.store_ops in
+      let { find; insert; delete } = 
+        let k_cmp = Tjr_int.compare in
+        make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops 
+      in
+      Isa_test.disable_isa_checks();
+      let rec loop n r = 
+        if n >= 100000 then () else
+          insert ~r ~k:n ~v:n |> Imperative.from_m |> function (Some r) ->
+          loop (n+1) r
+      in
+      loop 0 (Leaf[]))
+        
+    
