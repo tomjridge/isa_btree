@@ -19,7 +19,7 @@ We can also take ('a,t) m = 'a
 
 open Isa_btree
 open Tjr_monad
-open Tree_store  (* also includes monad_ops *)
+open Test_store  (* also includes monad_ops *)
 open Tjr_fs_shared.Kv_op
 
 module Logger = Tjr_fs_shared.Logger
@@ -48,18 +48,10 @@ open Isa_export_wrapper
 
 type ii_op = (int,int) op [@@deriving yojson]
 
-type leaf = (int,int) Tjr_polymap.t
-
-let leaf_ops = 
-  let leaf_insert k v l = Tjr_polymap.add k v l in
-  let leaf_length l = Tjr_polymap.cardinal l in
-  let leaf_kvs l = Tjr_polymap.bindings l in
-  let mk_leaf kvs = Tjr_polymap.from_bindings ~compare:Tjr_int.compare kvs in
-  (leaf_insert,leaf_length,leaf_kvs,mk_leaf)
   
 
 let execute_tests ~cs ~range ~fuel = 
-  let store_ops = Tree_store.store_ops in
+  let store_ops = Test_store.store_ops in
   let { find; insert; delete } = 
     let k_cmp = Tjr_int.compare in
     make_find_insert_delete ~monad_ops ~cs ~k_cmp ~leaf_ops ~store_ops 
@@ -73,21 +65,21 @@ let execute_tests ~cs ~range ~fuel =
   let rec depth n (r, (s:(int,int)Tjr_polymap.t) ) =
     if n = 0 then () else
     ops |> List.iter (fun op ->
-        Logger.log(Tree_store.t2s r);
+        Logger.log(Test_store.t2s r);
         Logger.jlog (ii_op_to_yojson op);
         match op with
         | Insert (k,v) -> (
             insert ~r ~k ~v |> Imperative.from_m |> function (Some r) ->
               let s = Tjr_polymap.add k v s in
-              assert(Tjr_polymap.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat));
+              (* assert(Tjr_polymap.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat)); *)
               depth (n-1) (r,s))
         | Delete k -> (
             delete ~r ~k |> Imperative.from_m |> fun r -> 
             let s = Tjr_polymap.remove k s in
-            assert(Tjr_polymap.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat));
+            (* assert(Tjr_polymap.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat)); *)
             depth (n-1) (r,s)))
   in
-  depth fuel (Leaf[],Tjr_polymap.empty_int_map ())
+  depth fuel (Leaf (empty_poly_map()),empty_poly_map())
   
 ;;
 
@@ -138,10 +130,10 @@ let _ =
                  ~min_node_keys:500
                  ~max_node_keys:1000
       in
-      let store_ops = Tree_store.store_ops in
+      let store_ops = Test_store.store_ops in
       let { find; insert; delete } = 
         let k_cmp = Tjr_int.compare in
-        make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops 
+        make_find_insert_delete ~monad_ops ~cs ~k_cmp ~leaf_ops ~store_ops 
       in
       Isa_test.disable_isa_checks();
       let rec loop n r = 
@@ -149,7 +141,7 @@ let _ =
           insert ~r ~k:n ~v:n |> Imperative.from_m |> function (Some r) ->
           loop (n-1) r
       in
-      loop (int_of_float 1e5) (Leaf[]);
+      loop (int_of_float 1e6) (Leaf (empty_poly_map()));
       print_profile_summary (profiler.get_marks())
     )
     | ["test_polymap"] -> (
