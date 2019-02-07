@@ -6,8 +6,8 @@ type ('k,'v,'r) dnode = ('k,'v,'r,unit) Disk_node.dnode
 
 type ('k,'r) stk = ('r list * 'k list, 'r, 'k list * 'r list, 'r) Stacks_and_frames.stk_frame list
 
-type ('k,'v,'r,'t) pre_map_ops = {
- find: r:'r -> k:'k -> ('r * ('k*'v)list * ('k,'r)stk,'t) m;
+type ('k,'v,'r,'leaf,'t) pre_map_ops = {
+ find: r:'r -> k:'k -> ('r * 'leaf * ('k,'r)stk,'t) m;
  insert: r:'r -> k:'k -> v:'v -> ('r option,'t) m;
  delete: r:'r -> k:'k -> ('r,'t) m;
 }
@@ -40,19 +40,22 @@ let make_find_insert_delete (type t) ~(monad_ops:t monad_ops) =
     let (a,b,c,d) = store_ops in
     M.Post_monad.make_store_ops a b c d
   in
-  fun ~cs ~k_cmp ~leaf_ops ~store_ops -> 
-  let find  = 
-    let find = M.Find.find (cs2isa cs) (cmp2isa k_cmp) (leaf_ops2isa leaf_ops) (store_ops2isa store_ops) in
-    fun ~(r:'r) ~(k:'k) -> find r k |> Monad.fmap (fun (a,(b,c)) -> (a,b,c))
-  in
-  let insert = 
-    let insert = M.Insert.insert (cs2isa cs) (cmp2isa k_cmp) (leaf_ops2isa leaf_ops) (store_ops2isa store_ops) in
-    fun  ~(r:'r) ~(k:'k) ~(v:'v) -> insert r k v
-  in
-  let delete  =
-    let delete = M.Delete.delete (cs2isa cs) (cmp2isa k_cmp) (leaf_ops2isa leaf_ops) (store_ops2isa store_ops) in
-    fun ~(r:'r) ~(k:'k) -> delete r k
-  in
-  {find;insert;delete}
+  fun ~cs ~k_cmp
+    ~leaf_ops
+    ~store_ops -> 
+    let _ = leaf_ops in
+    let find  = 
+      let find = M.Find.find (cs2isa cs) (cmp2isa k_cmp) (leaf_ops2isa leaf_ops) (store_ops2isa store_ops) in
+      fun ~(r:'r) ~(k:'k) -> find r k |> Monad.fmap (fun (a,(b,c)) -> (a,b,c))
+    in
+    let insert = 
+      let insert = M.Insert.insert (cs2isa cs) (cmp2isa k_cmp) (leaf_ops2isa leaf_ops) (store_ops2isa store_ops) in
+      fun  ~(r:'r) ~(k:'k) ~(v:'v) -> insert r k v
+    in
+    let delete  =
+      let delete = M.Delete.delete (cs2isa cs) (cmp2isa k_cmp) (leaf_ops2isa leaf_ops) (store_ops2isa store_ops) in
+      fun ~(r:'r) ~(k:'k) -> delete r k
+    in
+    {find;insert;delete}
 
 let _ = make_find_insert_delete

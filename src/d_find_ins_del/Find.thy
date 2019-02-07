@@ -19,7 +19,7 @@ constants \<Rightarrow>
     Disk_node (ks,rs) \<Rightarrow> (
       let (frm,r) = make_frame k_cmp k r ks rs in      
       F_down(r0,k,r,frm#stk))
-    | Disk_leaf kvs \<Rightarrow> F_finished(r0,k,r,kvs,stk)))))"
+    | Disk_leaf leaf \<Rightarrow> F_finished(r0,k,r,leaf,stk)))))"
 
 definition find_big_step :: "
 constants \<Rightarrow> 

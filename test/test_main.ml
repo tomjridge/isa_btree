@@ -48,11 +48,21 @@ open Isa_export_wrapper
 
 type ii_op = (int,int) op [@@deriving yojson]
 
+type leaf = (int,int) Tjr_polymap.t
+
+let leaf_ops = 
+  let leaf_insert k v l = Tjr_polymap.add k v l in
+  let leaf_length l = Tjr_polymap.cardinal l in
+  let leaf_kvs l = Tjr_polymap.bindings l in
+  let mk_leaf kvs = Tjr_polymap.from_bindings ~compare:Tjr_int.compare kvs in
+  (leaf_insert,leaf_length,leaf_kvs,mk_leaf)
+  
+
 let execute_tests ~cs ~range ~fuel = 
   let store_ops = Tree_store.store_ops in
   let { find; insert; delete } = 
     let k_cmp = Tjr_int.compare in
-    make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops 
+    make_find_insert_delete ~monad_ops ~cs ~k_cmp ~leaf_ops ~store_ops 
   in
   let ops = 
     range|>List.map (fun x -> Insert (x,x)) |> fun xs ->

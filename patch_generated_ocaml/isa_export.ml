@@ -1150,8 +1150,8 @@ let rec find_step
                       (let (frm, ra) =
                          Stacks_and_frames.make_frame k_cmp k r ks rs in
                         Find_state.F_down (r0, (k, (ra, frm :: stk))))
-                    | Disk_node.Disk_leaf kvs ->
-                      Find_state.F_finished (r0, (k, (r, (kvs, stk)))))))
+                    | Disk_node.Disk_leaf leaf ->
+                      Find_state.F_finished (r0, (k, (r, (leaf, stk)))))))
           | Find_state.F_finished _ -> A_start_here.failwitha "find_step 1")));;
 
 let rec find_big_step
