@@ -19,7 +19,7 @@ We can also take ('a,t) m = 'a
 
 open Isa_btree
 open Tjr_monad
-open Tree_store
+open Tree_store  (* also includes monad_ops *)
 open Tjr_fs_shared.Kv_op
 
 module Logger = Tjr_fs_shared.Logger
@@ -96,6 +96,22 @@ let main ~pre_config:c =
     c.range_min c.range_max c.min_leaf_size c.max_leaf_size c.min_node_keys c.max_node_keys;
   main' ~range_min:c.range_min ~range_max:c.range_max ~constants
 
+let _ = monad_ops
+
+
+(* setup profiler ----------------------------------------------- *)
+
+open Tjr_profile
+
+let _ =
+  Profile_manager.now := 
+    Core.Time_stamp_counter.(fun () ->
+        now () |> to_int63 |> Core.Int63.to_int |> fun (Some x) -> x)
+[@@ocaml.warning "-8"]
+
+let profiler = Profile_manager.create_profiler ~name:"my_profiler"
+
+
 let _ = 
   match List.tl (Array.to_list (Sys.argv)) with
   | [] -> (
@@ -119,10 +135,19 @@ let _ =
       in
       Isa_test.disable_isa_checks();
       let rec loop n r = 
-        if n >= 100000 then () else
+        if n <= 0 then () else
           insert ~r ~k:n ~v:n |> Imperative.from_m |> function (Some r) ->
-          loop (n+1) r
+          loop (n-1) r
       in
-      loop 0 (Leaf[]))
-        
+      loop (int_of_float 1e5) (Leaf[]);
+      print_profile_summary (profiler.get_marks())
+    )
+    | ["test_polymap"] -> (
+        let rec loop n m = 
+          if n <= 0 then () else
+          Tjr_polymap.add n n m |> fun m -> 
+          loop (n-1) m
+      in
+      loop (int_of_float 1e7) (Tjr_polymap.empty (fun (x:int) (y:int) -> Pervasives.compare x y))
+    )
     

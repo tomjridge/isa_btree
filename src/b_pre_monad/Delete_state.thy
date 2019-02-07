@@ -27,20 +27,20 @@ type_synonym ('k,'v,'r) fo = "('k,'v,'r) del_t"  (* focus *)
 (* dead: https://groups.google.com/forum/#!topic/fa.isabelle/hWGSgu3pSsM *)
 
 (* D_down: r is the original pointer to root, in case we don't delete anything *)
-datatype (dead 'k, dead 'v,dead 'r) delete_state = 
-  D_down "('k,'v,'r) fs * 'r"  
+datatype (dead 'k, dead 'v,dead 'r,'leaf) delete_state = 
+  D_down "('k,'r,'leaf,unit) fs * 'r"  
   | D_up "('k,'v,'r) fo * ('k,'r) stk * 'r"  (* last 'r is the root, for wellformedness check *)
   | D_finished "'r" 
   
 type_synonym ('k,'v,'r)u = "('k,'v,'r)fo * ('k,'r)stk"  
-type_synonym ('k,'v,'r)d = "('k,'v,'r)find_state * 'r"
+type_synonym ('k,'r,'leaf)d = "('k,'r,'leaf,unit)find_state * 'r"
 
-type_synonym ('k,'v,'r)dst = "('k,'v,'r) delete_state"
+type_synonym ('k,'v,'r,'leaf)dst = "('k,'v,'r,'leaf) delete_state"
 
-definition make_initial_delete_state :: "'r \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r)delete_state" where
+definition make_initial_delete_state :: "'r \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r,'leaf)delete_state" where
 "make_initial_delete_state r k = (D_down(make_initial_find_state k r,r))"
 
-definition dest_D_finished :: "('k,'v,'r)delete_state \<Rightarrow> 'r option" where
+definition dest_D_finished :: "('k,'v,'r,'leaf)delete_state \<Rightarrow> 'r option" where
 "dest_D_finished x = (case x of D_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
 
 end

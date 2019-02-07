@@ -13,16 +13,22 @@ with pointers rather than children *)
 
 *)
 
-datatype ('k,'v,'r) dnode = 
+datatype ('k,'r,'leaf,'unit) dnode = 
   Disk_node "'k list * 'r list" 
-  | Disk_leaf "('k*'v) list"
+  | Disk_leaf "'leaf"
 
-definition dest_Disk_node :: "('k,'v,'r) dnode \<Rightarrow> ('k list * 'r list)" where
+definition dest_Disk_node :: "('k,'r,'leaf,unit) dnode \<Rightarrow> ('k list * 'r list)" where
 "dest_Disk_node f = (case f of Disk_node x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Disk_node''))"
 
-definition dest_Disk_leaf :: "('k,'v,'r) dnode \<Rightarrow> ('k*'v) list" where
+definition dest_Disk_leaf :: "('k,'r,'leaf,unit) dnode \<Rightarrow> 'leaf" where
 "dest_Disk_leaf f = (case f of Disk_leaf x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Disk_leaf''))"
 
+datatype_record ('k,'v,'leaf) leaf_ops = 
+  leaf_insert :: "'k \<Rightarrow> 'v \<Rightarrow> 'leaf \<Rightarrow> 'leaf"
+  leaf_length :: "'leaf \<Rightarrow> nat"
+  leaf_kvs :: "'leaf \<Rightarrow> ('k*'v) s"
+  mk_leaf :: "('k*'v) s \<Rightarrow> 'leaf"
+  
 end
 
 

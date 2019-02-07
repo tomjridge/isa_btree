@@ -5,7 +5,7 @@ theory Delete imports Find "$SRC/b_pre_monad/Delete_state" begin
 (* NOTE these are repeated from Delete_state, because otherwise they are shadowed by eg insert.fo *)
 type_synonym ('k,'v,'r)fo = "('k,'v,'r) del_t"  (* focus *)
 type_synonym ('k,'v,'r)u = "('k,'v,'r)fo * ('k,'r)stk"  
-type_synonym ('k,'v,'r)d = "('k,'v,'r)find_state * 'r"
+type_synonym ('k,'r,'leaf)d = "('k,'r,'leaf,unit)find_state * 'r"
 
 (* node steal ------------------------------------------------------- *)
 
@@ -16,7 +16,7 @@ FIXME maybe it makes more sense to deal with the context in isolation, and retur
 NOTE rs,ks as args for node_steal_xxx
  *)
 definition node_steal_right :: 
-  "('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('r s * 'k s) \<Rightarrow> 'k \<Rightarrow> ('r s * 'k s) \<Rightarrow> ('r*'k*'r,'t) MM" 
+  "('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow> ('r s * 'k s) \<Rightarrow> 'k \<Rightarrow> ('r s * 'k s) \<Rightarrow> ('r*'k*'r,'t) MM" 
 where
 "node_steal_right store_ops = (
   let write = store_ops|>wrte in
@@ -30,7 +30,7 @@ where
 
 
 definition node_steal_left :: 
-  "('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('r s * 'k s) \<Rightarrow> 'k \<Rightarrow> ('r s * 'k s) \<Rightarrow> ('r*'k*'r,'t) MM" 
+  "('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow> ('r s * 'k s) \<Rightarrow> 'k \<Rightarrow> ('r s * 'k s) \<Rightarrow> ('r*'k*'r,'t) MM" 
 where
 "node_steal_left store_ops = (
   let write = store_ops|>wrte in
@@ -47,7 +47,7 @@ where
 (* node merge ------------------------------------------------------- *)
 
 definition node_merge_right :: 
-  "('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('k s * 'r s) \<Rightarrow> 'k \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('r,'t) MM"
+  "('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow> ('k s * 'r s) \<Rightarrow> 'k \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('r,'t) MM"
 where
 "node_merge_right store_ops = (
   let write = store_ops|>wrte in
@@ -58,52 +58,59 @@ where
 
 (* NOTE same as merge right *)
 definition node_merge_left :: 
-  "('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('k s * 'r s) \<Rightarrow> 'k \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('r,'t) MM"
+  "('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow> ('k s * 'r s) \<Rightarrow> 'k \<Rightarrow> ('k s * 'r s) \<Rightarrow> ('r,'t) MM"
 where
 "node_merge_left store_ops = node_merge_right store_ops"
 
 
 (* leaf steal ------------------------------------------------------- *)
 
-definition leaf_steal_right :: 
-  "('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('r * 'k * 'r,'t) MM"  
+definition leaf_steal_right :: "
+('k,'v,'leaf) leaf_ops \<Rightarrow> 
+('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('r * 'k * 'r,'t) MM"  
 where
-"leaf_steal_right store_ops = (
+"leaf_steal_right leaf_ops store_ops = (
   let write = store_ops|>wrte in
+  let disk_leaf = % kvs. Disk_leaf ((leaf_ops|>mk_leaf) kvs) in
   (% c1 c2.
   case c2 of kv1#kv2#rest \<Rightarrow> 
-  Disk_leaf (c1@[kv1]) |> write |> bind (% left.
-  Disk_leaf (kv2#rest) |> write |> bind (% right.
+  disk_leaf (c1@[kv1]) |> write |> bind (% left.
+  disk_leaf (kv2#rest) |> write |> bind (% right.
   return (left,(fst kv2),right)))))"
 
 
-definition leaf_steal_left :: 
-  "('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('r * 'k * 'r,'t) MM"  
+definition leaf_steal_left :: "
+('k,'v,'leaf) leaf_ops \<Rightarrow> 
+('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('r * 'k * 'r,'t) MM"  
 where
-"leaf_steal_left store_ops = (
+"leaf_steal_left leaf_ops store_ops = (
   let write = store_ops|>wrte in
+  let disk_leaf = % kvs. Disk_leaf ((leaf_ops|>mk_leaf) kvs) in
   (% c1 c2.
   let c1 = rev c1 in
   case c1 of kv1#rest \<Rightarrow>
-  Disk_leaf(rev rest) |> write |> bind (% left.
-  Disk_leaf(kv1#c2) |> write |> bind (% right.
+  disk_leaf(rev rest) |> write |> bind (% left.
+  disk_leaf(kv1#c2) |> write |> bind (% right.
   return (left,(fst kv1),right)))))"
 
 
 (* leaf merge ------------------------------------------------------- *)
 
 definition leaf_merge_right :: "
-  ('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('r ,'t) MM" where "
-leaf_merge_right store_ops = (
+('k,'v,'leaf) leaf_ops \<Rightarrow> 
+  ('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('r ,'t) MM" where "
+leaf_merge_right leaf_ops store_ops = (
   let write = store_ops|>wrte in
+  let disk_leaf = % kvs. Disk_leaf ((leaf_ops|>mk_leaf) kvs) in
   (% c1 c2.
   let kvs = c1@c2 in
-  Disk_leaf kvs |> write))"
+  disk_leaf kvs |> write))"
 
 (* NOTE same as above *)
-definition leaf_merge_left :: 
-  "('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('r,'t) MM" where
-"leaf_merge_left store_ops = leaf_merge_right store_ops"
+definition leaf_merge_left :: "
+('k,'v,'leaf) leaf_ops \<Rightarrow> 
+('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('r,'t) MM" where
+"leaf_merge_left leaf_ops store_ops = leaf_merge_right leaf_ops store_ops"
 
 
 (* delete ----------------------------------------------------------  *)
@@ -112,7 +119,7 @@ definition leaf_merge_left ::
 was only one key to begin with; this operation tags a node that is small, or even has no
 keys at all *)
 definition post_merge :: 
-  "constants \<Rightarrow> ('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> ('k s * 'r s) \<Rightarrow> (('k,'v,'r)fo,'t)MM"
+  "constants \<Rightarrow> ('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow> ('k s * 'r s) \<Rightarrow> (('k,'v,'r)fo,'t)MM"
 where
 "post_merge cs store_ops krs = (
   let (ks,rs) = krs in
@@ -123,12 +130,15 @@ where
     return (D_updated_subtree(r)))))"
 
 
-definition step_up :: 
-  "constants \<Rightarrow> ('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow> 
+definition step_up :: "
+constants \<Rightarrow> 
+('k,'v,'leaf) leaf_ops \<Rightarrow> 
+('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow> 
   ('k,'v,'r)u \<Rightarrow> (('k,'v,'r)u,'t) MM" where
-"step_up cs store_ops du = (
+"step_up cs leaf_ops store_ops du = (
   let (f,stk) = du in
   let (read,write) = (store_ops|>read,store_ops|>wrte) in
+  let (leaf_kvs,leaf_length,mk_leaf) = (leaf_ops|>leaf_kvs,leaf_ops|>leaf_length,leaf_ops|>mk_leaf) in
   let post_merge = post_merge cs store_ops in
   case stk of [] \<Rightarrow> (failwith (STR ''delete, step_up'')) | p#stk' \<Rightarrow> (
   \<comment> \<open>(* NOTE p is the parent *)\<close>
@@ -149,12 +159,12 @@ definition step_up ::
       case rks of 
       (r1#rs1,_#ks1) \<Rightarrow> 
       r1 |> read |> fmap dest_Disk_leaf |> bind (% left_kvs. 
-      case List.length left_kvs = cs|>min_leaf_size of
+      case leaf_length left_kvs = cs|>min_leaf_size of
       True \<Rightarrow> (
-        leaf_merge_left store_ops left_kvs kvs |> bind (% r.
+        leaf_merge_left leaf_ops store_ops (leaf_kvs left_kvs) kvs |> bind (% r.
         unsplit_node ( (rs1,ks1),([r],[]),krs) |> post_merge))
       | False \<Rightarrow> (
-        leaf_steal_left store_ops left_kvs kvs |> bind (% (r1,k1,r2).
+        leaf_steal_left leaf_ops store_ops (leaf_kvs left_kvs) kvs |> bind (% (r1,k1,r2).
         unsplit_node ((rs1,ks1), ([r1,r2],[k1]), krs) |> Disk_node
         |> write |> fmap D_updated_subtree))))
     | False \<Rightarrow> (
@@ -163,12 +173,12 @@ definition step_up ::
       case krs of
       (_#ks1,r1#rs1) \<Rightarrow>       
       r1 |> read |> fmap dest_Disk_leaf |> bind (% right_kvs. 
-      case List.length right_kvs = cs|>min_leaf_size of
+      case leaf_length right_kvs = cs|>min_leaf_size of
       True \<Rightarrow> (
-        leaf_merge_right store_ops kvs right_kvs |> bind (% r.
+        leaf_merge_right leaf_ops store_ops kvs (leaf_kvs right_kvs) |> bind (% r.
         unsplit_node (rks,([r],[]),(ks1,rs1)) |> post_merge))
       | False \<Rightarrow> (
-        leaf_steal_right store_ops kvs right_kvs |> bind (% (r1,k1,r2). 
+        leaf_steal_right leaf_ops store_ops kvs (leaf_kvs right_kvs) |> bind (% (r1,k1,r2). 
         unsplit_node ( rks, ([r1,r2],[k1]), (ks1,rs1)) |> Disk_node
         |> write |> fmap D_updated_subtree)))))
   | D_small_node(ks,rs) \<Rightarrow> (
@@ -205,49 +215,55 @@ definition step_up ::
 "
 
 
-definition delete_step :: "constants \<Rightarrow> 'k ord \<Rightarrow> ('r,('k,'v,'r)dnode,'t)store_ops \<Rightarrow>
-  ('k,'v,'r)delete_state \<Rightarrow> (('k,'v,'r)delete_state,'t) MM" 
+definition delete_step :: "
+constants \<Rightarrow> 'k ord \<Rightarrow> 
+ ('k,'v,'leaf) leaf_ops \<Rightarrow>
+('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow>
+  ('k,'v,'r,'leaf)delete_state \<Rightarrow> (('k,'v,'r,'leaf)delete_state,'t) MM" 
 where
-"delete_step cs k_cmp store_ops = (
+"delete_step cs k_cmp leaf_ops store_ops = (
   let write = store_ops|>wrte in
+  let disk_leaf = % kvs. Disk_leaf ((leaf_ops|>mk_leaf) kvs) in
   (% s.
   case s of 
   D_down(f,r0) \<Rightarrow> (
     case dest_F_finished f of
-    None \<Rightarrow> (find_step cs k_cmp store_ops f |> fmap (% f'. D_down(f',r0)))
+    None \<Rightarrow> (find_step cs k_cmp leaf_ops store_ops f |> fmap (% f'. D_down(f',r0)))
     | Some x \<Rightarrow> (
-      let (r0,k,r,kvs,stk) = x in
+      let (r0,k,r,leaf,stk) = x in
       \<comment> \<open> (* (store_ops|>free) (r0#(r_stk_to_rs stk)) FIXME *)\<close>
+      let kvs = (leaf_ops|>leaf_kvs) leaf in  (* FIXME inefficient *)
       let something_to_delete = (? x : set (kvs|>List.map fst). key_eq k_cmp x k) in
       case something_to_delete of
       True \<Rightarrow> (
         let kvs' = kvs|>List.filter (% x. ~ (key_eq k_cmp (fst x) k)) in
         case List.length kvs' < cs|>min_leaf_size of
         True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
-        | False \<Rightarrow> (Disk_leaf(kvs') |> write 
+        | False \<Rightarrow> (disk_leaf(kvs') |> write 
           |> fmap (% r. D_up(D_updated_subtree(r),stk,r0))))
       | False \<Rightarrow> (return (D_finished r0) )))
   | D_up(f,stk,r0) \<Rightarrow> (
     case is_Nil' stk of
     True \<Rightarrow> (
       case f of
-      D_small_leaf kvs \<Rightarrow> (Disk_leaf(kvs)|>write|>fmap D_finished)
+      D_small_leaf kvs \<Rightarrow> (disk_leaf(kvs)|>write|>fmap D_finished)
       | D_small_node (ks,rs) \<Rightarrow> (
         case List.length ks = 0 of
         True \<Rightarrow> return (D_finished (List.hd rs))
         | False \<Rightarrow> (Disk_node(ks,rs)|>write|>fmap D_finished))
       | D_updated_subtree(r) \<Rightarrow> (return (D_finished r)))
-    | False \<Rightarrow> (step_up cs store_ops (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
+    | False \<Rightarrow> (step_up cs leaf_ops store_ops (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
   | D_finished(r) \<Rightarrow> (failwith (STR ''delete_step 1''))))"
 
 
 definition delete_big_step :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
-('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r) delete_state \<Rightarrow> (('k,'v,'r) delete_state,'t) MM" where
-"delete_big_step cs k_cmp store_ops = (
-  let delete_step = delete_step cs k_cmp store_ops in
+('k,'v,'leaf) leaf_ops \<Rightarrow> 
+('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
+('k,'v,'r,'leaf) delete_state \<Rightarrow> (('k,'v,'r,'leaf) delete_state,'t) MM" where
+"delete_big_step cs k_cmp leaf_ops store_ops = (
+  let delete_step = delete_step cs k_cmp leaf_ops store_ops in
   (% d.
   iter_m (% d. case d of
     D_finished _ \<Rightarrow> return None
@@ -258,12 +274,13 @@ constants \<Rightarrow>
 definition delete :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
-('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>
+('k,'v,'leaf) leaf_ops \<Rightarrow>
+('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
 'r \<Rightarrow> 'k  \<Rightarrow> ('r,'t) MM" where
-"delete cs k_cmp store_ops r k = (
-  let check_tree_at_r = check_tree_at_r cs k_cmp store_ops in
+"delete cs k_cmp leaf_ops store_ops r k = (
+  let check_tree_at_r = check_tree_at_r cs k_cmp leaf_ops store_ops in
   let d = make_initial_delete_state r k in
-  delete_big_step cs k_cmp store_ops d |> bind (% d.
+  delete_big_step cs k_cmp leaf_ops store_ops d |> bind (% d.
   case d of
   D_finished r \<Rightarrow> (check_tree_at_r r |> bind (% _. return r))
   | _ \<Rightarrow> (failwith (STR ''delete, impossible''))))"

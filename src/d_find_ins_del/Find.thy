@@ -5,9 +5,10 @@ theory Find imports Post_monad "$SRC/b_pre_monad/Find_state" begin
 definition find_step :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
-('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>  
-('k,'v,'r) find_state \<Rightarrow> (('k,'v,'r) find_state,'t) MM" where
-"find_step cs k_cmp store_ops = (
+('k,'v,'leaf) leaf_ops \<Rightarrow> 
+('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>  
+('k,'r,'leaf,unit) find_state \<Rightarrow> (('k,'r,'leaf,unit) find_state,'t) MM" where
+"find_step cs k_cmp leaf_ops store_ops = (
   let read = store_ops|>read in
   (% fs. 
   case fs of 
@@ -23,10 +24,11 @@ constants \<Rightarrow>
 definition find_big_step :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
-('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r) find_state \<Rightarrow> (('k,'v,'r) find_state,'t) MM" where
-"find_big_step cs k_cmp store_ops = (
-  let step = find_step cs k_cmp store_ops in
+ ('k,'v,'leaf) leaf_ops \<Rightarrow> 
+('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
+('k,'r,'leaf,unit) find_state \<Rightarrow> (('k,'r,'leaf,unit) find_state,'t) MM" where
+"find_big_step cs k_cmp leaf_ops store_ops = (
+  let step = find_step cs k_cmp leaf_ops store_ops in
   (% i.
   iter_m (% i. case i of
     F_finished _ \<Rightarrow> (return None)
@@ -36,11 +38,12 @@ constants \<Rightarrow>
 definition find :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow>
-('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow>
-'r \<Rightarrow> 'k \<Rightarrow> ('r * ('k*'v)s * ('k,'r)stk,'t) MM" where
-"find cs k_cmp store_ops r k = (
+ ('k,'v,'leaf) leaf_ops \<Rightarrow> 
+('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
+'r \<Rightarrow> 'k \<Rightarrow> ('r * 'leaf * ('k,'r)stk,'t) MM" where
+"find cs k_cmp leaf_ops store_ops r k = (
   let s = make_initial_find_state k r in
-  find_big_step cs k_cmp store_ops s |> bind (% s.
+  find_big_step cs k_cmp leaf_ops store_ops s |> bind (% s.
   case s of
   F_finished(r0,k,r,kvs,stk) \<Rightarrow> return (r,kvs,stk)
   | _ \<Rightarrow> failwith (STR ''find 1'')))"

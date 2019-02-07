@@ -6,21 +6,21 @@ begin
 definition dummy :: "unit" where "dummy=()"
 
 
-datatype ('k,'v,'r) find_state = 
+datatype ('k,'r,'leaf,'unit) find_state = 
   F_down "'r * 'k * 'r * ('k,'r) stk"  (* root, search key, current pointer, stack *) 
-  | F_finished "'r * 'k * 'r * ('k*'v)s * ('k,'r)stk"
+  | F_finished "'r * 'k * 'r * 'leaf * ('k,'r)stk"
 
-definition dest_F_finished :: "('k,'v,'r)find_state \<Rightarrow> ('r*'k*'r*('k*'v) s * ('k,'r)  stk) option" where
+definition dest_F_finished :: "('k,'r,'leaf,unit)find_state \<Rightarrow> ('r*'k*'r* 'leaf * ('k,'r)  stk) option" where
 "dest_F_finished fs = (
   case fs of
   F_down _ \<Rightarrow> None
   | F_finished (r0,k,r,kvs,stk) \<Rightarrow> Some(r0,k,r,kvs,stk) )"
 
-definition make_initial_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'v,'r) find_state" where "
+definition make_initial_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'r,'leaf,unit) find_state" where "
 make_initial_find_state k r = F_down (r,k,r,[])"
 
 
-type_synonym ('k,'v,'r) fs = "('k,'v,'r) find_state"
+type_synonym ('k,'r,'leaf,'unit) fs = "('k,'r,'leaf,'unit) find_state"
 
 end
 

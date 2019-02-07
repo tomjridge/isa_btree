@@ -2,7 +2,7 @@ open Tjr_monad.Types
 open Constants_type
 open Isa_export
 
-type ('k,'v,'r) dnode = ('k,'v,'r) Disk_node.dnode
+type ('k,'v,'r) dnode = ('k,'v,'r,unit) Disk_node.dnode
 
 type ('k,'r) stk = ('r list * 'k list, 'r, 'k list * 'r list, 'r) Stacks_and_frames.stk_frame list
 
@@ -32,19 +32,26 @@ let make_find_insert_delete (type t) ~(monad_ops:t monad_ops) =
       (n2isa cs.max_node_keys)
   in
   let cmp2isa (f: 'k -> 'k -> int) = fun k1 k2 -> f k1 k2 |> i2isa in
+  let leaf_ops2isa (leaf_insert,leaf_length,leaf_kvs,mk_leaf) =
+    let leaf_length l = leaf_length l |> n2isa in
+    Isa_export.Disk_node.Make_leaf_ops(leaf_insert,leaf_length,leaf_kvs,mk_leaf)
+  in
   let store_ops2isa store_ops = 
     let (a,b,c,d) = store_ops in
     M.Post_monad.make_store_ops a b c d
   in
-  fun ~cs ~k_cmp ~store_ops -> 
-  let find ~(r:'r) ~(k:'k) = 
-    M.Find.find (cs2isa cs) (cmp2isa k_cmp) (store_ops2isa store_ops) r k |> Monad.fmap (fun (a,(b,c)) -> (a,b,c))
+  fun ~cs ~k_cmp ~leaf_ops ~store_ops -> 
+  let find  = 
+    let find = M.Find.find (cs2isa cs) (cmp2isa k_cmp) (leaf_ops2isa leaf_ops) (store_ops2isa store_ops) in
+    fun ~(r:'r) ~(k:'k) -> find r k |> Monad.fmap (fun (a,(b,c)) -> (a,b,c))
   in
-  let insert ~(r:'r) ~(k:'k) ~(v:'v) = 
-    M.Insert.insert (cs2isa cs) (cmp2isa k_cmp) (store_ops2isa store_ops) r k v
+  let insert = 
+    let insert = M.Insert.insert (cs2isa cs) (cmp2isa k_cmp) (leaf_ops2isa leaf_ops) (store_ops2isa store_ops) in
+    fun  ~(r:'r) ~(k:'k) ~(v:'v) -> insert r k v
   in
-  let delete ~(r:'r) ~(k:'k) =
-    M.Delete.delete (cs2isa cs) (cmp2isa k_cmp) (store_ops2isa store_ops) r k
+  let delete  =
+    let delete = M.Delete.delete (cs2isa cs) (cmp2isa k_cmp) (leaf_ops2isa leaf_ops) (store_ops2isa store_ops) in
+    fun ~(r:'r) ~(k:'k) -> delete r k
   in
   {find;insert;delete}
 

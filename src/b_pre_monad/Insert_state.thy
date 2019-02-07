@@ -6,17 +6,17 @@ datatype ('k,'v,'r) i12_t = I1 'r | I2 "'r*'k*'r"
 
 type_synonym ('k,'v,'r) fo = "('k,'v,'r)i12_t"
 
-type_synonym ('k,'v,'r) d (* down_state *) = "('k,'v,'r)find_state*'v"
+type_synonym ('k,'v,'r,'leaf) d (* down_state *) = "('k,'r,'leaf,unit)find_state*'v"
 type_synonym ('k,'v,'r) u (* up_state *) = "('k,'v,'r)fo*('k,'r)stk"
 
-datatype (dead 'k,dead 'v,dead 'r) insert_state = 
-  I_down "('k,'v,'r) d"
+datatype (dead 'k,dead 'v,dead 'r,'leaf) insert_state = 
+  I_down "('k,'v,'r,'leaf) d"
   | I_up "('k,'v,'r) u"
   | I_finished 'r
   | I_finished_with_mutate
 
 
-definition make_initial_insert_state :: "'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r) insert_state" where
+definition make_initial_insert_state :: "'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r,'leaf) insert_state" where
 "make_initial_insert_state r k v = (
   let f = make_initial_find_state k r in
   I_down(f,v))"
@@ -25,15 +25,16 @@ definition make_initial_insert_state :: "'r \<Rightarrow> 'k \<Rightarrow> 'v \<
 definition split_leaf :: "constants \<Rightarrow> ('k*'v) s \<Rightarrow> ('k*'v)s * 'k * ('k*'v) s" where "
 split_leaf cs kvs = (
   let _ = assert_true True in
-  iter_step (% (kvs,kvs').
-    case List.length kvs' \<le> cs|>min_leaf_size of
+  let min = cs|>min_leaf_size in 
+  iter_step (% (kvs,kvs',len_kvs').
+    case len_kvs' \<le> min of
     True \<Rightarrow> None
     | False \<Rightarrow> (
       case kvs' of 
       [] \<Rightarrow> impossible1 (STR ''split_leaf'')
-      | (k,v)#kvs' \<Rightarrow> Some((k,v)#kvs,kvs')))
-    ([],kvs)
-  |> (% (kvs,kvs'). (List.rev kvs,List.hd kvs'|>fst, kvs')))
+      | (k,v)#kvs' \<Rightarrow> Some((k,v)#kvs,kvs',len_kvs'-1)))
+    ([],kvs,List.length kvs)
+  |> (% (kvs,kvs',_). (List.rev kvs,List.hd kvs'|>fst, kvs')))
 "
 
 (* NOTE for both split_node and split_leaf, we may know the order is dense, and all keys have values; in which case we can split
