@@ -6,17 +6,17 @@ datatype ('k,'v,'r) i12_t = I1 'r | I2 "'r*'k*'r"
 
 type_synonym ('k,'v,'r) fo = "('k,'v,'r)i12_t"
 
-type_synonym ('k,'v,'r,'leaf) d (* down_state *) = "('k,'r,'leaf,unit)find_state*'v"
-type_synonym ('k,'v,'r) u (* up_state *) = "('k,'v,'r)fo*('k,'r)stk"
+type_synonym ('k,'v,'r,'leaf,'frame) d (* down_state *) = "('k,'r,'leaf,'frame)find_state*'v"
+type_synonym ('k,'v,'r,'frame) u (* up_state *) = "('k,'v,'r)fo*'frame list"
 
-datatype (dead 'k,dead 'v,dead 'r,'leaf) insert_state = 
-  I_down "('k,'v,'r,'leaf) d"
-  | I_up "('k,'v,'r) u"
+datatype (dead 'k,dead 'v,dead 'r,'leaf, 'frame) insert_state = 
+  I_down "('k,'v,'r,'leaf,'frame) d"
+  | I_up "('k,'v,'r,'frame) u"
   | I_finished 'r
   | I_finished_with_mutate
 
 
-definition make_initial_insert_state :: "'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r,'leaf) insert_state" where
+definition make_initial_insert_state :: "'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k,'v,'r,'leaf,'frame) insert_state" where
 "make_initial_insert_state r k v = (
   let f = make_initial_find_state k r in
   I_down(f,v))"

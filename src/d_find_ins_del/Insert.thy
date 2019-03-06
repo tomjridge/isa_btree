@@ -1,8 +1,8 @@
 theory Insert imports Find "$SRC/b_pre_monad/Insert_state" begin
 
 type_synonym ('k,'v,'r) fo = "('k,'v,'r)i12_t"
-type_synonym ('k,'v,'r,'leaf) d (* down_state *) = "('k,'r,'leaf,unit)find_state*'v"
-type_synonym ('k,'v,'r) u (* up_state *) = "('k,'v,'r)fo*('k,'r)stk"
+type_synonym ('k,'v,'r,'leaf,'frame) d (* down_state *) = "('k,'r,'leaf,'frame)find_state*'v"
+type_synonym ('k,'v,'r,'frame) u (* up_state *) = "('k,'v,'r)fo*'frame list"
 
 (* insert ------------------------------------------------------------ *)
 
@@ -10,11 +10,11 @@ type_synonym ('k,'v,'r) u (* up_state *) = "('k,'v,'r)fo*('k,'r)stk"
 definition step_down :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
-('k,'v,'leaf) leaf_ops \<Rightarrow>
-('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r,'leaf) d \<Rightarrow> (('k,'v,'r,'leaf) d,'t) MM" where
-"step_down cs k_cmp leaf_ops store_ops = (
-  let find_step =  find_step cs k_cmp leaf_ops store_ops in
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
+('k,'v,'r,'leaf,'frame) d \<Rightarrow> (('k,'v,'r,'leaf,'frame) d,'t) MM" where
+"step_down cs k_cmp frame_ops store_ops = (
+  let find_step =  find_step cs k_cmp frame_ops store_ops in
   (% d.
   let (fs,v) = d in
   find_step fs |> fmap (% d'. (d',v)) ))"
@@ -24,10 +24,12 @@ definition step_bottom :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
-('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r,'leaf) d \<Rightarrow> (('k,'v,'r) u + unit,'t) MM" where
-"step_bottom cs k_cmp leaf_ops store_ops d = (
+('k,'r,'node) node_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
+('k,'v,'r,'leaf,'frame) d \<Rightarrow> (('k,'v,'r,'frame) u + unit,'t) MM" where
+"step_bottom cs k_cmp leaf_ops node_ops store_ops d = (
   let (write,rewrite) = (store_ops|>wrte,store_ops|>rewrite) in
+  let mk_leaf = (leaf_ops|>mk_leaf) in
   let (fs,v) = d in
   case dest_F_finished fs of 
   None \<Rightarrow> (failwith (STR ''insert, step_bottom, 1''))
@@ -44,7 +46,6 @@ constants \<Rightarrow>
         return (Inr ())
       | Some r' \<Rightarrow> return (Inl(I1 r',stk))))
     | False \<Rightarrow> (
-      let mk_leaf = (leaf_ops|>mk_leaf) in
       let kvs' = (leaf_ops|>leaf_kvs) leaf' in
       let (kvs1,k',kvs2) = split_leaf cs kvs' in
       Disk_leaf (mk_leaf kvs1) |> write |> bind (% r1.
@@ -56,47 +57,54 @@ constants \<Rightarrow>
 definition step_up :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
-('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r) u \<Rightarrow> (('k,'v,'r) u + unit,'t) MM" where
-"step_up  cs k_cmp store_ops u = (
+('k,'r,'node) node_ops \<Rightarrow> 
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
+('k,'v,'r,'frame) u \<Rightarrow> (('k,'v,'r,'frame) u + unit,'t) MM" where
+"step_up  cs k_cmp node_ops frame_ops store_ops u = (
   let (write,rewrite) = (store_ops|>wrte,store_ops|>rewrite) in
   let (fo,stk) = u in
   case stk of 
   [] \<Rightarrow> failwith (STR ''insert, step_up,1'') 
   | frm#stk' \<Rightarrow> (
-    let ((rs1,ks1),_,(ks2,rs2),r_parent) = dest_Frm frm in
+    let (lh,rh) = ((frame_ops|>left_half) frm, (frame_ops|>right_half) frm) in
+    let original_r = (frame_ops|>original_node_r) frm in
     case fo of
     I1 r \<Rightarrow> (
-      let (ks,rs) = unsplit_node ((rs1,ks1),([r],[]),(ks2,rs2)) in
-      Disk_node(ks,rs) |> rewrite r_parent |> bind (% r2. 
+      let n = (frame_ops|>unsplit) (lh,R(r),rh) in
+      Disk_node(n) |> rewrite original_r |> bind (% r2. 
       case r2 of 
       None \<Rightarrow> return (Inr ())
       | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
     | I2 (r1,k,r2) \<Rightarrow> (
-      let (ks',rs') = unsplit_node ((rs1,ks1), ([r1,r2],[k]), (ks2,rs2)) in
-      case List.length ks' \<le> (cs|>max_node_keys) of
+      let n = (frame_ops|>unsplit) (lh, Rkr(r1,k,r2), rh) in
+      let n = (n :: 'node) in
+      case (node_ops|>node_keys_length) n \<le> (cs|>max_node_keys) of
       True \<Rightarrow> (
-        Disk_node(ks',rs') |> rewrite r_parent |> bind (% r2. 
+        Disk_node(n) |> rewrite original_r |> bind (% r2. 
         case r2 of 
         None \<Rightarrow> return (Inr ())
         | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
       | False \<Rightarrow> (
-        let (ks_rs1,k,ks_rs2) = split_node cs (ks',rs') in  
-        Disk_node(ks_rs1) |> write |> bind (% r1. 
-        Disk_node (ks_rs2) |> write |> bind (% r2.
-        return (Inl (I2(r1,k,r2),stk')))) ))))"
+        let (n1,k,n2) = (node_ops|>split_large_node) n in  
+        Disk_node(n1) |> write |> bind (% r1. 
+        Disk_node(n2) |> write |> bind (% r2.
+        return (Inl (I2(r1,k,r2),stk'))))) )))"
+
 
 
 definition insert_step :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow> 
-('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r,'leaf) insert_state \<Rightarrow> (('k,'v,'r,'leaf) insert_state,'t) MM" where
-"insert_step cs k_cmp leaf_ops store_ops = (
-  let step_down = step_down cs k_cmp leaf_ops store_ops in
-  let step_bottom = step_bottom cs k_cmp leaf_ops store_ops in
-  let step_up = step_up  cs k_cmp store_ops in
+('k,'r,'node) node_ops \<Rightarrow> 
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
+('k,'v,'r,'leaf,'frame) insert_state \<Rightarrow> (('k,'v,'r,'leaf,'frame) insert_state,'t) MM" where
+"insert_step cs k_cmp leaf_ops node_ops frame_ops store_ops = (
+  let step_down = step_down cs k_cmp frame_ops store_ops in
+  let step_bottom = step_bottom cs k_cmp leaf_ops node_ops store_ops in
+  let step_up = step_up  cs k_cmp node_ops frame_ops store_ops in
   let write = store_ops|>wrte in
   (% s.
   case s of 
@@ -115,7 +123,7 @@ constants \<Rightarrow>
       case fo of 
       I1 r \<Rightarrow> return (I_finished r)
       | I2(r1,k,r2) \<Rightarrow> (
-        (Disk_node([k],[r1,r2]) |> write |> bind (% r.
+        (Disk_node((node_ops|>node_make_small_root)(r1,k,r2)) |> write |> bind (% r.
         return (I_finished r)))))
     | _ \<Rightarrow> (step_up u |> bind (% u. 
       case u of 
@@ -128,10 +136,12 @@ definition insert_big_step :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
-('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r,'leaf) insert_state \<Rightarrow> (('k,'v,'r,'leaf) insert_state,'t) MM" where
-"insert_big_step cs k_cmp leaf_ops store_ops = (
-  let insert_step = insert_step cs k_cmp leaf_ops store_ops in
+('k,'r,'node) node_ops \<Rightarrow> 
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
+('k,'v,'r,'leaf,'frame) insert_state \<Rightarrow> (('k,'v,'r,'leaf,'frame) insert_state,'t) MM" where
+"insert_big_step cs k_cmp leaf_ops node_ops frame_ops store_ops = (
+  let insert_step = insert_step cs k_cmp leaf_ops node_ops frame_ops store_ops in
   (% i.
   iter_m (% i. case i of
     I_finished r \<Rightarrow> (return None)
@@ -143,12 +153,16 @@ definition insert :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow>
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
-('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
+('k,'r,'node) node_ops \<Rightarrow> 
+('node \<Rightarrow> 'r s) \<Rightarrow> 
+('node \<Rightarrow> 'k s) \<Rightarrow> 
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
 'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('r option,'t) MM" where
-"insert cs k_cmp leaf_ops store_ops r k v = (
-  let check_tree_at_r = check_tree_at_r cs k_cmp leaf_ops store_ops in
+"insert cs k_cmp leaf_ops node_ops node2rs node2ks frame_ops store_ops r k v = (
+  let check_tree_at_r = check_tree_at_r cs k_cmp leaf_ops node_ops node2rs node2ks store_ops in
   let i = make_initial_insert_state r k v in
-  insert_big_step cs k_cmp leaf_ops store_ops i |> bind (% i.
+  insert_big_step cs k_cmp leaf_ops node_ops frame_ops store_ops i |> bind (% i.
   case i of
   I_finished r \<Rightarrow> (check_tree_at_r r |> bind (% _. return (Some r)))
   | I_finished_with_mutate \<Rightarrow> (check_tree_at_r r |> bind (% _. return None))

@@ -13,14 +13,14 @@ with pointers rather than children *)
 
 *)
 
-datatype ('k,'r,'leaf,'unit) dnode = 
-  Disk_node "'k list * 'r list" 
+datatype ('node,'leaf) dnode = 
+  Disk_node "'node" 
   | Disk_leaf "'leaf"
 
-definition dest_Disk_node :: "('k,'r,'leaf,unit) dnode \<Rightarrow> ('k list * 'r list)" where
+definition dest_Disk_node :: "('node,'leaf) dnode \<Rightarrow> 'node" where
 "dest_Disk_node f = (case f of Disk_node x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Disk_node''))"
 
-definition dest_Disk_leaf :: "('k,'r,'leaf,unit) dnode \<Rightarrow> 'leaf" where
+definition dest_Disk_leaf :: "('node,'leaf) dnode \<Rightarrow> 'leaf" where
 "dest_Disk_leaf f = (case f of Disk_leaf x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Disk_leaf''))"
 
 datatype_record ('k,'v,'leaf) leaf_ops = 
@@ -28,7 +28,36 @@ datatype_record ('k,'v,'leaf) leaf_ops =
   leaf_length :: "'leaf \<Rightarrow> nat"
   leaf_kvs :: "'leaf \<Rightarrow> ('k*'v) s"
   mk_leaf :: "('k*'v) s \<Rightarrow> 'leaf"
-  
+
+datatype_record ('k,'r,'node) node_ops =
+  split_large_node :: "'node \<Rightarrow> 'node*'k*'node"
+  node_merge :: "'node * 'k * 'node \<Rightarrow> 'node"
+  node_steal_right :: "'node * 'k * 'node \<Rightarrow> 'node * 'k * 'node"
+  node_steal_left :: "'node * 'k * 'node \<Rightarrow> 'node * 'k * 'node"
+  node_keys_length :: "'node \<Rightarrow> nat"
+  node_make_small_root :: "'r*'k*'r \<Rightarrow> 'node"
+
+
+type_synonym ('k,'r) simple_node_ops = "('k,'r,'k s * 'r s) node_ops"
+
+definition mk_simple_node_ops :: "(('k s * 'r s) \<Rightarrow> ('k s * 'r s) * 'k * ('k s * 'r s)) \<Rightarrow> 
+('k,'r) simple_node_ops" where
+"mk_simple_node_ops sln = (
+  \<lparr> split_large_node=sln,
+    node_merge=(% ((ks1,rs1), k, (ks2,rs2)). (ks1@[k]@ks2,rs1@rs2)),
+    node_steal_right=(% x. case x of 
+      ((ks1,rs1),k1,(k2#ks2,r2#rs2)) \<Rightarrow> ( (ks1@[k1],rs1@[r2]),k2,(ks2,rs2))),
+    node_steal_left=(% x. case x of
+      ((ks1,rs1),k2,(ks2,rs2)) \<Rightarrow> 
+      case (List.rev ks1, List.rev rs1) of
+      (k1#ks1,r1#rs1) \<Rightarrow>
+      ((List.rev ks1,List.rev rs1), k1, (k2#ks2,r1#rs2))),
+    node_keys_length=(% (ks,_). List.length ks),
+    node_make_small_root=(% (r1,k,r2). ([k],[r1,r2]))
+
+  \<rparr>
+)"
+
 end
 
 

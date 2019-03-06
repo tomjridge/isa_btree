@@ -6,17 +6,18 @@ begin
 definition dummy :: "unit" where "dummy=()"
 
 
-datatype ('k,'r,'leaf,'unit) find_state = 
-  F_down "'r * 'k * 'r * ('k,'r) stk"  (* root, search key, current pointer, stack *) 
-  | F_finished "'r * 'k * 'r * 'leaf * ('k,'r)stk"
+datatype ('k,'r,'leaf,'frame) find_state = 
+  F_down "'r * 'k * 'r * 'frame list"  (* root, search key, current pointer, stack *) 
+  | F_finished "'r * 'k * 'r * 'leaf * 'frame list"
 
-definition dest_F_finished :: "('k,'r,'leaf,unit)find_state \<Rightarrow> ('r*'k*'r* 'leaf * ('k,'r)  stk) option" where
+definition dest_F_finished :: "('k,'r,'leaf,'frame)find_state \<Rightarrow> 
+('r*'k*'r* 'leaf * 'frame list) option" where
 "dest_F_finished fs = (
   case fs of
   F_down _ \<Rightarrow> None
   | F_finished (r0,k,r,kvs,stk) \<Rightarrow> Some(r0,k,r,kvs,stk) )"
 
-definition make_initial_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'r,'leaf,unit) find_state" where "
+definition make_initial_find_state :: "'k \<Rightarrow> 'r \<Rightarrow> ('k,'r,'leaf,'frame) find_state" where "
 make_initial_find_state k r = F_down (r,k,r,[])"
 
 

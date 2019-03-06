@@ -31,19 +31,24 @@ termination iter_m
  by (force intro:FIXME)
 
 
-function get_tree :: "('k,'v,'leaf)leaf_ops \<Rightarrow> ('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow> 'r \<Rightarrow> (('k,'v)tree,'t)MM" where
-"get_tree leaf_ops store_ops r = (
+function get_tree :: 
+"('k,'v,'leaf)leaf_ops \<Rightarrow> 
+('k,'r,'node)node_ops \<Rightarrow> 
+('node \<Rightarrow> 'r s) \<Rightarrow> 
+('node \<Rightarrow> 'k s) \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow> 'r \<Rightarrow> (('k,'v)tree,'t)MM" where
+"get_tree leaf_ops node_ops node2rs node2ks store_ops r = (
   r |> (store_ops|>read) |> bind (% n. case n of 
   Disk_leaf kvs \<Rightarrow> return (Leaf((leaf_ops|>leaf_kvs)kvs))
-  | Disk_node (ks,rs) \<Rightarrow> (
+  | Disk_node n \<Rightarrow> (
     iter_m (% (ts,rs). case rs of 
       [] \<Rightarrow> return None
       | r#rs \<Rightarrow> (
-        get_tree leaf_ops store_ops r |> bind (% t. 
+        get_tree leaf_ops node_ops node2rs node2ks store_ops r |> bind (% t. 
         return (Some(t#ts,rs)))))
-      ([],rs)
+      ([],node2rs n)
     |> bind (% (ts,_).
-    return (Node(ks,List.rev ts))))))"
+    return (Node(node2ks n,List.rev ts))))))"
 apply (force)+ done
 termination get_tree
   by (force intro:FIXME)
@@ -54,13 +59,16 @@ definition check_tree_at_r :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow>
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
-('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
+('k,'r,'node)node_ops \<Rightarrow> 
+('node \<Rightarrow> 'r s) \<Rightarrow> 
+('node \<Rightarrow> 'k s) \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
 'r \<Rightarrow> (unit,'t)MM" where
-"check_tree_at_r cs k_cmp leaf_ops store_ops r = (
+"check_tree_at_r cs k_cmp leaf_ops node_ops node2rs node2ks store_ops r = (
   case get_check_flag () of
   False \<Rightarrow> return ()
   | True \<Rightarrow> 
-    get_tree leaf_ops store_ops r |> bind (% t.
+    get_tree leaf_ops node_ops node2rs node2ks store_ops r |> bind (% t.
     let _ = check_true (% _. wf_tree cs (Some Small_root_node_or_leaf) k_cmp t) in
     return ()))"
 
