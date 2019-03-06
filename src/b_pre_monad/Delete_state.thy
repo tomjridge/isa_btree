@@ -17,9 +17,9 @@ definition dummy :: "unit" where "dummy=()"
 
 *)
 
-datatype ('k,'v,'r)del_t =
-  D_small_leaf "('k*'v)s"
-  | D_small_node "'k s * 'r s"
+datatype ('r,'node,'leaf)del_t =
+  D_small_leaf "'leaf"
+  | D_small_node "'node"
   | D_updated_subtree "'r"
 
 type_synonym ('k,'v,'r) fo = "('k,'v,'r) del_t"  (* focus *)
@@ -28,7 +28,7 @@ type_synonym ('k,'v,'r) fo = "('k,'v,'r) del_t"  (* focus *)
 
 (* D_down: r is the original pointer to root, in case we don't delete anything *)
 datatype (dead 'k, dead 'v,dead 'r,'leaf,dead 'frame) delete_state = 
-  D_down "('k,'r,'leaf,unit) fs * 'r"  
+  D_down "('k,'r,'leaf,'frame) fs * 'r"  
   | D_up "('k,'v,'r) fo * 'frame list * 'r"  (* last 'r is the root, for wellformedness check *)
   | D_finished "'r" 
   

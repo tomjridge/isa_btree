@@ -23,11 +23,16 @@ definition dest_Disk_node :: "('node,'leaf) dnode \<Rightarrow> 'node" where
 definition dest_Disk_leaf :: "('node,'leaf) dnode \<Rightarrow> 'leaf" where
 "dest_Disk_leaf f = (case f of Disk_leaf x \<Rightarrow> x  | _ \<Rightarrow> failwith (STR ''dest_Disk_leaf''))"
 
+(* FIXME probably want to abstract even further *)
 datatype_record ('k,'v,'leaf) leaf_ops = 
   leaf_insert :: "'k \<Rightarrow> 'v \<Rightarrow> 'leaf \<Rightarrow> 'leaf"
   leaf_length :: "'leaf \<Rightarrow> nat"
-  leaf_kvs :: "'leaf \<Rightarrow> ('k*'v) s"
-  mk_leaf :: "('k*'v) s \<Rightarrow> 'leaf"
+  leaf_kvs :: "'leaf \<Rightarrow> ('k*'v) s"  (* FIXME avoid? *)
+  leaf_steal_right :: "'leaf*'leaf \<Rightarrow> 'leaf*'k*'leaf"
+  leaf_steal_left :: "'leaf*'leaf \<Rightarrow> 'leaf*'k*'leaf"
+  leaf_merge :: "'leaf*'leaf \<Rightarrow> 'leaf"
+  split_large_leaf :: "'leaf \<Rightarrow> 'leaf*'k*'leaf"
+  mk_leaf :: "('k*'v) s \<Rightarrow> 'leaf"  (* FIXME avoid? *)
 
 datatype_record ('k,'r,'node) node_ops =
   split_large_node :: "'node \<Rightarrow> 'node*'k*'node"
