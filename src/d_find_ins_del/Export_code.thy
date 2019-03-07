@@ -32,7 +32,7 @@ ck2_tests
 kvs_insert_tests
 
 (* Searching_and_splitting.sk2i_tests *)
-Stacks_and_frames.Frm
+(* Stacks_and_frames.Frm *)
 
 Disk_node.Disk_node
 make_leaf_ops

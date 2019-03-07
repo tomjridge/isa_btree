@@ -22,25 +22,27 @@ datatype ('r,'node,'leaf)del_t =
   | D_small_node "'node"
   | D_updated_subtree "'r"
 
-type_synonym ('k,'v,'r) fo = "('k,'v,'r) del_t"  (* focus *)
+(* type_synonym ('r,'node,'leaf) fo = "('r,'node,'leaf) del_t"  (* focus *) *)
 
 (* dead: https://groups.google.com/forum/#!topic/fa.isabelle/hWGSgu3pSsM *)
 
 (* D_down: r is the original pointer to root, in case we don't delete anything *)
-datatype (dead 'k, dead 'v,dead 'r,'leaf,dead 'frame) delete_state = 
+datatype (dead 'k, dead 'v,dead 'r,'leaf,'node,dead 'frame) delete_state = 
   D_down "('k,'r,'leaf,'frame) fs * 'r"  
-  | D_up "('k,'v,'r) fo * 'frame list * 'r"  (* last 'r is the root, for wellformedness check *)
+  | D_up "('r,'node,'leaf) del_t * 'frame list * 'r"  (* last 'r is the root, for wellformedness check *)
   | D_finished "'r" 
-  
-type_synonym ('k,'v,'r,'frame)u = "('k,'v,'r)fo * 'frame list"  
-type_synonym ('k,'r,'leaf)d = "('k,'r,'leaf,unit)find_state * 'r"
 
-type_synonym ('k,'v,'r,'leaf,'frame)dst = "('k,'v,'r,'leaf,'frame) delete_state"
+(*
+type_synonym ('r,'node,'leaf,'frame)u = "('r,'node,'leaf)fo * 'frame list"  
+type_synonym ('k,'r,'leaf,'frame)d = "('k,'r,'leaf,'frame)find_state * 'r"
 
-definition make_initial_delete_state :: "'r \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r,'leaf,'frame)delete_state" where
+type_synonym ('k,'v,'r,'leaf,'node,'frame)dst = "('k,'v,'r,'leaf,'node,'frame) delete_state"
+*)
+
+definition make_initial_delete_state :: "'r \<Rightarrow> 'k \<Rightarrow> ('k,'v,'r,'leaf,'node,'frame)delete_state" where
 "make_initial_delete_state r k = (D_down(make_initial_find_state k r,r))"
 
-definition dest_D_finished :: "('k,'v,'r,'leaf,'frame)delete_state \<Rightarrow> 'r option" where
+definition dest_D_finished :: "('k,'v,'r,'leaf,'node,'frame)delete_state \<Rightarrow> 'r option" where
 "dest_D_finished x = (case x of D_finished r \<Rightarrow> Some r | _ \<Rightarrow> None)"
 
 end

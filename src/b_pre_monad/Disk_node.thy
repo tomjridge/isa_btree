@@ -25,6 +25,7 @@ definition dest_Disk_leaf :: "('node,'leaf) dnode \<Rightarrow> 'leaf" where
 
 (* FIXME probably want to abstract even further *)
 datatype_record ('k,'v,'leaf) leaf_ops = 
+  leaf_lookup :: "'k \<Rightarrow> 'leaf \<Rightarrow> 'v option"
   leaf_insert :: "'k \<Rightarrow> 'v \<Rightarrow> 'leaf \<Rightarrow> 'leaf"
   leaf_length :: "'leaf \<Rightarrow> nat"
   leaf_kvs :: "'leaf \<Rightarrow> ('k*'v) s"  (* FIXME avoid? *)
@@ -41,6 +42,7 @@ datatype_record ('k,'r,'node) node_ops =
   node_steal_left :: "'node * 'k * 'node \<Rightarrow> 'node * 'k * 'node"
   node_keys_length :: "'node \<Rightarrow> nat"
   node_make_small_root :: "'r*'k*'r \<Rightarrow> 'node"
+  node_get_single_r :: "'node \<Rightarrow> 'r"  (* when we decrease the size of the tree in delete *)
 
 
 type_synonym ('k,'r) simple_node_ops = "('k,'r,'k s * 'r s) node_ops"
@@ -58,7 +60,8 @@ definition mk_simple_node_ops :: "(('k s * 'r s) \<Rightarrow> ('k s * 'r s) * '
       (k1#ks1,r1#rs1) \<Rightarrow>
       ((List.rev ks1,List.rev rs1), k1, (k2#ks2,r1#rs2))),
     node_keys_length=(% (ks,_). List.length ks),
-    node_make_small_root=(% (r1,k,r2). ([k],[r1,r2]))
+    node_make_small_root=(% (r1,k,r2). ([k],[r1,r2])),
+    node_get_single_r=(% (ks,rs). List.hd rs)
 
   \<rparr>
 )"

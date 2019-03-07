@@ -136,27 +136,29 @@ constants \<Rightarrow>
 definition delete_step :: "
 constants \<Rightarrow> 'k ord \<Rightarrow> 
  ('k,'v,'leaf) leaf_ops \<Rightarrow>
-('r,('k,'r,'leaf,unit)dnode,'t)store_ops \<Rightarrow>
-  ('k,'v,'r,'leaf)delete_state \<Rightarrow> (('k,'v,'r,'leaf)delete_state,'t) MM" 
+('k,'r,'node) node_ops \<Rightarrow> 
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t)store_ops \<Rightarrow> 
+('k,'v,'r,'leaf,'node,'frame)delete_state \<Rightarrow> (('k,'v,'r,'leaf,'node,'frame)delete_state,'t) MM" 
 where
-"delete_step cs k_cmp leaf_ops store_ops = (
+"delete_step cs k_cmp leaf_ops node_ops frame_ops store_ops = (
   let write = store_ops|>wrte in
   let disk_leaf = % kvs. Disk_leaf ((leaf_ops|>mk_leaf) kvs) in
   (% s.
   case s of 
   D_down(f,r0) \<Rightarrow> (
     case dest_F_finished f of
-    None \<Rightarrow> (find_step cs k_cmp leaf_ops store_ops f |> fmap (% f'. D_down(f',r0)))
+    None \<Rightarrow> (find_step cs k_cmp frame_ops store_ops f |> fmap (% f'. D_down(f',r0)))
     | Some x \<Rightarrow> (
       let (r0,k,r,leaf,stk) = x in
-      \<comment> \<open> (* (store_ops|>free) (r0#(r_stk_to_rs stk)) FIXME *)\<close>
-      let kvs = (leaf_ops|>leaf_kvs) leaf in  (* FIXME inefficient *)
+      let r0 :: 'r = r0 in
+      let kvs = (leaf_ops|>leaf_kvs) leaf in  
       let something_to_delete = (? x : set (kvs|>List.map fst). key_eq k_cmp x k) in
       case something_to_delete of
       True \<Rightarrow> (
         let kvs' = kvs|>List.filter (% x. ~ (key_eq k_cmp (fst x) k)) in
         case List.length kvs' < cs|>min_leaf_size of
-        True \<Rightarrow> (return (D_up(D_small_leaf(kvs'),stk,r0)))
+        True \<Rightarrow> (return (D_up(D_small_leaf((leaf_ops|>mk_leaf)kvs'),stk,undefined)))
         | False \<Rightarrow> (disk_leaf(kvs') |> write 
           |> fmap (% r. D_up(D_updated_subtree(r),stk,r0))))
       | False \<Rightarrow> (return (D_finished r0) )))
@@ -164,24 +166,26 @@ where
     case is_Nil' stk of
     True \<Rightarrow> (
       case f of
-      D_small_leaf kvs \<Rightarrow> (disk_leaf(kvs)|>write|>fmap D_finished)
-      | D_small_node (ks,rs) \<Rightarrow> (
-        case List.length ks = 0 of
-        True \<Rightarrow> return (D_finished (List.hd rs))
-        | False \<Rightarrow> (Disk_node(ks,rs)|>write|>fmap D_finished))
+      D_small_leaf leaf \<Rightarrow> (Disk_leaf(leaf)|>write|>fmap D_finished)
+      | D_small_node(n) \<Rightarrow> (
+        case (node_ops|>node_keys_length) n = 0 of
+        True \<Rightarrow> return (D_finished ((node_ops|>node_get_single_r) n))
+        | False \<Rightarrow> (Disk_node(n)|>write|>fmap D_finished))
       | D_updated_subtree(r) \<Rightarrow> (return (D_finished r)))
-    | False \<Rightarrow> (step_up cs leaf_ops store_ops (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
+    | False \<Rightarrow> (step_up cs leaf_ops node_ops frame_ops store_ops (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
   | D_finished(r) \<Rightarrow> (failwith (STR ''delete_step 1''))))"
 
 
 definition delete_big_step :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
-('k,'v,'leaf) leaf_ops \<Rightarrow> 
-('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r,'leaf) delete_state \<Rightarrow> (('k,'v,'r,'leaf) delete_state,'t) MM" where
-"delete_big_step cs k_cmp leaf_ops store_ops = (
-  let delete_step = delete_step cs k_cmp leaf_ops store_ops in
+('k,'v,'leaf) leaf_ops \<Rightarrow>
+('k,'r,'node) node_ops \<Rightarrow> 
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t)store_ops \<Rightarrow> 
+('k,'v,'r,'leaf,'node,'frame) delete_state \<Rightarrow> (('k,'v,'r,'leaf,'node,'frame) delete_state,'t) MM" where
+"delete_big_step cs k_cmp leaf_ops node_ops frame_ops store_ops = (
+  let delete_step = delete_step cs k_cmp leaf_ops node_ops frame_ops store_ops in
   (% d.
   iter_m (% d. case d of
     D_finished _ \<Rightarrow> return None
@@ -193,12 +197,16 @@ definition delete :: "
 constants \<Rightarrow> 
 'k ord \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
-('r,('k,'r,'leaf,unit)dnode,'t) store_ops \<Rightarrow>
+('k,'r,'node) node_ops \<Rightarrow> 
+('node \<Rightarrow> 'r s) \<Rightarrow> 
+('node \<Rightarrow> 'k s) \<Rightarrow> 
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t)store_ops \<Rightarrow> 
 'r \<Rightarrow> 'k  \<Rightarrow> ('r,'t) MM" where
-"delete cs k_cmp leaf_ops store_ops r k = (
-  let check_tree_at_r = check_tree_at_r cs k_cmp leaf_ops store_ops in
+"delete cs k_cmp leaf_ops node_ops node2rs node2ks frame_ops store_ops r k = (
+  let check_tree_at_r = check_tree_at_r cs k_cmp leaf_ops node_ops node2rs node2ks store_ops in
   let d = make_initial_delete_state r k in
-  delete_big_step cs k_cmp leaf_ops store_ops d |> bind (% d.
+  delete_big_step cs k_cmp leaf_ops node_ops frame_ops store_ops d |> bind (% d.
   case d of
   D_finished r \<Rightarrow> (check_tree_at_r r |> bind (% _. return r))
   | _ \<Rightarrow> (failwith (STR ''delete, impossible''))))"

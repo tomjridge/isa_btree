@@ -18,7 +18,7 @@ definition dummy :: "unit" where "dummy = (
   let _ = (% x :: (int,int) dnode. x) in
   let _ = (% x :: (int,int,int,unit)find_state. x) in
   let _ = (% x :: (int,int,int,int,int)insert_state. x) in
-  let _ = (% x :: (int,int,int,int,int)delete_state. x) in
+  let _ = (% x :: (int,int,int,int,int,int)delete_state. x) in
   let _ = (% x :: (int,int)tree. x) in
   let _ = (% x :: (int + int). x) in
   ()
