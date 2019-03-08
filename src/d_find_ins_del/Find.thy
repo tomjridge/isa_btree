@@ -103,6 +103,11 @@ definition find2 :: "
 'r \<Rightarrow> 'k \<Rightarrow> ('r * 'leaf * 'frame list,'t) MM" where
 "find2 x y = f.find x y"
 
+lemma find_def_2: "find2 x y r k = undefined"
+  apply(simp add: find2_def)
+  apply(simp cong: find_state.case_cong add: f.find_def f.find_big_step_def f.find_step_def)
+  oops
+
 lemma find_def_2[code]: "find2 x y r k = 
 (let s = make_initial_find_state k r
      in (case s of

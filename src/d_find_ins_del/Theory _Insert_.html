@@ -1,0 +1,332 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- saved from url=(0152)http://127.0.0.1:35947/f3d8ca49-0a62-48df-bf23-fe0ef7473fde/preview?%2Ftmp%2Fl%2Fgit%2Fgithub%2Fan_imp%2Fb_isa_btree%2Fsrc%2Fd_find_ins_del%2FInsert.thy -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>/* Isabelle fonts */
+
+@font-face {
+  font-family: 'IsabelleText';
+  src: url('/f3d8ca49-0a62-48df-bf23-fe0ef7473fde/fonts/IsabelleText.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'IsabelleText';
+  src: url('/f3d8ca49-0a62-48df-bf23-fe0ef7473fde/fonts/IsabelleTextBold.ttf') format('truetype');
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: 'Vacuous';
+  src: url('/f3d8ca49-0a62-48df-bf23-fe0ef7473fde/fonts/Vacuous.ttf') format('truetype');
+}/* standard document markup */
+
+dt {
+  float: left;
+  clear: left;
+  padding-right: 0.5em;
+  font-weight: bold;
+}
+
+body {
+  color: #000000;
+  background-color: #FFFFFF;
+}
+
+.head     { background-color: #FFFFFF; }
+.source   {
+  direction: ltr; unicode-bidi: bidi-override;
+  background-color: #FFFFFF;
+  padding: 10px;
+  font-family: IsabelleText;
+  line-height: 147%;
+}
+
+.theories { background-color: #FFFFFF; padding: 10px; }
+.sessions { background-color: #FFFFFF; padding: 10px; }
+.document { white-space: normal; font-family: sans-serif; }
+
+.name     { font-style: italic; }
+.filename { font-family: fixed; }
+
+
+/* basic syntax markup */
+
+.hidden         { font-family: Vacuous; font-size: 1%; color: rgba(255,255,255,0); }
+.control        { font-weight: bold; font-style: italic; }
+
+.binding        { color: #336655; }
+.tfree          { color: #A020F0; }
+.tvar           { color: #A020F0; }
+.free           { color: #0000FF; }
+.skolem         { color: #D2691E; }
+.bound          { color: #008000; }
+.var            { color: #00009B; }
+.numeral        { }
+.literal        { font-weight: bold; }
+.delimiter      { }
+.inner_numeral  { color: #FF0000; }
+.inner_quoted   { color: #FF00CC; }
+.inner_cartouche { color: #CC6600; }
+.inner_comment  { color: #CC0000; }
+.dynamic        { color: #7BA428; }
+.class_parameter_color { color: #D2691E; }
+
+.bold           { font-weight: bold; }
+
+.main           { color: #000000; }
+.command        { font-weight: bold; }
+.keyword        { font-weight: bold; }
+.keyword1       { color: #006699; }
+.keyword2       { color: #009966; }
+.keyword3       { color: #0099FF; }
+.quasi_keyword  { color: #9966FF; }
+.operator       { color: #323232; }
+.string         { color: #FF00CC; }
+.alt_string     { color: #CC00CC; }
+.verbatim       { color: #6600CC; }
+.cartouche      { color: #CC6600; }
+.comment        { color: #CC0000; }
+.improper       { color: #FF5050; }
+.bad            { background-color: #FF6A6A; }
+.quoted         { background-color: rgba(139,139,139,0.05); }
+.antiquoted     { background-color: rgba(255,200,50,0.1); }
+
+
+/* message background */
+
+.writeln_message      { background-color: #F0F0F0; }
+.information_message  { background-color: #DCEAF3; }
+.tracing_message      { background-color: #F0F8FF; }
+.warning_message      { background-color: #EEE8AA; }
+.legacy_message       { background-color: #EEE8AA; }
+.error_message        { background-color: #FFC1C1; }
+
+
+/* message underline */
+
+.writeln { border-bottom: 1px dotted #C0C0C0; }
+.information { border-bottom: 1px dotted #C1DFEE; }
+.warning { border-bottom: 1px dotted #FF8C00; }
+.legacy { border-bottom: 1px dotted #FF8C00; }
+.error { border-bottom: 1px dotted #B22222; }
+
+
+/* tooltips */
+
+.writeln { position: relative; display: inline-block; }
+.information { position: relative; display: inline-block; }
+.warning { position: relative; display: inline-block; }
+.legacy { position: relative; display: inline-block; }
+.error { position: relative; display: inline-block; }
+
+.writeln:hover .tooltip { visibility: visible; }
+.information:hover .tooltip { visibility: visible; }
+.warning:hover .tooltip { visibility: visible; }
+.legacy:hover .tooltip { visibility: visible; }
+.error:hover .tooltip { visibility: visible; }
+
+.tooltip {
+  top: -0.5ex;
+  left: 5em;
+  visibility: hidden;
+  width: 50em;
+  border: 1px solid #808080;
+  padding: 1px 1px;
+  background-color: #FFFFE9;
+  position: absolute;
+  z-index: 1;
+}
+
+.tooltip pre { margin: 1px; white-space: pre-wrap; }
+</style><title>Theory "Insert"</title></head>
+<body><pre class="source"><span class="keyword1"><span class="command">theory</span></span> Insert <span class="keyword2"><span class="keyword">imports</span></span> Find <span class="quoted">"$SRC/b_pre_monad/Insert_state"</span> <span class="keyword2"><span class="keyword">begin</span></span>
+
+<span class="keyword1"><span class="command">type_synonym</span></span> <span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">)</span> fo <span class="main">=</span> <span class="quoted"><span class="language">"<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">)</span>i12_t"</span></span>
+<span class="keyword1"><span class="command">type_synonym</span></span> <span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> d <span class="comment">(* down_state *)</span> <span class="main">=</span> <span class="quoted"><span class="language">"<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span>find_state<span class="main">*</span><span class="tfree">'v</span>"</span></span>
+<span class="keyword1"><span class="command">type_synonym</span></span> <span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> u <span class="comment">(* up_state *)</span> <span class="main">=</span> <span class="quoted"><span class="language">"<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">)</span>fo<span class="main">*</span><span class="tfree">'frame</span> list"</span></span>
+
+<span class="comment">(* insert ------------------------------------------------------------ *)</span>
+
+
+<span class="keyword1"><span class="command">definition</span></span> step_down <span class="main">::</span> <span class="quoted"><span class="language">"
+constants <span class="main">⇒</span> 
+<span class="tfree">'k</span> ord <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'left_half</span><span class="main">,</span><span class="tfree">'right_half</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> store_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> d <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> d<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">step_down</span> <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="bound">find_step</span> <span class="main">=</span>  find_step <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+  <span class="main">(</span><span class="main">%</span> <span class="bound">d</span><span class="main">.</span>
+  <span class="keyword1">let</span> <span class="main">(</span><span class="bound">fs</span><span class="main">,</span><span class="bound">v</span><span class="main">)</span> <span class="main">=</span> <span class="bound">d</span> <span class="keyword1">in</span>
+  <span class="bound">find_step</span> <span class="bound">fs</span> <span class="main">|&gt;</span> fmap <span class="main">(</span><span class="main">%</span> <span class="bound">d'</span><span class="main">.</span> <span class="main">(</span><span class="bound">d'</span><span class="main">,</span><span class="bound">v</span><span class="main">)</span><span class="main">)</span> <span class="main">)</span><span class="main">)</span>"</span></span>
+
+
+<span class="keyword1"><span class="command">definition</span></span> step_bottom <span class="main">::</span> <span class="quoted"><span class="language">"
+constants <span class="main">⇒</span> 
+<span class="tfree">'k</span> ord <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span> leaf_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> node_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> store_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> d <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> u <span class="main">+</span> unit<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">step_bottom</span> <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="free"><span class="bound">d</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="main">(</span><span class="bound">write</span><span class="main">,</span><span class="bound">rewrite</span><span class="main">)</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>wrte<span class="main">,</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>rewrite<span class="main">)</span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="bound">mk_leaf</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>mk_leaf<span class="main">)</span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="main">(</span><span class="bound">fs</span><span class="main">,</span><span class="bound">v</span><span class="main">)</span> <span class="main">=</span> <span class="free"><span class="bound">d</span></span> <span class="keyword1">in</span>
+  <span class="keyword1">case</span> dest_F_finished <span class="bound">fs</span> <span class="keyword1">of</span> 
+  None <span class="main">⇒</span> <span class="main">(</span>failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''insert, step_bottom, 1''</span><span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> Some<span class="main">(</span><span class="bound">r0</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="bound">leaf</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+    <span class="inner_comment">― <span class="quoted"><span class="document">‹ free here? FIXME ›</span></span></span>
+    <span class="keyword1">let</span> <span class="bound">leaf'</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_insert<span class="main">)</span> <span class="bound">k</span> <span class="bound">v</span> <span class="bound">leaf</span> <span class="keyword1">in</span>
+    <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_length<span class="main">)</span> <span class="bound">leaf'</span> <span class="main">≤</span> <span class="free"><span class="bound">cs</span></span><span class="main">|&gt;</span>max_leaf_size <span class="keyword1">of</span>
+    True <span class="main">⇒</span> <span class="main">(</span>
+      <span class="inner_comment">― <span class="quoted"><span class="document">‹ we want to update in place if possible ›</span></span></span>
+      Disk_leaf <span class="bound">leaf'</span> <span class="main">|&gt;</span> <span class="bound">rewrite</span> <span class="bound">r</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r'</span><span class="main">.</span> 
+      <span class="keyword1">case</span> <span class="bound">r'</span> <span class="keyword1">of</span> 
+      None <span class="main">⇒</span> 
+        <span class="inner_comment">― <span class="quoted"><span class="document">‹ block was updated in place ›</span></span></span>
+        return <span class="main">(</span>Inr <span class="main">()</span><span class="main">)</span>
+      <span class="main">|</span> Some <span class="bound">r'</span> <span class="main">⇒</span> return <span class="main">(</span>Inl<span class="main">(</span>I1 <span class="bound">r'</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+    <span class="main">|</span> False <span class="main">⇒</span> <span class="main">(</span>
+      <span class="keyword1">let</span> <span class="bound">kvs'</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_kvs<span class="main">)</span> <span class="bound">leaf'</span> <span class="keyword1">in</span>
+      <span class="keyword1">let</span> <span class="main">(</span><span class="bound">kvs1</span><span class="main">,</span><span class="bound">k'</span><span class="main">,</span><span class="bound">kvs2</span><span class="main">)</span> <span class="main">=</span> split_leaf <span class="free"><span class="bound">cs</span></span> <span class="bound">kvs'</span> <span class="keyword1">in</span>
+      Disk_leaf <span class="main">(</span><span class="bound">mk_leaf</span> <span class="bound">kvs1</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">write</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r1</span><span class="main">.</span>
+      Disk_leaf <span class="main">(</span><span class="bound">mk_leaf</span> <span class="bound">kvs2</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">write</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r2</span><span class="main">.</span> 
+      return <span class="main">(</span>Inl<span class="main">(</span>I2<span class="main">(</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k'</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+
+
+<span class="keyword1"><span class="command">definition</span></span> step_up <span class="main">::</span> <span class="quoted"><span class="language">"
+constants <span class="main">⇒</span> 
+<span class="tfree">'k</span> ord <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> node_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'left_half</span><span class="main">,</span><span class="tfree">'right_half</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> store_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> u <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> u <span class="main">+</span> unit<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">step_up</span>  <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="free"><span class="bound">u</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="main">(</span><span class="bound">write</span><span class="main">,</span><span class="bound">rewrite</span><span class="main">)</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>wrte<span class="main">,</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>rewrite<span class="main">)</span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="main">(</span><span class="bound">fo</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span> <span class="main">=</span> <span class="free"><span class="bound">u</span></span> <span class="keyword1">in</span>
+  <span class="keyword1">case</span> <span class="bound">stk</span> <span class="keyword1">of</span> 
+  <span class="main">[]</span> <span class="main">⇒</span> failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''insert, step_up,1''</span><span class="main">)</span> 
+  <span class="main">|</span> <span class="bound">frm</span><span class="main">#</span><span class="bound">stk'</span> <span class="main">⇒</span> <span class="main">(</span>
+    <span class="keyword1">let</span> <span class="main">(</span><span class="bound">lh</span><span class="main">,</span><span class="bound">rh</span><span class="main">)</span> <span class="main">=</span> <span class="main">(</span><span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>left_half<span class="main">)</span> <span class="bound">frm</span><span class="main">,</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>right_half<span class="main">)</span> <span class="bound">frm</span><span class="main">)</span> <span class="keyword1">in</span>
+    <span class="keyword1">let</span> <span class="bound">original_r</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>original_node_r<span class="main">)</span> <span class="bound">frm</span> <span class="keyword1">in</span>
+    <span class="keyword1">case</span> <span class="bound">fo</span> <span class="keyword1">of</span>
+    I1 <span class="bound">r</span> <span class="main">⇒</span> <span class="main">(</span>
+      <span class="keyword1">let</span> <span class="bound">n</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>unsplit<span class="main">)</span> <span class="main">(</span><span class="bound">lh</span><span class="main">,</span>R<span class="main">(</span><span class="bound">r</span><span class="main">)</span><span class="main">,</span><span class="bound">rh</span><span class="main">)</span> <span class="keyword1">in</span>
+      Disk_node<span class="main">(</span><span class="bound">n</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">rewrite</span> <span class="bound">original_r</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r2</span><span class="main">.</span> 
+      <span class="keyword1">case</span> <span class="bound">r2</span> <span class="keyword1">of</span> 
+      None <span class="main">⇒</span> return <span class="main">(</span>Inr <span class="main">()</span><span class="main">)</span>
+      <span class="main">|</span> Some <span class="bound">r2</span> <span class="main">⇒</span> return <span class="main">(</span>Inl <span class="main">(</span>I1 <span class="bound">r2</span><span class="main">,</span> <span class="bound">stk'</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+    <span class="main">|</span> I2 <span class="main">(</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+      <span class="keyword1">let</span> <span class="bound">n</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>unsplit<span class="main">)</span> <span class="main">(</span><span class="bound">lh</span><span class="main">,</span> Rkr<span class="main">(</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">,</span> <span class="bound">rh</span><span class="main">)</span> <span class="keyword1">in</span>
+      <span class="keyword1">let</span> <span class="bound">n</span> <span class="main">=</span> <span class="main">(</span><span class="bound">n</span> <span class="main">::</span> <span class="tfree">'node</span><span class="main">)</span> <span class="keyword1">in</span>
+      <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_keys_length<span class="main">)</span> <span class="bound">n</span> <span class="main">≤</span> <span class="main">(</span><span class="free"><span class="bound">cs</span></span><span class="main">|&gt;</span>max_node_keys<span class="main">)</span> <span class="keyword1">of</span>
+      True <span class="main">⇒</span> <span class="main">(</span>
+        Disk_node<span class="main">(</span><span class="bound">n</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">rewrite</span> <span class="bound">original_r</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r2</span><span class="main">.</span> 
+        <span class="keyword1">case</span> <span class="bound">r2</span> <span class="keyword1">of</span> 
+        None <span class="main">⇒</span> return <span class="main">(</span>Inr <span class="main">()</span><span class="main">)</span>
+        <span class="main">|</span> Some <span class="bound">r2</span> <span class="main">⇒</span> return <span class="main">(</span>Inl <span class="main">(</span>I1 <span class="bound">r2</span><span class="main">,</span> <span class="bound">stk'</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+      <span class="main">|</span> False <span class="main">⇒</span> <span class="main">(</span>
+        <span class="keyword1">let</span> <span class="main">(</span><span class="bound">n1</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">n2</span><span class="main">)</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>split_large_node<span class="main">)</span> <span class="bound">n</span> <span class="keyword1">in</span>  
+        Disk_node<span class="main">(</span><span class="bound">n1</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">write</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r1</span><span class="main">.</span> 
+        Disk_node<span class="main">(</span><span class="bound">n2</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">write</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r2</span><span class="main">.</span>
+        return <span class="main">(</span>Inl <span class="main">(</span>I2<span class="main">(</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">,</span><span class="bound">stk'</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span> <span class="main">)</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+
+
+<span class="keyword1"><span class="command">definition</span></span> insert_step <span class="main">::</span> <span class="quoted"><span class="language">"
+constants <span class="main">⇒</span> 
+<span class="tfree">'k</span> ord <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span> leaf_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> node_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'left_half</span><span class="main">,</span><span class="tfree">'right_half</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> store_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> insert_state <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> insert_state<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">insert_step</span> <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="bound">step_down</span> <span class="main">=</span> step_down <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="bound">step_bottom</span> <span class="main">=</span> step_bottom <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="bound">step_up</span> <span class="main">=</span> step_up  <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="bound">write</span> <span class="main">=</span> <span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>wrte <span class="keyword1">in</span>
+  <span class="main">(</span><span class="main">%</span> <span class="bound">s</span><span class="main">.</span>
+  <span class="keyword1">case</span> <span class="bound">s</span> <span class="keyword1">of</span> 
+  I_down <span class="bound">d</span> <span class="main">⇒</span> <span class="main">(</span>
+    <span class="keyword1">let</span> <span class="main">(</span><span class="bound">fs</span><span class="main">,</span><span class="bound">v</span><span class="main">)</span> <span class="main">=</span> <span class="bound">d</span> <span class="keyword1">in</span>
+    <span class="keyword1">case</span> dest_F_finished <span class="bound">fs</span> <span class="keyword1">of</span> 
+    None <span class="main">⇒</span> <span class="main">(</span><span class="bound">step_down</span> <span class="bound">d</span> <span class="main">|&gt;</span> fmap <span class="main">(</span><span class="main">%</span> <span class="bound">d</span><span class="main">.</span> I_down <span class="bound">d</span><span class="main">)</span><span class="main">)</span>
+    <span class="main">|</span> Some <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> <span class="bound">step_bottom</span> <span class="bound">d</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">bot</span><span class="main">.</span>
+      <span class="keyword1">case</span> <span class="bound">bot</span> <span class="keyword1">of</span> 
+      Inr <span class="main">()</span> <span class="main">⇒</span> return I_finished_with_mutate
+      <span class="main">|</span> Inl <span class="bound">u</span> <span class="main">⇒</span> return <span class="main">(</span>I_up <span class="bound">u</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> I_up <span class="bound">u</span> <span class="main">⇒</span> <span class="main">(</span>
+    <span class="keyword1">let</span> <span class="main">(</span><span class="bound">fo</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span> <span class="main">=</span> <span class="bound">u</span> <span class="keyword1">in</span>
+    <span class="keyword1">case</span> <span class="bound">stk</span> <span class="keyword1">of</span>
+    <span class="main">[]</span> <span class="main">⇒</span> <span class="main">(</span>
+      <span class="keyword1">case</span> <span class="bound">fo</span> <span class="keyword1">of</span> 
+      I1 <span class="bound">r</span> <span class="main">⇒</span> return <span class="main">(</span>I_finished <span class="bound">r</span><span class="main">)</span>
+      <span class="main">|</span> I2<span class="main">(</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+        <span class="main">(</span>Disk_node<span class="main">(</span><span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_make_small_root<span class="main">)</span><span class="main">(</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">write</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r</span><span class="main">.</span>
+        return <span class="main">(</span>I_finished <span class="bound">r</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+    <span class="main">|</span> <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> <span class="main">(</span><span class="bound">step_up</span> <span class="bound">u</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">u</span><span class="main">.</span> 
+      <span class="keyword1">case</span> <span class="bound">u</span> <span class="keyword1">of</span> 
+      Inr <span class="main">()</span> <span class="main">⇒</span> return I_finished_with_mutate
+      <span class="main">|</span> Inl <span class="bound">u</span> <span class="main">⇒</span> return <span class="main">(</span>I_up <span class="bound">u</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> I_finished <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> <span class="main">(</span>failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''insert_step 1''</span><span class="main">)</span><span class="main">)</span> 
+  <span class="main">|</span> I_finished_with_mutate <span class="main">⇒</span> <span class="main">(</span>failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''insert_step 2''</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+<span class="keyword1"><span class="command">definition</span></span> insert_big_step <span class="main">::</span> <span class="quoted"><span class="language">"
+constants <span class="main">⇒</span> 
+<span class="tfree">'k</span> ord <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span> leaf_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> node_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'left_half</span><span class="main">,</span><span class="tfree">'right_half</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> store_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> insert_state <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> insert_state<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">insert_big_step</span> <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="bound">insert_step</span> <span class="main">=</span> insert_step <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+  <span class="main">(</span><span class="main">%</span> <span class="bound">i</span><span class="main">.</span>
+  iter_m <span class="main">(</span><span class="main">%</span> <span class="bound">i</span><span class="main">.</span> <span class="keyword1">case</span> <span class="bound">i</span> <span class="keyword1">of</span>
+    I_finished <span class="bound">r</span> <span class="main">⇒</span> <span class="main">(</span>return None<span class="main">)</span>
+    <span class="main">|</span> I_finished_with_mutate <span class="main">⇒</span> <span class="main">(</span>return None<span class="main">)</span>
+    <span class="main">|</span> <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> <span class="main">(</span><span class="bound">insert_step</span> <span class="bound">i</span> <span class="main">|&gt;</span> fmap Some<span class="main">)</span><span class="main">)</span>
+    <span class="bound">i</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+<span class="keyword1"><span class="command">definition</span></span> insert <span class="main">::</span> <span class="quoted"><span class="language">"
+constants <span class="main">⇒</span> 
+<span class="tfree">'k</span> ord <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span> leaf_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> node_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'node</span> <span class="main">⇒</span> <span class="tfree">'r</span> s<span class="main">)</span> <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'node</span> <span class="main">⇒</span> <span class="tfree">'k</span> s<span class="main">)</span> <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'left_half</span><span class="main">,</span><span class="tfree">'right_half</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> store_ops <span class="main">⇒</span>
+<span class="tfree">'r</span> <span class="main">⇒</span> <span class="tfree">'k</span> <span class="main">⇒</span> <span class="tfree">'v</span> <span class="main">⇒</span> <span class="main">(</span><span class="tfree">'r</span> option<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">insert</span> <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">node2rs</span></span> <span class="free"><span class="bound">node2ks</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="free"><span class="bound">r</span></span> <span class="free"><span class="bound">k</span></span> <span class="free"><span class="bound">v</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="bound">check_tree_at_r</span> <span class="main">=</span> check_tree_at_r <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">node2rs</span></span> <span class="free"><span class="bound">node2ks</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="bound">i</span> <span class="main">=</span> make_initial_insert_state <span class="free"><span class="bound">r</span></span> <span class="free"><span class="bound">k</span></span> <span class="free"><span class="bound">v</span></span> <span class="keyword1">in</span>
+  insert_big_step <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">k_cmp</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="bound">i</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">i</span><span class="main">.</span>
+  <span class="keyword1">case</span> <span class="bound">i</span> <span class="keyword1">of</span>
+  I_finished <span class="bound">r</span> <span class="main">⇒</span> <span class="main">(</span><span class="bound">check_tree_at_r</span> <span class="bound">r</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="main"><span class="bound">_</span></span><span class="main">.</span> return <span class="main">(</span>Some <span class="bound">r</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> I_finished_with_mutate <span class="main">⇒</span> <span class="main">(</span><span class="bound">check_tree_at_r</span> <span class="free"><span class="bound">r</span></span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="main"><span class="bound">_</span></span><span class="main">.</span> return None<span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''insert 1''</span><span class="main">)</span>
+<span class="main">)</span><span class="main">)</span>"</span></span>
+
+
+
+<span class="keyword2"><span class="keyword">end</span></span>
+
+
+
+
+
+<span class="comment">(*
+export_code  
+"Code_Numeral.int_of_integer"
+fmap
+Disk_node
+make_constants
+make_store_ops
+make_initial_find_state
+I1
+I_down
+insert_step
+
+in OCaml file "/tmp/insert_with_mutation.ml"
+*)</span></pre><div id="LinkCheckrOverlay"></div></body></html>
