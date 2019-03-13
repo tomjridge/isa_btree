@@ -1,0 +1,111 @@
+theory Insert_many
+imports Find "$SRC/d_find_ins_del/Post_monad" 
+begin
+
+
+(* kvs_insert_2 defn ------------------------------------------------------------ *)
+
+(* 
+
+We have an existing list of kv pairs (ordered by k).
+
+We want to insert kv, and as many additional entries from "new" as
+possible, subject to:
+
+- u bound
+- max size of 2*max_leaf_size
+- existing entries
+
+We assume:
+
+- kv<new
+- new are sorted in order (although we can check this easily enough as
+  we insert) with no duplicates
+
+We return:
+- the remaining new that we could not insert, and the updated kv list
+
+During the insert we track:
+- the suffix of new that we still need to insert (called new')
+- the suffix of existing (called existing')
+- the result so far (some combination of a prefix of existing and a
+  prefix of new, with some entries from existing overwritten);
+  probably in reverse order; (called result)
+- the length of result
+- the length of @existing'
+- 
+*)
+definition kvs_insert_2 :: 
+  "constants \<Rightarrow> 'k ord \<Rightarrow> 'k option \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s \<Rightarrow> ('k*'v)s * ('k*'v)s" 
+where
+"kvs_insert_2 cs' k_ord u kv new existing = (
+  \<comment> \<open>(* let _ = check_true (% _. ordered_key_list k_ord (List.map fst (kv#new))) in *) \<close>
+  let cs = cs' in
+  let step = (% s. 
+    let (result,len_result,new',existing',len_existing') = s in
+    case new' of
+    [] \<Rightarrow> None
+    | (k,v)#new'' \<Rightarrow> (
+      \<comment> \<open> (* NOTE may be able to do better if we are replacing an entry - we can afford the length to 
+      equal the max FIXME and so this code may not work with very small constants *)
+      (* NOTE these tests are for the ''bad'' case where we stop *)
+      (* NOTE length result = length (List.rev result); FIXME possibly inefficient *)\<close>
+      let test1 = len_result+len_existing' \<ge> 2 * cs|>max_leaf_size in 
+      let test2 = case u of None \<Rightarrow> False | Some u \<Rightarrow> (key_le k_ord u k) in
+      case test1 \<or> test2 of
+      True \<Rightarrow> None
+      | False \<Rightarrow> (
+        \<comment> \<open>(* insert or replace? *)\<close>
+        case existing' of 
+        [] \<Rightarrow> (
+          let _ = assert_true (len_existing' = 0) in
+          Some((k,v)#result,len_result+1,new'',existing',len_existing'))
+        | (k',v')#existing'' \<Rightarrow> (
+          case key_compare k_ord k k' of
+          LT \<Rightarrow> (Some((k,v)#result,len_result+1,new'',existing',len_existing') \<comment> \<open>(* insert *)\<close>)
+          | EQ \<Rightarrow> (Some((k,v)#result,len_result+1,new'',existing'',len_existing' -1))  \<comment> \<open>(* replace *)\<close> 
+          | GT \<Rightarrow> (Some((k',v')#result,len_result+1,new',existing'',len_existing' -1))  \<comment> \<open>(* from existing *) \<close> ))))
+  in
+  let (result,_,new',existing',_) = iter_step step ([],0,(kv#new),existing,length existing) in 
+  let result = (List.rev result)@existing' in 
+  (result,new'))"
+
+
+(* im_step defns ------------------------------------------------------------ *)
+
+definition im_step_bottom :: "constants \<Rightarrow> 'k ord \<Rightarrow> ('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow> 
+  ('k,'v,'r) d \<Rightarrow> ('k*'v)s \<Rightarrow> (('k,'v,'r) u * ('k*'v)s,'t) MM" where
+"im_step_bottom cs k_cmp store_ops d kvs0 = (
+  let (fs,v) = d in 
+  case dest_F_finished fs of 
+  None \<Rightarrow> impossible1 (STR ''insert, step_bottom'')
+  | Some(r0,k,r,kvs,stk) \<Rightarrow> (
+    \<comment> \<open> (store_ops|>free) (r0#(r_stk_to_rs stk))\<close>
+    let (l,u) = get_bounds stk in
+    let (kvs',kvs0') = kvs_insert_2 cs k_cmp u (k,v) kvs0 kvs in
+    case length kvs' \<le> cs|>max_leaf_size of
+    True \<Rightarrow> (
+      Disk_leaf kvs' |> (store_ops|>wrte) |> fmap (% r'. ((I1(r'),stk),kvs0')))
+    | False \<Rightarrow> (
+        let (kvs1,k',kvs2) = split_leaf cs kvs' in
+        Disk_leaf kvs1 |> (store_ops|>wrte) |> bind (% r1. 
+        Disk_leaf kvs2 |> (store_ops|>wrte) |> fmap (% r2. ((I2(r1,k',r2),stk),kvs0')))) ))"
+
+
+definition im_step :: "
+  constants \<Rightarrow> 'k ord \<Rightarrow> ('r,('k,'v,'r)dnode,'t) store_ops \<Rightarrow> 
+  ('k,'v,'r) im \<Rightarrow> (('k,'v,'r) im, 't) MM" where
+"im_step cs k_cmp store_ops im = (
+  let (i,kvs) = im in
+  case i of 
+  I_down d \<Rightarrow> (
+    let (fs,v) = d in
+    case dest_F_finished fs of 
+    None \<Rightarrow> (insert_step cs k_cmp store_ops i |> fmap (% d. (d,kvs)))
+    | Some _ \<Rightarrow> (im_step_bottom cs k_cmp store_ops d kvs |> fmap (% (u,kvs). (I_up u,kvs))))
+  | I_up u \<Rightarrow> (insert_step cs k_cmp store_ops i |> fmap (% u. (u,kvs)))
+  | I_finished _ \<Rightarrow> failwith (STR ''im_step 1'')
+  | I_finished_with_mutate \<Rightarrow> failwith (STR '' im_step 2'')
+)"
+
+end

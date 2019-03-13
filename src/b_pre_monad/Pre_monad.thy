@@ -9,7 +9,7 @@ Tree
 (* don't import the states - they tend to clash with each other? *)
 Find_state
 Insert_state
-(* Insert_many_state *)
+Insert_many_state
 Delete_state
 (* Leaf_stream_state *)
 begin

@@ -27,8 +27,10 @@ definition dest_Disk_leaf :: "('node,'leaf) dnode \<Rightarrow> 'leaf" where
 datatype_record ('k,'v,'leaf) leaf_ops = 
   leaf_lookup :: "'k \<Rightarrow> 'leaf \<Rightarrow> 'v option"
   leaf_insert :: "'k \<Rightarrow> 'v \<Rightarrow> 'leaf \<Rightarrow> 'leaf"
+  leaf_insert_v2 :: "'k \<Rightarrow> 'v \<Rightarrow> 'leaf \<Rightarrow> 'leaf * 'v option"
+  leaf_remove :: "'k \<Rightarrow> 'leaf \<Rightarrow> 'leaf"
   leaf_length :: "'leaf \<Rightarrow> nat"
-  leaf_kvs :: "'leaf \<Rightarrow> ('k*'v) s"  (* FIXME avoid? *)
+  xdbg_leaf_kvs :: "'leaf \<Rightarrow> ('k*'v) s"  (* avoid for non-dbg code *)
   leaf_steal_right :: "'leaf*'leaf \<Rightarrow> 'leaf*'k*'leaf"
   leaf_steal_left :: "'leaf*'leaf \<Rightarrow> 'leaf*'k*'leaf"
   leaf_merge :: "'leaf*'leaf \<Rightarrow> 'leaf"

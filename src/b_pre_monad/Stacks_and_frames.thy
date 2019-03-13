@@ -15,6 +15,22 @@ datatype_record ('k,'r,'frame,'left_half,'right_half,'node) frame_ops =
   split_node_on_key :: "'node \<Rightarrow> 'k \<Rightarrow> 'frame"
   original_node_r :: "'frame \<Rightarrow> 'r"
 
+definition get_bounds :: "
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+'frame list \<Rightarrow> ('k option *  'k option)" where
+"get_bounds frame_ops stk = (
+  iter_step (% (l,u,stk). 
+    case stk of [] \<Rightarrow> None
+    | frm#stk \<Rightarrow> (
+      case (l,u) of (Some _,Some _) \<Rightarrow> None
+      | _ \<Rightarrow> (
+        let (l',u') = (frame_ops|>get_midpoint_bounds) frm in
+        let l = (case l of None \<Rightarrow> l' | _ \<Rightarrow> l) in
+        let u = (case u of None \<Rightarrow> u' | _ \<Rightarrow> u) in
+        Some(l,u,stk))))
+    (None,None,stk)
+  |> (% (l,u,_). (l,u)))"
+
 end
 
 (*

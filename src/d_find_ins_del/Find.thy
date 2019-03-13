@@ -3,12 +3,10 @@ theory Find imports Post_monad "$SRC/b_pre_monad/Find_state" begin
 (* find ------------------------------------------------------------- *)
 
 definition find_step :: "
-constants \<Rightarrow> 
-'k ord \<Rightarrow> 
 ('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
 ('k,'r,'leaf,'frame) find_state \<Rightarrow> (('k,'r,'leaf,'frame) find_state,'t) MM" where
-"find_step cs k_cmp frame_ops store_ops = (
+"find_step frame_ops store_ops = (
   let read = store_ops|>read in
   (% fs. 
   case fs of 
@@ -23,13 +21,11 @@ constants \<Rightarrow>
     | Disk_leaf leaf \<Rightarrow> F_finished(r0,k,r,leaf,stk)))))"
 
 definition find_big_step :: "
-constants \<Rightarrow> 
-'k ord \<Rightarrow> 
 ('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
 ('k,'r,'leaf,'frame) find_state \<Rightarrow> (('k,'r,'leaf,'frame) find_state,'t) MM" where
-"find_big_step cs k_cmp frame_ops store_ops = (
-  let step = find_step cs k_cmp frame_ops store_ops in
+"find_big_step frame_ops store_ops = (
+  let step = find_step frame_ops store_ops in
   (% i.
   iter_m (% i. case i of
     F_finished _ \<Rightarrow> (return None)
@@ -37,14 +33,12 @@ constants \<Rightarrow>
     i))"
 
 definition find :: "
-constants \<Rightarrow> 
-'k ord \<Rightarrow>
 ('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
 'r \<Rightarrow> 'k \<Rightarrow> ('r * 'leaf * 'frame list,'t) MM" where
-"find cs k_cmp frame_ops store_ops r k = (
+"find frame_ops store_ops r k = (
   let s = make_initial_find_state k r in
-  find_big_step cs k_cmp frame_ops store_ops s |> bind (% s.
+  find_big_step frame_ops store_ops s |> bind (% s.
   case s of
   F_finished(r0,k,r,kvs,stk) \<Rightarrow> return (r,kvs,stk)
   | _ \<Rightarrow> failwith (STR ''find 1'')))"

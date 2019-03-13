@@ -3,8 +3,8 @@ imports
 Find
 Insert
 Delete
-(* Leaf_stream
-Insert_many *)
+(* Leaf_stream *)
+Insert_many 
 "~~/src/HOL/Library/Code_Target_Numeral"
 begin
 
@@ -67,10 +67,9 @@ make_initial_delete_state
 dest_D_finished
 
 
-(*
 Insert_many_state.make_initial_im_state 
 
-
+(*
 Leaf_stream_state.make_initial_lss
 lss_is_finished 
 dest_LS_leaf 
@@ -102,9 +101,9 @@ Delete.delete_step delete
 
 (*
 Leaf_stream.lss_step
+*)
 
 Insert_many.im_step
-*)
 
 in OCaml file "/tmp/isa_export.ml"
 
