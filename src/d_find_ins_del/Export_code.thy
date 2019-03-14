@@ -3,7 +3,7 @@ imports
 Find
 Insert
 Delete
-(* Leaf_stream *)
+Leaf_stream
 Insert_many 
 "~~/src/HOL/Library/Code_Target_Numeral"
 begin
@@ -69,11 +69,9 @@ dest_D_finished
 
 Insert_many_state.make_initial_im_state 
 
-(*
-Leaf_stream_state.make_initial_lss
-lss_is_finished 
+Leaf_stream_state.make_initial_ls_state
+ls_step_to_next_leaf 
 dest_LS_leaf 
-*)
 
 Pre_monad.dummy
 

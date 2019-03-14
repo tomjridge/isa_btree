@@ -53,4 +53,35 @@ definition ls_step :: "
 
 (* FIXME now we need the "step from leaf to leaf" *)
 
+(* we iterate ls_step until we reach a leaf (or we finish the traversal) *)
+definition ls_step_to_next_leaf :: "
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
+('r,'leaf,'frame) ls_state \<Rightarrow> (('r,'leaf,'frame) ls_state option,'t) MM" where
+"ls_step_to_next_leaf frame_ops store_ops lss = (
+  case ls_is_finished lss of
+  True \<Rightarrow> (return None)
+  | False \<Rightarrow> (
+  ls_step frame_ops store_ops lss |> bind (% lss.
+  (lss,False) |> iter_m (% s.
+    let (lss,known_finished) = s in
+    case known_finished of 
+    True \<Rightarrow> return None
+    | False \<Rightarrow> (
+      case ls_is_finished lss of
+      True \<Rightarrow> return (Some(lss,True))
+      | False \<Rightarrow> (
+        case dest_LS_leaf lss of
+        None \<Rightarrow> (
+          ls_step frame_ops store_ops lss |> fmap (% lss. 
+          (Some(lss,False))))
+        | Some _ \<Rightarrow> return None))))
+  |> fmap (% (lss,known_finished).
+    case known_finished of 
+    True \<Rightarrow> None
+    | False \<Rightarrow> (Some(lss)))))"
+
+
+
+
 end
