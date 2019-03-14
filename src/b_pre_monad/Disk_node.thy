@@ -45,7 +45,7 @@ datatype_record ('k,'r,'node) node_ops =
   node_keys_length :: "'node \<Rightarrow> nat"
   node_make_small_root :: "'r*'k*'r \<Rightarrow> 'node"
   node_get_single_r :: "'node \<Rightarrow> 'r"  (* when we decrease the size of the tree in delete *)
-
+  
 
 type_synonym ('k,'r) simple_node_ops = "('k,'r,'k s * 'r s) node_ops"
 
