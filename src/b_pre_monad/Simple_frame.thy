@@ -61,4 +61,3 @@ definition get_bounds :: "('k,'r) stk \<Rightarrow> ('k option *  'k option)" wh
 
 
 end
-

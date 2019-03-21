@@ -4,7 +4,7 @@ type_synonym ('k,'v,'r) fo = "('k,'v,'r)i12_t"
 type_synonym ('k,'v,'r,'leaf,'frame) d (* down_state *) = "('k,'r,'leaf,'frame)find_state*'v"
 type_synonym ('k,'v,'r,'frame) u (* up_state *) = "('k,'v,'r)fo*'frame list"
 
-(* insert ------------------------------------------------------------ *)
+(* insert ----------------------------------------------------------- *)
 
 
 definition step_down :: "

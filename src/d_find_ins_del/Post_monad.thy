@@ -1,7 +1,7 @@
 theory Post_monad imports "$SRC/c_monad/Monad" begin
 
 
-(* ops types -------------------------------------------- *)
+(* ops types -------------------------------------------------------- *)
 
 datatype_record ('r,'dnode,'t) store_ops =
   read :: "'r \<Rightarrow> ('dnode,'t) MM"

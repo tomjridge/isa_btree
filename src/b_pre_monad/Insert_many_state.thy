@@ -21,4 +21,3 @@ definition make_initial_im_state :: "'r \<Rightarrow> 'k \<Rightarrow> 'v \<Righ
   (i,kvs))"
 
 end
-

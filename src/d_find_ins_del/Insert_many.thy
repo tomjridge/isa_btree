@@ -2,7 +2,7 @@ theory Insert_many
   imports "$SRC/d_find_ins_del/Post_monad" Find Insert
 begin
 
-(* im_step defns ------------------------------------------------------------ *)
+(* im_step defns ---------------------------------------------------- *)
 
 definition im_step_bottom :: "
 constants \<Rightarrow> 

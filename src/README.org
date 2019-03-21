@@ -1,9 +1,5 @@
 Various occurrences of "FIXME patch" indicate places where OCaml
 generated code needs to be patched.
 
-Details of patching can be found in
-github-repo-tjr_btree:/src/aa_from_isa (eg in file orig.patch)
-
-
 Terminology: blocks-and-pointers vs ADT: We need two models for trees:
 the algebraic datatype model, and the "blocks and pointers" model.

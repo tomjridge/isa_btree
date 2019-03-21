@@ -2,7 +2,7 @@ theory Key_value
 imports A_start_here
 begin
 
-(* k ord ------------------------------- *)
+(* k ord ------------------------------------------------------------ *)
 
 (* use "ord" or "cmp" as var names; "k_cmp", "k_ord" *)
 type_synonym 'k ord = "'k \<Rightarrow> 'k \<Rightarrow> int"

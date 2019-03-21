@@ -1,4 +1,4 @@
-(* old res -------------------------------------------------------------- *)
+(* old res ---------------------------------------------------------- *)
   
 (* This is similar to the result type from OCaml *)
 
@@ -13,7 +13,7 @@ definition dest_Ok :: "'a res \<Rightarrow> 'a" where
 *)
 
 
-(* split_at etc ---------------------------------- *)
+(* split_at etc ----------------------------------------------------- *)
 
 (* FIXME take and drop used separately is inefficient *)
 (*
@@ -84,6 +84,5 @@ definition invariant_assuming_thm :: "'s trans_t \<Rightarrow>  ('s \<Rightarrow
   invariant_assuming trns P Q 
   \<longrightarrow> invariant trns (% x. P x & Q x)
 )"
-
 
 

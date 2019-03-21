@@ -49,15 +49,15 @@ constants \<Rightarrow>
   let post_merge = post_merge cs node_ops store_ops in
   case stk of [] \<Rightarrow> (failwith (STR ''delete, step_up'')) | frm#stk' \<Rightarrow> (
   let (lh,rh) = ((frame_ops|>left_half)frm,(frame_ops|>right_half)frm) in
-  \<comment> \<open>(* NOTE p is the parent *)\<close>
-  \<comment> \<open>(* take the result of what follows, and add the stk' component *)\<close>
+  \<comment> \<open> NOTE p is the parent \<close>
+  \<comment> \<open> take the result of what follows, and add the stk' component \<close>
   (% x. x |> fmap (% y. (y,stk'))) (case f of   
   D_updated_subtree r \<Rightarrow> (
     let (lh,rh) = ((frame_ops|>left_half)frm,(frame_ops|>right_half)frm) in
     (frame_ops|>unsplit) (lh, R(r), rh) |> Disk_node |> write |> fmap D_updated_subtree)
   | D_small_leaf(leaf) \<Rightarrow> (
     \<comment> \<open>NOTE stack is not empty, so at least one sibling; then a small leaf is expected to
-      have min_leaf_size-1 entries\<close>
+      have FIXME minleafsize-1 entries\<close>
     let no_right_sibling = is_None ((frame_ops|>rh_dest_cons) rh) in
     case no_right_sibling of 
     True \<Rightarrow> (
@@ -205,4 +205,3 @@ constants \<Rightarrow>
   | _ \<Rightarrow> (failwith (STR ''delete, impossible''))))"
 
 end
-

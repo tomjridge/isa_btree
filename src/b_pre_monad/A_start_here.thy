@@ -66,7 +66,7 @@ definition mk_err :: "String.literal \<Rightarrow> error" where
 type_synonym e = error
 
 
-(* misc aux defns ------------------------------------------------------------- *)
+(* misc aux defns --------------------------------------------------- *)
   
 
 (* is_Some also in Quickcheck_Examples/Completeness.thy - should be in

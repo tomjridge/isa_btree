@@ -1,7 +1,27 @@
 SHELL:=bash
 
+# run isabelle to export code ------------------------------------------
+
+all:
+	$(MAKE) build
+
+# to complete export of code, make sure Isabelle processes the theory
+# Export_code to the end
+run_isabelle: 
+	SRC=$$PWD isabelle jedit d_find_ins_del/Export_code.thy &
+
+build:
+	cd `realpath .` && SRC=$$PWD isabelle build -o quick_and_dirty=true -D .
+
+
+# docs -----------------------------------------------------------------
+
+# NOTE following just builds some text documentation/index. 
+
+tweak_comments=/tmp/l/bin/tweak_comments.native
+
 index.txt: FORCE
-	(for f in */*.thy; do echo "$$f ========================================"; tweak_comments.native $$f; grep "\------\\|ignore_definition" $$f; echo; done)>$@
+	(for f in */*.thy; do echo "$$f ========================================"; $(tweak_comments) $$f; grep "\------\\|ignore_definition" $$f; echo; done)>$@
 
 
 doc: FORCE

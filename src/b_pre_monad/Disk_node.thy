@@ -116,4 +116,3 @@ definition wf_node_frame :: "constants \<Rightarrow> nat \<Rightarrow> nat \<Rig
 definition wf_leaf_frame :: "constants \<Rightarrow> nat \<Rightarrow> bool" where
 "wf_leaf_frame c n = ( c|>min_leaf_size \<le> n & n \<le> c|>max_leaf_size )"
 *)
-
