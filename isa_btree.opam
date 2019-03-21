@@ -14,6 +14,7 @@ bug-reports: "https://github.com/tomjridge/isa_btree/issues"
 depends: [
   "num"
   "ppx_deriving_yojson"
+  "tjr_fs_shared"
 ]
 
 # ----------------------------------------------------------------------

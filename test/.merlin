@@ -56,6 +56,7 @@ B /home/tr61/.opam/default/lib/spawn
 B /home/tr61/.opam/default/lib/splittable_random
 B /home/tr61/.opam/default/lib/stdio
 B /home/tr61/.opam/default/lib/time_now
+B /home/tr61/.opam/default/lib/tjr_polymap
 B /home/tr61/.opam/default/lib/typerep
 B /home/tr61/.opam/default/lib/uchar
 B /home/tr61/.opam/default/lib/variantslib
@@ -63,7 +64,6 @@ B /home/tr61/.opam/default/lib/yojson
 B ../../_build/default/a_tjr_lib/src/core/.tjr_lib_core.objs/byte
 B ../../_build/default/a_tjr_lib/src/non_core/.tjr_lib.objs/byte
 B ../../_build/default/a_tjr_monad/src/.tjr_monad.objs/byte
-B ../../_build/default/a_tjr_polymap/src/.tjr_polymap.objs/byte
 B ../../_build/default/a_tjr_profile/src/.tjr_profile.objs/byte
 B ../../_build/default/b_isa_btree/ocaml/.isa_btree.objs/byte
 B ../../_build/default/b_isa_btree/test/.test_main.eobjs/byte
@@ -125,6 +125,7 @@ S /home/tr61/.opam/default/lib/spawn
 S /home/tr61/.opam/default/lib/splittable_random
 S /home/tr61/.opam/default/lib/stdio
 S /home/tr61/.opam/default/lib/time_now
+S /home/tr61/.opam/default/lib/tjr_polymap
 S /home/tr61/.opam/default/lib/typerep
 S /home/tr61/.opam/default/lib/uchar
 S /home/tr61/.opam/default/lib/variantslib
@@ -132,7 +133,6 @@ S /home/tr61/.opam/default/lib/yojson
 S ../../a_tjr_lib/src/core
 S ../../a_tjr_lib/src/non_core
 S ../../a_tjr_monad/src
-S ../../a_tjr_polymap/src
 S ../../a_tjr_profile/src
 S ../ocaml
 S .
