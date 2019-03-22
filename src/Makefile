@@ -8,7 +8,7 @@ all:
 # to complete export of code, make sure Isabelle processes the theory
 # Export_code to the end
 run_isabelle: 
-	SRC=$$PWD isabelle jedit d_find_ins_del/Export_code.thy &
+	SRC=$$PWD isabelle jedit d_find_ins_del/Export_code.thy 
 
 build:
 	cd `realpath .` && SRC=$$PWD isabelle build -o quick_and_dirty=true -D .

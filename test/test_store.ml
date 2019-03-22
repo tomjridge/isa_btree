@@ -6,19 +6,20 @@ open Disk_node
 
 (* a store that works with trees not refs --------------------------- *)
 
-type leaf = (int,int) Tjr_polymap.t
+type leaf = (int,int) Tjr_poly_map.poly_map_2
 
 let leaf_to_yojson x = `String "leaf"
 let leaf_of_yojson _ = failwith "FIXME"
 
 let leaf_ops = 
-  let leaf_insert k v l = Tjr_polymap.add k v l in
-  let leaf_length l = Tjr_polymap.cardinal l in
-  let leaf_kvs l = Tjr_polymap.bindings l in
-  let mk_leaf kvs = Tjr_polymap.from_bindings ~compare:Tjr_int.compare kvs in
-  (leaf_insert,leaf_length,leaf_kvs,mk_leaf)
+  let open Tjr_poly_map in
+  let leaf_insert k v l = add k v l in
+  let leaf_length l = cardinal l in
+  let leaf_kvs l = bindings l in
+  (* let mk_leaf kvs = from_bindings ~compare:Tjr_int.compare kvs in *)
+  (leaf_insert,leaf_length,leaf_kvs)
 
-let empty_poly_map () = Tjr_polymap.empty_int_map ()
+(* let empty_poly_map () = Tjr_poly_map.empty_int_map () *)
 
 type key = int  [@@deriving yojson]
 type value = int  [@@deriving yojson]

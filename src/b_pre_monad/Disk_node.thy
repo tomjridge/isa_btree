@@ -26,16 +26,16 @@ definition dest_Disk_leaf :: "('node,'leaf) dnode \<Rightarrow> 'leaf" where
 (* FIXME probably want to abstract even further *)
 datatype_record ('k,'v,'leaf) leaf_ops = 
   leaf_lookup :: "'k \<Rightarrow> 'leaf \<Rightarrow> 'v option"
-  leaf_insert :: "'k \<Rightarrow> 'v \<Rightarrow> 'leaf \<Rightarrow> 'leaf"
-  leaf_insert_v2 :: "'k \<Rightarrow> 'v \<Rightarrow> 'leaf \<Rightarrow> 'leaf * 'v option"
+(*  leaf_insert :: "'k \<Rightarrow> 'v \<Rightarrow> 'leaf \<Rightarrow> 'leaf" *)
+  leaf_insert :: "'k \<Rightarrow> 'v \<Rightarrow> 'leaf \<Rightarrow> 'leaf * 'v option"
   leaf_remove :: "'k \<Rightarrow> 'leaf \<Rightarrow> 'leaf"
   leaf_length :: "'leaf \<Rightarrow> nat"
-  xdbg_leaf_kvs :: "'leaf \<Rightarrow> ('k*'v) s"  (* avoid for non-dbg code *)
+  dbg_leaf_kvs :: "'leaf \<Rightarrow> ('k*'v) s"  (* avoid for non-dbg code *)
   leaf_steal_right :: "'leaf*'leaf \<Rightarrow> 'leaf*'k*'leaf"
   leaf_steal_left :: "'leaf*'leaf \<Rightarrow> 'leaf*'k*'leaf"
   leaf_merge :: "'leaf*'leaf \<Rightarrow> 'leaf"
   split_large_leaf :: "'leaf \<Rightarrow> 'leaf*'k*'leaf"
-  mk_leaf :: "('k*'v) s \<Rightarrow> 'leaf"  (* FIXME avoid? *)
+(*  xmk_leaf :: "('k*'v) s \<Rightarrow> 'leaf"  (* FIXME avoid? *) *)
 
 datatype_record ('k,'r,'node) node_ops =
   split_large_node :: "'node \<Rightarrow> 'node*'k*'node"

@@ -28,7 +28,7 @@ constants \<Rightarrow>
       case test1 \<or> test2 of
       True \<Rightarrow> None
       | False \<Rightarrow> (
-        let (leaf,old_v) = (leaf_ops|>leaf_insert_v2) k v leaf in
+        let (leaf,old_v) = (leaf_ops|>leaf_insert) k v leaf in
         let len_leaf = (if is_None old_v then len_leaf+1 else len_leaf) in
         Some(leaf,len_leaf,kvs)
       )))

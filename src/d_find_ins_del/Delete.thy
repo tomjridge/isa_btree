@@ -16,6 +16,7 @@ FIXME maybe it makes more sense to deal with the context in isolation, and retur
 NOTE rs,ks as args for node_steal_xxx
  *)
 
+(* FIXME we also want a version that mutates in place *)
 
 (* delete ----------------------------------------------------------  *)
 

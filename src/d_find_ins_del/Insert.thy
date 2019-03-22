@@ -31,7 +31,7 @@ constants \<Rightarrow>
   None \<Rightarrow> (failwith (STR ''insert, step_bottom, 1''))
   | Some(r0,k,r,leaf,stk) \<Rightarrow> (
     \<comment> \<open> free here? FIXME \<close>
-    let leaf' = (leaf_ops|>leaf_insert) k v leaf in
+    let (leaf',_) = (leaf_ops|>leaf_insert) k v leaf in
     case (leaf_ops|>leaf_length) leaf' \<le> cs|>max_leaf_size of
     True \<Rightarrow> (
       \<comment> \<open> we want to update in place if possible \<close>
