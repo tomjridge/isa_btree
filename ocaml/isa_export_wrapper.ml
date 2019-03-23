@@ -37,8 +37,8 @@ let make_find_insert_delete (type t) ~(monad_ops:t monad_ops) =
   let node_ops2isa (split_large_node,node_merge,node_steal_right,node_steal_left,node_keys_length,node_make_small_root,node_get_single_r) = 
     Isa_export.Disk_node.Make_node_ops (split_large_node,node_merge,node_steal_right,node_steal_left,node_keys_length,node_make_small_root,node_get_single_r)
   in
-  let frame_ops2isa (leaf_half,right_half,midpoint,rh_dest_cons,lh_dest_snoc,unsplit,get_midpoint_bounds,split_node_on_key,original_node_r,split_node_on_first_key,step_frame_for_ls) = 
-    Isa_export.Stacks_and_frames.Make_frame_ops(leaf_half,right_half,midpoint,rh_dest_cons,lh_dest_snoc,unsplit,get_midpoint_bounds,split_node_on_key,original_node_r,split_node_on_first_key,step_frame_for_ls)
+  let frame_ops2isa (left_half,right_half,midpoint,rh_dest_cons,lh_dest_snoc,unsplit,get_midpoint_bounds,split_node_on_key,original_node_r,split_node_on_first_key,step_frame_for_ls) = 
+    Isa_export.Stacks_and_frames.Make_frame_ops(left_half,right_half,midpoint,rh_dest_cons,lh_dest_snoc,unsplit,get_midpoint_bounds,split_node_on_key,original_node_r,split_node_on_first_key,step_frame_for_ls)
   in
   let store_ops2isa store_ops = 
     let (a,b,c,d) = store_ops in

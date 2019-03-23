@@ -37,6 +37,15 @@ datatype_record ('k,'v,'leaf) leaf_ops =
   split_large_leaf :: "'leaf \<Rightarrow> 'leaf*'k*'leaf"
 (*  xmk_leaf :: "('k*'v) s \<Rightarrow> 'leaf"  (* FIXME avoid? *) *)
 
+(* we want a simple, obviously-correct implementation of these operations *)
+
+definition leaf_as_list_ops :: "('k,'v,('k*'v) list) leaf_ops" where
+"leaf_as_list_ops = (
+  \<lparr> 
+  leaf_lookup=(% k l. List.ass
+)
+
+
 datatype_record ('k,'r,'node) node_ops =
   split_large_node :: "'node \<Rightarrow> 'node*'k*'node"
   node_merge :: "'node * 'k * 'node \<Rightarrow> 'node"

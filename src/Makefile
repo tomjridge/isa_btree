@@ -10,6 +10,10 @@ all:
 run_isabelle: 
 	SRC=$$PWD isabelle jedit d_find_ins_del/Export_code.thy 
 
+run_alt: 
+	SRC=$$PWD isabelle jedit d_find_ins_del/Export_code.thy 
+
+
 build:
 	cd `realpath .` && SRC=$$PWD isabelle build -o quick_and_dirty=true -D .
 
