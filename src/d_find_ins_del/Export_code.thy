@@ -37,6 +37,7 @@ kvs_insert_tests
 Disk_node.Disk_node
 make_leaf_ops
 make_node_ops
+rbt_as_leaf_ops
 
 (* stacks and frames *)
 Stacks_and_frames.make_frame_ops

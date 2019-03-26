@@ -10,6 +10,16 @@ type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
  delete: r:'r -> k:'k -> ('r,'t) m;
 }
 
+FIXME got here; need to implement node_ops and frame_ops 
+
+node_ops is just tjr_fs_shared/tjr_lin_partition
+frame_ops builds on this
+
+then make_find_insert_delete should take a k_cmp and construct all the leaf and node and ops
+
+also need to add batch operations
+
+
 let make_find_insert_delete (type t) ~(monad_ops:t monad_ops) = 
   let module Monad = struct
     type nonrec t = t

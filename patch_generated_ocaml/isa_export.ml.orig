@@ -22,16 +22,49 @@ let rec eq _A a b = equal _A a b;;
 
 end;; (*struct HOL*)
 
+module Product_Type : sig
+  val equal_prod : 'a HOL.equal -> 'b HOL.equal -> ('a * 'b) HOL.equal
+  val apfst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
+  val apsnd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
+  val fst : 'a * 'b -> 'a
+  val snd : 'a * 'b -> 'b
+end = struct
+
+let rec equal_proda _A _B
+  (x1, x2) (y1, y2) = HOL.eq _A x1 y1 && HOL.eq _B x2 y2;;
+
+let rec equal_prod _A _B =
+  ({HOL.equal = equal_proda _A _B} : ('a * 'b) HOL.equal);;
+
+let rec apfst f (x, y) = (f x, y);;
+
+let rec apsnd f (x, y) = (x, f y);;
+
+let rec fst (x1, x2) = x1;;
+
+let rec snd (x1, x2) = x2;;
+
+end;; (*struct Product_Type*)
+
 module Orderings : sig
   type 'a ord = {less_eq : 'a -> 'a -> bool; less : 'a -> 'a -> bool}
   val less_eq : 'a ord -> 'a -> 'a -> bool
   val less : 'a ord -> 'a -> 'a -> bool
+  type 'a preorder = {ord_preorder : 'a ord}
+  type 'a order = {preorder_order : 'a preorder}
+  type 'a linorder = {order_linorder : 'a order}
   val max : 'a ord -> 'a -> 'a -> 'a
 end = struct
 
 type 'a ord = {less_eq : 'a -> 'a -> bool; less : 'a -> 'a -> bool};;
 let less_eq _A = _A.less_eq;;
 let less _A = _A.less;;
+
+type 'a preorder = {ord_preorder : 'a ord};;
+
+type 'a order = {preorder_order : 'a preorder};;
+
+type 'a linorder = {order_linorder : 'a order};;
 
 let rec max _A a b = (if less_eq _A a b then b else a);;
 
@@ -49,6 +82,7 @@ module Arith : sig
   val plus_nat : nat -> nat -> nat
   val one_nat : nat
   val suc : nat -> nat
+  val divmod_nat : nat -> nat -> nat * nat
   val less_int : int -> int -> bool
   val int_of_nat : nat -> int
   val zero_int : int
@@ -95,6 +129,46 @@ let one_nat : nat = Nat (Big_int.big_int_of_int 1);;
 
 let rec suc n = plus_nat n one_nat;;
 
+let rec sgn_integer
+  k = (if Big_int.eq_big_int k Big_int.zero_big_int then Big_int.zero_big_int
+        else (if Big_int.lt_big_int k Big_int.zero_big_int
+               then (Big_int.minus_big_int (Big_int.big_int_of_int 1))
+               else (Big_int.big_int_of_int 1)));;
+
+let rec divmod_integer
+  k l = (if Big_int.eq_big_int k Big_int.zero_big_int
+          then (Big_int.zero_big_int, Big_int.zero_big_int)
+          else (if Big_int.eq_big_int l Big_int.zero_big_int
+                 then (Big_int.zero_big_int, k)
+                 else Fun.comp
+                        (Fun.comp Product_Type.apsnd Big_int.mult_big_int)
+                        sgn_integer l
+                        (if Big_int.eq_big_int (sgn_integer k) (sgn_integer l)
+                          then Big_int.quomod_big_int (Big_int.abs_big_int k)
+                                 (Big_int.abs_big_int l)
+                          else (let (r, s) =
+                                  Big_int.quomod_big_int (Big_int.abs_big_int k)
+                                    (Big_int.abs_big_int l)
+                                  in
+                                 (if Big_int.eq_big_int s Big_int.zero_big_int
+                                   then (Big_int.minus_big_int r,
+  Big_int.zero_big_int)
+                                   else (Big_int.sub_big_int
+   (Big_int.minus_big_int r) (Big_int.big_int_of_int 1),
+  Big_int.sub_big_int (Big_int.abs_big_int l) s))))));;
+
+let rec modulo_integer k l = Product_Type.snd (divmod_integer k l);;
+
+let rec modulo_nat
+  m n = Nat (modulo_integer (integer_of_nat m) (integer_of_nat n));;
+
+let rec divide_integer k l = Product_Type.fst (divmod_integer k l);;
+
+let rec divide_nat
+  m n = Nat (divide_integer (integer_of_nat m) (integer_of_nat n));;
+
+let rec divmod_nat m n = (divide_nat m n, modulo_nat m n);;
+
 let rec integer_of_int (Int_of_integer k) = k;;
 
 let rec less_int
@@ -135,6 +209,7 @@ module Lista : sig
   val null : 'a list -> bool
   val foldr : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
   val concat : ('a list) list -> 'a list
+  val hd : 'a list -> 'a
   val map : ('a -> 'b) -> 'a list -> 'b list
   val list_all : ('a -> bool) -> 'a list -> bool
   val size_list : 'a list -> Arith.nat
@@ -161,6 +236,8 @@ let rec foldr f x1 = match f, x1 with f, [] -> Fun.id
                 | f, x :: xs -> Fun.comp (f x) (foldr f xs);;
 
 let rec concat xss = foldr (fun a b -> a @ b) xss [];;
+
+let rec hd (x21 :: x22) = x21;;
 
 let rec map f x1 = match f, x1 with f, [] -> []
               | f, x21 :: x22 -> f x21 :: map f x22;;
@@ -196,20 +273,392 @@ let rec is_empty (Set xs) = Lista.null xs;;
 
 end;; (*struct Set*)
 
-module Product_Type : sig
-  val equal_prod : 'a HOL.equal -> 'b HOL.equal -> ('a * 'b) HOL.equal
-  val fst : 'a * 'b -> 'a
+module RBT_Impl : sig
+  type color
+  type ('a, 'b) rbt = Empty |
+    Branch of color * ('a, 'b) rbt * 'a * 'b * ('a, 'b) rbt
+  val entries : ('a, 'b) rbt -> ('a * 'b) list
+  val rbtreeify : ('a * 'b) list -> ('a, 'b) rbt
+  val rbt_union :
+    'a Orderings.ord -> ('a, 'b) rbt -> ('a, 'b) rbt -> ('a, 'b) rbt
+  val rbt_delete : 'a Orderings.ord -> 'a -> ('a, 'b) rbt -> ('a, 'b) rbt
+  val rbt_insert : 'a Orderings.ord -> 'a -> 'b -> ('a, 'b) rbt -> ('a, 'b) rbt
+  val rbt_lookup : 'a Orderings.ord -> ('a, 'b) rbt -> 'a -> 'b option
 end = struct
 
-let rec equal_proda _A _B
-  (x1, x2) (y1, y2) = HOL.eq _A x1 y1 && HOL.eq _B x2 y2;;
+type color = R | B;;
 
-let rec equal_prod _A _B =
-  ({HOL.equal = equal_proda _A _B} : ('a * 'b) HOL.equal);;
+type ('a, 'b) rbt = Empty |
+  Branch of color * ('a, 'b) rbt * 'a * 'b * ('a, 'b) rbt;;
 
-let rec fst (x1, x2) = x1;;
+type compare = LT | GT | EQ;;
 
-end;; (*struct Product_Type*)
+let rec fold
+  f xa1 x = match f, xa1, x with
+    f, Branch (c, lt, k, v, rt), x -> fold f rt (f k v (fold f lt x))
+    | f, Empty, x -> x;;
+
+let rec paint c x1 = match c, x1 with c, Empty -> Empty
+                | c, Branch (uu, l, k, v, r) -> Branch (c, l, k, v, r);;
+
+let rec balance
+  x0 s t x3 = match x0, s, t, x3 with
+    Branch (R, a, w, x, b), s, t, Branch (R, c, y, z, d) ->
+      Branch (R, Branch (B, a, w, x, b), s, t, Branch (B, c, y, z, d))
+    | Branch (R, Branch (R, a, w, x, b), s, t, c), y, z, Empty ->
+        Branch (R, Branch (B, a, w, x, b), s, t, Branch (B, c, y, z, Empty))
+    | Branch (R, Branch (R, a, w, x, b), s, t, c), y, z,
+        Branch (B, va, vb, vc, vd)
+        -> Branch
+             (R, Branch (B, a, w, x, b), s, t,
+               Branch (B, c, y, z, Branch (B, va, vb, vc, vd)))
+    | Branch (R, Empty, w, x, Branch (R, b, s, t, c)), y, z, Empty ->
+        Branch (R, Branch (B, Empty, w, x, b), s, t, Branch (B, c, y, z, Empty))
+    | Branch (R, Branch (B, va, vb, vc, vd), w, x, Branch (R, b, s, t, c)), y,
+        z, Empty
+        -> Branch
+             (R, Branch (B, Branch (B, va, vb, vc, vd), w, x, b), s, t,
+               Branch (B, c, y, z, Empty))
+    | Branch (R, Empty, w, x, Branch (R, b, s, t, c)), y, z,
+        Branch (B, va, vb, vc, vd)
+        -> Branch
+             (R, Branch (B, Empty, w, x, b), s, t,
+               Branch (B, c, y, z, Branch (B, va, vb, vc, vd)))
+    | Branch (R, Branch (B, ve, vf, vg, vh), w, x, Branch (R, b, s, t, c)), y,
+        z, Branch (B, va, vb, vc, vd)
+        -> Branch
+             (R, Branch (B, Branch (B, ve, vf, vg, vh), w, x, b), s, t,
+               Branch (B, c, y, z, Branch (B, va, vb, vc, vd)))
+    | Empty, w, x, Branch (R, b, s, t, Branch (R, c, y, z, d)) ->
+        Branch (R, Branch (B, Empty, w, x, b), s, t, Branch (B, c, y, z, d))
+    | Branch (B, va, vb, vc, vd), w, x,
+        Branch (R, b, s, t, Branch (R, c, y, z, d))
+        -> Branch
+             (R, Branch (B, Branch (B, va, vb, vc, vd), w, x, b), s, t,
+               Branch (B, c, y, z, d))
+    | Empty, w, x, Branch (R, Branch (R, b, s, t, c), y, z, Empty) ->
+        Branch (R, Branch (B, Empty, w, x, b), s, t, Branch (B, c, y, z, Empty))
+    | Empty, w, x,
+        Branch (R, Branch (R, b, s, t, c), y, z, Branch (B, va, vb, vc, vd))
+        -> Branch
+             (R, Branch (B, Empty, w, x, b), s, t,
+               Branch (B, c, y, z, Branch (B, va, vb, vc, vd)))
+    | Branch (B, va, vb, vc, vd), w, x,
+        Branch (R, Branch (R, b, s, t, c), y, z, Empty)
+        -> Branch
+             (R, Branch (B, Branch (B, va, vb, vc, vd), w, x, b), s, t,
+               Branch (B, c, y, z, Empty))
+    | Branch (B, va, vb, vc, vd), w, x,
+        Branch (R, Branch (R, b, s, t, c), y, z, Branch (B, ve, vf, vg, vh))
+        -> Branch
+             (R, Branch (B, Branch (B, va, vb, vc, vd), w, x, b), s, t,
+               Branch (B, c, y, z, Branch (B, ve, vf, vg, vh)))
+    | Empty, s, t, Empty -> Branch (B, Empty, s, t, Empty)
+    | Empty, s, t, Branch (B, va, vb, vc, vd) ->
+        Branch (B, Empty, s, t, Branch (B, va, vb, vc, vd))
+    | Empty, s, t, Branch (v, Empty, vb, vc, Empty) ->
+        Branch (B, Empty, s, t, Branch (v, Empty, vb, vc, Empty))
+    | Empty, s, t, Branch (v, Branch (B, ve, vf, vg, vh), vb, vc, Empty) ->
+        Branch
+          (B, Empty, s, t,
+            Branch (v, Branch (B, ve, vf, vg, vh), vb, vc, Empty))
+    | Empty, s, t, Branch (v, Empty, vb, vc, Branch (B, vf, vg, vh, vi)) ->
+        Branch
+          (B, Empty, s, t,
+            Branch (v, Empty, vb, vc, Branch (B, vf, vg, vh, vi)))
+    | Empty, s, t,
+        Branch
+          (v, Branch (B, ve, vj, vk, vl), vb, vc, Branch (B, vf, vg, vh, vi))
+        -> Branch
+             (B, Empty, s, t,
+               Branch
+                 (v, Branch (B, ve, vj, vk, vl), vb, vc,
+                   Branch (B, vf, vg, vh, vi)))
+    | Branch (B, va, vb, vc, vd), s, t, Empty ->
+        Branch (B, Branch (B, va, vb, vc, vd), s, t, Empty)
+    | Branch (B, va, vb, vc, vd), s, t, Branch (B, ve, vf, vg, vh) ->
+        Branch (B, Branch (B, va, vb, vc, vd), s, t, Branch (B, ve, vf, vg, vh))
+    | Branch (B, va, vb, vc, vd), s, t, Branch (v, Empty, vf, vg, Empty) ->
+        Branch
+          (B, Branch (B, va, vb, vc, vd), s, t,
+            Branch (v, Empty, vf, vg, Empty))
+    | Branch (B, va, vb, vc, vd), s, t,
+        Branch (v, Branch (B, vi, vj, vk, vl), vf, vg, Empty)
+        -> Branch
+             (B, Branch (B, va, vb, vc, vd), s, t,
+               Branch (v, Branch (B, vi, vj, vk, vl), vf, vg, Empty))
+    | Branch (B, va, vb, vc, vd), s, t,
+        Branch (v, Empty, vf, vg, Branch (B, vj, vk, vl, vm))
+        -> Branch
+             (B, Branch (B, va, vb, vc, vd), s, t,
+               Branch (v, Empty, vf, vg, Branch (B, vj, vk, vl, vm)))
+    | Branch (B, va, vb, vc, vd), s, t,
+        Branch
+          (v, Branch (B, vi, vn, vo, vp), vf, vg, Branch (B, vj, vk, vl, vm))
+        -> Branch
+             (B, Branch (B, va, vb, vc, vd), s, t,
+               Branch
+                 (v, Branch (B, vi, vn, vo, vp), vf, vg,
+                   Branch (B, vj, vk, vl, vm)))
+    | Branch (v, Empty, vb, vc, Empty), s, t, Empty ->
+        Branch (B, Branch (v, Empty, vb, vc, Empty), s, t, Empty)
+    | Branch (v, Empty, vb, vc, Branch (B, ve, vf, vg, vh)), s, t, Empty ->
+        Branch
+          (B, Branch (v, Empty, vb, vc, Branch (B, ve, vf, vg, vh)), s, t,
+            Empty)
+    | Branch (v, Branch (B, vf, vg, vh, vi), vb, vc, Empty), s, t, Empty ->
+        Branch
+          (B, Branch (v, Branch (B, vf, vg, vh, vi), vb, vc, Empty), s, t,
+            Empty)
+    | Branch
+        (v, Branch (B, vf, vg, vh, vi), vb, vc, Branch (B, ve, vj, vk, vl)),
+        s, t, Empty
+        -> Branch
+             (B, Branch
+                   (v, Branch (B, vf, vg, vh, vi), vb, vc,
+                     Branch (B, ve, vj, vk, vl)),
+               s, t, Empty)
+    | Branch (v, Empty, vf, vg, Empty), s, t, Branch (B, va, vb, vc, vd) ->
+        Branch
+          (B, Branch (v, Empty, vf, vg, Empty), s, t,
+            Branch (B, va, vb, vc, vd))
+    | Branch (v, Empty, vf, vg, Branch (B, vi, vj, vk, vl)), s, t,
+        Branch (B, va, vb, vc, vd)
+        -> Branch
+             (B, Branch (v, Empty, vf, vg, Branch (B, vi, vj, vk, vl)), s, t,
+               Branch (B, va, vb, vc, vd))
+    | Branch (v, Branch (B, vj, vk, vl, vm), vf, vg, Empty), s, t,
+        Branch (B, va, vb, vc, vd)
+        -> Branch
+             (B, Branch (v, Branch (B, vj, vk, vl, vm), vf, vg, Empty), s, t,
+               Branch (B, va, vb, vc, vd))
+    | Branch
+        (v, Branch (B, vj, vk, vl, vm), vf, vg, Branch (B, vi, vn, vo, vp)),
+        s, t, Branch (B, va, vb, vc, vd)
+        -> Branch
+             (B, Branch
+                   (v, Branch (B, vj, vk, vl, vm), vf, vg,
+                     Branch (B, vi, vn, vo, vp)),
+               s, t, Branch (B, va, vb, vc, vd));;
+
+let rec balance_left
+  x0 s y c = match x0, s, y, c with
+    Branch (R, a, k, x, b), s, y, c ->
+      Branch (R, Branch (B, a, k, x, b), s, y, c)
+    | Empty, k, x, Branch (B, a, s, y, b) ->
+        balance Empty k x (Branch (R, a, s, y, b))
+    | Branch (B, va, vb, vc, vd), k, x, Branch (B, a, s, y, b) ->
+        balance (Branch (B, va, vb, vc, vd)) k x (Branch (R, a, s, y, b))
+    | Empty, k, x, Branch (R, Branch (B, a, s, y, b), t, z, c) ->
+        Branch (R, Branch (B, Empty, k, x, a), s, y, balance b t z (paint R c))
+    | Branch (B, va, vb, vc, vd), k, x,
+        Branch (R, Branch (B, a, s, y, b), t, z, c)
+        -> Branch
+             (R, Branch (B, Branch (B, va, vb, vc, vd), k, x, a), s, y,
+               balance b t z (paint R c))
+    | Empty, k, x, Empty -> Empty
+    | Empty, k, x, Branch (R, Empty, vb, vc, vd) -> Empty
+    | Empty, k, x, Branch (R, Branch (R, ve, vf, vg, vh), vb, vc, vd) -> Empty
+    | Branch (B, va, vb, vc, vd), k, x, Empty -> Empty
+    | Branch (B, va, vb, vc, vd), k, x, Branch (R, Empty, vf, vg, vh) -> Empty
+    | Branch (B, va, vb, vc, vd), k, x,
+        Branch (R, Branch (R, vi, vj, vk, vl), vf, vg, vh)
+        -> Empty;;
+
+let rec combine
+  xa0 x = match xa0, x with Empty, x -> x
+    | Branch (v, va, vb, vc, vd), Empty -> Branch (v, va, vb, vc, vd)
+    | Branch (R, a, k, x, b), Branch (R, c, s, y, d) ->
+        (match combine b c
+          with Empty -> Branch (R, a, k, x, Branch (R, Empty, s, y, d))
+          | Branch (R, b2, t, z, c2) ->
+            Branch (R, Branch (R, a, k, x, b2), t, z, Branch (R, c2, s, y, d))
+          | Branch (B, b2, t, z, c2) ->
+            Branch (R, a, k, x, Branch (R, Branch (B, b2, t, z, c2), s, y, d)))
+    | Branch (B, a, k, x, b), Branch (B, c, s, y, d) ->
+        (match combine b c
+          with Empty -> balance_left a k x (Branch (B, Empty, s, y, d))
+          | Branch (R, b2, t, z, c2) ->
+            Branch (R, Branch (B, a, k, x, b2), t, z, Branch (B, c2, s, y, d))
+          | Branch (B, b2, t, z, c2) ->
+            balance_left a k x (Branch (B, Branch (B, b2, t, z, c2), s, y, d)))
+    | Branch (B, va, vb, vc, vd), Branch (R, b, k, x, c) ->
+        Branch (R, combine (Branch (B, va, vb, vc, vd)) b, k, x, c)
+    | Branch (R, a, k, x, b), Branch (B, va, vb, vc, vd) ->
+        Branch (R, a, k, x, combine b (Branch (B, va, vb, vc, vd)));;
+
+let rec gen_entries
+  kvts x1 = match kvts, x1 with
+    kvts, Branch (c, l, k, v, r) -> gen_entries (((k, v), r) :: kvts) l
+    | (kv, t) :: kvts, Empty -> kv :: gen_entries kvts t
+    | [], Empty -> [];;
+
+let rec entries x = gen_entries [] x;;
+
+let rec skip_red = function Branch (R, l, k, v, r) -> l
+                   | Empty -> Empty
+                   | Branch (B, va, vb, vc, vd) -> Branch (B, va, vb, vc, vd);;
+
+let rec rbtreeify_g
+  n kvs =
+    (if Arith.equal_nata n Arith.zero_nat || Arith.equal_nata n Arith.one_nat
+      then (Empty, kvs)
+      else (let (na, r) =
+              Arith.divmod_nat n
+                (Arith.nat_of_integer (Big_int.big_int_of_int 2))
+              in
+             (if Arith.equal_nata r Arith.zero_nat
+               then (let (t1, (k, v) :: kvsa) = rbtreeify_g na kvs in
+                      Product_Type.apfst (fun a -> Branch (B, t1, k, v, a))
+                        (rbtreeify_g na kvsa))
+               else (let (t1, (k, v) :: kvsa) = rbtreeify_f na kvs in
+                      Product_Type.apfst (fun a -> Branch (B, t1, k, v, a))
+                        (rbtreeify_g na kvsa)))))
+and rbtreeify_f
+  n kvs =
+    (if Arith.equal_nata n Arith.zero_nat then (Empty, kvs)
+      else (if Arith.equal_nata n Arith.one_nat
+             then (let (k, v) :: kvsa = kvs in
+                    (Branch (R, Empty, k, v, Empty), kvsa))
+             else (let (na, r) =
+                     Arith.divmod_nat n
+                       (Arith.nat_of_integer (Big_int.big_int_of_int 2))
+                     in
+                    (if Arith.equal_nata r Arith.zero_nat
+                      then (let (t1, (k, v) :: kvsa) = rbtreeify_f na kvs in
+                             Product_Type.apfst
+                               (fun a -> Branch (B, t1, k, v, a))
+                               (rbtreeify_g na kvsa))
+                      else (let (t1, (k, v) :: kvsa) = rbtreeify_f na kvs in
+                             Product_Type.apfst
+                               (fun a -> Branch (B, t1, k, v, a))
+                               (rbtreeify_f na kvsa))))));;
+
+let rec rbtreeify
+  kvs = Product_Type.fst (rbtreeify_g (Arith.suc (Lista.size_list kvs)) kvs);;
+
+let rec skip_black
+  t = (let ta = skip_red t in
+        (match ta with Empty -> ta | Branch (R, _, _, _, _) -> ta
+          | Branch (B, l, _, _, _) -> l));;
+
+let rec balance_right
+  a k x xa3 = match a, k, x, xa3 with
+    a, k, x, Branch (R, b, s, y, c) ->
+      Branch (R, a, k, x, Branch (B, b, s, y, c))
+    | Branch (B, a, k, x, b), s, y, Empty ->
+        balance (Branch (R, a, k, x, b)) s y Empty
+    | Branch (B, a, k, x, b), s, y, Branch (B, va, vb, vc, vd) ->
+        balance (Branch (R, a, k, x, b)) s y (Branch (B, va, vb, vc, vd))
+    | Branch (R, a, k, x, Branch (B, b, s, y, c)), t, z, Empty ->
+        Branch (R, balance (paint R a) k x b, s, y, Branch (B, c, t, z, Empty))
+    | Branch (R, a, k, x, Branch (B, b, s, y, c)), t, z,
+        Branch (B, va, vb, vc, vd)
+        -> Branch
+             (R, balance (paint R a) k x b, s, y,
+               Branch (B, c, t, z, Branch (B, va, vb, vc, vd)))
+    | Empty, k, x, Empty -> Empty
+    | Branch (R, va, vb, vc, Empty), k, x, Empty -> Empty
+    | Branch (R, va, vb, vc, Branch (R, ve, vf, vg, vh)), k, x, Empty -> Empty
+    | Empty, k, x, Branch (B, va, vb, vc, vd) -> Empty
+    | Branch (R, ve, vf, vg, Empty), k, x, Branch (B, va, vb, vc, vd) -> Empty
+    | Branch (R, ve, vf, vg, Branch (R, vi, vj, vk, vl)), k, x,
+        Branch (B, va, vb, vc, vd)
+        -> Empty;;
+
+let rec compare_height
+  sx s t tx =
+    (match (skip_red sx, (skip_red s, (skip_red t, skip_red tx)))
+      with (Empty, (Empty, (_, Empty))) -> EQ
+      | (Empty, (Empty, (_, Branch (_, _, _, _, _)))) -> LT
+      | (Empty, (Branch (_, _, _, _, _), (Empty, _))) -> EQ
+      | (Empty, (Branch (_, _, _, _, _), (Branch (_, _, _, _, _), Empty))) -> EQ
+      | (Empty,
+          (Branch (_, sa, _, _, _),
+            (Branch (_, ta, _, _, _), Branch (_, txa, _, _, _))))
+        -> compare_height Empty sa ta (skip_black txa)
+      | (Branch (_, _, _, _, _), (Empty, (Empty, Empty))) -> GT
+      | (Branch (_, _, _, _, _), (Empty, (Empty, Branch (_, _, _, _, _)))) -> LT
+      | (Branch (_, _, _, _, _), (Empty, (Branch (_, _, _, _, _), Empty))) -> EQ
+      | (Branch (_, _, _, _, _),
+          (Empty, (Branch (_, _, _, _, _), Branch (_, _, _, _, _))))
+        -> LT
+      | (Branch (_, _, _, _, _), (Branch (_, _, _, _, _), (Empty, _))) -> GT
+      | (Branch (_, sxa, _, _, _),
+          (Branch (_, sa, _, _, _), (Branch (_, ta, _, _, _), Empty)))
+        -> compare_height (skip_black sxa) sa ta Empty
+      | (Branch (_, sxa, _, _, _),
+          (Branch (_, sa, _, _, _),
+            (Branch (_, ta, _, _, _), Branch (_, txa, _, _, _))))
+        -> compare_height (skip_black sxa) sa ta (skip_black txa));;
+
+let rec rbt_del _A
+  x xa1 = match x, xa1 with x, Empty -> Empty
+    | x, Branch (c, a, y, s, b) ->
+        (if Orderings.less _A x y then rbt_del_from_left _A x a y s b
+          else (if Orderings.less _A y x then rbt_del_from_right _A x a y s b
+                 else combine a b))
+and rbt_del_from_left _A
+  x xa1 y s b = match x, xa1, y, s, b with
+    x, Branch (B, lt, z, v, rt), y, s, b ->
+      balance_left (rbt_del _A x (Branch (B, lt, z, v, rt))) y s b
+    | x, Empty, y, s, b -> Branch (R, rbt_del _A x Empty, y, s, b)
+    | x, Branch (R, va, vb, vc, vd), y, s, b ->
+        Branch (R, rbt_del _A x (Branch (R, va, vb, vc, vd)), y, s, b)
+and rbt_del_from_right _A
+  x a y s xa4 = match x, a, y, s, xa4 with
+    x, a, y, s, Branch (B, lt, z, v, rt) ->
+      balance_right a y s (rbt_del _A x (Branch (B, lt, z, v, rt)))
+    | x, a, y, s, Empty -> Branch (R, a, y, s, rbt_del _A x Empty)
+    | x, a, y, s, Branch (R, va, vb, vc, vd) ->
+        Branch (R, a, y, s, rbt_del _A x (Branch (R, va, vb, vc, vd)));;
+
+let rec rbt_ins _A
+  f k v x3 = match f, k, v, x3 with
+    f, k, v, Empty -> Branch (R, Empty, k, v, Empty)
+    | f, k, v, Branch (B, l, x, y, r) ->
+        (if Orderings.less _A k x then balance (rbt_ins _A f k v l) x y r
+          else (if Orderings.less _A x k then balance l x y (rbt_ins _A f k v r)
+                 else Branch (B, l, x, f k y v, r)))
+    | f, k, v, Branch (R, l, x, y, r) ->
+        (if Orderings.less _A k x then Branch (R, rbt_ins _A f k v l, x, y, r)
+          else (if Orderings.less _A x k
+                 then Branch (R, l, x, y, rbt_ins _A f k v r)
+                 else Branch (R, l, x, f k y v, r)));;
+
+let rec rbt_insert_with_key _A f k v t = paint B (rbt_ins _A f k v t);;
+
+let rec sunion_with _A
+  f asa bs = match f, asa, bs with
+    f, (ka, va) :: asa, (k, v) :: bs ->
+      (if Orderings.less _A k ka
+        then (k, v) :: sunion_with _A f ((ka, va) :: asa) bs
+        else (if Orderings.less _A ka k
+               then (ka, va) :: sunion_with _A f asa ((k, v) :: bs)
+               else (ka, f ka va v) :: sunion_with _A f asa bs))
+    | f, [], bs -> bs
+    | f, asa, [] -> asa;;
+
+let rec rbt_union_with_key _A
+  f t1 t2 =
+    (match compare_height t1 t1 t2 t2
+      with LT -> fold (rbt_insert_with_key _A (fun k v w -> f k w v)) t1 t2
+      | GT -> fold (rbt_insert_with_key _A f) t2 t1
+      | EQ -> rbtreeify (sunion_with _A f (entries t1) (entries t2)));;
+
+let rec rbt_union _A = rbt_union_with_key _A (fun _ _ rv -> rv);;
+
+let rec rbt_delete _A k t = paint B (rbt_del _A k t);;
+
+let rec rbt_insert _A = rbt_insert_with_key _A (fun _ _ nv -> nv);;
+
+let rec rbt_lookup _A
+  x0 k = match x0, k with Empty, k -> None
+    | Branch (uu, l, x, y, r), k ->
+        (if Orderings.less _A k x then rbt_lookup _A l k
+          else (if Orderings.less _A x k then rbt_lookup _A r k else Some y));;
+
+end;; (*struct RBT_Impl*)
 
 module Option : sig
   val is_none : 'a option -> bool
@@ -225,6 +674,8 @@ module A_start_here : sig
   val from_to : Arith.nat -> Arith.nat -> Arith.nat list
   val is_Nil : 'a list -> bool
   val is_None : 'a option -> bool
+  val rbt_max : ('a, 'b) RBT_Impl.rbt -> ('a * 'b) option
+  val rbt_min : ('a, 'b) RBT_Impl.rbt -> ('a * 'b) option
   val rev_apply : 'a -> ('a -> 'b) -> 'b
   val failwitha : string -> 'a
   val dest_Some : 'a option -> 'a
@@ -243,6 +694,20 @@ let rec from_to x y = Lista.upt x (Arith.suc y);;
 let rec is_Nil x = (match x with [] -> true | _ :: _ -> false);;
 
 let rec is_None x = Option.is_none x;;
+
+let rec rbt_maxa
+  x sofar =
+    (match x with RBT_Impl.Empty -> sofar
+      | RBT_Impl.Branch (_, _, k, v, r) -> rbt_maxa r (Some (k, v)));;
+
+let rec rbt_max x = rbt_maxa x None;;
+
+let rec rbt_mina
+  x sofar =
+    (match x with RBT_Impl.Empty -> sofar
+      | RBT_Impl.Branch (_, l, k, v, _) -> rbt_mina l (Some (k, v)));;
+
+let rec rbt_min x = rbt_mina x None;;
 
 let rec rev_apply x f = f x;;
 
@@ -470,6 +935,9 @@ module Disk_node : sig
         ('b * ('a * 'b) -> 'c) * ('c -> 'b)
   val dest_Disk_leaf : ('a, 'b) dnode -> 'b
   val dest_Disk_node : ('a, 'b) dnode -> 'a
+  val rbt_as_leaf_ops :
+    'a Orderings.linorder ->
+      Arith.nat -> ('a, 'b, ('a, 'b) RBT_Impl.rbt) leaf_ops
   val leaf_merge : ('a, 'b, 'c) leaf_ops -> 'c * 'c -> 'c
   val node_merge : ('a, 'b, 'c) node_ops -> 'c * ('a * 'c) -> 'c
   val leaf_insert : ('a, 'b, 'c) leaf_ops -> 'a -> 'b -> 'c -> 'c * 'b option
@@ -504,6 +972,20 @@ type ('a, 'b, 'c) node_ops =
       ('c * ('a * 'c) -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c * ('a * 'c)) *
       ('c -> Arith.nat) * ('b * ('a * 'b) -> 'c) * ('c -> 'b);;
 
+let rec split_list
+  n kvs =
+    A_start_here.rev_apply
+      (A_start_here.iter_step
+        (fun (m, (kvs1, kvs2)) ->
+          (match Arith.less_nat n m with true -> None
+            | false ->
+              (match kvs2 with [] -> None
+                | (k, v) :: kvs2a ->
+                  Some (Arith.plus_nat m Arith.one_nat,
+                         ((k, v) :: kvs1, kvs2a)))))
+        (Arith.zero_nat, ([], kvs)))
+      (fun (_, a) -> (let (xs, aa) = a in (Lista.rev xs, aa)));;
+
 let rec dest_Disk_leaf
   f = (match f with Disk_node _ -> A_start_here.failwitha "dest_Disk_leaf"
         | Disk_leaf x -> x);;
@@ -511,6 +993,72 @@ let rec dest_Disk_leaf
 let rec dest_Disk_node
   f = (match f with Disk_node x -> x
         | Disk_leaf _ -> A_start_here.failwitha "dest_Disk_node");;
+
+let rec rbt_as_leaf_ops _A
+  max_leaf_size =
+    Make_leaf_ops
+      ((fun k l ->
+         RBT_Impl.rbt_lookup
+           _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
+           l k),
+        (fun k v l ->
+          (let a =
+             RBT_Impl.rbt_lookup
+               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
+               l k
+             in
+            (RBT_Impl.rbt_insert
+               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
+               k v l,
+              a))),
+        RBT_Impl.rbt_delete
+          _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder,
+        (fun l -> Lista.size_list (RBT_Impl.entries l)), RBT_Impl.entries,
+        (fun (l1, l2) ->
+          (let (k, v) =
+             A_start_here.rev_apply (A_start_here.rbt_min l2)
+               A_start_here.dest_Some
+             in
+           let l2a =
+             RBT_Impl.rbt_delete
+               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
+               k l2
+             in
+           let (ka, _) =
+             A_start_here.rev_apply (A_start_here.rbt_min l2a)
+               A_start_here.dest_Some
+             in
+           let l1a =
+             RBT_Impl.rbt_insert
+               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
+               k v l1
+             in
+            (l1a, (ka, l2a)))),
+        (fun (l1, l2) ->
+          (let (k, v) =
+             A_start_here.rev_apply (A_start_here.rbt_max l1)
+               A_start_here.dest_Some
+             in
+           let l1a =
+             RBT_Impl.rbt_delete
+               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
+               k l1
+             in
+           let l2a =
+             RBT_Impl.rbt_insert
+               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
+               k v l2
+             in
+            (l1a, (k, l2a)))),
+        (fun (a, b) ->
+          RBT_Impl.rbt_union
+            _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
+            a b),
+        (fun l ->
+          (let kvs = RBT_Impl.entries l in
+           let (l1, l2) = split_list max_leaf_size kvs in
+           let (k, _) = Lista.hd l2 in
+            (RBT_Impl.rbtreeify l1, (k, RBT_Impl.rbtreeify l2)))));;
 
 let rec leaf_merge (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x8;;
 

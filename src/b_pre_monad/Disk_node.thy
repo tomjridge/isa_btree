@@ -1,5 +1,5 @@
 theory Disk_node  
-imports A_start_here
+  imports  A_start_here
 begin
 
 (* blocks on disk correspond to nodes, which are like tree nodes, but
@@ -39,12 +39,44 @@ datatype_record ('k,'v,'leaf) leaf_ops =
 
 (* we want a simple, obviously-correct implementation of these operations *)
 
-definition leaf_as_list_ops :: "('k,'v,('k*'v) list) leaf_ops" where
-"leaf_as_list_ops = (
-  \<lparr> 
-  leaf_lookup=(% k l. List.ass
-)
 
+definition split_list where
+"split_list (n::nat) kvs = (
+  iter_step (% (m,kvs1,kvs2). 
+    case m > n of True \<Rightarrow> None | False \<Rightarrow> (
+    case kvs2 of 
+    [] \<Rightarrow> None
+    | (k,v)#kvs2 \<Rightarrow> Some(m+1,(k,v)#kvs1,kvs2)))
+  (0,[],kvs)
+  |> (% (_,xs,ys). (List.rev xs, ys))
+)"
+
+definition rbt_as_leaf_ops :: "nat \<Rightarrow> ('k::linorder,'v,('k,'v)RBT_Impl.rbt) leaf_ops" where
+"rbt_as_leaf_ops max_leaf_size = \<lparr> 
+  leaf_lookup=(% k l. rbt_lookup l k),
+leaf_insert=(% k v l. let v' = rbt_lookup l k in (rbt_insert k v l,v')),
+leaf_remove=(% k l. rbt_delete k l),
+leaf_length=(% l. List.length (RBT_Impl.entries l)),
+dbg_leaf_kvs=(% l. RBT_Impl.entries l),
+leaf_steal_right=(% (l1,l2). 
+  let (k,v) = rbt_min l2 |> dest_Some in 
+  let l2' = rbt_delete k l2 in
+  let (k',_) = rbt_min l2' |> dest_Some in
+  let l1' = rbt_insert k v l1 in
+  (l1',k',l2')),
+leaf_steal_left=( % (l1,l2).
+  let (k,v) = rbt_max l1 |> dest_Some in
+  let l1' = rbt_delete k l1 in
+  let l2' = rbt_insert k v l2 in
+  (l1',k,l2')),
+leaf_merge=(% (l1,l2). rbt_union l1 l2),
+split_large_leaf=(% l. 
+  let kvs = RBT_Impl.entries l in 
+  let (l1,l2) = split_list max_leaf_size kvs in
+  let (k,_) = List.hd l2 in
+  (rbtreeify l1,k,rbtreeify l2))
+\<rparr>"
+(* FIXME split could be much more efficient *)
 
 datatype_record ('k,'r,'node) node_ops =
   split_large_node :: "'node \<Rightarrow> 'node*'k*'node"
@@ -54,7 +86,14 @@ datatype_record ('k,'r,'node) node_ops =
   node_keys_length :: "'node \<Rightarrow> nat"
   node_make_small_root :: "'r*'k*'r \<Rightarrow> 'node"
   node_get_single_r :: "'node \<Rightarrow> 'r"  (* when we decrease the size of the tree in delete *)
-  
+
+(*
+definition rbt_as_node_ops :: "nat \<Rightarrow> ('k::linorder,'v,('k,'v)RBT_Impl.rbt) node_ops" where
+"rbt_as_node_ops split_node_size = (undefined \<lparr>
+  split_large_node:=(% n. let rks = undefined)
+\<rparr>)"
+*)
+
 
 type_synonym ('k,'r) simple_node_ops = "('k,'r,'k s * 'r s) node_ops"
 

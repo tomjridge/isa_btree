@@ -1,6 +1,27 @@
 theory A_start_here
-imports Main "~~/src/HOL/Library/Datatype_Records"
+imports Main "HOL-Library.RBT_Impl"  "HOL-Library.Datatype_Records" (* ~~/src/HOL/Library/Datatype_Records *)
 begin
+
+
+fun rbt_min' :: "('a,'b) RBT_Impl.rbt \<Rightarrow> ('a*'b) option \<Rightarrow> ('a*'b) option" where
+"rbt_min' x sofar = (case x of
+RBT_Impl.Empty \<Rightarrow> sofar
+| Branch c l k v r \<Rightarrow> rbt_min' l (Some(k,v)))"
+
+definition rbt_min :: "('a,'b) RBT_Impl.rbt \<Rightarrow> ('a*'b) option" where
+"rbt_min x = rbt_min' x None"
+
+
+fun rbt_max' :: "('a,'b) RBT_Impl.rbt \<Rightarrow> ('a*'b) option \<Rightarrow> ('a*'b) option" where
+"rbt_max' x sofar = (case x of
+RBT_Impl.Empty \<Rightarrow> sofar
+| Branch c l k v r \<Rightarrow> rbt_max' r (Some(k,v)))"
+
+definition rbt_max :: "('a,'b) RBT_Impl.rbt \<Rightarrow> ('a*'b) option" where
+"rbt_max x = rbt_max' x None"
+
+
+
 
 lemma FIXME: "P" sorry
 
