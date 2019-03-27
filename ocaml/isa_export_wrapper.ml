@@ -10,6 +10,39 @@ type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
  delete: r:'r -> k:'k -> ('r,'t) m;
 }
 
+
+(* node ops --------------------------------------------------------- *)
+
+(* NOTE *)
+type ('k,'r,'node) node_ops = ('k,'r,'node) Disk_node.node_ops
+
+open Tjr_fs_shared
+
+type ('k,'r,'t) keyspace_ops = ('k,'r,'t) Tjr_lin_partition.keyspace_ops
+
+
+let make_node_ops ~k_cmp =
+  let kspace = Tjr_lin_partition.make_keyspace_ops ~k_cmp in
+  let split_large_node : 'node -> 'node*'k*'node = fun n -> 
+    kspace.split_keyspace n
+  in
+  let node_merge : 'node*'k*'node -> 'node = fun (n1,k,n2) ->
+    kspace.merge_keyspaces (n1,k,n2)
+  in
+  let node_steal_right : 'node*'k*'node -> 'node*'k*'node = fun (n1,k1,n2) ->
+    let (r,k2,n2) = kspace.ks_dest_cons n2 in
+    let n1 = kspace.add (Some k1) r n1 in
+    (n1,k2,n2) 
+  in
+  let node_steal_left : 'node*'k*'node -> 'node*'k*'node = fun (n1,k1,n2) ->
+    let (n1,k2,r) = kspace.ks_dest_snoc n1 in
+    let n2 = 
+      
+
+
+;;
+
+
 FIXME got here; need to implement node_ops and frame_ops 
 
 node_ops is just tjr_fs_shared/tjr_lin_partition

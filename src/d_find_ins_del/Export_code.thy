@@ -54,7 +54,6 @@ Find_state.make_initial_find_state
 dest_F_finished
 (* wellformed_find_state *)
 (* Find_state.wf_trans *)
-find2
 
 
 

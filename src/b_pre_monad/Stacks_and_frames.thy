@@ -4,7 +4,10 @@ theory Stacks_and_frames imports A_start_here Key_value begin
 
 datatype ('k,'r) rkr_or_r = Rkr "'r*'k*'r" | R 'r
 
+(* The expected implementation is { lh:'node, midpoint:'k, rh:'node, parent:'r }, where 
+'node is the impl of nodes *)
 datatype_record ('k,'r,'frame,'left_half,'right_half,'node) frame_ops = 
+  split_node_on_key :: "'r \<Rightarrow> 'node \<Rightarrow> 'k \<Rightarrow> 'frame"
   left_half :: "'frame \<Rightarrow> 'left_half"
   right_half :: "'frame \<Rightarrow> 'right_half"
   midpoint :: "'frame \<Rightarrow> 'r"
@@ -12,8 +15,7 @@ datatype_record ('k,'r,'frame,'left_half,'right_half,'node) frame_ops =
   lh_dest_snoc :: "'left_half \<Rightarrow> ('left_half*'r*'k) option"
   unsplit :: "'left_half * ('k,'r)rkr_or_r * 'right_half \<Rightarrow> 'node"
   get_midpoint_bounds :: "'frame \<Rightarrow> ('k option * 'k option)"
-  split_node_on_key :: "'node \<Rightarrow> 'k \<Rightarrow> 'frame"
-  original_node_r :: "'frame \<Rightarrow> 'r"  (* FIXME parent_node? o_n_pointer? *)
+  original_node_r :: "'frame \<Rightarrow> 'r"  (* for rewriting in place; FIXME parent_node? o_n_pointer? *)
   split_node_on_first_key :: "'node \<Rightarrow> 'frame"  (* for leaf stream *)
   step_frame_for_ls :: "'frame \<Rightarrow> 'frame option"
 
