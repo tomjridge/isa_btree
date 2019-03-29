@@ -62,7 +62,7 @@ constants \<Rightarrow>
   [] \<Rightarrow> failwith (STR ''insert, step_up,1'') 
   | frm#stk' \<Rightarrow> (
     let (lh,rh) = ((frame_ops|>left_half) frm, (frame_ops|>right_half) frm) in
-    let original_r = (frame_ops|>original_node_r) frm in
+    let original_r = (frame_ops|>backing_node_blk_ref) frm in
     case fo of
     I1 r \<Rightarrow> (
       let n = (frame_ops|>unsplit) (lh,R(r),rh) in
@@ -80,7 +80,8 @@ constants \<Rightarrow>
         None \<Rightarrow> return (Inr ())
         | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
       | False \<Rightarrow> (
-        let (n1,k,n2) = (node_ops|>split_large_node) n in  
+        let index = cs|>max_node_keys in
+        let (n1,k,n2) = (node_ops|>split_node_at_k_index) index n in  
         Disk_node(n1) |> write |> bind (% r1. 
         Disk_node(n2) |> write |> bind (% r2.
         return (Inl (I2(r1,k,r2),stk'))))) )))"

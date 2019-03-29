@@ -1,3 +1,17 @@
+(** This file is exported from Isabelle, and lightly patched (eg to
+   include this comment!). The OCaml interfaces wrap this basic
+   functionality. *)
+
+let check_flag = ref true
+
+module type MONAD = sig
+   type ('a, 'b) mm
+   val bind : ('a -> ('b, 'c) mm) -> ('a, 'c) mm -> ('b, 'c) mm
+   val fmap : ('a -> 'b) -> ('a, 'c) mm -> ('b, 'c) mm
+   val return : 'a -> ('a, 'b) mm
+end
+
+
 module Fun : sig
   val id : 'a -> 'a
   val comp : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
@@ -761,10 +775,10 @@ module Stacks_and_frames : sig
   type ('a, 'b) rkr_or_r = Rkr of ('b * ('a * 'b)) | R of 'b
   type ('a, 'b, 'c, 'd, 'e, 'f) frame_ops =
     Make_frame_ops of
-      ('c -> 'd) * ('c -> 'e) * ('c -> 'b) * ('e -> ('a * ('b * 'e)) option) *
-        ('d -> ('d * ('b * 'a)) option) *
+      ('b -> 'f -> 'a -> 'c) * ('c -> 'd) * ('c -> 'e) * ('c -> 'b) *
+        ('e -> ('a * ('b * 'e)) option) * ('d -> ('d * ('b * 'a)) option) *
         ('d * (('a, 'b) rkr_or_r * 'e) -> 'f) * ('c -> 'a option * 'a option) *
-        ('f -> 'a -> 'c) * ('c -> 'b) * ('f -> 'c) * ('c -> 'c option)
+        ('c -> 'b) * ('f -> 'c) * ('c -> 'c option)
   val get_bounds :
     ('a, 'b, 'c, 'd, 'e, 'f) frame_ops -> 'c list -> 'a option * 'a option
   val unsplit :
@@ -776,9 +790,10 @@ module Stacks_and_frames : sig
     ('a, 'b, 'c, 'd, 'e, 'f) frame_ops -> 'd -> ('d * ('b * 'a)) option
   val rh_dest_cons :
     ('a, 'b, 'c, 'd, 'e, 'f) frame_ops -> 'e -> ('a * ('b * 'e)) option
-  val original_node_r : ('a, 'b, 'c, 'd, 'e, 'f) frame_ops -> 'c -> 'b
-  val split_node_on_key : ('a, 'b, 'c, 'd, 'e, 'f) frame_ops -> 'f -> 'a -> 'c
+  val split_node_on_key :
+    ('a, 'b, 'c, 'd, 'e, 'f) frame_ops -> 'b -> 'f -> 'a -> 'c
   val step_frame_for_ls : ('a, 'b, 'c, 'd, 'e, 'f) frame_ops -> 'c -> 'c option
+  val backing_node_blk_ref : ('a, 'b, 'c, 'd, 'e, 'f) frame_ops -> 'c -> 'b
   val split_node_on_first_key : ('a, 'b, 'c, 'd, 'e, 'f) frame_ops -> 'f -> 'c
 end = struct
 
@@ -786,13 +801,13 @@ type ('a, 'b) rkr_or_r = Rkr of ('b * ('a * 'b)) | R of 'b;;
 
 type ('a, 'b, 'c, 'd, 'e, 'f) frame_ops =
   Make_frame_ops of
-    ('c -> 'd) * ('c -> 'e) * ('c -> 'b) * ('e -> ('a * ('b * 'e)) option) *
-      ('d -> ('d * ('b * 'a)) option) * ('d * (('a, 'b) rkr_or_r * 'e) -> 'f) *
-      ('c -> 'a option * 'a option) * ('f -> 'a -> 'c) * ('c -> 'b) *
-      ('f -> 'c) * ('c -> 'c option);;
+    ('b -> 'f -> 'a -> 'c) * ('c -> 'd) * ('c -> 'e) * ('c -> 'b) *
+      ('e -> ('a * ('b * 'e)) option) * ('d -> ('d * ('b * 'a)) option) *
+      ('d * (('a, 'b) rkr_or_r * 'e) -> 'f) * ('c -> 'a option * 'a option) *
+      ('c -> 'b) * ('f -> 'c) * ('c -> 'c option);;
 
 let rec get_midpoint_bounds
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x7;;
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x8;;
 
 let rec get_bounds
   frame_ops stk =
@@ -819,31 +834,31 @@ let rec get_bounds
       (fun (l, (u, _)) -> (l, u));;
 
 let rec unsplit
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x6;;
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x7;;
 
 let rec midpoint
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x3;;
-
-let rec left_half
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x1;;
-
-let rec right_half
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x2;;
-
-let rec lh_dest_snoc
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x5;;
-
-let rec rh_dest_cons
   (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x4;;
 
-let rec original_node_r
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x9;;
+let rec left_half
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x2;;
+
+let rec right_half
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x3;;
+
+let rec lh_dest_snoc
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x6;;
+
+let rec rh_dest_cons
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x5;;
 
 let rec split_node_on_key
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x8;;
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x1;;
 
 let rec step_frame_for_ls
   (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x11;;
+
+let rec backing_node_blk_ref
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x9;;
 
 let rec split_node_on_first_key
   (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x10;;
@@ -929,7 +944,7 @@ module Disk_node : sig
         ('c * 'c -> 'c) * ('c -> 'c * ('a * 'c))
   type ('a, 'b, 'c) node_ops =
     Make_node_ops of
-      ('c -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c) *
+      (Arith.nat -> 'c -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c) *
         ('c * ('a * 'c) -> 'c * ('a * 'c)) *
         ('c * ('a * 'c) -> 'c * ('a * 'c)) * ('c -> Arith.nat) *
         ('b * ('a * 'b) -> 'c) * ('c -> 'b)
@@ -952,9 +967,10 @@ module Disk_node : sig
   val node_keys_length : ('a, 'b, 'c) node_ops -> 'c -> Arith.nat
   val node_steal_right :
     ('a, 'b, 'c) node_ops -> 'c * ('a * 'c) -> 'c * ('a * 'c)
-  val split_large_node : ('a, 'b, 'c) node_ops -> 'c -> 'c * ('a * 'c)
   val node_get_single_r : ('a, 'b, 'c) node_ops -> 'c -> 'b
   val node_make_small_root : ('a, 'b, 'c) node_ops -> 'b * ('a * 'b) -> 'c
+  val split_node_at_k_index :
+    ('a, 'b, 'c) node_ops -> Arith.nat -> 'c -> 'c * ('a * 'c)
 end = struct
 
 type ('a, 'b) dnode = Disk_node of 'a | Disk_leaf of 'b;;
@@ -968,7 +984,7 @@ type ('a, 'b, 'c) leaf_ops =
 
 type ('a, 'b, 'c) node_ops =
   Make_node_ops of
-    ('c -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c) *
+    (Arith.nat -> 'c -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c) *
       ('c * ('a * 'c) -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c * ('a * 'c)) *
       ('c -> Arith.nat) * ('b * ('a * 'b) -> 'c) * ('c -> 'b);;
 
@@ -1087,11 +1103,12 @@ let rec node_keys_length (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x5;;
 
 let rec node_steal_right (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x3;;
 
-let rec split_large_node (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x1;;
-
 let rec node_get_single_r (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x7;;
 
 let rec node_make_small_root (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x6;;
+
+let rec split_node_at_k_index
+  (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x1;;
 
 end;; (*struct Disk_node*)
 
@@ -1520,6 +1537,8 @@ let rec return x = failwith "undefined";;
 
 end;; (*struct Monad*)
 
+module Make(Monad:MONAD) = struct
+
 module Post_monad : sig
   type ('a, 'b, 'c) store_ops =
     Make_store_ops of
@@ -1572,10 +1591,6 @@ module Find : sig
     ('a, 'b, 'c, 'd, 'e, 'f) Stacks_and_frames.frame_ops ->
       ('b, ('f, 'g) Disk_node.dnode, 'h) Post_monad.store_ops ->
         'b -> 'a -> (('b * ('g * 'c list)), 'h) Monad.mm
-  val find2 :
-    ('a, 'b, 'c, 'd, 'e, 'f) Stacks_and_frames.frame_ops ->
-      ('b, ('f, 'g) Disk_node.dnode, 'h) Post_monad.store_ops ->
-        'b -> 'a -> (('b * ('g * 'c list)), 'h) Monad.mm
 end = struct
 
 let rec find_step
@@ -1591,7 +1606,7 @@ let rec find_step
                     with Disk_node.Disk_node n ->
                       (let frm =
                          A_start_here.rev_apply frame_ops
-                           Stacks_and_frames.split_node_on_key n k
+                           Stacks_and_frames.split_node_on_key r n k
                          in
                        let ra =
                          A_start_here.rev_apply frame_ops
@@ -1621,67 +1636,6 @@ let rec find
             (match a with Find_state.F_down _ -> A_start_here.failwitha "find 1"
               | Find_state.F_finished (_, (_, (ra, (kvs, stk)))) ->
                 Monad.return (ra, (kvs, stk))))));;
-
-let rec find2
-  x y r k =
-    (let s = Find_state.make_initial_find_state k r in
-      A_start_here.rev_apply
-        (A_start_here.rev_apply
-          (match s
-            with Find_state.F_down prod ->
-              A_start_here.rev_apply
-                (let (r0, (ka, (ra, stk))) = prod in
-                  A_start_here.rev_apply
-                    (A_start_here.rev_apply y Post_monad.read ra)
-                    (Monad.fmap
-                      (fun a ->
-                        (match a
-                          with Disk_node.Disk_node n ->
-                            (let frm =
-                               A_start_here.rev_apply x
-                                 Stacks_and_frames.split_node_on_key n ka
-                               in
-                              Find_state.F_down
-                                (r0, (ka, (A_start_here.rev_apply x
-     Stacks_and_frames.midpoint frm,
-    frm :: stk))))
-                          | Disk_node.Disk_leaf leaf ->
-                            Find_state.F_finished
-                              (r0, (ka, (ra, (leaf, stk))))))))
-                (Monad.fmap (fun a -> Some a))
-            | Find_state.F_finished _ -> Monad.return None)
-          (Monad.bind
-            (fun a ->
-              (match a with None -> Monad.return s
-                | Some aa ->
-                  Post_monad.iter_m
-                    (fun ab ->
-                      (match ab
-                        with Find_state.F_down prod ->
-                          A_start_here.rev_apply
-                            (let (r0, (ka, (ra, stk))) = prod in
-                              A_start_here.rev_apply
-                                (A_start_here.rev_apply y Post_monad.read ra)
-                                (Monad.fmap
-                                  (fun ac ->
-                                    (match ac
-                                      with Disk_node.Disk_node n ->
-(let frm = A_start_here.rev_apply x Stacks_and_frames.split_node_on_key n ka in
-  Find_state.F_down
-    (r0, (ka, (A_start_here.rev_apply x Stacks_and_frames.midpoint frm,
-                frm :: stk))))
-                                      | Disk_node.Disk_leaf leaf ->
-Find_state.F_finished (r0, (ka, (ra, (leaf, stk))))))))
-                            (Monad.fmap (fun ac -> Some ac))
-                        | Find_state.F_finished _ -> Monad.return None))
-                    aa))))
-        (Monad.bind
-          (fun a ->
-            (match a with Find_state.F_down _ -> A_start_here.failwitha "find 1"
-              | Find_state.F_finished aa ->
-                (let (_, ab) = aa in
-                 let (_, ac) = ab in
-                  Monad.return ac)))));;
 
 end;; (*struct Find*)
 
@@ -2187,8 +2141,8 @@ let rec step_up
                  frm)
              in
            let original_r =
-             A_start_here.rev_apply frame_ops Stacks_and_frames.original_node_r
-               frm
+             A_start_here.rev_apply frame_ops
+               Stacks_and_frames.backing_node_blk_ref frm
              in
             (match fo
               with Insert_state.I1 r ->
@@ -2228,9 +2182,13 @@ let rec step_up
                                 Monad.return
                                   (Sum_Type.Inl (Insert_state.I1 r2a, stk)))))
                     | false ->
-                      (let (n1, (ka, n2)) =
+                      (let index =
+                         A_start_here.rev_apply cs
+                           Constants_and_size_types.max_node_keys
+                         in
+                       let (n1, (ka, n2)) =
                          A_start_here.rev_apply node_ops
-                           Disk_node.split_large_node na
+                           Disk_node.split_node_at_k_index index na
                          in
                         A_start_here.rev_apply
                           (A_start_here.rev_apply (Disk_node.Disk_node n1)
@@ -2573,3 +2531,5 @@ let rec make_initial_im_state
     (let i = Insert_state.make_initial_insert_state r k v in (i, kvs));;
 
 end;; (*struct Insert_many_state*)
+
+end (* Make *)

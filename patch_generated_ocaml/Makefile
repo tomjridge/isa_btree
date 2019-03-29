@@ -1,13 +1,13 @@
 SHELL:=/bin/bash
 
-ORIG:=isa_export.ml.orig
+ORIG:=orig/isa_export.ml
 
 PATCH:=isa_export.patch
 
 # manually patched - just edit isa_export.ml in place
-PATCHED:=isa_export.ml
+PATCHED:=patched/isa_export.ml
 
-GENERATED_PATCHED:=isa_export.ml
+GENERATED_PATCHED:=patched/isa_export.ml
 
 # * Generated code
 #

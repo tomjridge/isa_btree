@@ -78,8 +78,12 @@ split_large_leaf=(% l.
 \<rparr>"
 (* FIXME split could be much more efficient *)
 
+(* split_node_at_k_index: we take an index i, and make two nodes with a separating key; the key is
+at position i+1 in the list of lower bounds (which starts with None at posn 0); alternatively we could return 
+a key option *)
+
 datatype_record ('k,'r,'node) node_ops =
-  split_large_node :: "'node \<Rightarrow> 'node*'k*'node"
+  split_node_at_k_index :: "nat \<Rightarrow> 'node \<Rightarrow> 'node*'k*'node" (* for large node *)
   node_merge :: "'node * 'k * 'node \<Rightarrow> 'node"
   node_steal_right :: "'node * 'k * 'node \<Rightarrow> 'node * 'k * 'node"
   node_steal_left :: "'node * 'k * 'node \<Rightarrow> 'node * 'k * 'node"
@@ -97,10 +101,12 @@ definition rbt_as_node_ops :: "nat \<Rightarrow> ('k::linorder,'v,('k,'v)RBT_Imp
 
 type_synonym ('k,'r) simple_node_ops = "('k,'r,'k s * 'r s) node_ops"
 
-definition mk_simple_node_ops :: "(('k s * 'r s) \<Rightarrow> ('k s * 'r s) * 'k * ('k s * 'r s)) \<Rightarrow> 
-('k,'r) simple_node_ops" where
-"mk_simple_node_ops sln = (
-  \<lparr> split_large_node=sln,
+definition mk_simple_node_ops :: "('k,'r) simple_node_ops" where
+"mk_simple_node_ops = (
+  \<lparr> split_node_at_k_index=(% n (ks,rs). 
+      let (ks1,k,ks2) = (List.take n ks, ks!n, List.drop (n+1) ks) in
+      let (rs1,rs2) = (List.take (n+1) rs,List.drop (n+1) rs) in
+      ( (ks1,rs1),k,(ks2,rs2))),
     node_merge=(% ((ks1,rs1), k, (ks2,rs2)). (ks1@[k]@ks2,rs1@rs2)),
     node_steal_right=(% x. case x of 
       ((ks1,rs1),k1,(k2#ks2,r2#rs2)) \<Rightarrow> ( (ks1@[k1],rs1@[r2]),k2,(ks2,rs2))),
