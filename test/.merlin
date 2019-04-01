@@ -56,18 +56,18 @@ B /home/tr61/.opam/default/lib/spawn
 B /home/tr61/.opam/default/lib/splittable_random
 B /home/tr61/.opam/default/lib/stdio
 B /home/tr61/.opam/default/lib/time_now
+B /home/tr61/.opam/default/lib/tjr_fs_shared
+B /home/tr61/.opam/default/lib/tjr_lib
+B /home/tr61/.opam/default/lib/tjr_lib_core
+B /home/tr61/.opam/default/lib/tjr_monad
 B /home/tr61/.opam/default/lib/tjr_polymap
+B /home/tr61/.opam/default/lib/tjr_profile
 B /home/tr61/.opam/default/lib/typerep
 B /home/tr61/.opam/default/lib/uchar
 B /home/tr61/.opam/default/lib/variantslib
 B /home/tr61/.opam/default/lib/yojson
-B ../../_build/default/a_tjr_lib/src/core/.tjr_lib_core.objs/byte
-B ../../_build/default/a_tjr_lib/src/non_core/.tjr_lib.objs/byte
-B ../../_build/default/a_tjr_monad/src/.tjr_monad.objs/byte
-B ../../_build/default/a_tjr_profile/src/.tjr_profile.objs/byte
-B ../../_build/default/b_isa_btree/ocaml/.isa_btree.objs/byte
-B ../../_build/default/b_isa_btree/test/.test_main.eobjs/byte
-B ../../_build/default/b_tjr_fs_shared/src/.tjr_fs_shared.objs/byte
+B ../_build/default/ocaml/.isa_btree.objs/byte
+B ../_build/default/test/.test_main.eobjs/byte
 S /home/tr61/.opam/default/lib/astring
 S /home/tr61/.opam/default/lib/base
 S /home/tr61/.opam/default/lib/base/caml
@@ -125,17 +125,17 @@ S /home/tr61/.opam/default/lib/spawn
 S /home/tr61/.opam/default/lib/splittable_random
 S /home/tr61/.opam/default/lib/stdio
 S /home/tr61/.opam/default/lib/time_now
+S /home/tr61/.opam/default/lib/tjr_fs_shared
+S /home/tr61/.opam/default/lib/tjr_lib
+S /home/tr61/.opam/default/lib/tjr_lib_core
+S /home/tr61/.opam/default/lib/tjr_monad
 S /home/tr61/.opam/default/lib/tjr_polymap
+S /home/tr61/.opam/default/lib/tjr_profile
 S /home/tr61/.opam/default/lib/typerep
 S /home/tr61/.opam/default/lib/uchar
 S /home/tr61/.opam/default/lib/variantslib
 S /home/tr61/.opam/default/lib/yojson
-S ../../a_tjr_lib/src/core
-S ../../a_tjr_lib/src/non_core
-S ../../a_tjr_monad/src
-S ../../a_tjr_profile/src
 S ../ocaml
 S .
-S ../../b_tjr_fs_shared/src
-FLG -ppx '/home/tr61/l/github/an_imp/_build/default/.ppx/27c11945ba53286491f0cc385a99aeca/ppx.exe --as-ppx'
+FLG -ppx '/home/tr61/l/github/an_imp/b_isa_btree/_build/default/.ppx/27c11945ba53286491f0cc385a99aeca/ppx.exe --as-ppx'
 FLG -w @a-4-29-40-41-42-44-45-48-58-59-60-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -8-26-27-32-37-39

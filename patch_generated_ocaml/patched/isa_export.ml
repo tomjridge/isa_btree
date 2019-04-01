@@ -85,7 +85,7 @@ let rec max _A a b = (if less_eq _A a b then b else a);;
 end;; (*struct Orderings*)
 
 module Arith : sig
-  type nat
+  type nat = Nat of Big_int.big_int
   val equal_nata : nat -> nat -> bool
   val equal_nat : nat HOL.equal
   val less_eq_nat : nat -> nat -> bool
