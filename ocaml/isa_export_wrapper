@@ -1,0 +1,42 @@
+-*- org -*-
+
+kn <= k < kn+1
+
+> 
+>            Left half (incl kn)    Midpoint         Right half
+>     +-----------------------+
+>     |                       |                   +--------------+
+>     | (None k1 k2 ...), kn  |     +-----+       |              |
+>     |                       |     |     |       |  kn+1 ... k  |
+>     |   r0  r1 r2 ...   XXX |     | rn  |       |              |
+>     |                       |     +-----+       |  rn+1 ... rm |
+>     +-----------------------+                   +--------------+
+> 
+> 
+> 
+> 
+
+
+NOTE
+- left half can be empty?
+
+
+* unsplit
+                             
+unsplit (r1,k,r2) should give:
+
+... kn  k   kn+1 ...   
+... r1  r2  rn+1 ...
+
+
+which can be phrased as the merge of lh and rh', where rh' is:
+
+| None | k | rh
+| r1   | r2
+
+and the separating key is k1
+
+
+* rh_dest_cons should give (kn+1,rn+1,rest)
+
+

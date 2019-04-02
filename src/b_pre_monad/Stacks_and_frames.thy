@@ -50,14 +50,16 @@ So we should model lh as keyspace * k, and we need the ability to get the max bi
 
 
 *)
-datatype_record ('k,'r,'frame,'left_half,'right_half,'node) frame_ops =
+datatype_record ('k,'r,'frame,'node) frame_ops =
   split_node_on_key :: "'r \<Rightarrow> 'node \<Rightarrow> 'k \<Rightarrow> 'frame"
-  left_half :: "'frame \<Rightarrow> 'left_half"
-  right_half :: "'frame \<Rightarrow> 'right_half"
   midpoint :: "'frame \<Rightarrow> 'r"
-  rh_dest_cons :: "'right_half \<Rightarrow> ('k*'r*'right_half) option"
-  lh_dest_snoc :: "'left_half \<Rightarrow> ('left_half*'r*'k) option"
-  unsplit :: "'left_half * ('k,'r)rkr_or_r * 'right_half \<Rightarrow> 'node"
+  get_right_sibling_and_separator :: "'frame \<Rightarrow> ('k * 'r) option"
+  remove_right_sibling :: "'frame \<Rightarrow> 'frame"  (* for merge; assumes present *)
+  replace_right_sibling :: "'k \<Rightarrow> 'r \<Rightarrow> 'frame \<Rightarrow> 'frame"  (* NOTE extra k argument; the new lower bound *)
+  get_left_sibling_and_separator :: "'frame \<Rightarrow> ('r * 'k) option"
+  remove_left_sibling :: "'frame \<Rightarrow> 'frame"
+  replace_left_sibling :: "'r \<Rightarrow> 'frame \<Rightarrow> 'frame"
+  unsplit_with_new_focus :: "('k,'r)rkr_or_r \<Rightarrow> 'frame \<Rightarrow> 'node"  (* FIXME always an r? *)
   get_midpoint_bounds :: "'frame \<Rightarrow> ('k option * 'k option)"
   backing_node_blk_ref :: "'frame \<Rightarrow> 'r"  (* for rewriting in place *)
 
@@ -65,8 +67,16 @@ datatype_record ('k,'r,'frame,'left_half,'right_half,'node) frame_ops =
   split_node_on_first_key :: "'node \<Rightarrow> 'frame"  (* for leaf stream *)
   step_frame_for_ls :: "'frame \<Rightarrow> 'frame option"
 
+(*
+  left_halfx :: "'frame \<Rightarrow> 'left_half"
+  right_half :: "'frame \<Rightarrow> 'right_half"
+  lh_dest_snoc :: "'left_half \<Rightarrow> ('left_half*'r*'k) option"
+
+*)
+
+
 definition get_bounds :: "
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow>
+('k,'r,'frame,'node) frame_ops \<Rightarrow>
 'frame list \<Rightarrow> ('k option *  'k option)" where
 "get_bounds frame_ops stk = (
   iter_step (% (l,u,stk).

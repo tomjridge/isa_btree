@@ -36,12 +36,105 @@ where
     Disk_node(n)|>(store_ops|>wrte)|>bind (% r.
     return (D_updated_subtree(r)))))"
 
-(* FIXME really don't like all the parameterization ... *)
+definition step_up_small_leaf where
+"step_up_small_leaf  cs leaf_ops node_ops frame_ops store_ops frm leaf = (
+  let (read,write) = (store_ops|>read,store_ops|>wrte) in
+  let post_merge = post_merge cs node_ops store_ops in
+    \<comment> \<open>NOTE stack is not empty, so at least one sibling; then a small leaf is expected to
+      have FIXME minleafsize-1 entries\<close>
+    case (frame_ops|>get_right_sibling_and_separator) frm of 
+    None \<Rightarrow> (
+      \<comment> \<open> steal or merge from left \<close>
+      case (frame_ops|>get_left_sibling_and_separator) frm of 
+      None \<Rightarrow> failwith (STR ''impossible'') 
+      | Some (r1,_) \<Rightarrow> (
+      r1 |> read |> fmap dest_Disk_leaf |> bind (% left_leaf. 
+      case (leaf_ops|>leaf_length) left_leaf = cs|>min_leaf_size of
+      True \<Rightarrow> (
+        \<comment> \<open> merge from left \<close>
+        (leaf_ops|>leaf_merge) (left_leaf,leaf) |> (% leaf.
+        write (Disk_leaf(leaf)) |> bind (% r.
+        frm |> (frame_ops|>remove_left_sibling) 
+        |> (frame_ops|>unsplit_with_new_focus) (R r) |> post_merge)))
+      | False \<Rightarrow> (
+        \<comment> \<open> steal from left \<close>
+        (leaf_ops|>leaf_steal_left) (left_leaf,leaf) |> (% (left_leaf,k1,leaf).
+        write (Disk_leaf(left_leaf)) |> bind (% r1.
+        write (Disk_leaf(leaf)) |> bind (% r2.
+        frm |> (frame_ops|>replace_left_sibling) r1 
+        |> (frame_ops|>unsplit_with_new_focus) (R r2) |> Disk_node
+        |> write |> fmap D_updated_subtree)))))))
+    | Some (_,r1) \<Rightarrow> (
+      \<comment> \<open> steal or merge from right \<close>
+      r1 |> read |> fmap dest_Disk_leaf |> bind (% right_leaf. 
+      case (leaf_ops|>leaf_length) right_leaf = cs|>min_leaf_size of
+      True \<Rightarrow> (
+        \<comment> \<open> merge from right \<close>
+        (leaf_ops|>leaf_merge) (leaf,right_leaf) |> (% leaf.
+        write (Disk_leaf(leaf)) |> bind (% r.
+        frm |> (frame_ops|>remove_right_sibling) 
+        |> (frame_ops|>unsplit_with_new_focus) (R r) |> post_merge)))
+      | False \<Rightarrow> (
+        \<comment> \<open> steal from right \<close> 
+        (leaf_ops|>leaf_steal_right) (leaf,right_leaf) |> (% (leaf,k1,right_leaf). 
+        write (Disk_leaf(leaf)) |> bind (% r1.
+        write (Disk_leaf(right_leaf)) |> bind (% r2.
+        frm |> (frame_ops|>replace_right_sibling) k1 r2 
+        |> (frame_ops|>unsplit_with_new_focus) (R r1) |> Disk_node
+        |> write |> fmap D_updated_subtree)))))))
+"
+
+definition step_up_small_node where
+"step_up_small_node cs (leaf_ops::('k,'v,'leaf)leaf_ops) node_ops frame_ops store_ops frm n = (
+  let (read,write) = (store_ops|>read,store_ops|>wrte) in
+  let post_merge = post_merge cs node_ops store_ops in
+    case (frame_ops|>get_right_sibling_and_separator) frm of 
+    None \<Rightarrow> (
+      \<comment> \<open> steal or merge from left \<close>
+      case (frame_ops|>get_left_sibling_and_separator) frm of 
+      None \<Rightarrow> failwith (STR ''impossible'')
+      | Some (r1,k1) \<Rightarrow> (
+      r1 |> read |> fmap dest_Disk_node |> bind (% left_sibling. 
+      case (node_ops|>node_keys_length) left_sibling = cs|>min_node_keys of
+      True \<Rightarrow> (
+        \<comment> \<open> merge from left \<close>      
+        (node_ops|>node_merge) (left_sibling,k1,n) |> (% n. 
+        write (Disk_node(n)) |> bind (% r.
+        frm |> (frame_ops|>remove_left_sibling) 
+        |> (frame_ops|>unsplit_with_new_focus) (R r) |> post_merge)))
+      | False \<Rightarrow> (
+        \<comment> \<open> steal from left \<close>      
+        (node_ops|>node_steal_left) (left_sibling,k1,n) |> (% (left_sibling,k1,n).
+        write (Disk_node(left_sibling)) |> bind (% r1.
+        write (Disk_node(n)) |> bind (% r2.
+        frm |> (frame_ops |> replace_left_sibling) r1 
+        |> (frame_ops|>unsplit_with_new_focus) (R r2) |> Disk_node
+        |> write |> fmap D_updated_subtree)))))))
+    | Some (k1,r1) \<Rightarrow> (
+      \<comment> \<open> steal or merge from right \<close>
+      r1 |> read |> fmap dest_Disk_node |> bind (% right_sibling. 
+      case (node_ops|>node_keys_length) right_sibling = cs|>min_node_keys of
+      True \<Rightarrow> (
+        \<comment> \<open> merge from right \<close>
+        (node_ops|>node_merge) (n,k1,right_sibling) |> (% n.
+        write (Disk_node(n)) |> bind (% r. 
+        frm |> (frame_ops|>remove_right_sibling) 
+        |> (frame_ops|>unsplit_with_new_focus) (R r) |> post_merge)))
+      | False \<Rightarrow> (
+        \<comment> \<open> steal from right \<close>
+        (node_ops|>node_steal_right) (n,k1,right_sibling) |> (% (n,k1,right_sibling).
+        write (Disk_node(n)) |> bind (% r1.
+        write (Disk_node(right_sibling)) |> bind (% r2.
+        frm |> (frame_ops|>replace_right_sibling) k1 r2 
+        |> (frame_ops|>unsplit_with_new_focus) (R r1) |> Disk_node
+        |> write |> fmap D_updated_subtree)))))))
+"
+
 definition step_up :: "
 constants \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow> 
 ('k,'r,'node) node_ops \<Rightarrow> 
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t)store_ops \<Rightarrow> 
 ('r,'node,'leaf,'frame)u \<Rightarrow> (('r,'node,'leaf,'frame)u,'t) MM" where
 "step_up cs leaf_ops node_ops frame_ops store_ops du = (
@@ -49,89 +142,16 @@ constants \<Rightarrow>
   let (read,write) = (store_ops|>read,store_ops|>wrte) in
   let post_merge = post_merge cs node_ops store_ops in
   case stk of [] \<Rightarrow> (failwith (STR ''delete, step_up'')) | frm#stk' \<Rightarrow> (
-  let (lh,rh) = ((frame_ops|>left_half)frm,(frame_ops|>right_half)frm) in
   \<comment> \<open> NOTE p is the parent \<close>
   \<comment> \<open> take the result of what follows, and add the stk' component \<close>
   (% x. x |> fmap (% y. (y,stk'))) (case f of   
   D_updated_subtree r \<Rightarrow> (
-    let (lh,rh) = ((frame_ops|>left_half)frm,(frame_ops|>right_half)frm) in
-    (frame_ops|>unsplit) (lh, R(r), rh) |> Disk_node |> write |> fmap D_updated_subtree)
+    frm |> (frame_ops|>unsplit_with_new_focus) (R r) |> Disk_node |> write |> fmap D_updated_subtree)
   | D_small_leaf(leaf) \<Rightarrow> (
-    \<comment> \<open>NOTE stack is not empty, so at least one sibling; then a small leaf is expected to
-      have FIXME minleafsize-1 entries\<close>
-    let no_right_sibling = is_None ((frame_ops|>rh_dest_cons) rh) in
-    case no_right_sibling of 
-    True \<Rightarrow> (
-      \<comment> \<open>steal or merge from left\<close>
-      let _ = check_true (% _. ~ (is_None ((frame_ops|>lh_dest_snoc) lh))) in
-      case (frame_ops|>lh_dest_snoc) lh |> dest_Some of 
-      (lh,r1,_) \<Rightarrow> 
-      r1 |> read |> fmap dest_Disk_leaf |> bind (% left_leaf. 
-      case (leaf_ops|>leaf_length) left_leaf = cs|>min_leaf_size of
-      True \<Rightarrow> (
-        (leaf_ops|>leaf_merge) (left_leaf,leaf) |> (% leaf.
-        write (Disk_leaf(leaf)) |> bind (% r.
-        (frame_ops|>unsplit) (lh,R(r),rh) |> post_merge)))
-      | False \<Rightarrow> (
-        (leaf_ops|>leaf_steal_left) (left_leaf,leaf) |> (% (left_leaf,k1,leaf).
-        write (Disk_leaf(left_leaf)) |> bind (% r1.
-        write (Disk_leaf(leaf)) |> bind (% r2.
-        (frame_ops|>unsplit) (lh,Rkr(r1,k1,r2),rh) |> Disk_node
-        |> write |> fmap D_updated_subtree))))))
-    | False \<Rightarrow> (
-      \<comment> \<open>steal or merge from right\<close>
-      let _ = check_true (% _. ~ (is_None ((frame_ops|>rh_dest_cons) rh))) in
-      case (frame_ops|>rh_dest_cons) rh |> dest_Some of
-      (_,r1,rh) \<Rightarrow>       
-      r1 |> read |> fmap dest_Disk_leaf |> bind (% right_leaf. 
-      case (leaf_ops|>leaf_length) right_leaf = cs|>min_leaf_size of
-      True \<Rightarrow> (
-        (leaf_ops|>leaf_merge) (leaf,right_leaf) |> (% leaf.
-        write (Disk_leaf(leaf)) |> bind (% r.
-        (frame_ops|>unsplit) (lh,R(r),rh)|> post_merge)))
-      | False \<Rightarrow> (
-        (leaf_ops|>leaf_steal_right) (leaf,right_leaf) |> (% (leaf,k1,right_leaf). 
-        write (Disk_leaf(leaf)) |> bind (% r1.
-        write (Disk_leaf(right_leaf)) |> bind (% r2.
-        (frame_ops|>unsplit) (lh,Rkr(r1,k1,r2),rh) |> Disk_node
-        |> write |> fmap D_updated_subtree)))))))
+    step_up_small_leaf  cs leaf_ops node_ops frame_ops store_ops frm leaf)
   | D_small_node(n) \<Rightarrow> (
-    let no_right_sibling = is_None ((frame_ops|>rh_dest_cons) rh) in
-    case no_right_sibling of 
-    True \<Rightarrow> (
-      \<comment> \<open>steal or merge from left\<close>
-      let _ = check_true (% _. ~ (is_None ((frame_ops|>lh_dest_snoc) lh))) in
-      case (frame_ops|>lh_dest_snoc) lh |> dest_Some of 
-      (lh,r1,k1) \<Rightarrow> 
-      r1 |> read |> fmap dest_Disk_node |> bind (% left_sibling. 
-      case (node_ops|>node_keys_length) left_sibling = cs|>min_node_keys of
-      True \<Rightarrow> (
-        (node_ops|>node_merge) (left_sibling,k1,n) |> (% n. 
-        write (Disk_node(n)) |> bind (% r.
-        (frame_ops|>unsplit) (lh,R(r),rh) |> post_merge)))
-      | False \<Rightarrow> (
-        (node_ops|>node_steal_left) (left_sibling,k1,n) |> (% (left_sibling,k1,n).
-        write (Disk_node(left_sibling)) |> bind (% r1.
-        write (Disk_node(n)) |> bind (% r2.
-        (frame_ops|>unsplit) (lh,Rkr(r1,k1,r2),rh) |> Disk_node
-        |> write |> fmap D_updated_subtree))))))
-    | False \<Rightarrow> (
-      \<comment> \<open>steal or merge from right\<close>
-      case (frame_ops|>rh_dest_cons) rh |> dest_Some of 
-      (k1,r1,rh) \<Rightarrow> 
-      r1 |> read |> fmap dest_Disk_node |> bind (% right_sibling. 
-      case (node_ops|>node_keys_length) right_sibling = cs|>min_node_keys of
-      True \<Rightarrow> (
-        (node_ops|>node_merge) (n,k1,right_sibling) |> (% n.
-        write (Disk_node(n)) |> bind (% r. 
-        (frame_ops|>unsplit) (lh,R(r),rh) |> post_merge)))
-      | False \<Rightarrow> (
-        (node_ops|>node_steal_right) (n,k1,right_sibling) |> (% (n,k1,right_sibling).
-        write (Disk_node(n)) |> bind (% r1.
-        write (Disk_node(right_sibling)) |> bind (% r2.
-        (frame_ops|>unsplit) (lh,Rkr(r1,k1,r2),rh) |> Disk_node
-        |> write |> fmap D_updated_subtree)))))))
-)))"
+    step_up_small_node cs leaf_ops node_ops frame_ops store_ops frm n))))
+"
 
 
 definition delete_step :: "

@@ -8,7 +8,7 @@ type_synonym ('k,'v,'r,'frame) u (* up_state *) = "('k,'v,'r)fo*'frame list"
 
 
 definition step_down :: "
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
 ('k,'v,'r,'leaf,'frame) d \<Rightarrow> (('k,'v,'r,'leaf,'frame) d,'t) MM" where
 "step_down frame_ops store_ops = (
@@ -52,7 +52,7 @@ constants \<Rightarrow>
 definition step_up :: "
 constants \<Rightarrow> 
 ('k,'r,'node) node_ops \<Rightarrow> 
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
 ('k,'v,'r,'frame) u \<Rightarrow> (('k,'v,'r,'frame) u + unit,'t) MM" where
 "step_up cs node_ops frame_ops store_ops u = (
@@ -61,17 +61,16 @@ constants \<Rightarrow>
   case stk of 
   [] \<Rightarrow> failwith (STR ''insert, step_up,1'') 
   | frm#stk' \<Rightarrow> (
-    let (lh,rh) = ((frame_ops|>left_half) frm, (frame_ops|>right_half) frm) in
     let original_r = (frame_ops|>backing_node_blk_ref) frm in
     case fo of
     I1 r \<Rightarrow> (
-      let n = (frame_ops|>unsplit) (lh,R(r),rh) in
+      let n = (frame_ops|>unsplit_with_new_focus) (R r) frm in
       Disk_node(n) |> rewrite original_r |> bind (% r2. 
       case r2 of 
       None \<Rightarrow> return (Inr ())
       | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
     | I2 (r1,k,r2) \<Rightarrow> (
-      let n = (frame_ops|>unsplit) (lh, Rkr(r1,k,r2), rh) in
+      let n = (frame_ops|>unsplit_with_new_focus) (Rkr(r1,k,r2)) frm in
       let n = (n :: 'node) in
       case (node_ops|>node_keys_length) n \<le> (cs|>max_node_keys) of
       True \<Rightarrow> (
@@ -92,7 +91,7 @@ definition insert_step :: "
 constants \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow> 
 ('k,'r,'node) node_ops \<Rightarrow> 
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
 ('k,'v,'r,'leaf,'frame) insert_state \<Rightarrow> (('k,'v,'r,'leaf,'frame) insert_state,'t) MM" where
 "insert_step cs leaf_ops node_ops frame_ops store_ops = (
@@ -130,7 +129,7 @@ definition insert_big_step :: "
 constants \<Rightarrow>  
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
 ('k,'v,'r,'leaf,'frame) insert_state \<Rightarrow> (('k,'v,'r,'leaf,'frame) insert_state,'t) MM" where
 "insert_big_step cs leaf_ops node_ops frame_ops store_ops = (
@@ -146,7 +145,7 @@ definition insert :: "
 constants \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
 ('r \<Rightarrow> (bool,'t) MM) \<Rightarrow> 
 'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('r option,'t) MM" where

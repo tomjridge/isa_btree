@@ -19,6 +19,7 @@ type ('k,'r,'node) node_ops' = ('k,'r,'node) Disk_node.node_ops
 (* record version to parallel isabelle's datatype version; includes
    extra functionality necessary to implement frame_ops with lh, rh as
    node *)
+(* see \doc(tjr_fs_shared//keyspace_ops *)
 type ('k,'r,'node) node_ops = {
   split_node_at_k_index: int -> 'node -> ('node*'k*'node);
   node_merge: 'node*'k*'node -> 'node;
@@ -27,8 +28,8 @@ type ('k,'r,'node) node_ops = {
   node_keys_length: 'node -> int;
   node_make_small_root: 'r*'k*'r -> 'node;
   node_get_single_r: 'node -> 'r;
-  node_dest_cons: 'node -> 'r * 'k * 'node;
-  node_dest_snoc: 'node -> 'node * 'k * 'r;
+  node_dest_cons: 'node -> 'r * 'k * 'node;  (* NOTE only for a node *)
+  node_dest_snoc: 'node -> 'node * 'k * 'r;  (* NOTE only for a node *)
 }
 
 open Tjr_fs_shared
@@ -43,6 +44,7 @@ let dest_Some x = match x with | Some x -> x | None -> failwith __LOC__
 
 let make_node_ops (type k r) ~(k_cmp:k -> k -> int) =
   let kspace = Tjr_lin_partition.make_keyspace_ops ~k_cmp in
+  let map_ops = Tjr_lin_partition.make_map_ops ~k_cmp in
   let split_node_at_k_index : int -> (k,r)node -> (k,r)node*k*(k,r)node = fun i n -> 
     kspace.split_keyspace_at_index i n
   in
@@ -51,45 +53,43 @@ let make_node_ops (type k r) ~(k_cmp:k -> k -> int) =
   in
   let node_steal_right : (k,r)node*k*(k,r)node -> (k,r)node*k*(k,r)node = fun (n1,k1,n2) ->
     let (r,k2,n2) = kspace.ks_dest_cons n2 in
-    let n1 = kspace.ks_internal_add (Some k1) r n1 in
+    let n1 = map_ops.add (Some k1) r n1 in
     (n1,k2,n2) 
   in
   let node_steal_left : (k,r)node*k*(k,r)node -> (k,r)node*k*(k,r)node = fun (n1,k1,n2) ->
     let (n1,k2,r1) = kspace.ks_dest_snoc n1 in
     let n2 = 
-      let r2 = kspace.ks_internal_find_opt None n2 |> dest_Some in
+      let r2 = map_ops.find_opt None n2 |> dest_Some in
       n2 
-      |> kspace.ks_internal_add (Some k1) r2 
-      |> kspace.ks_internal_add None r1
+      |> map_ops.add (Some k1) r2 
+      |> map_ops.add None r1
     in
     (n1,k2,n2)
   in
   let node_keys_length n = kspace.k_size n in
   let node_make_small_root (r1,k,r2) = 
-    kspace.ks_internal_empty 
-    |> kspace.ks_internal_add None r1
-    |> kspace.ks_internal_add (Some k) r2
+    map_ops.empty 
+    |> map_ops.add None r1
+    |> map_ops.add (Some k) r2
   in
   let node_get_single_r n =
     n |> kspace.ks2krs |> fun (ks,rs) ->
     assert(List.length rs = 1);
     List.hd rs
   in
-  let split_node_on_key n k : (k, r) node * k option * r * (k, r) node = 
-    kspace.split_keyspace_on_key k n
-  in
   let node_dest_cons n = kspace.ks_dest_cons n in
   let node_dest_snoc n = kspace.ks_dest_snoc n in
-  {split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length; node_make_small_root; node_get_single_r; node_dest_cons; node_dest_snoc },split_node_on_key
+  {split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length; node_make_small_root; node_get_single_r; node_dest_cons; node_dest_snoc }
 ;;
 
 let _ : 
-k_cmp:('a -> 'a -> int) -> ('a, 'b, ('a, 'b) node) node_ops * 'c
+k_cmp:('a -> 'a -> int) -> ('a, 'b, ('a, 'b) node) node_ops 
 = make_node_ops
 
 
 (* frame_ops -------------------------------------------------------- *)
 
+(* \doc(isa_export_wrapper) *)
 type ('k,'r,'frame,'left_half,'right_half,'node) frame_ops = {
   split_node_on_key: 'r -> 'node -> 'k -> 'frame;
   left_half: 'frame -> 'left_half;
@@ -108,75 +108,82 @@ type ('k,'r,'frame,'left_half,'right_half,'node) frame_ops = {
 type ('k,'node) left_half = 'node * 'k option
 
 type ('k,'r) frame = {
-  lh: ('k,'r) node;
+  lh: ('k,'r) node;  (* may be empty *)
   (* midkey: see Stacks_and_frames.thy *)
-  midkey: 'k option;
+  midkey: 'k option;  (* may be None *)
   midpoint: 'r;
-  rh: ('k,'r) node;
+  rh: ('k,'r) node;  (* may be empty *)
   backing_node_blk_ref: 'r
 }
-  
 
 let mu_opt = function
   | None -> None
   | Some None -> None
   | Some x -> Some x
 
-let make_frame_ops (type k r ) ~(node_ops:(k,r,(k,r)node)node_ops) ~split_node_on_key ~keyspace ~ks_dest_cons ~ks_dest_snoc = 
+(* ~ks_dest_cons ~ks_dest_snoc *)
+let make_frame_ops (type k r ) 
+    ~map_ops
+    ~keyspace_ops
+    ~(node_ops:(k,r,(k,r)node)node_ops) 
+  = 
   let open Tjr_lin_partition in
+  let split_node_on_key n k : (k, r) node * k option * r * (k, r) node = 
+    keyspace_ops.split_keyspace_on_key k n
+  in  
   let split_node_on_key backing_node_blk_ref n k = 
     split_node_on_key n k |> fun (lh,k,r,rh) -> 
     { lh; rh; midkey=k; midpoint=r; backing_node_blk_ref}
   in
-  let left_half f = (f.lh,f.midkey) in
-  let right_half f = f.rh in
+  (* left half is a pair of a total keyspace, and a bounding key *)
+  let left_half f = (`Lh,f.lh,f.midkey) in
+  let right_half f = (`Rh,f.rh) in
   let midpoint f = f.midpoint in
-  let rh_dest_cons rh = ks_dest_cons rh |> function
-    | None -> None
-    | Some(None,_,_) -> failwith ("impossible "^__LOC__)
-    | Some(Some k,r,rh) -> Some(k,r,rh)
+  let rh_dest_cons (_,rh) =     
+    map_ops.Tjr_poly_map.min_binding_opt rh |> function
+    | None -> None  (* rh is empty *)
+    | Some(None,_) -> failwith ("impossible "^__LOC__)
+    | Some(Some k,r) -> 
+      rh |> map_ops.remove (Some k) |> fun rh ->
+      Some(k,r,rh)
   in
-  let lh_dest_snoc (lh,k) = 
+  let lh_dest_snoc (_,lh,k) = 
     (* again, we may be in the situation that there is only a None
-       binding in lh, so we can't dest_snoc *)
-    match ks_dest_snoc lh with
-    | None -> failwith __LOC__
-    | Some (_,_,None) -> None (* failwith "lh_dest_snoc, only one key which is None" *)
-    | Some (lh,r,Some k') -> 
+       binding in lh, so we can't dest_snoc; or lh may be empty *)
+    match map_ops.max_binding_opt lh with
+    | None -> None
+    | Some(None,_) -> (
+        assert false
+        (* This case should not happen if we steal from a node which has at least 1 key *)
+      )
+    | Some (Some kn,rn) -> 
+      (* remove kn binding from lh *)
+      let lh = map_ops.remove (Some kn) lh in
       (* we must take care of the extra key *)
-      let lh' = (lh,k') in
-      Some(lh',r,k)
+      let lh = (lh,kn) in
+      Some(lh,rn,k)
   in
   let unsplit (lh,rkr,rh) = 
+    (* \doc(isa_export_wrapper) *)
     let (lh,k1) = lh in
     match rkr with 
     | Isa_export.Stacks_and_frames.R r -> (
-        rh  |> keyspace.ks_internal_add None r |> fun rh -> 
-        keyspace.merge_keyspaces (lh,k1,rh))
+        rh |> map_ops.add None r |> fun rh -> 
+        keyspace_ops.merge_keyspaces (lh,k1,rh))
     | Rkr (r1,(k2,r2)) -> (
-        (* unsplit should give:
-
-lh | k1 | k2 | rh
-   | r1 | r2
-
-which can be phrased as the merge of lh and rh', where rh' is:
-
-| None | k2 | rh
-| r1   | r2
-
-and the separating key is k1
-        *)
-        rh |> keyspace.ks_internal_add (Some k2) r2 
-        |> keyspace.ks_internal_add None r1 
+        rh 
+        |> map_ops.add (Some k2) r2 
+        |> map_ops.add None r1 
         |> fun rh -> 
-        keyspace.merge_keyspaces (lh,k1,rh))
+        keyspace_ops.merge_keyspaces (lh,k1,rh))
   in
   let get_midpoint_bounds f = 
     let l = f.midkey in
-    let u = f.rh |> ks_dest_cons |> function
+    let u = 
+      match map_ops.min_binding_opt f.rh with
       | None -> None
-      | Some(None,_,_) -> None
-      | Some(Some u,_,_) -> u
+      | Some(None,_) -> assert false  (* possible? *)
+      | Some(Some u,_) -> u
     in
     (l,u)
   in

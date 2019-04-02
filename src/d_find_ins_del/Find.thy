@@ -3,7 +3,7 @@ theory Find imports Post_monad "$SRC/b_pre_monad/Find_state" begin
 (* find ------------------------------------------------------------- *)
 
 definition find_step :: "
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
 ('k,'r,'leaf,'frame) find_state \<Rightarrow> (('k,'r,'leaf,'frame) find_state,'t) MM" where
 "find_step frame_ops store_ops = (
@@ -21,7 +21,7 @@ definition find_step :: "
     | Disk_leaf leaf \<Rightarrow> F_finished(r0,k,r,leaf,stk)))))"
 
 definition find_big_step :: "
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
 ('k,'r,'leaf,'frame) find_state \<Rightarrow> (('k,'r,'leaf,'frame) find_state,'t) MM" where
 "find_big_step frame_ops store_ops = (
@@ -33,7 +33,7 @@ definition find_big_step :: "
     i))"
 
 definition find :: "
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
 'r \<Rightarrow> 'k \<Rightarrow> ('r * 'leaf * 'frame list,'t) MM" where
 "find frame_ops store_ops r k = (
