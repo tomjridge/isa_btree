@@ -79,11 +79,11 @@ split_large_leaf=(% l.
 (* FIXME split could be much more efficient *)
 
 (* split_node_at_k_index: we take an index i, and make two nodes with a separating key; the key is
-at position i+1 in the list of lower bounds (which starts with None at posn 0); alternatively we could return 
+at position i in the list of keys of the form (Some k); alternatively we could return 
 a key option *)
 
 datatype_record ('k,'r,'node) node_ops =
-  split_node_at_k_index :: "nat \<Rightarrow> 'node \<Rightarrow> 'node*'k*'node" (* for large node *)
+  split_node_at_k_index :: "nat \<Rightarrow> 'node \<Rightarrow> 'node*'k*'node" (* n1 has i-1 keys; case n of _[k\<rightarrow>r] has r in n2; for large node *)
   node_merge :: "'node * 'k * 'node \<Rightarrow> 'node"
   node_steal_right :: "'node * 'k * 'node \<Rightarrow> 'node * 'k * 'node"
   node_steal_left :: "'node * 'k * 'node \<Rightarrow> 'node * 'k * 'node"

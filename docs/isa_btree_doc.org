@@ -1,6 +1,10 @@
 -*- org -*-
 * doc:node_ops
 
+The implementation is expected to be as a map from k option (None is
+less than Some k) to r. The implementation is really setting up to be
+used with frame_ops (via split_node_on_key)
+
 
 
 * doc:frame_ops

@@ -13,10 +13,10 @@ type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
 
 (* node ops --------------------------------------------------------- *)
 
-(* NOTE *)
+(* NOTE defn. in Isabelle *)
 type ('k,'r,'node) node_ops' = ('k,'r,'node) Disk_node.node_ops
 
-(* see \doc(doc:node_ops) *)
+(* As Isabelle defn. See \doc(doc:node_ops) *)
 type ('k,'r,'node) node_ops = {
   split_node_at_k_index: int -> 'node -> ('node*'k*'node);
   node_merge: 'node*'k*'node -> 'node;
@@ -30,62 +30,74 @@ type ('k,'r,'node) node_ops = {
 (*  node_dest_cons: 'node -> 'r * 'k * 'node;  (* NOTE only for a node *)
   node_dest_snoc: 'node -> 'node * 'k * 'r;  (* NOTE only for a node *) *)
 
-
-
 open Tjr_fs_shared
 
-type ('k,'r,'t) keyspace_ops = ('k,'r,'t) Tjr_lin_partition.keyspace_ops
+(* implement node ops using a map from option; see impl notes in \doc(doc:node_ops) *)
 
-(* FIXME is keyspace just a node? no, node is more restricted, and frame is something else *)
+(* None is less than any other lower bound; this corresponds to the
+   "lowest" interval below k0 *)
+let rec key_compare k_cmp k1 k2 =
+  match k1,k2 with 
+  | None,None -> 0
+  | None,_ -> -1
+  | _,None -> 1
+  | Some k1, Some k2 -> k_cmp k1 k2
 
-type ('k,'r) node = ('k,'r)Tjr_lin_partition.keyspace
+let dest_Some x = match x with Some x -> x | _ -> failwith "dest_Some"
 
-let dest_Some x = match x with | Some x -> x | None -> failwith __LOC__
-
-let make_node_ops (type k r) ~(k_cmp:k -> k -> int) =
-  let kspace = Tjr_lin_partition.make_keyspace_ops ~k_cmp in
-  let map_ops = Tjr_lin_partition.make_map_ops ~k_cmp in
-  let split_node_at_k_index : int -> (k,r)node -> (k,r)node*k*(k,r)node = fun i n -> 
-    kspace.split_keyspace_at_index i n
+let make_node_ops (type k r) ~k_cmp = 
+  let map_ops = Tjr_poly_map.make_map_ops (key_compare k_cmp) in
+  let make_node ks rs = 
+    assert(List.length rs = 1 + List.length ks);
+    let ks = None::(List.map (fun x -> Some x) ks) in
+    let krs = List.combine ks rs in
+    map_ops.of_bindings krs
   in
-  let node_merge : (k,r)node*k*(k,r)node -> (k,r)node = fun (n1,k,n2) ->
-    kspace.merge_keyspaces (n1,k,n2)
+  let _ = make_node in
+  let split_node_at_k_index i n =   (* i counts from 0 *)
+    map_ops.bindings n |> fun krs -> 
+    let ks,rs = List.split krs in
+    let ks = List.tl ks |> List.map dest_Some in  (* drop None *)
+    let k = List.nth ks i in
+    let r = map_ops.find_opt (Some k) n |> dest_Some in
+    let (n1,_,n2) = map_ops.split (Some k) n in
+    n2 |> map_ops.add None r |> fun n2 ->
+    (n1,k,n2)
   in
-  let node_steal_right : (k,r)node*k*(k,r)node -> (k,r)node*k*(k,r)node = fun (n1,k1,n2) ->
-    let (r,k2,n2) = kspace.ks_dest_cons n2 in
-    let n1 = map_ops.add (Some k1) r n1 in
-    (n1,k2,n2) 
+  let node_merge (n1,k,n2) = 
+    n2 |> map_ops.find_opt None |> dest_Some |> fun r2 -> 
+    n2 |> map_ops.remove None |> map_ops.add (Some k) r2 |> fun n2 ->
+    map_ops.disjoint_union n1 n2
   in
-  let node_steal_left : (k,r)node*k*(k,r)node -> (k,r)node*k*(k,r)node = fun (n1,k1,n2) ->
-    let (n1,k2,r1) = kspace.ks_dest_snoc n1 in
-    let n2 = 
-      let r2 = map_ops.find_opt None n2 |> dest_Some in
-      n2 
-      |> map_ops.add (Some k1) r2 
-      |> map_ops.add None r1
-    in
-    (n1,k2,n2)
+  let node_steal_right (n1,k,n2) =
+    n2 |> map_ops.find_opt None |> dest_Some |> fun r2 ->
+    n2 |> map_ops.remove None |> fun n2 ->
+    n1 |> map_ops.add (Some k) r2 |> fun n1 ->
+    n2 |> map_ops.min_binding_opt |> dest_Some |> fun (k,_) ->
+    k |> dest_Some |> fun k ->
+    (n1,k,n2)
   in
-  let node_keys_length n = kspace.k_size n in
-  let node_make_small_root (r1,k,r2) = 
-    map_ops.empty 
-    |> map_ops.add None r1
-    |> map_ops.add (Some k) r2
+  let node_steal_left (n1,k,n2) = 
+    n1 |> map_ops.max_binding_opt |> dest_Some |> fun (k,r) ->
+    k |> dest_Some |> fun k ->
+    n1 |> map_ops.remove (Some k) |> fun n1 ->
+    n2 |> map_ops.add (Some k) r |> fun n2 ->
+    (n1,k,n2)
+  in
+  let node_keys_length n = 
+    (map_ops.cardinal n) -1
+  in
+  let node_make_small_root (r1,k,r2) =
+    map_ops.empty |> map_ops.add None r1 |> map_ops.add (Some k) r2
   in
   let node_get_single_r n =
-    n |> kspace.ks2krs |> fun (ks,rs) ->
-    assert(List.length rs = 1);
-    List.hd rs
+    assert(map_ops.cardinal n = 1);
+    map_ops.bindings n |> fun [(_,r)] -> r
   in
-  let node_dest_cons n = kspace.ks_dest_cons n in
-  let node_dest_snoc n = kspace.ks_dest_snoc n in
-  {split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length; node_make_small_root; node_get_single_r; node_dest_cons; node_dest_snoc }
-;;
-
-let _ : 
-k_cmp:('a -> 'a -> int) -> ('a, 'b, ('a, 'b) node) node_ops 
-= make_node_ops
-
+  let _ = node_steal_right in
+  { split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length;
+    node_make_small_root; node_get_single_r }
+    
 
 (* frame_ops -------------------------------------------------------- *)
 
