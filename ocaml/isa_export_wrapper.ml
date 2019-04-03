@@ -131,7 +131,7 @@ type ('k,'r,'node) frame = {
   backing_node_blk_ref: 'r
 }
 
-let make_frame_ops ~k_cmp = 
+let make_frame_ops (type k r) ~(k_cmp:k->k->int) = 
   let map_ops = Tjr_poly_map.make_map_ops (key_compare k_cmp) in
   Tjr_fs_shared.Map_with_key_traversal.make_ops ~map_ops @@ fun ~get_next_binding ~get_prev_binding ->
   (* map_ops is a map from 'k option *)
@@ -141,7 +141,7 @@ let make_frame_ops ~k_cmp =
       map_ops.find_opt (Some k) n |> function
       | None -> get_prev_binding (Some k) n |> dest_Some |> fun (k,r) ->
                 (k,r)
-      | Some r -> (Some k,r)
+      | Some r -> (Some k,(r:r))
     in
     { midkey; midpoint; backing_node_blk_ref; node=n }
   in
@@ -152,51 +152,65 @@ let make_frame_ops ~k_cmp =
       | None -> None 
       | Some (k,r) -> Some(k|>dest_Some,r)
   in
+  let _ = get_right_sibling_and_separator in
   let remove_right_sibling f = 
     get_right_sibling_and_separator f |> function
       | None -> failwith __LOC__
       | Some (k,r) -> { f with node=(f.node |> map_ops.remove (Some k)) }
   in
+  let _ = remove_right_sibling in
   let replace_right_sibling k r f = 
     get_right_sibling_and_separator f |> function
       | None -> failwith __LOC__
       | Some (k1,r1) -> { f with node=(f.node |> map_ops.remove (Some k1) |> map_ops.add (Some k) r) }
   in
+  let _ = replace_right_sibling in
   let get_left_sibling_and_separator f = 
     f.node |> get_prev_binding f.midkey |> function
     | None -> None
-    | Some (r,k) -> Some(r,k|>dest_Some)
+    | Some (k,r) -> Some(r,k|>dest_Some)
   in
+  let _ = get_left_sibling_and_separator in
   let remove_left_sibling f = 
     get_left_sibling_and_separator f |> function
     | None -> failwith __LOC__
     | Some (r,k) -> { f with node=(f.node |> map_ops.remove (Some k)) }
   in
+  let _ = remove_left_sibling in
   let replace_left_sibling r1 f =
     get_left_sibling_and_separator f |> function
     | None -> failwith __LOC__
     | Some (r,k) -> { f with node=(f.node |> map_ops.add (Some k) r1) }
   in
+  let _ = replace_left_sibling in
   let unsplit_with_new_focus r f =
     f.node |> map_ops.add f.midkey r
   in
+  let _ = unsplit_with_new_focus in
   let unsplit_with_new_focus_2 (r1,k,r2) f = 
     f.node |> map_ops.add f.midkey r1
     |> map_ops.add (Some k) r2
-  in
+  in  
   let get_midpoint_bounds f =
-    let l = f.midkey in
-    let u = f.node |> get_next_binding f.midpoint |> function
+    let l : k option = f.midkey in
+    let u = f.node |> get_next_binding f.midkey |> function
       | None -> None
-      | Some (k,r) -> k
+      | Some (k,r) -> (k:k option)
     in
     (l,u)
   in
+  let _ = get_midpoint_bounds in
   let backing_node_blk_ref f = f.backing_node_blk_ref in
   { split_node_on_key; midpoint; get_right_sibling_and_separator; remove_right_sibling; replace_right_sibling;
     get_left_sibling_and_separator; remove_left_sibling; replace_left_sibling; 
     unsplit_with_new_focus; unsplit_with_new_focus_2; get_midpoint_bounds; backing_node_blk_ref }
-    
+
+let _ :
+k_cmp:('a -> 'a -> int) ->
+('a, 'b, ('a, 'b, ('a option, 'b, 'c) Tjr_poly_map.map) frame,
+ ('a option, 'b, 'c) Tjr_poly_map.map)
+frame_ops
+ = make_frame_ops
 
 ;;
 
