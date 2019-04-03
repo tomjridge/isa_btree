@@ -16,10 +16,7 @@ type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
 (* NOTE *)
 type ('k,'r,'node) node_ops' = ('k,'r,'node) Disk_node.node_ops
 
-(* record version to parallel isabelle's datatype version; includes
-   extra functionality necessary to implement frame_ops with lh, rh as
-   node *)
-(* see \doc(tjr_fs_shared//keyspace_ops *)
+(* see \doc(doc:node_ops) *)
 type ('k,'r,'node) node_ops = {
   split_node_at_k_index: int -> 'node -> ('node*'k*'node);
   node_merge: 'node*'k*'node -> 'node;
@@ -28,9 +25,12 @@ type ('k,'r,'node) node_ops = {
   node_keys_length: 'node -> int;
   node_make_small_root: 'r*'k*'r -> 'node;
   node_get_single_r: 'node -> 'r;
-  node_dest_cons: 'node -> 'r * 'k * 'node;  (* NOTE only for a node *)
-  node_dest_snoc: 'node -> 'node * 'k * 'r;  (* NOTE only for a node *)
 }
+
+(*  node_dest_cons: 'node -> 'r * 'k * 'node;  (* NOTE only for a node *)
+  node_dest_snoc: 'node -> 'node * 'k * 'r;  (* NOTE only for a node *) *)
+
+
 
 open Tjr_fs_shared
 
@@ -89,7 +89,7 @@ k_cmp:('a -> 'a -> int) -> ('a, 'b, ('a, 'b) node) node_ops
 
 (* frame_ops -------------------------------------------------------- *)
 
-(* \doc(isa_export_wrapper) *)
+(* \doc(doc:frame_ops) *)
 type ('k,'r,'frame,'left_half,'right_half,'node) frame_ops = {
   split_node_on_key: 'r -> 'node -> 'k -> 'frame;
   left_half: 'frame -> 'left_half;
@@ -164,7 +164,7 @@ let make_frame_ops (type k r )
       Some(lh,rn,k)
   in
   let unsplit (lh,rkr,rh) = 
-    (* \doc(isa_export_wrapper) *)
+    (* \doc(doc:frame_ops) *)
     let (lh,k1) = lh in
     match rkr with 
     | Isa_export.Stacks_and_frames.R r -> (

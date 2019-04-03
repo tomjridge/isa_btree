@@ -55,14 +55,14 @@ definition step_up_small_leaf where
         (leaf_ops|>leaf_merge) (left_leaf,leaf) |> (% leaf.
         write (Disk_leaf(leaf)) |> bind (% r.
         frm |> (frame_ops|>remove_left_sibling) 
-        |> (frame_ops|>unsplit_with_new_focus) (R r) |> post_merge)))
+        |> (frame_ops|>unsplit_with_new_focus) r |> post_merge)))
       | False \<Rightarrow> (
         \<comment> \<open> steal from left \<close>
         (leaf_ops|>leaf_steal_left) (left_leaf,leaf) |> (% (left_leaf,k1,leaf).
         write (Disk_leaf(left_leaf)) |> bind (% r1.
         write (Disk_leaf(leaf)) |> bind (% r2.
         frm |> (frame_ops|>replace_left_sibling) r1 
-        |> (frame_ops|>unsplit_with_new_focus) (R r2) |> Disk_node
+        |> (frame_ops|>unsplit_with_new_focus) r2 |> Disk_node
         |> write |> fmap D_updated_subtree)))))))
     | Some (_,r1) \<Rightarrow> (
       \<comment> \<open> steal or merge from right \<close>
@@ -73,14 +73,14 @@ definition step_up_small_leaf where
         (leaf_ops|>leaf_merge) (leaf,right_leaf) |> (% leaf.
         write (Disk_leaf(leaf)) |> bind (% r.
         frm |> (frame_ops|>remove_right_sibling) 
-        |> (frame_ops|>unsplit_with_new_focus) (R r) |> post_merge)))
+        |> (frame_ops|>unsplit_with_new_focus) r |> post_merge)))
       | False \<Rightarrow> (
         \<comment> \<open> steal from right \<close> 
         (leaf_ops|>leaf_steal_right) (leaf,right_leaf) |> (% (leaf,k1,right_leaf). 
         write (Disk_leaf(leaf)) |> bind (% r1.
         write (Disk_leaf(right_leaf)) |> bind (% r2.
         frm |> (frame_ops|>replace_right_sibling) k1 r2 
-        |> (frame_ops|>unsplit_with_new_focus) (R r1) |> Disk_node
+        |> (frame_ops|>unsplit_with_new_focus) r1 |> Disk_node
         |> write |> fmap D_updated_subtree)))))))
 "
 
@@ -101,14 +101,14 @@ definition step_up_small_node where
         (node_ops|>node_merge) (left_sibling,k1,n) |> (% n. 
         write (Disk_node(n)) |> bind (% r.
         frm |> (frame_ops|>remove_left_sibling) 
-        |> (frame_ops|>unsplit_with_new_focus) (R r) |> post_merge)))
+        |> (frame_ops|>unsplit_with_new_focus) r |> post_merge)))
       | False \<Rightarrow> (
         \<comment> \<open> steal from left \<close>      
         (node_ops|>node_steal_left) (left_sibling,k1,n) |> (% (left_sibling,k1,n).
         write (Disk_node(left_sibling)) |> bind (% r1.
         write (Disk_node(n)) |> bind (% r2.
         frm |> (frame_ops |> replace_left_sibling) r1 
-        |> (frame_ops|>unsplit_with_new_focus) (R r2) |> Disk_node
+        |> (frame_ops|>unsplit_with_new_focus) r2 |> Disk_node
         |> write |> fmap D_updated_subtree)))))))
     | Some (k1,r1) \<Rightarrow> (
       \<comment> \<open> steal or merge from right \<close>
@@ -119,14 +119,14 @@ definition step_up_small_node where
         (node_ops|>node_merge) (n,k1,right_sibling) |> (% n.
         write (Disk_node(n)) |> bind (% r. 
         frm |> (frame_ops|>remove_right_sibling) 
-        |> (frame_ops|>unsplit_with_new_focus) (R r) |> post_merge)))
+        |> (frame_ops|>unsplit_with_new_focus) r |> post_merge)))
       | False \<Rightarrow> (
         \<comment> \<open> steal from right \<close>
         (node_ops|>node_steal_right) (n,k1,right_sibling) |> (% (n,k1,right_sibling).
         write (Disk_node(n)) |> bind (% r1.
         write (Disk_node(right_sibling)) |> bind (% r2.
         frm |> (frame_ops|>replace_right_sibling) k1 r2 
-        |> (frame_ops|>unsplit_with_new_focus) (R r1) |> Disk_node
+        |> (frame_ops|>unsplit_with_new_focus) r1 |> Disk_node
         |> write |> fmap D_updated_subtree)))))))
 "
 
@@ -146,7 +146,7 @@ constants \<Rightarrow>
   \<comment> \<open> take the result of what follows, and add the stk' component \<close>
   (% x. x |> fmap (% y. (y,stk'))) (case f of   
   D_updated_subtree r \<Rightarrow> (
-    frm |> (frame_ops|>unsplit_with_new_focus) (R r) |> Disk_node |> write |> fmap D_updated_subtree)
+    frm |> (frame_ops|>unsplit_with_new_focus) r |> Disk_node |> write |> fmap D_updated_subtree)
   | D_small_leaf(leaf) \<Rightarrow> (
     step_up_small_leaf  cs leaf_ops node_ops frame_ops store_ops frm leaf)
   | D_small_node(n) \<Rightarrow> (
@@ -158,7 +158,7 @@ definition delete_step :: "
 constants \<Rightarrow> 
  ('k,'v,'leaf) leaf_ops \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t)store_ops \<Rightarrow> 
 ('k,'v,'r,'leaf,'node,'frame)delete_state \<Rightarrow> (('k,'v,'r,'leaf,'node,'frame)delete_state,'t) MM" 
 where
@@ -198,7 +198,7 @@ definition delete_big_step :: "
 constants \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t)store_ops \<Rightarrow> 
 ('k,'v,'r,'leaf,'node,'frame) delete_state \<Rightarrow> (('k,'v,'r,'leaf,'node,'frame) delete_state,'t) MM" where
 "delete_big_step cs leaf_ops node_ops frame_ops store_ops = (
@@ -214,7 +214,7 @@ definition delete :: "
 constants \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t)store_ops \<Rightarrow>
 ('r \<Rightarrow> (bool,'t)MM) \<Rightarrow> 
 'r \<Rightarrow> 'k  \<Rightarrow> ('r,'t) MM" where

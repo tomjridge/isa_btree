@@ -9,7 +9,7 @@ constants \<Rightarrow>
 ('k ord) \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
   ('k,'v,'r,'leaf,'frame) d \<Rightarrow> ('k*'v)s \<Rightarrow> (('k,'v,'r,'frame) u * ('k*'v)s,'t) MM" where
 "im_step_bottom cs k_cmp leaf_ops node_ops frame_ops store_ops = (% d kvs0.
@@ -49,7 +49,7 @@ constants \<Rightarrow>
 ('k ord) \<Rightarrow> 
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
  ('k,'v,'r,'leaf,'frame) im_state \<Rightarrow> (('k,'v,'r,'leaf,'frame) im_state, 't) MM" where
 "im_step cs k_cmp leaf_ops node_ops frame_ops store_ops im = (

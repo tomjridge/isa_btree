@@ -15,7 +15,7 @@ definition find_step :: "
     read r |>fmap (% f. 
     case f of 
     Disk_node n \<Rightarrow> (        
-      let frm = (frame_ops|>split_node_on_key) r n k in
+      let frm = (frame_ops|>split_node_on_key) r k n in
       let r = (frame_ops|>midpoint) frm in
       F_down(r0,k,r,frm#stk))
     | Disk_leaf leaf \<Rightarrow> F_finished(r0,k,r,leaf,stk)))))"

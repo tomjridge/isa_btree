@@ -4,7 +4,7 @@ begin
 
 
 definition step_down :: "
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
 ('r*'frame list) \<Rightarrow> (('r,'leaf,'frame)ls_state,'t) MM" where
 "step_down frame_ops store_ops r_fs = (
@@ -28,7 +28,7 @@ definition step_leaf :: "'leaf * 'frame list \<Rightarrow> ('r,'leaf,'frame) ls_
 
 (* assumes fs <> [] *)
 definition step_up :: "
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 'frame list \<Rightarrow> ('r,'leaf,'frame) ls_state" where
 "step_up frame_ops fs = (
   case fs of 
@@ -42,7 +42,7 @@ definition step_up :: "
 
   
 definition ls_step :: "
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
 ('r,'leaf,'frame) ls_state \<Rightarrow> (('r,'leaf,'frame) ls_state,'t) MM" where
 "ls_step frame_ops store_ops lss = (
@@ -55,7 +55,7 @@ definition ls_step :: "
 
 (* we iterate ls_step until we reach a leaf (or we finish the traversal) *)
 definition ls_step_to_next_leaf :: "
-('k,'r,'frame,'left_half,'right_half,'node) frame_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
 ('r,'leaf,'frame) ls_state \<Rightarrow> (('r,'leaf,'frame) ls_state option,'t) MM" where
 "ls_step_to_next_leaf frame_ops store_ops lss = (

@@ -64,13 +64,13 @@ constants \<Rightarrow>
     let original_r = (frame_ops|>backing_node_blk_ref) frm in
     case fo of
     I1 r \<Rightarrow> (
-      let n = (frame_ops|>unsplit_with_new_focus) (R r) frm in
+      let n = (frame_ops|>unsplit_with_new_focus) r frm in
       Disk_node(n) |> rewrite original_r |> bind (% r2. 
       case r2 of 
       None \<Rightarrow> return (Inr ())
       | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
     | I2 (r1,k,r2) \<Rightarrow> (
-      let n = (frame_ops|>unsplit_with_new_focus) (Rkr(r1,k,r2)) frm in
+      let n = (frame_ops|>unsplit_with_new_focus_2) (r1,k,r2) frm in
       let n = (n :: 'node) in
       case (node_ops|>node_keys_length) n \<le> (cs|>max_node_keys) of
       True \<Rightarrow> (
