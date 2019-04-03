@@ -97,124 +97,109 @@ let make_node_ops (type k r) ~k_cmp =
   let _ = node_steal_right in
   { split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length;
     node_make_small_root; node_get_single_r }
-    
+
+let _ :
+k_cmp:('a -> 'a -> int) ->
+('a, 'b, ('a option, 'b, 'c) Tjr_poly_map.map) node_ops
+= make_node_ops
+
 
 (* frame_ops -------------------------------------------------------- *)
 
-(* \doc(doc:frame_ops) *)
-type ('k,'r,'frame,'left_half,'right_half,'node) frame_ops = {
-  split_node_on_key: 'r -> 'node -> 'k -> 'frame;
-  left_half: 'frame -> 'left_half;
-  right_half: 'frame -> 'right_half;
+(* See Isabelle defn. See \doc(doc:frame_ops) *)
+type ('k,'r,'frame,'node) frame_ops = {
+  split_node_on_key: 'r -> 'k -> 'node -> 'frame;
   midpoint: 'frame -> 'r;
-  rh_dest_cons: 'right_half -> ('k*'r*'right_half) option;
-  lh_dest_snoc: 'left_half -> ('left_half*'r*'k) option;
-  unsplit: 'left_half*('k,'r)Isa_export.Stacks_and_frames.rkr_or_r * 'right_half -> 'node;
+  get_right_sibling_and_separator: 'frame -> ('k*'r) option;
+  remove_right_sibling: 'frame -> 'frame;
+  replace_right_sibling: 'k -> 'r -> 'frame -> 'frame;
+  get_left_sibling_and_separator: 'frame -> ('r * 'k) option;
+  remove_left_sibling: 'frame -> 'frame;
+  replace_left_sibling: 'r -> 'frame -> 'frame;
+  unsplit_with_new_focus: 'r -> 'frame -> 'node;
+  unsplit_with_new_focus_2: 'r*'k*'r -> 'frame -> 'node;
   get_midpoint_bounds: 'frame -> ('k option * 'k option);
-  backing_node_blk_ref: 'frame -> 'r
+  backing_node_blk_ref: 'frame -> 'r;
 }
 
 (* FIXME maybe move elsewhere *)
 
-
-type ('k,'node) left_half = 'node * 'k option
-
-type ('k,'r) frame = {
-  lh: ('k,'r) node;  (* may be empty *)
-  (* midkey: see Stacks_and_frames.thy *)
+type ('k,'r,'node) frame = {
   midkey: 'k option;  (* may be None *)
   midpoint: 'r;
-  rh: ('k,'r) node;  (* may be empty *)
+  node: 'node;
   backing_node_blk_ref: 'r
 }
 
-let mu_opt = function
-  | None -> None
-  | Some None -> None
-  | Some x -> Some x
-
-(* ~ks_dest_cons ~ks_dest_snoc *)
-let make_frame_ops (type k r ) 
-    ~map_ops
-    ~keyspace_ops
-    ~(node_ops:(k,r,(k,r)node)node_ops) 
-  = 
-  let open Tjr_lin_partition in
-  let split_node_on_key n k : (k, r) node * k option * r * (k, r) node = 
-    keyspace_ops.split_keyspace_on_key k n
-  in  
-  let split_node_on_key backing_node_blk_ref n k = 
-    split_node_on_key n k |> fun (lh,k,r,rh) -> 
-    { lh; rh; midkey=k; midpoint=r; backing_node_blk_ref}
+let make_frame_ops ~k_cmp = 
+  let map_ops = Tjr_poly_map.make_map_ops (key_compare k_cmp) in
+  Tjr_fs_shared.Map_with_key_traversal.make_ops ~map_ops @@ fun ~get_next_binding ~get_prev_binding ->
+  (* map_ops is a map from 'k option *)
+  let split_node_on_key backing_node_blk_ref k n = 
+    (* get the relevant key *)
+    let midkey,midpoint = 
+      map_ops.find_opt (Some k) n |> function
+      | None -> get_prev_binding (Some k) n |> dest_Some |> fun (k,r) ->
+                (k,r)
+      | Some r -> (Some k,r)
+    in
+    { midkey; midpoint; backing_node_blk_ref; node=n }
   in
-  (* left half is a pair of a total keyspace, and a bounding key *)
-  let left_half f = (`Lh,f.lh,f.midkey) in
-  let right_half f = (`Rh,f.rh) in
+  let _ = split_node_on_key in
   let midpoint f = f.midpoint in
-  let rh_dest_cons (_,rh) =     
-    map_ops.Tjr_poly_map.min_binding_opt rh |> function
-    | None -> None  (* rh is empty *)
-    | Some(None,_) -> failwith ("impossible "^__LOC__)
-    | Some(Some k,r) -> 
-      rh |> map_ops.remove (Some k) |> fun rh ->
-      Some(k,r,rh)
+  let get_right_sibling_and_separator f = 
+    f.node |> get_next_binding f.midkey |> function 
+      | None -> None 
+      | Some (k,r) -> Some(k|>dest_Some,r)
   in
-  let lh_dest_snoc (_,lh,k) = 
-    (* again, we may be in the situation that there is only a None
-       binding in lh, so we can't dest_snoc; or lh may be empty *)
-    match map_ops.max_binding_opt lh with
+  let remove_right_sibling f = 
+    get_right_sibling_and_separator f |> function
+      | None -> failwith __LOC__
+      | Some (k,r) -> { f with node=(f.node |> map_ops.remove (Some k)) }
+  in
+  let replace_right_sibling k r f = 
+    get_right_sibling_and_separator f |> function
+      | None -> failwith __LOC__
+      | Some (k1,r1) -> { f with node=(f.node |> map_ops.remove (Some k1) |> map_ops.add (Some k) r) }
+  in
+  let get_left_sibling_and_separator f = 
+    f.node |> get_prev_binding f.midkey |> function
     | None -> None
-    | Some(None,_) -> (
-        assert false
-        (* This case should not happen if we steal from a node which has at least 1 key *)
-      )
-    | Some (Some kn,rn) -> 
-      (* remove kn binding from lh *)
-      let lh = map_ops.remove (Some kn) lh in
-      (* we must take care of the extra key *)
-      let lh = (lh,kn) in
-      Some(lh,rn,k)
+    | Some (r,k) -> Some(r,k|>dest_Some)
   in
-  let unsplit (lh,rkr,rh) = 
-    (* \doc(doc:frame_ops) *)
-    let (lh,k1) = lh in
-    match rkr with 
-    | Isa_export.Stacks_and_frames.R r -> (
-        rh |> map_ops.add None r |> fun rh -> 
-        keyspace_ops.merge_keyspaces (lh,k1,rh))
-    | Rkr (r1,(k2,r2)) -> (
-        rh 
-        |> map_ops.add (Some k2) r2 
-        |> map_ops.add None r1 
-        |> fun rh -> 
-        keyspace_ops.merge_keyspaces (lh,k1,rh))
+  let remove_left_sibling f = 
+    get_left_sibling_and_separator f |> function
+    | None -> failwith __LOC__
+    | Some (r,k) -> { f with node=(f.node |> map_ops.remove (Some k)) }
   in
-  let get_midpoint_bounds f = 
+  let replace_left_sibling r1 f =
+    get_left_sibling_and_separator f |> function
+    | None -> failwith __LOC__
+    | Some (r,k) -> { f with node=(f.node |> map_ops.add (Some k) r1) }
+  in
+  let unsplit_with_new_focus r f =
+    f.node |> map_ops.add f.midkey r
+  in
+  let unsplit_with_new_focus_2 (r1,k,r2) f = 
+    f.node |> map_ops.add f.midkey r1
+    |> map_ops.add (Some k) r2
+  in
+  let get_midpoint_bounds f =
     let l = f.midkey in
-    let u = 
-      match map_ops.min_binding_opt f.rh with
+    let u = f.node |> get_next_binding f.midpoint |> function
       | None -> None
-      | Some(None,_) -> assert false  (* possible? *)
-      | Some(Some u,_) -> u
+      | Some (k,r) -> k
     in
     (l,u)
   in
   let backing_node_blk_ref f = f.backing_node_blk_ref in
-  let _ = split_node_on_key, left_half, right_half, midpoint, rh_dest_cons, lh_dest_snoc, unsplit, get_midpoint_bounds in
-  { split_node_on_key; left_half; right_half; midpoint; rh_dest_cons; lh_dest_snoc; unsplit; get_midpoint_bounds; backing_node_blk_ref }
+  { split_node_on_key; midpoint; get_right_sibling_and_separator; remove_right_sibling; replace_right_sibling;
+    get_left_sibling_and_separator; remove_left_sibling; replace_left_sibling; 
+    unsplit_with_new_focus; unsplit_with_new_focus_2; get_midpoint_bounds; backing_node_blk_ref }
     
-  
 
-(*
-FIXME got here; need to implement frame_ops 
+;;
 
-frame_ops builds on this
-
-then make_find_insert_delete should take a k_cmp and construct all the leaf and node and ops
-
-also need to add batch operations
-
-*)
 
 let make_find_insert_delete (type t) ~(monad_ops:t monad_ops) = 
   let module Monad = struct
