@@ -12,3 +12,4 @@ docs/pics/*.ps
 /dune-project
 /isa_btree.install
 /ocaml/.merlin
+/test/.merlin

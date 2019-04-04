@@ -97,3 +97,34 @@ and the separating key is k1
 ** rh_dest_cons should give (kn+1,rn+1,rest)
 
 
+* doc:testing
+
+We have quite a few representations in play:
+
+- Map (the spec)
+- Tree (including wf predicates)
+- Node via (k option map) implementation (and leaf impl too)
+  - Disk_node, Disk_leaf
+
+We need to map the Disk_node/Disk_leaf representation (wrt a dummy
+store where pointers r are actually whole subtrees) to the Tree repn,
+and then (for functional correctness) to the map. This should be
+fairly straightforward.
+
+NOTE we also have "check_tree_at_r'" which is currently performing wf
+checks at beginning and end of each operation. This is useful because
+if these checks are enabled, we don't have to do any wf checking, and
+can concentrate on functional testing.
+
+We might even think about putting spec-like testing into the
+Isabelle. For example, check_transition (impl,spec) (Insert(k,v))
+(impl',spec') (or, check_transition impl (Insert(k,v)) impl'; but this
+fails to cache any of the spec computations... but perhaps this is not
+really a problem). Or perhaps we work with a notion of "checked"
+state, where wf checks take (k,v)node to (k,v)checked_node. Without
+testing, checked_node is the same as node. With testing, checked_node
+include additional spec info. But this is just multiplying all the
+types.
+
+
+
