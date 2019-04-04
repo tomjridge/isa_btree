@@ -39,7 +39,7 @@ constants \<Rightarrow>
     True \<Rightarrow> (
       Disk_leaf leaf |> (store_ops|>wrte) |> fmap (% r'. ((I1(r'),stk),kvs)))
     | False \<Rightarrow> (
-      let (leaf1,k',leaf2) = (leaf_ops|>split_large_leaf) leaf in
+      let (leaf1,k',leaf2) = (leaf_ops|>split_large_leaf) (cs|>max_leaf_size) leaf in
       Disk_leaf leaf1 |> (store_ops|>wrte) |> bind (% r1. 
       Disk_leaf leaf2 |> (store_ops|>wrte) |> fmap (% r2. ((I2(r1,k',r2),stk),kvs)))) )))"
 

@@ -34,7 +34,7 @@ datatype_record ('k,'v,'leaf) leaf_ops =
   leaf_steal_right :: "'leaf*'leaf \<Rightarrow> 'leaf*'k*'leaf"
   leaf_steal_left :: "'leaf*'leaf \<Rightarrow> 'leaf*'k*'leaf"
   leaf_merge :: "'leaf*'leaf \<Rightarrow> 'leaf"
-  split_large_leaf :: "'leaf \<Rightarrow> 'leaf*'k*'leaf"
+  split_large_leaf :: "nat \<Rightarrow> 'leaf \<Rightarrow> 'leaf*'k*'leaf"
 (*  xmk_leaf :: "('k*'v) s \<Rightarrow> 'leaf"  (* FIXME avoid? *) *)
 
 (* we want a simple, obviously-correct implementation of these operations *)
@@ -51,8 +51,8 @@ definition split_list where
   |> (% (_,xs,ys). (List.rev xs, ys))
 )"
 
-definition rbt_as_leaf_ops :: "nat \<Rightarrow> ('k::linorder,'v,('k,'v)RBT_Impl.rbt) leaf_ops" where
-"rbt_as_leaf_ops max_leaf_size = \<lparr> 
+definition rbt_as_leaf_ops :: "('k::linorder,'v,('k,'v)RBT_Impl.rbt) leaf_ops" where
+"rbt_as_leaf_ops = \<lparr> 
   leaf_lookup=(% k l. rbt_lookup l k),
 leaf_insert=(% k v l. let v' = rbt_lookup l k in (rbt_insert k v l,v')),
 leaf_remove=(% k l. rbt_delete k l),
@@ -70,9 +70,9 @@ leaf_steal_left=( % (l1,l2).
   let l2' = rbt_insert k v l2 in
   (l1',k,l2')),
 leaf_merge=(% (l1,l2). rbt_union l1 l2),
-split_large_leaf=(% l. 
+split_large_leaf=(% n l. 
   let kvs = RBT_Impl.entries l in 
-  let (l1,l2) = split_list max_leaf_size kvs in
+  let (l1,l2) = split_list n kvs in
   let (k,_) = List.hd l2 in
   (rbtreeify l1,k,rbtreeify l2))
 \<rparr>"

@@ -42,7 +42,7 @@ constants \<Rightarrow>
         return (Inr ())
       | Some r' \<Rightarrow> return (Inl(I1 r',stk))))
     | False \<Rightarrow> (
-      let (leaf1,k',leaf2) = (leaf_ops|>split_large_leaf) leaf' in
+      let (leaf1,k',leaf2) = (leaf_ops|>split_large_leaf) (cs|>max_leaf_size) leaf' in
       Disk_leaf leaf1 |> write |> bind (% r1.
       Disk_leaf leaf2 |> write |> bind (% r2. 
       return (Inl(I2(r1,k',r2),stk)))))))"

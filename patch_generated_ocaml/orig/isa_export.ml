@@ -760,42 +760,48 @@ end;; (*struct A_start_here*)
 module Stacks_and_frames : sig
   type ('a, 'b, 'c, 'd) frame_ops =
     Make_frame_ops of
-      ('b -> 'a -> 'd -> 'c) * ('c -> 'b) * ('c -> ('a * 'b) option) *
-        ('c -> 'c) * ('a -> 'b -> 'c -> 'c) * ('c -> ('b * 'a) option) *
-        ('c -> 'c) * ('b -> 'c -> 'c) * ('b -> 'c -> 'd) *
-        ('b * ('a * 'b) -> 'c -> 'd) * ('c -> 'a option * 'a option) *
-        ('c -> 'b) * ('d -> 'c) * ('c -> 'c option)
+      ('b -> 'a -> 'd -> 'c) * ('c -> 'b) *
+        ('c -> 'a option * ('b * 'a option)) *
+        ('c -> ('a option * ('b * ('a * ('b * 'a option)))) option) *
+        ('c -> ('a option * ('b * ('a * ('b * 'a option)))) option) *
+        ('a option * ('b * (('a * 'b) list * 'a option)) ->
+          'a option * ('b * (('a * 'b) list * 'a option)) -> 'c -> 'c) *
+        ('c -> 'd) * ('c -> 'a option * 'a option) * ('c -> 'b) * ('d -> 'c) *
+        ('c -> 'c option)
   val get_bounds :
     ('a, 'b, 'c, 'd) frame_ops -> 'c list -> 'a option * 'a option
+  val replace :
+    ('a, 'b, 'c, 'd) frame_ops ->
+      'a option * ('b * (('a * 'b) list * 'a option)) ->
+        'a option * ('b * (('a * 'b) list * 'a option)) -> 'c -> 'c
   val midpoint : ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'b
+  val get_focus :
+    ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'a option * ('b * 'a option)
+  val frame_to_node : ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'd
   val split_node_on_key : ('a, 'b, 'c, 'd) frame_ops -> 'b -> 'a -> 'd -> 'c
   val step_frame_for_ls : ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'c option
-  val remove_left_sibling : ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'c
   val backing_node_blk_ref : ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'b
-  val remove_right_sibling : ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'c
-  val replace_left_sibling : ('a, 'b, 'c, 'd) frame_ops -> 'b -> 'c -> 'c
-  val replace_right_sibling : ('a, 'b, 'c, 'd) frame_ops -> 'a -> 'b -> 'c -> 'c
-  val unsplit_with_new_focus : ('a, 'b, 'c, 'd) frame_ops -> 'b -> 'c -> 'd
   val split_node_on_first_key : ('a, 'b, 'c, 'd) frame_ops -> 'd -> 'c
-  val unsplit_with_new_focus_2 :
-    ('a, 'b, 'c, 'd) frame_ops -> 'b * ('a * 'b) -> 'c -> 'd
-  val get_left_sibling_and_separator :
-    ('a, 'b, 'c, 'd) frame_ops -> 'c -> ('b * 'a) option
-  val get_right_sibling_and_separator :
-    ('a, 'b, 'c, 'd) frame_ops -> 'c -> ('a * 'b) option
+  val get_left_sibling_and_focus :
+    ('a, 'b, 'c, 'd) frame_ops ->
+      'c -> ('a option * ('b * ('a * ('b * 'a option)))) option
+  val get_focus_and_right_sibling :
+    ('a, 'b, 'c, 'd) frame_ops ->
+      'c -> ('a option * ('b * ('a * ('b * 'a option)))) option
 end = struct
 
 type ('a, 'b, 'c, 'd) frame_ops =
   Make_frame_ops of
-    ('b -> 'a -> 'd -> 'c) * ('c -> 'b) * ('c -> ('a * 'b) option) *
-      ('c -> 'c) * ('a -> 'b -> 'c -> 'c) * ('c -> ('b * 'a) option) *
-      ('c -> 'c) * ('b -> 'c -> 'c) * ('b -> 'c -> 'd) *
-      ('b * ('a * 'b) -> 'c -> 'd) * ('c -> 'a option * 'a option) *
-      ('c -> 'b) * ('d -> 'c) * ('c -> 'c option);;
+    ('b -> 'a -> 'd -> 'c) * ('c -> 'b) * ('c -> 'a option * ('b * 'a option)) *
+      ('c -> ('a option * ('b * ('a * ('b * 'a option)))) option) *
+      ('c -> ('a option * ('b * ('a * ('b * 'a option)))) option) *
+      ('a option * ('b * (('a * 'b) list * 'a option)) ->
+        'a option * ('b * (('a * 'b) list * 'a option)) -> 'c -> 'c) *
+      ('c -> 'd) * ('c -> 'a option * 'a option) * ('c -> 'b) * ('d -> 'c) *
+      ('c -> 'c option);;
 
 let rec get_midpoint_bounds
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x11;;
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x8;;
 
 let rec get_bounds
   frame_ops stk =
@@ -821,57 +827,35 @@ let rec get_bounds
         (None, (None, stk)))
       (fun (l, (u, _)) -> (l, u));;
 
+let rec replace
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x6;;
+
 let rec midpoint
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x2;;
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x2;;
+
+let rec get_focus
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x3;;
+
+let rec frame_to_node
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x7;;
 
 let rec split_node_on_key
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x1;;
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x1;;
 
 let rec step_frame_for_ls
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x14;;
-
-let rec remove_left_sibling
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x7;;
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x11;;
 
 let rec backing_node_blk_ref
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x12;;
-
-let rec remove_right_sibling
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x4;;
-
-let rec replace_left_sibling
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x8;;
-
-let rec replace_right_sibling
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x5;;
-
-let rec unsplit_with_new_focus
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x9;;
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x9;;
 
 let rec split_node_on_first_key
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x13;;
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x10;;
 
-let rec unsplit_with_new_focus_2
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x10;;
+let rec get_left_sibling_and_focus
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x5;;
 
-let rec get_left_sibling_and_separator
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x6;;
-
-let rec get_right_sibling_and_separator
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14))
-    = x3;;
+let rec get_focus_and_right_sibling
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)) = x4;;
 
 end;; (*struct Stacks_and_frames*)
 
@@ -951,7 +935,7 @@ module Disk_node : sig
       ('a -> 'c -> 'b option) * ('a -> 'b -> 'c -> 'c * 'b option) *
         ('a -> 'c -> 'c) * ('c -> Arith.nat) * ('c -> ('a * 'b) list) *
         ('c * 'c -> 'c * ('a * 'c)) * ('c * 'c -> 'c * ('a * 'c)) *
-        ('c * 'c -> 'c) * ('c -> 'c * ('a * 'c))
+        ('c * 'c -> 'c) * (Arith.nat -> 'c -> 'c * ('a * 'c))
   type ('a, 'b, 'c) node_ops =
     Make_node_ops of
       (Arith.nat -> 'c -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c) *
@@ -961,8 +945,7 @@ module Disk_node : sig
   val dest_Disk_leaf : ('a, 'b) dnode -> 'b
   val dest_Disk_node : ('a, 'b) dnode -> 'a
   val rbt_as_leaf_ops :
-    'a Orderings.linorder ->
-      Arith.nat -> ('a, 'b, ('a, 'b) RBT_Impl.rbt) leaf_ops
+    'a Orderings.linorder -> ('a, 'b, ('a, 'b) RBT_Impl.rbt) leaf_ops
   val leaf_merge : ('a, 'b, 'c) leaf_ops -> 'c * 'c -> 'c
   val node_merge : ('a, 'b, 'c) node_ops -> 'c * ('a * 'c) -> 'c
   val leaf_insert : ('a, 'b, 'c) leaf_ops -> 'a -> 'b -> 'c -> 'c * 'b option
@@ -973,7 +956,8 @@ module Disk_node : sig
   val node_steal_left :
     ('a, 'b, 'c) node_ops -> 'c * ('a * 'c) -> 'c * ('a * 'c)
   val leaf_steal_right : ('a, 'b, 'c) leaf_ops -> 'c * 'c -> 'c * ('a * 'c)
-  val split_large_leaf : ('a, 'b, 'c) leaf_ops -> 'c -> 'c * ('a * 'c)
+  val split_large_leaf :
+    ('a, 'b, 'c) leaf_ops -> Arith.nat -> 'c -> 'c * ('a * 'c)
   val node_keys_length : ('a, 'b, 'c) node_ops -> 'c -> Arith.nat
   val node_steal_right :
     ('a, 'b, 'c) node_ops -> 'c * ('a * 'c) -> 'c * ('a * 'c)
@@ -990,7 +974,7 @@ type ('a, 'b, 'c) leaf_ops =
     ('a -> 'c -> 'b option) * ('a -> 'b -> 'c -> 'c * 'b option) *
       ('a -> 'c -> 'c) * ('c -> Arith.nat) * ('c -> ('a * 'b) list) *
       ('c * 'c -> 'c * ('a * 'c)) * ('c * 'c -> 'c * ('a * 'c)) *
-      ('c * 'c -> 'c) * ('c -> 'c * ('a * 'c));;
+      ('c * 'c -> 'c) * (Arith.nat -> 'c -> 'c * ('a * 'c));;
 
 type ('a, 'b, 'c) node_ops =
   Make_node_ops of
@@ -1021,8 +1005,7 @@ let rec dest_Disk_node
         | Disk_leaf _ -> A_start_here.failwitha "dest_Disk_node");;
 
 let rec rbt_as_leaf_ops _A
-  max_leaf_size =
-    Make_leaf_ops
+  = Make_leaf_ops
       ((fun k l ->
          RBT_Impl.rbt_lookup
            _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
@@ -1080,9 +1063,9 @@ let rec rbt_as_leaf_ops _A
           RBT_Impl.rbt_union
             _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
             a b),
-        (fun l ->
+        (fun n l ->
           (let kvs = RBT_Impl.entries l in
-           let (l1, l2) = split_list max_leaf_size kvs in
+           let (l1, l2) = split_list n kvs in
            let (k, _) = Lista.hd l2 in
             (RBT_Impl.rbtreeify l1, (k, RBT_Impl.rbtreeify l2)))));;
 
@@ -1689,13 +1672,13 @@ let rec step_up_small_node
      let post_mergea = post_merge cs node_ops store_ops in
       (match
         A_start_here.rev_apply frame_ops
-          Stacks_and_frames.get_right_sibling_and_separator frm
+          Stacks_and_frames.get_focus_and_right_sibling frm
         with None ->
           (match
             A_start_here.rev_apply frame_ops
-              Stacks_and_frames.get_left_sibling_and_separator frm
+              Stacks_and_frames.get_left_sibling_and_focus frm
             with None -> A_start_here.failwitha "impossible"
-            | Some (r1, k1) ->
+            | Some (k1, (r1, (k2, (r2, k3)))) ->
               A_start_here.rev_apply
                 (A_start_here.rev_apply (A_start_here.rev_apply r1 read)
                   (Monad.fmap Disk_node.dest_Disk_node))
@@ -1710,7 +1693,7 @@ let rec step_up_small_node
                       with true ->
                         A_start_here.rev_apply
                           (A_start_here.rev_apply node_ops Disk_node.node_merge
-                            (left_sibling, (k1, n)))
+                            (left_sibling, (k2, n)))
                           (fun na ->
                             A_start_here.rev_apply
                               (write (Disk_node.Disk_node na))
@@ -1719,15 +1702,16 @@ let rec step_up_small_node
                                   A_start_here.rev_apply
                                     (A_start_here.rev_apply
                                       (A_start_here.rev_apply frm
-(A_start_here.rev_apply frame_ops Stacks_and_frames.remove_left_sibling))
+(A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+  (k1, (r1, ([(k2, r2)], k3))) (k1, (r, ([], k3)))))
                                       (A_start_here.rev_apply frame_ops
-Stacks_and_frames.unsplit_with_new_focus r))
+Stacks_and_frames.frame_to_node))
                                     post_mergea)))
                       | false ->
                         A_start_here.rev_apply
                           (A_start_here.rev_apply node_ops
-                            Disk_node.node_steal_left (left_sibling, (k1, n)))
-                          (fun (left_siblinga, (_, na)) ->
+                            Disk_node.node_steal_left (left_sibling, (k2, n)))
+                          (fun (left_siblinga, (k2a, na)) ->
                             A_start_here.rev_apply
                               (write (Disk_node.Disk_node left_siblinga))
                               (Monad.bind
@@ -1735,22 +1719,21 @@ Stacks_and_frames.unsplit_with_new_focus r))
                                   A_start_here.rev_apply
                                     (write (Disk_node.Disk_node na))
                                     (Monad.bind
-                                      (fun r2 ->
+                                      (fun r2a ->
 A_start_here.rev_apply
   (A_start_here.rev_apply
     (A_start_here.rev_apply
       (A_start_here.rev_apply
         (A_start_here.rev_apply frm
-          (A_start_here.rev_apply frame_ops
-            Stacks_and_frames.replace_left_sibling r1a))
-        (A_start_here.rev_apply frame_ops
-          Stacks_and_frames.unsplit_with_new_focus r2))
+          (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+            (k1, (r1, ([(k2, r2)], k3))) (k1, (r1a, ([(k2a, r2a)], k3)))))
+        (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
       (fun a -> Disk_node.Disk_node a))
     write)
   (Monad.fmap (fun a -> Delete_state.D_updated_subtree a)))))))))))
-        | Some (k1, r1) ->
+        | Some (k1, (r1, (k2, (r2, k3)))) ->
           A_start_here.rev_apply
-            (A_start_here.rev_apply (A_start_here.rev_apply r1 read)
+            (A_start_here.rev_apply (A_start_here.rev_apply r2 read)
               (Monad.fmap Disk_node.dest_Disk_node))
             (Monad.bind
               (fun right_sibling ->
@@ -1763,7 +1746,7 @@ A_start_here.rev_apply
                   with true ->
                     A_start_here.rev_apply
                       (A_start_here.rev_apply node_ops Disk_node.node_merge
-                        (n, (k1, right_sibling)))
+                        (n, (k2, right_sibling)))
                       (fun na ->
                         A_start_here.rev_apply (write (Disk_node.Disk_node na))
                           (Monad.bind
@@ -1772,31 +1755,32 @@ A_start_here.rev_apply
                                 (A_start_here.rev_apply
                                   (A_start_here.rev_apply frm
                                     (A_start_here.rev_apply frame_ops
-                                      Stacks_and_frames.remove_right_sibling))
+                                      Stacks_and_frames.replace
+                                      (k1, (r1, ([(k2, r2)], k3)))
+                                      (k1, (r, ([], k3)))))
                                   (A_start_here.rev_apply frame_ops
-                                    Stacks_and_frames.unsplit_with_new_focus r))
+                                    Stacks_and_frames.frame_to_node))
                                 post_mergea)))
                   | false ->
                     A_start_here.rev_apply
                       (A_start_here.rev_apply node_ops
-                        Disk_node.node_steal_right (n, (k1, right_sibling)))
-                      (fun (na, (k1a, right_siblinga)) ->
+                        Disk_node.node_steal_right (n, (k2, right_sibling)))
+                      (fun (na, (k2a, right_siblinga)) ->
                         A_start_here.rev_apply (write (Disk_node.Disk_node na))
                           (Monad.bind
                             (fun r1a ->
                               A_start_here.rev_apply
                                 (write (Disk_node.Disk_node right_siblinga))
                                 (Monad.bind
-                                  (fun r2 ->
+                                  (fun r2a ->
                                     A_start_here.rev_apply
                                       (A_start_here.rev_apply
 (A_start_here.rev_apply
   (A_start_here.rev_apply
     (A_start_here.rev_apply frm
-      (A_start_here.rev_apply frame_ops Stacks_and_frames.replace_right_sibling
-        k1a r2))
-    (A_start_here.rev_apply frame_ops Stacks_and_frames.unsplit_with_new_focus
-      r1a))
+      (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+        (k1, (r1, ([(k2, r2)], k3))) (k1, (r1a, ([(k2a, r2a)], k3)))))
+    (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
   (fun a -> Disk_node.Disk_node a))
 write)
                                       (Monad.fmap
@@ -1811,13 +1795,13 @@ let rec step_up_small_leaf
      let post_mergea = post_merge cs node_ops store_ops in
       (match
         A_start_here.rev_apply frame_ops
-          Stacks_and_frames.get_right_sibling_and_separator frm
+          Stacks_and_frames.get_focus_and_right_sibling frm
         with None ->
           (match
             A_start_here.rev_apply frame_ops
-              Stacks_and_frames.get_left_sibling_and_separator frm
+              Stacks_and_frames.get_left_sibling_and_focus frm
             with None -> A_start_here.failwitha "impossible"
-            | Some (r1, _) ->
+            | Some (k1, (r1, (k2, (r2, k3)))) ->
               A_start_here.rev_apply
                 (A_start_here.rev_apply (A_start_here.rev_apply r1 read)
                   (Monad.fmap Disk_node.dest_Disk_leaf))
@@ -1841,15 +1825,16 @@ let rec step_up_small_leaf
                                   A_start_here.rev_apply
                                     (A_start_here.rev_apply
                                       (A_start_here.rev_apply frm
-(A_start_here.rev_apply frame_ops Stacks_and_frames.remove_left_sibling))
+(A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+  (k1, (r1, ([(k2, r2)], k3))) (k1, (r, ([], k3)))))
                                       (A_start_here.rev_apply frame_ops
-Stacks_and_frames.unsplit_with_new_focus r))
+Stacks_and_frames.frame_to_node))
                                     post_mergea)))
                       | false ->
                         A_start_here.rev_apply
                           (A_start_here.rev_apply leaf_ops
                             Disk_node.leaf_steal_left (left_leaf, leaf))
-                          (fun (left_leafa, (_, leafa)) ->
+                          (fun (left_leafa, (k, leafa)) ->
                             A_start_here.rev_apply
                               (write (Disk_node.Disk_leaf left_leafa))
                               (Monad.bind
@@ -1857,22 +1842,21 @@ Stacks_and_frames.unsplit_with_new_focus r))
                                   A_start_here.rev_apply
                                     (write (Disk_node.Disk_leaf leafa))
                                     (Monad.bind
-                                      (fun r2 ->
+                                      (fun r2a ->
 A_start_here.rev_apply
   (A_start_here.rev_apply
     (A_start_here.rev_apply
       (A_start_here.rev_apply
         (A_start_here.rev_apply frm
-          (A_start_here.rev_apply frame_ops
-            Stacks_and_frames.replace_left_sibling r1a))
-        (A_start_here.rev_apply frame_ops
-          Stacks_and_frames.unsplit_with_new_focus r2))
+          (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+            (k1, (r1, ([(k2, r2)], k3))) (k1, (r1a, ([(k, r2a)], k3)))))
+        (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
       (fun a -> Disk_node.Disk_node a))
     write)
   (Monad.fmap (fun a -> Delete_state.D_updated_subtree a)))))))))))
-        | Some (_, r1) ->
+        | Some (k1, (r1, (k2, (r2, k3)))) ->
           A_start_here.rev_apply
-            (A_start_here.rev_apply (A_start_here.rev_apply r1 read)
+            (A_start_here.rev_apply (A_start_here.rev_apply r2 read)
               (Monad.fmap Disk_node.dest_Disk_leaf))
             (Monad.bind
               (fun right_leaf ->
@@ -1895,15 +1879,17 @@ A_start_here.rev_apply
                                 (A_start_here.rev_apply
                                   (A_start_here.rev_apply frm
                                     (A_start_here.rev_apply frame_ops
-                                      Stacks_and_frames.remove_right_sibling))
+                                      Stacks_and_frames.replace
+                                      (k1, (r1, ([(k2, r2)], k3)))
+                                      (k1, (r, ([], k3)))))
                                   (A_start_here.rev_apply frame_ops
-                                    Stacks_and_frames.unsplit_with_new_focus r))
+                                    Stacks_and_frames.frame_to_node))
                                 post_mergea)))
                   | false ->
                     A_start_here.rev_apply
                       (A_start_here.rev_apply leaf_ops
                         Disk_node.leaf_steal_right (leaf, right_leaf))
-                      (fun (leafa, (k1, right_leafa)) ->
+                      (fun (leafa, (k, right_leafa)) ->
                         A_start_here.rev_apply
                           (write (Disk_node.Disk_leaf leafa))
                           (Monad.bind
@@ -1911,16 +1897,15 @@ A_start_here.rev_apply
                               A_start_here.rev_apply
                                 (write (Disk_node.Disk_leaf right_leafa))
                                 (Monad.bind
-                                  (fun r2 ->
+                                  (fun r2a ->
                                     A_start_here.rev_apply
                                       (A_start_here.rev_apply
 (A_start_here.rev_apply
   (A_start_here.rev_apply
     (A_start_here.rev_apply frm
-      (A_start_here.rev_apply frame_ops Stacks_and_frames.replace_right_sibling
-        k1 r2))
-    (A_start_here.rev_apply frame_ops Stacks_and_frames.unsplit_with_new_focus
-      r1a))
+      (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+        (k1, (r1, ([(k2, r2)], k3))) (k1, (r1a, ([(k, r2a)], k3)))))
+    (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
   (fun a -> Disk_node.Disk_node a))
 write)
                                       (Monad.fmap
@@ -1946,14 +1931,23 @@ let rec step_up
                   a
               | Delete_state.D_updated_subtree r ->
                 A_start_here.rev_apply
-                  (A_start_here.rev_apply
-                    (A_start_here.rev_apply
-                      (A_start_here.rev_apply frm
-                        (A_start_here.rev_apply frame_ops
-                          Stacks_and_frames.unsplit_with_new_focus r))
-                      (fun a -> Disk_node.Disk_node a))
-                    write)
-                  (Monad.fmap (fun a -> Delete_state.D_updated_subtree a)))
+                  (A_start_here.rev_apply frm
+                    (A_start_here.rev_apply frame_ops
+                      Stacks_and_frames.get_focus))
+                  (fun (k1, (r1, k2)) ->
+                    A_start_here.rev_apply
+                      (A_start_here.rev_apply
+                        (A_start_here.rev_apply
+                          (A_start_here.rev_apply
+                            (A_start_here.rev_apply frm
+                              (A_start_here.rev_apply frame_ops
+                                Stacks_and_frames.replace (k1, (r1, ([], k2)))
+                                (k1, (r, ([], k2)))))
+                            (A_start_here.rev_apply frame_ops
+                              Stacks_and_frames.frame_to_node))
+                          (fun a -> Disk_node.Disk_node a))
+                        write)
+                      (Monad.fmap (fun a -> Delete_state.D_updated_subtree a))))
             (Monad.fmap (fun y -> (y, stka)))));;
 
 let rec delete_step
@@ -2109,6 +2103,8 @@ let rec step_bottom
               | false ->
                 (let (leaf1, (ka, leaf2)) =
                    A_start_here.rev_apply leaf_ops Disk_node.split_large_leaf
+                     (A_start_here.rev_apply cs
+                       Constants_and_size_types.max_leaf_size)
                      leafa
                    in
                   A_start_here.rev_apply
@@ -2139,56 +2135,73 @@ let rec step_up
        in
       (match u with (_, []) -> A_start_here.failwitha "insert, step_up,1"
         | (fo, frm :: stk) ->
-          (let original_r =
+          (let backing_r =
              A_start_here.rev_apply frame_ops
                Stacks_and_frames.backing_node_blk_ref frm
              in
             (match fo
               with Insert_state.I1 r ->
-                (let n =
-                   A_start_here.rev_apply frame_ops
-                     Stacks_and_frames.unsplit_with_new_focus r frm
+                (let (k1, (r1, k2)) =
+                   A_start_here.rev_apply frame_ops Stacks_and_frames.get_focus
+                     frm
                    in
                   A_start_here.rev_apply
-                    (A_start_here.rev_apply (Disk_node.Disk_node n)
-                      (rewrite original_r))
+                    (A_start_here.rev_apply
+                      (A_start_here.rev_apply
+                        (A_start_here.rev_apply
+                          (A_start_here.rev_apply frm
+                            (A_start_here.rev_apply frame_ops
+                              Stacks_and_frames.replace (k1, (r1, ([], k2)))
+                              (k1, (r, ([], k2)))))
+                          (A_start_here.rev_apply frame_ops
+                            Stacks_and_frames.frame_to_node))
+                        (fun a -> Disk_node.Disk_node a))
+                      (rewrite backing_r))
                     (Monad.bind
                       (fun a ->
                         (match a with None -> Monad.return (Sum_Type.Inr ())
                           | Some r2 ->
                             Monad.return
                               (Sum_Type.Inl (Insert_state.I1 r2, stk))))))
-              | Insert_state.I2 (r1, (k, r2)) ->
-                (let n =
-                   A_start_here.rev_apply frame_ops
-                     Stacks_and_frames.unsplit_with_new_focus_2 (r1, (k, r2))
+              | Insert_state.I2 (r, (k, ra)) ->
+                (let (k1, (r1, k2)) =
+                   A_start_here.rev_apply frame_ops Stacks_and_frames.get_focus
                      frm
                    in
-                 let na = n in
+                 let n =
+                   A_start_here.rev_apply
+                     (A_start_here.rev_apply frm
+                       (A_start_here.rev_apply frame_ops
+                         Stacks_and_frames.replace (k1, (r1, ([], k2)))
+                         (k1, (r, ([(k, ra)], k2)))))
+                     (A_start_here.rev_apply frame_ops
+                       Stacks_and_frames.frame_to_node)
+                   in
                   (match
                     Arith.less_eq_nat
                       (A_start_here.rev_apply node_ops
-                        Disk_node.node_keys_length na)
+                        Disk_node.node_keys_length n)
                       (A_start_here.rev_apply cs
                         Constants_and_size_types.max_node_keys)
                     with true ->
                       A_start_here.rev_apply
-                        (A_start_here.rev_apply (Disk_node.Disk_node na)
-                          (rewrite original_r))
+                        (A_start_here.rev_apply (Disk_node.Disk_node n)
+                          (rewrite backing_r))
                         (Monad.bind
                           (fun a ->
                             (match a with None -> Monad.return (Sum_Type.Inr ())
-                              | Some r2a ->
+                              | Some r2 ->
                                 Monad.return
-                                  (Sum_Type.Inl (Insert_state.I1 r2a, stk)))))
+                                  (Sum_Type.Inl (Insert_state.I1 r2, stk)))))
                     | false ->
                       (let index =
-                         A_start_here.rev_apply cs
-                           Constants_and_size_types.max_node_keys
+                         Arith.plus_nat Arith.one_nat
+                           (A_start_here.rev_apply cs
+                             Constants_and_size_types.max_node_keys)
                          in
                        let (n1, (ka, n2)) =
                          A_start_here.rev_apply node_ops
-                           Disk_node.split_node_at_k_index index na
+                           Disk_node.split_node_at_k_index index n
                          in
                         A_start_here.rev_apply
                           (A_start_here.rev_apply (Disk_node.Disk_node n1)
@@ -2199,10 +2212,10 @@ let rec step_up
                                 (A_start_here.rev_apply (Disk_node.Disk_node n2)
                                   write)
                                 (Monad.bind
-                                  (fun r2a ->
+                                  (fun r2 ->
                                     Monad.return
                                       (Sum_Type.Inl
-(Insert_state.I2 (r1a, (ka, r2a)), stk)))))))))))));;
+(Insert_state.I2 (r1a, (ka, r2)), stk)))))))))))));;
 
 let rec insert_step
   cs leaf_ops node_ops frame_ops store_ops =
@@ -2369,7 +2382,10 @@ let rec im_step_bottom
                     | false ->
                       (let (leaf1, (k, leaf2)) =
                          A_start_here.rev_apply leaf_ops
-                           Disk_node.split_large_leaf leafa
+                           Disk_node.split_large_leaf
+                           (A_start_here.rev_apply cs
+                             Constants_and_size_types.max_leaf_size)
+                           leafa
                          in
                         A_start_here.rev_apply
                           (A_start_here.rev_apply (Disk_node.Disk_leaf leaf1)

@@ -2,6 +2,9 @@ open Tjr_monad.Types
 open Constants_type
 open Isa_export
 
+let dest_Some x = match x with Some x -> x | _ -> failwith "dest_Some"
+
+
 type ('node,'leaf) dnode = ('node,'leaf) Disk_node.dnode
 
 type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
@@ -9,6 +12,63 @@ type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
  insert: r:'r -> k:'k -> v:'v -> ('r option,'t) m;
  delete: r:'r -> k:'k -> ('r,'t) m;
 }
+
+(* leaf ops --------------------------------------------------------- *)
+
+
+(* As Isabelle def. See \doc(doc:leaf_ops). *)
+
+type ('k,'v,'leaf) leaf_ops = {
+  leaf_lookup: 'k -> 'leaf -> 'v option;
+  leaf_insert: 'k -> 'v -> 'leaf -> 'leaf * 'v option;
+  leaf_remove: 'k -> 'leaf -> 'leaf;
+  leaf_length: 'leaf -> int;
+  dbg_leaf_kvs: 'leaf -> ('k*'v) list;
+  leaf_steal_right: 'leaf * 'leaf -> 'leaf * 'k * 'leaf;
+  leaf_steal_left: 'leaf*'leaf -> 'leaf*'k*'leaf;
+  leaf_merge: 'leaf * 'leaf -> 'leaf;
+  split_large_leaf: int -> 'leaf -> 'leaf*'k*'leaf
+}
+
+
+let make_leaf_ops ~k_cmp = 
+  let map_ops = Tjr_poly_map.make_map_ops k_cmp in
+  let leaf_lookup k l = map_ops.find_opt k l in
+  let leaf_insert k v l = 
+    map_ops.find_opt k l |> fun v' ->
+    map_ops.add k v l |> fun l -> (l,v')
+  in
+  let leaf_remove k l = map_ops.remove k l in
+  let leaf_length l = map_ops.cardinal l in
+  let dbg_leaf_kvs l = map_ops.bindings l in
+  let leaf_steal_right (l1,l2) =
+    map_ops.min_binding_opt l2 |> dest_Some |> fun (k,v) ->
+    l2 |> map_ops.remove k |> map_ops.min_binding_opt |> dest_Some |> fun (k',_) ->
+    l1 |> map_ops.add k v |> fun l1 ->
+    (l1,k',l2)
+  in
+  let leaf_steal_left (l1,l2) =
+    map_ops.max_binding_opt l1 |> dest_Some |> fun (k,v) ->
+    l1 |> map_ops.remove k |> fun l1 ->
+    l2 |> map_ops.add k v |> fun l2 ->
+    (l1,k,l2)
+  in
+  let leaf_merge (l1,l2) = map_ops.disjoint_union l1 l2 in
+  let split_large_leaf i l1 = 
+    l1 |> map_ops.bindings |> Tjr_list.drop i |> fun binds -> 
+    match binds with
+    | [] -> failwith __LOC__
+    | (k,v)::rest -> 
+      l1 |> map_ops.split k |> fun (l1,_,l2) -> 
+      l2 |> map_ops.add k v |> fun l2 ->
+      (l1,k,l2)
+  in
+  { leaf_lookup; leaf_insert; leaf_remove; leaf_length; 
+    dbg_leaf_kvs; leaf_steal_right; leaf_steal_left; 
+    leaf_merge;
+    split_large_leaf }
+  
+
 
 
 (* node ops --------------------------------------------------------- *)
@@ -30,7 +90,7 @@ type ('k,'r,'node) node_ops = {
 (*  node_dest_cons: 'node -> 'r * 'k * 'node;  (* NOTE only for a node *)
   node_dest_snoc: 'node -> 'node * 'k * 'r;  (* NOTE only for a node *) *)
 
-open Tjr_fs_shared
+(* open Tjr_fs_shared *)
 
 (* implement node ops using a map from option; see impl notes in \doc(doc:node_ops) *)
 
@@ -43,9 +103,7 @@ let rec key_compare k_cmp k1 k2 =
   | _,None -> 1
   | Some k1, Some k2 -> k_cmp k1 k2
 
-let dest_Some x = match x with Some x -> x | _ -> failwith "dest_Some"
-
-let make_node_ops (type k r) ~k_cmp = 
+let make_node_ops (type k) ~(k_cmp:k -> k -> int) = 
   let map_ops = Tjr_poly_map.make_map_ops (key_compare k_cmp) in
   let make_node ks rs = 
     assert(List.length rs = 1 + List.length ks);
@@ -271,17 +329,33 @@ type int = Int_of_integer of Big_int.big_int;;
       (fun (a,(b,c)) -> node_make_small_root (a,b,c)), 
       node_get_single_r)
   in
-  let frame_ops2isa (left_half,right_half,midpoint,rh_dest_cons,lh_dest_snoc,unsplit,get_midpoint_bounds,split_node_on_key,original_node_r,split_node_on_first_key,step_frame_for_ls) = 
-    Isa_export.Stacks_and_frames.Make_frame_ops(left_half,right_half,midpoint,rh_dest_cons,lh_dest_snoc,unsplit,get_midpoint_bounds,split_node_on_key,original_node_r,split_node_on_first_key,step_frame_for_ls)
+  let frame_ops2isa frame_ops = 
+    let   { split_node_on_key; midpoint; get_focus; get_focus_and_right_sibling; 
+    get_left_sibling_and_focus; replace; frame_to_node; get_midpoint_bounds;
+            backing_node_blk_ref } = frame_ops 
+    in
+    let seg2isa (a,b,c,d) = (a,(b,(c,d))) in
+    let isa2seg (a,(b,(c,d))) = (a,b,c,d) in
+    Isa_export.Stacks_and_frames.Make_frame_ops(
+      split_node_on_key, midpoint, 
+      (fun f -> get_focus f |> fun (a,b,c) -> (a,(b,c))), 
+      (fun f -> get_focus_and_right_sibling f |> function None -> None | Some(a,b,c,d,e) -> Some(a,(b,(c,(d,e))))), 
+      (fun f -> get_left_sibling_and_focus f |> function None -> None | Some(a,b,c,d,e) -> Some(a,(b,(c,(d,e))))),
+      (fun seg1 seg2 -> replace (isa2seg seg1) (isa2seg seg2)), 
+      frame_to_node, 
+      get_midpoint_bounds, 
+      backing_node_blk_ref, 
+      (fun x -> failwith "FIXME_not_implemented"), 
+      (fun x -> failwith "FIXME not implemented"))
   in
   let store_ops2isa store_ops = 
     let (a,b,c,d) = store_ops in
     M.Post_monad.make_store_ops a b c d
   in
   fun ~cs ~k_cmp
-    ~leaf_ops
+(*    ~leaf_ops
     ~node_ops
-    ~frame_ops
+    ~frame_ops *)
     ~store_ops
     ~check_tree_at_r'
     -> 
