@@ -81,7 +81,7 @@ constants \<Rightarrow>
         None \<Rightarrow> return (Inr ())
         | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
       | False \<Rightarrow> (
-        let index = 1+(cs|>max_node_keys) in
+        let index = cs|>max_node_keys in  (* index counts from 0 *)
         let (n1,k,n2) = (node_ops|>split_node_at_k_index) index n in  
         Disk_node(n1) |> write |> bind (% r1. 
         Disk_node(n2) |> write |> bind (% r2.

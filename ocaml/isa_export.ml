@@ -1816,7 +1816,7 @@ let rec step_up_small_leaf
           (match
             A_start_here.rev_apply frame_ops
               Stacks_and_frames.get_left_sibling_and_focus frm
-            with None -> A_start_here.failwitha "impossible"
+            with None -> A_start_here.failwitha "impossible 1819"
             | Some (k1, (r1, (k2, (r2, k3)))) ->
               A_start_here.rev_apply
                 (A_start_here.rev_apply (A_start_here.rev_apply r1 read)
@@ -2211,9 +2211,8 @@ let rec step_up
                                   (Sum_Type.Inl (Insert_state.I1 r2, stk)))))
                     | false ->
                       (let index =
-                         Arith.plus_nat Arith.one_nat
-                           (A_start_here.rev_apply cs
-                             Constants_and_size_types.max_node_keys)
+                         A_start_here.rev_apply cs
+                           Constants_and_size_types.max_node_keys
                          in
                        let (n1, (ka, n2)) =
                          A_start_here.rev_apply node_ops

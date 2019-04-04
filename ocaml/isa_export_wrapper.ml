@@ -116,6 +116,14 @@ let make_node_ops (type k) ~(k_cmp:k -> k -> int) =
     map_ops.bindings n |> fun krs -> 
     let ks,rs = List.split krs in
     let ks = List.tl ks |> List.map dest_Some in  (* drop None *)
+    assert(
+      let len = List.length ks in 
+      let _ = 
+        match i < len with
+        | false -> Printf.printf "NOTE %s: %d %d\n%!" __LOC__ i len
+        | true -> ()
+      in
+      i < len);
     let k = List.nth ks i in
     let r = map_ops.find_opt (Some k) n |> dest_Some in
     let (n1,_,n2) = map_ops.split (Some k) n in
