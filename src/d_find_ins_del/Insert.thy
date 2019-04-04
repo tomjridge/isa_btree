@@ -61,25 +61,27 @@ constants \<Rightarrow>
   case stk of 
   [] \<Rightarrow> failwith (STR ''insert, step_up,1'') 
   | frm#stk' \<Rightarrow> (
-    let original_r = (frame_ops|>backing_node_blk_ref) frm in
+    let backing_r = (frame_ops|>backing_node_blk_ref) frm in
     case fo of
     I1 r \<Rightarrow> (
-      let n = (frame_ops|>unsplit_with_new_focus) r frm in
-      Disk_node(n) |> rewrite original_r |> bind (% r2. 
+      let (k1,r1,k2) = (frame_ops|>get_focus) frm in
+      frm |> (frame_ops|>replace) (k1,r1,[],k2) (k1,r,[],k2) 
+      |> (frame_ops|>frame_to_node) 
+      |> Disk_node |> rewrite backing_r |> bind (% r2. 
       case r2 of 
       None \<Rightarrow> return (Inr ())
       | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
-    | I2 (r1,k,r2) \<Rightarrow> (
-      let n = (frame_ops|>unsplit_with_new_focus_2) (r1,k,r2) frm in
-      let n = (n :: 'node) in
+    | I2 (r,k,r') \<Rightarrow> (
+      let (k1,r1,k2) = (frame_ops|>get_focus) frm in
+      let n = frm |> (frame_ops|>replace) (k1,r1,[],k2) (k1,r,[(k,r')],k2) |> (frame_ops|>frame_to_node) in
       case (node_ops|>node_keys_length) n \<le> (cs|>max_node_keys) of
       True \<Rightarrow> (
-        Disk_node(n) |> rewrite original_r |> bind (% r2. 
+        Disk_node(n) |> rewrite backing_r |> bind (% r2. 
         case r2 of 
         None \<Rightarrow> return (Inr ())
         | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
       | False \<Rightarrow> (
-        let index = cs|>max_node_keys in
+        let index = 1+(cs|>max_node_keys) in
         let (n1,k,n2) = (node_ops|>split_node_at_k_index) index n in  
         Disk_node(n1) |> write |> bind (% r1. 
         Disk_node(n2) |> write |> bind (% r2.

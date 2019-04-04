@@ -2,12 +2,39 @@ theory Stacks_and_frames imports A_start_here Key_value begin
 
 (* for performance, we need to abstract over frames *)
 
-datatype ('k,'r) rkr_or_r = Rkr "'r*'k*'r" | R 'r
+(* datatype ('k,'r) rkr_or_r = Rkr "'r*'k*'r" | R 'r *)
+
+type_synonym 'k or_bottom = "'k option"
+
+type_synonym 'k or_top = "'k option"
+
+type_synonym ('k,'r) segment = "'k or_bottom * 'r * ('k*'r) s * 'k or_top"
 
 (* \doc(doc:frame_ops) *)
 datatype_record ('k,'r,'frame,'node) frame_ops =
   split_node_on_key :: "'r \<Rightarrow> 'k \<Rightarrow> 'node \<Rightarrow> 'frame"
   midpoint :: "'frame \<Rightarrow> 'r"
+
+  get_focus :: "'frame \<Rightarrow> ('k or_bottom * 'r * 'k or_top)"  (* node must have at least one Some-key *)
+  get_focus_and_right_sibling :: "'frame \<Rightarrow> ('k or_bottom * 'r * 'k * 'r * 'k or_top) option"
+  get_left_sibling_and_focus :: "'frame \<Rightarrow> ('k or_bottom * 'r * 'k * 'r * 'k or_top) option"
+
+  (* in the following, the first and last keys are marker keys and must not be changed between
+  segments *)
+  replace :: "('k,'r) segment \<Rightarrow> ('k,'r) segment \<Rightarrow> 'frame \<Rightarrow> 'frame"
+  frame_to_node :: "'frame \<Rightarrow> 'node"
+  
+
+  get_midpoint_bounds :: "'frame \<Rightarrow> ('k option * 'k option)"  (* FIXME similar to get_focus *)
+  backing_node_blk_ref :: "'frame \<Rightarrow> 'r"  (* for rewriting in place *)
+
+  (* FIXME may want to use lists for the following *)
+  split_node_on_first_key :: "'node \<Rightarrow> 'frame"  (* for leaf stream *)
+  step_frame_for_ls :: "'frame \<Rightarrow> 'frame option"
+
+
+
+(*
   get_right_sibling_and_separator :: "'frame \<Rightarrow> ('k * 'r) option"
   remove_right_sibling :: "'frame \<Rightarrow> 'frame"  (* for merge; assumes present *)
   replace_right_sibling :: "'k \<Rightarrow> 'r \<Rightarrow> 'frame \<Rightarrow> 'frame"  (* NOTE extra k argument; the new lower bound *)
@@ -16,12 +43,7 @@ datatype_record ('k,'r,'frame,'node) frame_ops =
   replace_left_sibling :: "'r \<Rightarrow> 'frame \<Rightarrow> 'frame"
   unsplit_with_new_focus :: "'r \<Rightarrow> 'frame \<Rightarrow> 'node" 
   unsplit_with_new_focus_2 :: "'r*'k*'r \<Rightarrow> 'frame \<Rightarrow> 'node" 
-  get_midpoint_bounds :: "'frame \<Rightarrow> ('k option * 'k option)"
-  backing_node_blk_ref :: "'frame \<Rightarrow> 'r"  (* for rewriting in place *)
-
-  (* FIXME may want to use lists for the following *)
-  split_node_on_first_key :: "'node \<Rightarrow> 'frame"  (* for leaf stream *)
-  step_frame_for_ls :: "'frame \<Rightarrow> 'frame option"
+*)
 
 (*
   left_halfx :: "'frame \<Rightarrow> 'left_half"
