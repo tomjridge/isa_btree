@@ -725,7 +725,7 @@ let rec rbt_min x = rbt_mina x None;;
 
 let rec rev_apply x f = f x;;
 
-let rec failwitha x = rev_apply "FIXME patch" (fun _ -> failwith "undefined");;
+let rec failwitha x = failwith x
 
 let rec dest_Some = function Some x -> x
                     | None -> failwith "undefined";;
@@ -733,7 +733,7 @@ let rec dest_Some = function Some x -> x
 let rec iter_step
   f x = (let a = f x in (match a with None -> x | Some aa -> iter_step f aa));;
 
-let rec check_true f = rev_apply "FIXME patch" (fun _ -> failwith "undefined");;
+let rec check_true f = let r = f() in assert r; r
 
 let rec assert_true b = (if b then b else failwitha "assert_true");;
 

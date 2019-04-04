@@ -63,12 +63,12 @@ let make_leaf_ops ~k_cmp =
       l2 |> map_ops.add k v |> fun l2 ->
       (l1,k,l2)
   in
-  { leaf_lookup; leaf_insert; leaf_remove; leaf_length; 
+  ({ leaf_lookup; leaf_insert; leaf_remove; leaf_length; 
     dbg_leaf_kvs; leaf_steal_right; leaf_steal_left; 
     leaf_merge;
-    split_large_leaf }
+    split_large_leaf } : ('k,'v,('k,'v,unit)Tjr_poly_map.map) leaf_ops)
   
-
+let _ = make_leaf_ops
 
 
 (* node ops --------------------------------------------------------- *)
@@ -153,8 +153,8 @@ let make_node_ops (type k) ~(k_cmp:k -> k -> int) =
     map_ops.bindings n |> fun [(_,r)] -> r
   in
   let _ = node_steal_right in
-  { split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length;
-    node_make_small_root; node_get_single_r }
+  ({ split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length;
+     node_make_small_root; node_get_single_r } : (k,'v,(k option,'v,unit)Tjr_poly_map.map) node_ops)
 
 let _ :
 k_cmp:('a -> 'a -> int) ->

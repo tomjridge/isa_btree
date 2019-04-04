@@ -1,36 +1,28 @@
 (** A store that works directly with trees, not refs to blks. For
    testing. *)
 
-open Isa_btree.Isa_export
-open Disk_node
+open Isa_btree
 
 (* a store that works with trees not refs --------------------------- *)
 
-type leaf = (int,int) Tjr_poly_map.poly_map_2
+let k_cmp : int -> int -> int = Pervasives.compare
 
-let leaf_to_yojson x = `String "leaf"
-let leaf_of_yojson _ = failwith "FIXME"
 
-let leaf_ops = 
-  let open Tjr_poly_map in
-  let leaf_insert k v l = add k v l in
-  let leaf_length l = cardinal l in
-  let leaf_kvs l = bindings l in
-  (* let mk_leaf kvs = from_bindings ~compare:Tjr_int.compare kvs in *)
-  (leaf_insert,leaf_length,leaf_kvs)
+let leaf_ops : (int,int,(int,int,unit)Tjr_poly_map.map) Isa_export_wrapper.leaf_ops = 
+  Isa_export_wrapper.make_leaf_ops ~k_cmp
 
-(* let empty_poly_map () = Tjr_poly_map.empty_int_map () *)
+let _ = leaf_ops
+
+type leaf = (int,int,unit) Tjr_poly_map.map
 
 type key = int  [@@deriving yojson]
 type value = int  [@@deriving yojson]
 
 type tree = 
-Node of (key list * tree list)
-| Leaf of leaf [@@deriving yojson]
+  | Node of (int option,tree,unit) Tjr_poly_map.map
+  | Leaf of leaf
 
 type r = tree
-
-let t2s t = t |> tree_to_yojson |> Yojson.Safe.pretty_to_string
 
 
 module State = struct
@@ -49,6 +41,8 @@ let return = monad_ops.return
 
 include struct
 
+  open Isa_export.Disk_node
+
   let store_ops =
     let ( >>= ) = monad_ops.bind in
     let return = monad_ops.return in
@@ -56,16 +50,16 @@ include struct
       (* r is a tree, but we need to return a frame *)
       let frm =
         match r with
-        | Node(ks,ts) -> Disk_node(ks,ts)
-        | Leaf(kvs) -> Disk_leaf(kvs)
+        | Node n -> Disk_node n
+        | Leaf l -> Disk_leaf l
       in
       return frm
     in
     let write frm = 
       let node = 
         match frm with
-        | Disk_node(ks,ts) -> Node(ks,ts)
-        | Disk_leaf(kvs) -> Leaf(kvs)
+        | Disk_node n -> Node n
+        | Disk_leaf l -> Leaf l
       in
       return node
     in

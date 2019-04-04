@@ -48,7 +48,11 @@ open Isa_export_wrapper
 
 type ii_op = (int,int) op [@@deriving yojson]
 
-  
+let k_cmp : int -> int -> int = Pervasives.compare  
+
+let map_ops = Tjr_poly_map.make_map_ops k_cmp
+
+let check_tree_at_r' = fun r -> return true
 
 let execute_tests ~cs ~range ~fuel = 
   let store_ops = Test_store.store_ops in
@@ -62,24 +66,24 @@ let execute_tests ~cs ~range ~fuel =
     xs@ys
   in
   (* s is the spec... a map *)
-  let rec depth n (r, (s:(int,int)Tjr_polymap.t) ) =
+  let rec depth n (r, (s:(int,int,unit)Tjr_poly_map.map) ) =
     if n = 0 then () else
     ops |> List.iter (fun op ->
-        Logger.log(Test_store.t2s r);
-        Logger.jlog (ii_op_to_yojson op);
+        (* Logger.log(Test_store.t2s r); *)
+        (* Logger.jlog (ii_op_to_yojson op); *)
         match op with
         | Insert (k,v) -> (
             insert ~r ~k ~v |> Imperative.from_m |> function (Some r) ->
-              let s = Tjr_polymap.add k v s in
+              let s = map_ops.add k v s in
               (* assert(Tjr_polymap.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat)); *)
               depth (n-1) (r,s))
         | Delete k -> (
             delete ~r ~k |> Imperative.from_m |> fun r -> 
-            let s = Tjr_polymap.remove k s in
+            let s = map_ops.remove k s in
             (* assert(Tjr_polymap.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat)); *)
             depth (n-1) (r,s)))
   in
-  depth fuel (Leaf (empty_poly_map()),empty_poly_map())
+  depth fuel (Leaf map_ops.empty,map_ops.empty)
   
 ;;
 
@@ -133,7 +137,7 @@ let _ =
       let store_ops = Test_store.store_ops in
       let { find; insert; delete } = 
         let k_cmp = Tjr_int.compare in
-        make_find_insert_delete ~monad_ops ~cs ~k_cmp ~leaf_ops ~store_ops 
+        make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r'
       in
       Isa_test.disable_isa_checks();
       let rec loop n r = 
@@ -141,15 +145,14 @@ let _ =
           insert ~r ~k:n ~v:n |> Imperative.from_m |> function (Some r) ->
           loop (n-1) r
       in
-      loop (int_of_float 1e6) (Leaf (empty_poly_map()));
+      loop (int_of_float 1e6) (Leaf map_ops.empty);
       print_profile_summary (profiler.get_marks())
     )
     | ["test_polymap"] -> (
         let rec loop n m = 
           if n <= 0 then () else
-          Tjr_polymap.add n n m |> fun m -> 
+            map_ops.add n n m |> fun m -> 
           loop (n-1) m
       in
-      loop (int_of_float 1e7) (Tjr_polymap.empty (fun (x:int) (y:int) -> Pervasives.compare x y))
+      loop (int_of_float 1e7) map_ops.empty
     )
-    
