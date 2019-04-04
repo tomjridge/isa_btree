@@ -314,9 +314,20 @@ type int = Int_of_integer of Big_int.big_int;;
       (int2nat cs.max_node_keys)
   in
   let cmp2isa (f: 'k -> 'k -> int) = fun k1 k2 -> f k1 k2 |> int2isa in
-  let leaf_ops2isa (leaf_lookup,leaf_insert,leaf_remove,leaf_length,dbg_leaf_kvs,leaf_steal_right,leaf_steal_left,leaf_merge,split_large_leaf) = 
-    let leaf_length l = leaf_length l |> int2nat in
-    Isa_export.Disk_node.Make_leaf_ops(leaf_lookup,leaf_insert,leaf_remove,leaf_length,dbg_leaf_kvs,leaf_steal_right,leaf_steal_left,leaf_merge,split_large_leaf)
+  let leaf_ops2isa leaf_ops  = 
+    let  { leaf_lookup; leaf_insert; leaf_remove; leaf_length; 
+           dbg_leaf_kvs; leaf_steal_right; leaf_steal_left; 
+           leaf_merge;
+           split_large_leaf }
+      = leaf_ops 
+    in
+    Isa_export.Disk_node.Make_leaf_ops(
+      leaf_lookup,leaf_insert,leaf_remove,
+      (fun l -> leaf_length l |> int2nat),dbg_leaf_kvs,
+      (fun (l1,l2) -> leaf_steal_right (l1,l2) |> fun (a,b,c) -> (a,(b,c))),
+      (fun (l1,l2) -> leaf_steal_left (l1,l2) |> fun (a,b,c) -> (a,(b,c))),
+      leaf_merge,
+      (fun n l -> split_large_leaf (nat2int n) l |> fun (a,b,c) -> (a,(b,c))))
   in
   let node_ops2isa node_ops = 
     let {split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length; node_make_small_root; node_get_single_r} = node_ops in
@@ -352,14 +363,10 @@ type int = Int_of_integer of Big_int.big_int;;
     let (a,b,c,d) = store_ops in
     M.Post_monad.make_store_ops a b c d
   in
-  fun ~cs ~k_cmp
-(*    ~leaf_ops
-    ~node_ops
-    ~frame_ops *)
-    ~store_ops
-    ~check_tree_at_r'
-    -> 
-    let _ = leaf_ops in
+  fun ~cs ~k_cmp ~store_ops ~check_tree_at_r' -> 
+    let leaf_ops = make_leaf_ops ~k_cmp in
+    let node_ops = make_node_ops ~k_cmp in
+    let frame_ops = make_frame_ops ~k_cmp in
     let find  = 
       let find = M.Find.find (frame_ops2isa frame_ops) (store_ops2isa store_ops) in
       fun ~(r:'r) ~(k:'k) -> find r k |> Monad.fmap (fun (a,(b,c)) -> (a,b,c))

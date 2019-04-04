@@ -54,7 +54,7 @@ let execute_tests ~cs ~range ~fuel =
   let store_ops = Test_store.store_ops in
   let { find; insert; delete } = 
     let k_cmp = Tjr_int.compare in
-    make_find_insert_delete ~monad_ops ~cs ~k_cmp ~leaf_ops ~node_ops ~frame_ops ~store_ops ~check_tree_at_r'
+    make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r'
   in
   let ops = 
     range|>List.map (fun x -> Insert (x,x)) |> fun xs ->
