@@ -90,6 +90,7 @@ datatype_record ('k,'r,'node) node_ops =
   node_keys_length :: "'node \<Rightarrow> nat"
   node_make_small_root :: "'r*'k*'r \<Rightarrow> 'node"
   node_get_single_r :: "'node \<Rightarrow> 'r"  (* when we decrease the size of the tree in delete *)
+  check_node :: "'node \<Rightarrow> unit"
 
 (*
 definition rbt_as_node_ops :: "nat \<Rightarrow> ('k::linorder,'v,('k,'v)RBT_Impl.rbt) node_ops" where
@@ -117,8 +118,8 @@ definition mk_simple_node_ops :: "('k,'r) simple_node_ops" where
       ((List.rev ks1,List.rev rs1), k1, (k2#ks2,r1#rs2))),
     node_keys_length=(% (ks,_). List.length ks),
     node_make_small_root=(% (r1,k,r2). ([k],[r1,r2])),
-    node_get_single_r=(% (ks,rs). List.hd rs)
-
+    node_get_single_r=(% (ks,rs). List.hd rs),
+    check_node=(% n. ())
   \<rparr>
 )"
 

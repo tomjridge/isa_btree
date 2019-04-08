@@ -81,12 +81,18 @@ let execute_tests ~cs ~range ~fuel =
         | Insert (k,v) -> (
             insert ~r ~k ~v |> Imperative.from_m |> function (Some r) ->
               let s = map_ops.add k v s in
-              (* assert(map_ops.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat)); *)
+              assert(map_ops.bindings s = (
+                r |> Test_node_leaf_and_frame_implementations.test_r_to_tree'
+                |> Test_node_leaf_and_frame_implementations.tree'_to_tree
+                |> Isa_export.Tree.tree_to_leaves |> List.concat));
               depth (n-1) (r,s))
         | Delete k -> (
             delete ~r ~k |> Imperative.from_m |> fun r -> 
             let s = map_ops.remove k s in
-            (* assert(Tjr_polymap.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat)); *)
+            assert(map_ops.bindings s = (
+                r |> Test_node_leaf_and_frame_implementations.test_r_to_tree'
+                |> Test_node_leaf_and_frame_implementations.tree'_to_tree
+                |> Isa_export.Tree.tree_to_leaves |> List.concat));
             depth (n-1) (r,s)))
   in
   depth fuel (Test_r (Disk_leaf map_ops.empty),map_ops.empty)
