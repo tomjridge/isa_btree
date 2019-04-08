@@ -42,7 +42,7 @@ rbt_as_leaf_ops
 (* stacks and frames *)
 Stacks_and_frames.make_frame_ops
 
-
+Tree.Node
 Tree.dest_Node
 (* Tree_stack.stack_to_lu_of_child *)
 tree_to_leaves 

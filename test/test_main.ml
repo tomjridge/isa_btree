@@ -41,24 +41,30 @@ module C = struct
   let filename="config.json"
 end
 
-(* val config *)
+(* declares val config *)
 include Tjr_config.Make(C)
 
 open Isa_export_wrapper
 
 type ii_op = (int,int) op [@@deriving yojson]
 
-let k_cmp : int -> int -> int = Pervasives.compare  
+let k_cmp : int -> int -> int = Tjr_int.compare
 
 let map_ops = Tjr_poly_map.make_map_ops k_cmp
 
 let check_tree_at_r' = fun r -> return true
 
+let dbg_frame f = 
+  Tjr_fs_shared.Logger.log_lazy (fun _ -> 
+    Printf.sprintf "dbg_frame: %s\n" (f |> Test_node_leaf_and_frame_implementations.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
+
 let execute_tests ~cs ~range ~fuel = 
   let store_ops = Test_store.store_ops in
   let { find; insert; delete } = 
-    let k_cmp = Tjr_int.compare in
-    make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r'
+    (* let open Tjr_monad.Monad_ops in *)
+    (* let open Tjr_monad.Imperative in *)
+    (* let open Test_node_leaf_and_frame_implementations in *)
+    make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r' ~dbg_frame
   in
   let ops = 
     range|>List.map (fun x -> Insert (x,x)) |> fun xs ->
@@ -75,7 +81,7 @@ let execute_tests ~cs ~range ~fuel =
         | Insert (k,v) -> (
             insert ~r ~k ~v |> Imperative.from_m |> function (Some r) ->
               let s = map_ops.add k v s in
-              assert(map_ops.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat));
+              (* assert(map_ops.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat)); *)
               depth (n-1) (r,s))
         | Delete k -> (
             delete ~r ~k |> Imperative.from_m |> fun r -> 
@@ -83,7 +89,7 @@ let execute_tests ~cs ~range ~fuel =
             (* assert(Tjr_polymap.bindings s = (Isa_export.Tree.tree_to_leaves r |> List.concat)); *)
             depth (n-1) (r,s)))
   in
-  depth fuel (Leaf map_ops.empty,map_ops.empty)
+  depth fuel (Test_r (Disk_leaf map_ops.empty),map_ops.empty)
   
 ;;
 
@@ -123,6 +129,7 @@ let _ =
   | [] -> (
       Logger.logger := Some (Tjr_log.mk_log_ops());
       Logger.at_exit ~print:true;
+      Logger.log_lazy (fun _ -> "Logger initialized");
       Printf.printf "%s: tests begin\n%!" __MODULE__;
       List.iter (fun pre_config -> main ~pre_config) config;
       Printf.printf "%s: tests OK\n%!" __MODULE__;
@@ -136,8 +143,7 @@ let _ =
       in
       let store_ops = Test_store.store_ops in
       let { find; insert; delete } = 
-        let k_cmp = Tjr_int.compare in
-        make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r'
+        make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r' ~dbg_frame
       in
       Isa_test.disable_isa_checks();
       let rec loop n r = 
@@ -145,7 +151,7 @@ let _ =
           insert ~r ~k:n ~v:n |> Imperative.from_m |> function (Some r) ->
           loop (n-1) r
       in
-      loop (int_of_float 1e6) (Leaf map_ops.empty);
+      loop (int_of_float 1e6) (Test_r (Disk_leaf map_ops.empty));
       print_profile_summary (profiler.get_marks())
     )
     | ["test_polymap"] -> (

@@ -42,6 +42,7 @@ definition step_up_small_leaf where
   let post_merge = post_merge cs node_ops store_ops in
     \<comment> \<open>NOTE stack is not empty, so at least one sibling; then a small leaf is expected to
       have FIXME minleafsize-1 entries\<close>
+    let _ = (frame_ops|>dbg_frame) frm in
     case (frame_ops|>get_focus_and_right_sibling) frm of 
     None \<Rightarrow> (
       \<comment> \<open> steal or merge from left \<close>
@@ -142,6 +143,7 @@ constants \<Rightarrow>
   let (read,write) = (store_ops|>read,store_ops|>wrte) in
   let post_merge = post_merge cs node_ops store_ops in
   case stk of [] \<Rightarrow> (failwith (STR ''delete, step_up'')) | frm#stk' \<Rightarrow> (
+  let _ = (frame_ops|>dbg_frame) frm in
   \<comment> \<open> NOTE p is the parent \<close>
   \<comment> \<open> take the result of what follows, and add the stk' component \<close>
   (% x. x |> fmap (% y. (y,stk'))) (case f of   

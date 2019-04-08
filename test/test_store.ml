@@ -1,32 +1,13 @@
 (** A store that works directly with trees, not refs to blks. For
-   testing. *)
+   testing. Pointers r are trees themselves. *)
 
 open Isa_btree
+open Test_node_leaf_and_frame_implementations
 
 (* a store that works with trees not refs --------------------------- *)
 
-let k_cmp : int -> int -> int = Pervasives.compare
-
-
-let leaf_ops : (int,int,(int,int,unit)Tjr_poly_map.map) Isa_export_wrapper.leaf_ops = 
-  Isa_export_wrapper.make_leaf_ops ~k_cmp
-
-let _ = leaf_ops
-
-type leaf = (int,int,unit) Tjr_poly_map.map
-
-type key = int  [@@deriving yojson]
-type value = int  [@@deriving yojson]
-
-type tree = 
-  | Node of (int option,tree,unit) Tjr_poly_map.map
-  | Leaf of leaf
-
-type r = tree
-
-
 module State = struct
-  type t = tree
+  type t = test_r
   let compare (x:t) (y:t) = Pervasives.compare x y
 end
 
@@ -47,27 +28,30 @@ include struct
     let ( >>= ) = monad_ops.bind in
     let return = monad_ops.return in
     let read r =
-      (* r is a tree, but we need to return a frame *)
+      (* r is a test_r, but we need to return a frame *)
       let frm =
         match r with
-        | Node n -> Disk_node n
-        | Leaf l -> Disk_leaf l
+        | Test_r n -> n
       in
       return frm
     in
     let write frm = 
-      let node = 
-        match frm with
-        | Disk_node n -> Node n
-        | Disk_leaf l -> Leaf l
-      in
+      let node = Test_r frm in
       return node
     in
     let rewrite r frm = write frm >>= fun r -> return (Some r) in
     let free _rs = return () in
     (read,write,rewrite,free)
 
-  let _ = store_ops
+open Tjr_monad.Monad_ops
+open Tjr_monad.Imperative
+  let _ :
+(test_r -> ((test_node, test_leaf) dnode, imperative) m) *
+((test_node, test_leaf) dnode -> (test_r, imperative) m) *
+('a -> (test_node, test_leaf) dnode -> (test_r option, imperative) m) *
+('b -> (test_node', imperative) m)
+
+= store_ops
 
 end
 

@@ -32,6 +32,8 @@ datatype_record ('k,'r,'frame,'node) frame_ops =
   split_node_on_first_key :: "'node \<Rightarrow> 'frame"  (* for leaf stream *)
   step_frame_for_ls :: "'frame \<Rightarrow> 'frame option"
 
+  dbg_frame :: "'frame \<Rightarrow> unit"
+
 
 
 (*

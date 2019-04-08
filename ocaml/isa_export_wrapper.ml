@@ -170,6 +170,7 @@ k_cmp:('a -> 'a -> int) ->
 = make_node_ops
 
 
+
 (* frame_ops -------------------------------------------------------- *)
 
 (* See Isabelle defn. See \doc(doc:frame_ops) *)
@@ -192,6 +193,8 @@ type ('k,'r,'frame,'node) frame_ops = {
 
   get_midpoint_bounds: 'frame -> ('k option * 'k option);
   backing_node_blk_ref: 'frame -> 'r;
+
+  dbg_frame: 'frame -> unit;
 }
 
 (* FIXME maybe move elsewhere *)
@@ -201,9 +204,11 @@ type ('k,'r,'node) frame = {
   midpoint: 'r;
   node: 'node;
   backing_node_blk_ref: 'r
-}
+} [@@deriving to_yojson]
 
-let make_frame_ops (type k r) ~(k_cmp:k->k->int) = 
+
+
+let make_frame_ops (type k r) ~(k_cmp:k->k->int) ~dbg_frame = 
   let map_ops = Tjr_poly_map.make_map_ops (key_compare k_cmp) in
   Tjr_fs_shared.Map_with_key_traversal.make_ops ~map_ops @@ fun ~get_next_binding ~get_prev_binding ->
   (* map_ops is a map from 'k option *)
@@ -280,13 +285,15 @@ let make_frame_ops (type k r) ~(k_cmp:k->k->int) =
   let backing_node_blk_ref f = f.backing_node_blk_ref in
   { split_node_on_key; midpoint; get_focus; get_focus_and_right_sibling; 
     get_left_sibling_and_focus; replace; frame_to_node; get_midpoint_bounds;
-    backing_node_blk_ref }
+    backing_node_blk_ref; dbg_frame }
   
 ;;
       
 
 let _ :
 k_cmp:('a -> 'a -> int) ->
+         dbg_frame:(('a, 'd, ('a or_bottom, 'd, 'e) Tjr_poly_map.map) frame ->
+                    unit) ->
 ('a, 'b, ('a, 'b, ('a or_bottom, 'b, 'c) Tjr_poly_map.map) frame,
  ('a or_bottom, 'b, 'c) Tjr_poly_map.map)
 frame_ops
@@ -351,7 +358,7 @@ type int = Int_of_integer of Big_int.big_int;;
   let frame_ops2isa frame_ops = 
     let   { split_node_on_key; midpoint; get_focus; get_focus_and_right_sibling; 
     get_left_sibling_and_focus; replace; frame_to_node; get_midpoint_bounds;
-            backing_node_blk_ref } = frame_ops 
+            backing_node_blk_ref; dbg_frame } = frame_ops 
     in
     let seg2isa (a,b,c,d) = (a,(b,(c,d))) in
     let isa2seg (a,(b,(c,d))) = (a,b,c,d) in
@@ -365,16 +372,17 @@ type int = Int_of_integer of Big_int.big_int;;
       get_midpoint_bounds, 
       backing_node_blk_ref, 
       (fun x -> failwith "FIXME_not_implemented"), 
-      (fun x -> failwith "FIXME not implemented"))
+      (fun x -> failwith "FIXME not implemented"),
+      dbg_frame)
   in
   let store_ops2isa store_ops = 
     let (a,b,c,d) = store_ops in
     M.Post_monad.make_store_ops a b c d
   in
-  fun ~cs ~k_cmp ~store_ops ~check_tree_at_r' -> 
+  fun ~cs ~k_cmp ~store_ops ~check_tree_at_r' ~dbg_frame -> 
     let leaf_ops = make_leaf_ops ~k_cmp in
     let node_ops = make_node_ops ~k_cmp in
-    let frame_ops = make_frame_ops ~k_cmp in
+    let frame_ops = make_frame_ops ~k_cmp ~dbg_frame in
     let find  = 
       let find = M.Find.find (frame_ops2isa frame_ops) (store_ops2isa store_ops) in
       fun ~(r:'r) ~(k:'k) -> find r k |> Monad.fmap (fun (a,(b,c)) -> (a,b,c))

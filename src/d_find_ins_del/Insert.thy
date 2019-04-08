@@ -17,6 +17,29 @@ definition step_down :: "
   let (fs,v) = d in
   find_step fs |> fmap (% d'. (d',v)) ))"
 
+(* split_large_leaf:
+
+We have min and max leaf size. We have a large leaf, of size n.
+
+We want to split n so that the left leaf has as many keys as possible.
+
+- Allocate min to right. Remainder is n-min.
+- If n-min <= max, allocate to left.
+- Else, allocate max to left, and (n-min)-max additional to right.
+  - right is therefore n-max
+
+
+*)
+
+(* Following returns the length of the left leaf *)
+definition calculate_leaf_split where
+"calculate_leaf_split cs n = (
+  let _ = assert_true (n > cs|>max_leaf_size) in
+  let left_possibles = n-(cs|>min_leaf_size) in
+  case left_possibles \<le> cs|>max_leaf_size of
+  True \<Rightarrow> left_possibles
+  | False \<Rightarrow> cs|>max_leaf_size
+)"
 
 definition step_bottom :: "
 constants \<Rightarrow> 
@@ -32,7 +55,8 @@ constants \<Rightarrow>
   | Some(r0,k,r,leaf,stk) \<Rightarrow> (
     \<comment> \<open> free here? FIXME \<close>
     let (leaf',_) = (leaf_ops|>leaf_insert) k v leaf in
-    case (leaf_ops|>leaf_length) leaf' \<le> cs|>max_leaf_size of
+    let length_leaf' = (leaf_ops|>leaf_length) leaf' in
+    case length_leaf' \<le> cs|>max_leaf_size of
     True \<Rightarrow> (
       \<comment> \<open> we want to update in place if possible \<close>
       Disk_leaf leaf' |> rewrite r |> bind (% r'. 
@@ -42,12 +66,35 @@ constants \<Rightarrow>
         return (Inr ())
       | Some r' \<Rightarrow> return (Inl(I1 r',stk))))
     | False \<Rightarrow> (
-      let (leaf1,k',leaf2) = (leaf_ops|>split_large_leaf) (cs|>max_leaf_size) leaf' in
+      let split_point = calculate_leaf_split cs length_leaf' in
+      let (leaf1,k',leaf2) = (leaf_ops|>split_large_leaf) split_point leaf' in
       Disk_leaf leaf1 |> write |> bind (% r1.
       Disk_leaf leaf2 |> write |> bind (% r2. 
       return (Inl(I2(r1,k',r2),stk)))))))"
 
+(* split_node:
 
+We have min and max node keys. 
+
+We need to split a node which has more than max keys (say, n).
+
+We want to split so left node has as many keys as possible.
+
+- Allocate min keys to right node.
+- There are n -1 - min keys available for left.
+- If n-1-min <= max then allocate to left
+- Else, allocate max to left, and n-1-max to right.
+
+*)
+
+definition calculate_node_split where 
+"calculate_node_split cs n = (
+  let _ = assert_true (n > cs|>max_node_keys) in
+  let left_possibles = n - 1 - (cs|>min_node_keys) in
+  case left_possibles \<le> cs|>max_node_keys of
+  True \<Rightarrow> left_possibles
+  | False \<Rightarrow> cs|>max_node_keys
+)"
 
 definition step_up :: "
 constants \<Rightarrow> 
@@ -74,14 +121,15 @@ constants \<Rightarrow>
     | I2 (r,k,r') \<Rightarrow> (
       let (k1,r1,k2) = (frame_ops|>get_focus) frm in
       let n = frm |> (frame_ops|>replace) (k1,r1,[],k2) (k1,r,[(k,r')],k2) |> (frame_ops|>frame_to_node) in
-      case (node_ops|>node_keys_length) n \<le> (cs|>max_node_keys) of
+      let n_keys_length = (node_ops|>node_keys_length) n in
+      case n_keys_length \<le> (cs|>max_node_keys) of
       True \<Rightarrow> (
         Disk_node(n) |> rewrite backing_r |> bind (% r2. 
         case r2 of 
         None \<Rightarrow> return (Inr ())
         | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
       | False \<Rightarrow> (
-        let index = cs|>max_node_keys in  (* index counts from 0 *) 
+        let index = calculate_node_split cs n_keys_length in  (* index counts from 0 *) 
         let (n1,k,n2) = (node_ops|>split_node_at_k_index) index n in  
         Disk_node(n1) |> write |> bind (% r1. 
         Disk_node(n2) |> write |> bind (% r2.
