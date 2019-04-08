@@ -18,6 +18,7 @@ We can also take ('a,t) m = 'a
 *)
 
 open Isa_btree
+open Isa_export
 open Tjr_monad
 open Test_store  (* also includes monad_ops *)
 open Tjr_fs_shared.Kv_op
@@ -81,6 +82,12 @@ let execute_tests ~cs ~range ~fuel =
         | Insert (k,v) -> (
             insert ~r ~k ~v |> Imperative.from_m |> function (Some r) ->
               let s = map_ops.add k v s in
+              (* FIXME here and later we are a little unsure about
+                 Samll_root_node_or_leaf; FIXME the following is very
+                 inefficient *)
+              assert(r |> Test_node_leaf_and_frame_implementations.test_r_to_tree'
+                |> Test_node_leaf_and_frame_implementations.tree'_to_tree
+                |> Isa_export_wrapper.wf_tree ~cs ~ms:(Some Constants_and_size_types.Small_root_node_or_leaf) ~k_cmp );
               assert(map_ops.bindings s = (
                 r |> Test_node_leaf_and_frame_implementations.test_r_to_tree'
                 |> Test_node_leaf_and_frame_implementations.tree'_to_tree
@@ -89,6 +96,9 @@ let execute_tests ~cs ~range ~fuel =
         | Delete k -> (
             delete ~r ~k |> Imperative.from_m |> fun r -> 
             let s = map_ops.remove k s in
+              assert(r |> Test_node_leaf_and_frame_implementations.test_r_to_tree'
+                |> Test_node_leaf_and_frame_implementations.tree'_to_tree
+                |> Isa_export_wrapper.wf_tree ~cs ~ms:(Some Constants_and_size_types.Small_root_node_or_leaf) ~k_cmp );
             assert(map_ops.bindings s = (
                 r |> Test_node_leaf_and_frame_implementations.test_r_to_tree'
                 |> Test_node_leaf_and_frame_implementations.tree'_to_tree

@@ -302,6 +302,25 @@ frame_ops
 ;;
 
 
+module Internal_conversions = struct
+  (* isa numbers:
+type nat = Nat of Big_int.big_int;;
+type int = Int_of_integer of Big_int.big_int;;
+  *)
+  let int2nat n = Arith.nat_of_integer (Big_int.big_int_of_int n) 
+  let nat2bigint (Arith.Nat n) = n 
+  let bigint2int = Big_int.int_of_big_int 
+  let nat2int (n:Arith.nat) = n |> nat2bigint |> bigint2int 
+  let int2isa i = Arith.Int_of_integer(Big_int.big_int_of_int i) 
+  let cs2isa (cs:constants) = 
+    Constants_and_size_types.make_constants 
+      (int2nat cs.min_leaf_size) 
+      (int2nat cs.max_leaf_size)
+      (int2nat cs.min_node_keys)
+      (int2nat cs.max_node_keys)
+  let cmp2isa (f: 'k -> 'k -> int) = fun k1 k2 -> f k1 k2 |> int2isa 
+end
+
 let make_find_insert_delete (type t) ~(monad_ops:t monad_ops) = 
   let module Monad = struct
     type nonrec t = t
@@ -312,23 +331,7 @@ let make_find_insert_delete (type t) ~(monad_ops:t monad_ops) =
   end
   in
   let module M = Isa_export.Make(Monad) in
-  (* isa numbers:
-type nat = Nat of Big_int.big_int;;
-type int = Int_of_integer of Big_int.big_int;;
-  *)
-  let int2nat n = Arith.nat_of_integer (Big_int.big_int_of_int n) in
-  let nat2bigint (Arith.Nat n) = n in
-  let bigint2int = Big_int.int_of_big_int in
-  let nat2int (n:Arith.nat) = n |> nat2bigint |> bigint2int in
-  let int2isa i = Arith.Int_of_integer(Big_int.big_int_of_int i) in
-  let cs2isa (cs:constants) = 
-    Constants_and_size_types.make_constants 
-      (int2nat cs.min_leaf_size) 
-      (int2nat cs.max_leaf_size)
-      (int2nat cs.min_node_keys)
-      (int2nat cs.max_node_keys)
-  in
-  let cmp2isa (f: 'k -> 'k -> int) = fun k1 k2 -> f k1 k2 |> int2isa in
+  let open Internal_conversions in
   let leaf_ops2isa leaf_ops  = 
     let  { leaf_lookup; leaf_insert; leaf_remove; leaf_length; 
            dbg_leaf_kvs; leaf_steal_right; leaf_steal_left; 
@@ -398,3 +401,11 @@ type int = Int_of_integer of Big_int.big_int;;
     {find;insert;delete}
 
 let _ = make_find_insert_delete
+
+
+let wf_tree ~cs ~ms ~k_cmp = 
+  let open Internal_conversions in
+  Isa_export.Tree.wf_tree 
+    (cs |> cs2isa)
+    ms
+    (k_cmp |> cmp2isa)
