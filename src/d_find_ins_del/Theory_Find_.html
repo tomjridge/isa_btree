@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><style>/* Isabelle fonts */
+
+@font-face {
+  font-family: 'IsabelleText';
+  src: url('/e8d43b92-42c9-48f2-b949-d57e28f3fde1/fonts/IsabelleText.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'IsabelleText';
+  src: url('/e8d43b92-42c9-48f2-b949-d57e28f3fde1/fonts/IsabelleTextBold.ttf') format('truetype');
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: 'Vacuous';
+  src: url('/e8d43b92-42c9-48f2-b949-d57e28f3fde1/fonts/Vacuous.ttf') format('truetype');
+}/* standard document markup */
+
+dt {
+  float: left;
+  clear: left;
+  padding-right: 0.5em;
+  font-weight: bold;
+}
+
+body {
+  color: #000000;
+  background-color: #FFFFFF;
+}
+
+.head     { background-color: #FFFFFF; }
+.source   {
+  direction: ltr; unicode-bidi: bidi-override;
+  background-color: #FFFFFF;
+  padding: 10px;
+  font-family: IsabelleText;
+  line-height: 147%;
+}
+
+.theories { background-color: #FFFFFF; padding: 10px; }
+.sessions { background-color: #FFFFFF; padding: 10px; }
+.document { white-space: normal; font-family: sans-serif; }
+
+.name     { font-style: italic; }
+.filename { font-family: fixed; }
+
+
+/* basic syntax markup */
+
+.hidden         { font-family: Vacuous; font-size: 1%; color: rgba(255,255,255,0); }
+.control        { font-weight: bold; font-style: italic; }
+
+.binding        { color: #336655; }
+.tfree          { color: #A020F0; }
+.tvar           { color: #A020F0; }
+.free           { color: #0000FF; }
+.skolem         { color: #D2691E; }
+.bound          { color: #008000; }
+.var            { color: #00009B; }
+.numeral        { }
+.literal        { font-weight: bold; }
+.delimiter      { }
+.inner_numeral  { color: #FF0000; }
+.inner_quoted   { color: #FF00CC; }
+.inner_cartouche { color: #CC6600; }
+.inner_comment  { color: #CC0000; }
+.dynamic        { color: #7BA428; }
+.class_parameter_color { color: #D2691E; }
+
+.bold           { font-weight: bold; }
+
+.main           { color: #000000; }
+.command        { font-weight: bold; }
+.keyword        { font-weight: bold; }
+.keyword1       { color: #006699; }
+.keyword2       { color: #009966; }
+.keyword3       { color: #0099FF; }
+.quasi_keyword  { color: #9966FF; }
+.operator       { color: #323232; }
+.string         { color: #FF00CC; }
+.alt_string     { color: #CC00CC; }
+.verbatim       { color: #6600CC; }
+.cartouche      { color: #CC6600; }
+.comment        { color: #CC0000; }
+.improper       { color: #FF5050; }
+.bad            { background-color: #FF6A6A; }
+.quoted         { background-color: rgba(139,139,139,0.05); }
+.antiquoted     { background-color: rgba(255,200,50,0.1); }
+
+
+/* message background */
+
+.writeln_message      { background-color: #F0F0F0; }
+.information_message  { background-color: #DCEAF3; }
+.tracing_message      { background-color: #F0F8FF; }
+.warning_message      { background-color: #EEE8AA; }
+.legacy_message       { background-color: #EEE8AA; }
+.error_message        { background-color: #FFC1C1; }
+
+
+/* message underline */
+
+.writeln { border-bottom: 1px dotted #C0C0C0; }
+.information { border-bottom: 1px dotted #C1DFEE; }
+.warning { border-bottom: 1px dotted #FF8C00; }
+.legacy { border-bottom: 1px dotted #FF8C00; }
+.error { border-bottom: 1px dotted #B22222; }
+
+
+/* tooltips */
+
+.writeln { position: relative; display: inline-block; }
+.information { position: relative; display: inline-block; }
+.warning { position: relative; display: inline-block; }
+.legacy { position: relative; display: inline-block; }
+.error { position: relative; display: inline-block; }
+
+.writeln:hover .tooltip { visibility: visible; }
+.information:hover .tooltip { visibility: visible; }
+.warning:hover .tooltip { visibility: visible; }
+.legacy:hover .tooltip { visibility: visible; }
+.error:hover .tooltip { visibility: visible; }
+
+.tooltip {
+  top: -0.5ex;
+  left: 5em;
+  visibility: hidden;
+  width: 50em;
+  border: 1px solid #808080;
+  padding: 1px 1px;
+  background-color: #FFFFE9;
+  position: absolute;
+  z-index: 1;
+}
+
+.tooltip pre { margin: 1px; white-space: pre-wrap; }
+</style><title>Theory "Find"</title></head>
+<body><pre class="source"><span class="keyword1"><span class="command">theory</span></span> Find <span class="keyword2"><span class="keyword">imports</span></span> Post_monad <span class="quoted">"$SRC/b_pre_monad/Find_state"</span> <span class="keyword2"><span class="keyword">begin</span></span>
+
+<span class="comment">(* find ------------------------------------------------------------- *)</span>
+
+<span class="keyword1"><span class="command">definition</span></span> find_step <span class="main">::</span> <span class="quoted"><span class="language">"
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> store_ops <span class="main">⇒</span>  
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> find_state <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> find_state<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">find_step</span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="bound">read</span> <span class="main">=</span> <span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>read <span class="keyword1">in</span>
+  <span class="main">(</span><span class="main">%</span> <span class="bound">fs</span><span class="main">.</span> 
+  <span class="keyword1">case</span> <span class="bound">fs</span> <span class="keyword1">of</span> 
+  F_finished <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> <span class="main">(</span>failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''find_step 1''</span><span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> F_down<span class="main">(</span><span class="bound">r0</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+    <span class="bound">read</span> <span class="bound">r</span> <span class="main">|&gt;</span>fmap <span class="main">(</span><span class="main">%</span> <span class="bound">f</span><span class="main">.</span> 
+    <span class="keyword1">case</span> <span class="bound">f</span> <span class="keyword1">of</span> 
+    Disk_node <span class="bound">n</span> <span class="main">⇒</span> <span class="main">(</span>        
+      <span class="keyword1">let</span> <span class="bound">frm</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>split_node_on_key<span class="main">)</span> <span class="bound">r</span> <span class="bound">k</span> <span class="bound">n</span> <span class="keyword1">in</span>
+      <span class="keyword1">let</span> <span class="bound">r</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>midpoint<span class="main">)</span> <span class="bound">frm</span> <span class="keyword1">in</span>
+      F_down<span class="main">(</span><span class="bound">r0</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="bound">frm</span><span class="main">#</span><span class="bound">stk</span><span class="main">)</span><span class="main">)</span>
+    <span class="main">|</span> Disk_leaf <span class="bound">leaf</span> <span class="main">⇒</span> F_finished<span class="main">(</span><span class="bound">r0</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="bound">leaf</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+<span class="keyword1"><span class="command">definition</span></span> find_big_step <span class="main">::</span> <span class="quoted"><span class="language">"
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> store_ops <span class="main">⇒</span>  
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> find_state <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> find_state<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">find_big_step</span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="bound">step</span> <span class="main">=</span> find_step <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+  <span class="main">(</span><span class="main">%</span> <span class="bound">i</span><span class="main">.</span>
+  iter_m <span class="main">(</span><span class="main">%</span> <span class="bound">i</span><span class="main">.</span> <span class="keyword1">case</span> <span class="bound">i</span> <span class="keyword1">of</span>
+    F_finished <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> <span class="main">(</span>return None<span class="main">)</span>
+    <span class="main">|</span> <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> <span class="main">(</span><span class="bound">step</span> <span class="bound">i</span> <span class="main">|&gt;</span> fmap Some<span class="main">)</span><span class="main">)</span>
+    <span class="bound">i</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+<span class="keyword1"><span class="command">definition</span></span> find <span class="main">::</span> <span class="quoted"><span class="language">"
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> store_ops <span class="main">⇒</span>  
+<span class="tfree">'r</span> <span class="main">⇒</span> <span class="tfree">'k</span> <span class="main">⇒</span> <span class="main">(</span><span class="tfree">'r</span> <span class="main">*</span> <span class="tfree">'leaf</span> <span class="main">*</span> <span class="tfree">'frame</span> list<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">find</span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="free"><span class="bound">r</span></span> <span class="free"><span class="bound">k</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="bound">s</span> <span class="main">=</span> make_initial_find_state <span class="free"><span class="bound">k</span></span> <span class="free"><span class="bound">r</span></span> <span class="keyword1">in</span>
+  find_big_step <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="bound">s</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">s</span><span class="main">.</span>
+  <span class="keyword1">case</span> <span class="bound">s</span> <span class="keyword1">of</span>
+  F_finished<span class="main">(</span><span class="bound">r0</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="bound">kvs</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span> <span class="main">⇒</span> return <span class="main">(</span><span class="bound">r</span><span class="main">,</span><span class="bound">kvs</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span>
+  <span class="main">|</span> <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''find 1''</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+
+<span class="comment">(* attempt to do the same, but within a locale *)</span>
+<span class="comment">(*
+locale f =
+  fixes cs :: "constants" and
+  k_cmp :: "'k ord" and
+  frame_ops :: "('k,'r,'frame,'left_half,'right_half,'node) frame_ops" and 
+  store_ops :: "('r,('node,'leaf)dnode,'t) store_ops"
+
+
+definition (in f) find_step :: "
+('k,'r,'leaf,'frame) find_state ⇒ (('k,'r,'leaf,'frame) find_state,'t) MM" where
+"find_step = (
+  let read = store_ops|&gt;read in
+  (% fs. 
+  case fs of 
+  F_finished _ ⇒ (failwith (STR ''find_step 1''))
+  | F_down(r0,k,r,stk) ⇒ (
+    read r |&gt;fmap (% f. 
+    case f of 
+    Disk_node n ⇒ (        
+      let frm = (frame_ops|&gt;split_node_on_key) n k in
+      let r = (frame_ops|&gt;midpoint) frm in
+      F_down(r0,k,r,frm#stk))
+    | Disk_leaf leaf ⇒ F_finished(r0,k,r,leaf,stk)))))"
+
+definition (in f) find_big_step :: "
+('k,'r,'leaf,'frame) find_state ⇒ (('k,'r,'leaf,'frame) find_state,'t) MM" where
+"find_big_step = (
+  (% i.
+  iter_m (% i. case i of
+    F_finished _ ⇒ (return None)
+    | _ ⇒ (find_step i |&gt; fmap Some))
+    i))"
+
+
+definition (in f) find :: "'r ⇒ 'k ⇒ ('r * 'leaf * 'frame list,'t) MM" where
+"find  r k = (
+  let s = make_initial_find_state k r in
+  find_big_step s |&gt; bind (% s.
+  case s of
+  F_finished(r0,k,r,kvs,stk) ⇒ return (r,kvs,stk)
+  | _ ⇒ failwith (STR ''find 1'')))"
+
+print_locale! f
+
+thm f.find_def
+
+definition find2 :: "
+('k,'r,'frame,'left_half,'right_half,'node) frame_ops ⇒ 
+('r,('node,'leaf)dnode,'t) store_ops ⇒  
+'r ⇒ 'k ⇒ ('r * 'leaf * 'frame list,'t) MM" where
+"find2 x y = f.find x y"
+
+lemma find_def_2: "find2 x y r k = undefined"
+  apply(simp add: find2_def)
+  apply(simp cong: find_state.case_cong add: f.find_def f.find_big_step_def f.find_step_def)
+  oops
+
+lemma find_def_2[code]: "find2 x y r k = 
+(let s = make_initial_find_state k r
+     in (case s of
+         F_down prod' ⇒
+           (case prod' of
+            (r0, k, r, stk) ⇒
+              (y |&gt; read) r |&gt;
+              fmap
+               (case_dnode
+                 (λn. let frm = (x |&gt; split_node_on_key) n k in F_down (r0, k, (x |&gt; midpoint) frm, frm # stk))
+                 (λleaf. F_finished (r0, k, r, leaf, stk)))) |&gt;
+           fmap Some
+         | F_finished x ⇒ return None) |&gt;
+        bind
+         (case_option (return s)
+           (iter_m
+             (case_find_state
+               (λprod.
+                   (case prod of
+                    (r0, k, r, stk) ⇒
+                      (y |&gt; read) r |&gt;
+                      fmap
+                       (case_dnode
+                         (λn. let frm = (x |&gt; split_node_on_key) n k
+                               in F_down (r0, k, (x |&gt; midpoint) frm, frm # stk))
+                         (λleaf. F_finished (r0, k, r, leaf, stk)))) |&gt;
+                   fmap Some)
+               (λx. return None)))) |&gt;
+        bind (λs. case s of F_down prod' ⇒ failwith STR ''find 1'' | F_finished (r0, k, ba) ⇒ return ba))"
+  apply(simp add: find2_def)
+  apply(simp cong: find_state.case_cong add: f.find_def f.find_big_step_def f.find_step_def)
+  done
+*)</span>
+
+<span class="keyword2"><span class="keyword">end</span></span>
+
+
+
+
+
+
+
+
+
+
+<span class="comment">(* old =========================================================
+
+
+(* find_trans *)
+
+(*
+definition find_trans :: "(store * fs) trans_t" where
+"find_trans = { ((s,fs),(s',fs')). ( s|&gt;(find_step fs|&gt;dest_M) = (s',Ok fs')) }"
+*)
+
+(* lemmas *)
+
+(* wf_fts is invariant *)
+(*
+definition invariant_lem :: "bool" where
+"invariant_lem = (
+  ! P s t0. 
+  ((% s_fs. let (_,fs) =  s_fs in wellformed_find_state s t0 fs) = P) ⟶ invariant find_trans P)"
+*)
+
+*)</span></pre></body>

@@ -33,6 +33,9 @@ html_doc: FORCE
 
 # html likely in dir like ~/.isabelle/Isabelle2018/browser_info/Unsorted/isa_btree ?
 
+html2pdf:=wkhtmltopdf
+pdf_from_html_preview: FORCE
+	for f in d_find_ins_del/*.html; do $(html2pdf) $$f $${f/.html/.pdf}; done
 
 pdf_doc: FORCE
 	isabelle document -o pdf -n document -t '' -d output/document 2>&1

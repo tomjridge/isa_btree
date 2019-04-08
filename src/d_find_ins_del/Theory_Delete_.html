@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><style>/* Isabelle fonts */
+
+@font-face {
+  font-family: 'IsabelleText';
+  src: url('/e8d43b92-42c9-48f2-b949-d57e28f3fde1/fonts/IsabelleText.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'IsabelleText';
+  src: url('/e8d43b92-42c9-48f2-b949-d57e28f3fde1/fonts/IsabelleTextBold.ttf') format('truetype');
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: 'Vacuous';
+  src: url('/e8d43b92-42c9-48f2-b949-d57e28f3fde1/fonts/Vacuous.ttf') format('truetype');
+}/* standard document markup */
+
+dt {
+  float: left;
+  clear: left;
+  padding-right: 0.5em;
+  font-weight: bold;
+}
+
+body {
+  color: #000000;
+  background-color: #FFFFFF;
+}
+
+.head     { background-color: #FFFFFF; }
+.source   {
+  direction: ltr; unicode-bidi: bidi-override;
+  background-color: #FFFFFF;
+  padding: 10px;
+  font-family: IsabelleText;
+  line-height: 147%;
+}
+
+.theories { background-color: #FFFFFF; padding: 10px; }
+.sessions { background-color: #FFFFFF; padding: 10px; }
+.document { white-space: normal; font-family: sans-serif; }
+
+.name     { font-style: italic; }
+.filename { font-family: fixed; }
+
+
+/* basic syntax markup */
+
+.hidden         { font-family: Vacuous; font-size: 1%; color: rgba(255,255,255,0); }
+.control        { font-weight: bold; font-style: italic; }
+
+.binding        { color: #336655; }
+.tfree          { color: #A020F0; }
+.tvar           { color: #A020F0; }
+.free           { color: #0000FF; }
+.skolem         { color: #D2691E; }
+.bound          { color: #008000; }
+.var            { color: #00009B; }
+.numeral        { }
+.literal        { font-weight: bold; }
+.delimiter      { }
+.inner_numeral  { color: #FF0000; }
+.inner_quoted   { color: #FF00CC; }
+.inner_cartouche { color: #CC6600; }
+.inner_comment  { color: #CC0000; }
+.dynamic        { color: #7BA428; }
+.class_parameter_color { color: #D2691E; }
+
+.bold           { font-weight: bold; }
+
+.main           { color: #000000; }
+.command        { font-weight: bold; }
+.keyword        { font-weight: bold; }
+.keyword1       { color: #006699; }
+.keyword2       { color: #009966; }
+.keyword3       { color: #0099FF; }
+.quasi_keyword  { color: #9966FF; }
+.operator       { color: #323232; }
+.string         { color: #FF00CC; }
+.alt_string     { color: #CC00CC; }
+.verbatim       { color: #6600CC; }
+.cartouche      { color: #CC6600; }
+.comment        { color: #CC0000; }
+.improper       { color: #FF5050; }
+.bad            { background-color: #FF6A6A; }
+.quoted         { background-color: rgba(139,139,139,0.05); }
+.antiquoted     { background-color: rgba(255,200,50,0.1); }
+
+
+/* message background */
+
+.writeln_message      { background-color: #F0F0F0; }
+.information_message  { background-color: #DCEAF3; }
+.tracing_message      { background-color: #F0F8FF; }
+.warning_message      { background-color: #EEE8AA; }
+.legacy_message       { background-color: #EEE8AA; }
+.error_message        { background-color: #FFC1C1; }
+
+
+/* message underline */
+
+.writeln { border-bottom: 1px dotted #C0C0C0; }
+.information { border-bottom: 1px dotted #C1DFEE; }
+.warning { border-bottom: 1px dotted #FF8C00; }
+.legacy { border-bottom: 1px dotted #FF8C00; }
+.error { border-bottom: 1px dotted #B22222; }
+
+
+/* tooltips */
+
+.writeln { position: relative; display: inline-block; }
+.information { position: relative; display: inline-block; }
+.warning { position: relative; display: inline-block; }
+.legacy { position: relative; display: inline-block; }
+.error { position: relative; display: inline-block; }
+
+.writeln:hover .tooltip { visibility: visible; }
+.information:hover .tooltip { visibility: visible; }
+.warning:hover .tooltip { visibility: visible; }
+.legacy:hover .tooltip { visibility: visible; }
+.error:hover .tooltip { visibility: visible; }
+
+.tooltip {
+  top: -0.5ex;
+  left: 5em;
+  visibility: hidden;
+  width: 50em;
+  border: 1px solid #808080;
+  padding: 1px 1px;
+  background-color: #FFFFE9;
+  position: absolute;
+  z-index: 1;
+}
+
+.tooltip pre { margin: 1px; white-space: pre-wrap; }
+</style><title>Theory "Delete"</title></head>
+<body><pre class="source"><span class="keyword1"><span class="command">theory</span></span> Delete <span class="keyword2"><span class="keyword">imports</span></span> Find <span class="quoted">"$SRC/b_pre_monad/Delete_state"</span> <span class="keyword2"><span class="keyword">begin</span></span>
+
+<span class="comment">(* FIXME merge in documentation from Delete *)</span>
+
+<span class="comment">(* NOTE these are repeated from Delete_state, because otherwise they are shadowed by eg insert.fo *)</span>
+<span class="keyword1"><span class="command">type_synonym</span></span> <span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>fo <span class="main">=</span> <span class="quoted"><span class="language">"<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span> del_t"</span></span>  <span class="comment">(* focus *)</span>
+<span class="keyword1"><span class="command">type_synonym</span></span> <span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span>u <span class="main">=</span> <span class="quoted"><span class="language">"<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>fo <span class="main">*</span> <span class="tfree">'frame</span> list"</span></span>  
+<span class="keyword1"><span class="command">type_synonym</span></span> <span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span>d <span class="main">=</span> <span class="quoted"><span class="language">"<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span>find_state <span class="main">*</span> <span class="tfree">'r</span>"</span></span>
+ 
+<span class="comment">(* node steal ------------------------------------------------------- *)</span>
+
+<span class="comment">(* args are left split node context, focus, right sib; returns updated parent
+
+FIXME maybe it makes more sense to deal with the context in isolation, and return r*k*r
+
+NOTE rs,ks as args for node_steal_xxx
+ *)</span>
+
+<span class="comment">(* FIXME we also want a version that mutates in place *)</span>
+
+<span class="comment">(* delete ----------------------------------------------------------  *)</span>
+
+<span class="comment">(* after a merge, the parent may become "small", or even have no keys at all if there
+was only one key to begin with; this operation tags a node that is small, or even has no
+keys at all *)</span>
+<span class="keyword1"><span class="command">definition</span></span> post_merge <span class="main">::</span> 
+  <span class="quoted"><span class="language">"constants <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> node_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span>store_ops <span class="main">⇒</span> 
+<span class="tfree">'node</span> <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>fo<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span>MM"</span></span>
+<span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">post_merge</span> <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="free"><span class="bound">n</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">case</span> <span class="main">(</span><span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_keys_length<span class="main">)</span><span class="free"><span class="bound">n</span></span><span class="main">)</span> <span class="main">&lt;</span> <span class="free"><span class="bound">cs</span></span><span class="main">|&gt;</span>min_node_keys <span class="keyword1">of</span> 
+  True <span class="main">⇒</span> <span class="main">(</span>return <span class="main">(</span>D_small_node<span class="main">(</span><span class="free"><span class="bound">n</span></span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> False <span class="main">⇒</span> <span class="main">(</span>
+    Disk_node<span class="main">(</span><span class="free"><span class="bound">n</span></span><span class="main">)</span><span class="main">|&gt;</span><span class="main">(</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>wrte<span class="main">)</span><span class="main">|&gt;</span>bind <span class="main">(</span><span class="main">%</span> <span class="bound">r</span><span class="main">.</span>
+    return <span class="main">(</span>D_updated_subtree<span class="main">(</span><span class="bound">r</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+<span class="keyword1"><span class="command">definition</span></span> step_up_small_leaf <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">step_up_small_leaf</span>  <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="free"><span class="bound">frm</span></span> <span class="free"><span class="bound">leaf</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="main">(</span><span class="bound">read</span><span class="main">,</span><span class="bound">write</span><span class="main">)</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>read<span class="main">,</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>wrte<span class="main">)</span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="bound">post_merge</span> <span class="main">=</span> post_merge <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+    <span class="inner_comment">― <span class="quoted"><span class="document">‹NOTE stack is not empty, so at least one sibling; then a small leaf is expected to
+      have FIXME minleafsize-1 entries›</span></span></span>
+    <span class="keyword1">let</span> <span class="main"><span class="bound">_</span></span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>dbg_frame<span class="main">)</span> <span class="free"><span class="bound">frm</span></span> <span class="keyword1">in</span>
+    <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>get_focus_and_right_sibling<span class="main">)</span> <span class="free"><span class="bound">frm</span></span> <span class="keyword1">of</span> 
+    None <span class="main">⇒</span> <span class="main">(</span>
+      <span class="inner_comment">― <span class="quoted"><span class="document">‹ steal or merge from left ›</span></span></span>
+      <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>get_left_sibling_and_focus<span class="main">)</span> <span class="free"><span class="bound">frm</span></span> <span class="keyword1">of</span> 
+      None <span class="main">⇒</span> failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''impossible''</span><span class="main">)</span> 
+      <span class="main">|</span> Some <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+      <span class="bound">r1</span> <span class="main">|&gt;</span> <span class="bound">read</span> <span class="main">|&gt;</span> fmap dest_Disk_leaf <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">left_leaf</span><span class="main">.</span> 
+      <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_length<span class="main">)</span> <span class="bound">left_leaf</span> <span class="main">=</span> <span class="free"><span class="bound">cs</span></span><span class="main">|&gt;</span>min_leaf_size <span class="keyword1">of</span>
+      True <span class="main">⇒</span> <span class="main">(</span>
+        <span class="inner_comment">― <span class="quoted"><span class="document">‹ merge from left ›</span></span></span>
+        <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_merge<span class="main">)</span> <span class="main">(</span><span class="bound">left_leaf</span><span class="main">,</span><span class="free"><span class="bound">leaf</span></span><span class="main">)</span> <span class="main">|&gt;</span> <span class="main">(</span><span class="main">%</span> <span class="bound">leaf</span><span class="main">.</span>
+        <span class="bound">write</span> <span class="main">(</span>Disk_leaf<span class="main">(</span><span class="bound">leaf</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r</span><span class="main">.</span>
+        <span class="free"><span class="bound">frm</span></span> <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>replace<span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="main">[]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span>
+        <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>frame_to_node<span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">post_merge</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+      <span class="main">|</span> False <span class="main">⇒</span> <span class="main">(</span>
+        <span class="inner_comment">― <span class="quoted"><span class="document">‹ steal from left ›</span></span></span>
+        <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_steal_left<span class="main">)</span> <span class="main">(</span><span class="bound">left_leaf</span><span class="main">,</span><span class="free"><span class="bound">leaf</span></span><span class="main">)</span> <span class="main">|&gt;</span> <span class="main">(</span><span class="main">%</span> <span class="main">(</span><span class="bound">left_leaf</span><span class="main">,</span><span class="bound">k'</span><span class="main">,</span><span class="bound">leaf</span><span class="main">)</span><span class="main">.</span>
+        <span class="bound">write</span> <span class="main">(</span>Disk_leaf<span class="main">(</span><span class="bound">left_leaf</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r1'</span><span class="main">.</span>
+        <span class="bound">write</span> <span class="main">(</span>Disk_leaf<span class="main">(</span><span class="bound">leaf</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r2'</span><span class="main">.</span>
+        <span class="free"><span class="bound">frm</span></span> <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>replace<span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1'</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k'</span><span class="main">,</span><span class="bound">r2'</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span>
+        <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>frame_to_node<span class="main">)</span> <span class="main">|&gt;</span> Disk_node
+        <span class="main">|&gt;</span> <span class="bound">write</span> <span class="main">|&gt;</span> fmap D_updated_subtree<span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+    <span class="main">|</span> Some <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+      <span class="inner_comment">― <span class="quoted"><span class="document">‹ steal or merge from right ›</span></span></span>
+      <span class="bound">r2</span> <span class="main">|&gt;</span> <span class="bound">read</span> <span class="main">|&gt;</span> fmap dest_Disk_leaf <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">right_leaf</span><span class="main">.</span> 
+      <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_length<span class="main">)</span> <span class="bound">right_leaf</span> <span class="main">=</span> <span class="free"><span class="bound">cs</span></span><span class="main">|&gt;</span>min_leaf_size <span class="keyword1">of</span>
+      True <span class="main">⇒</span> <span class="main">(</span>
+        <span class="inner_comment">― <span class="quoted"><span class="document">‹ merge from right ›</span></span></span>
+        <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_merge<span class="main">)</span> <span class="main">(</span><span class="free"><span class="bound">leaf</span></span><span class="main">,</span><span class="bound">right_leaf</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="main">(</span><span class="main">%</span> <span class="bound">leaf</span><span class="main">.</span>
+        <span class="bound">write</span> <span class="main">(</span>Disk_leaf<span class="main">(</span><span class="bound">leaf</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r</span><span class="main">.</span>
+        <span class="free"><span class="bound">frm</span></span> <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>replace<span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="main">[]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span>        
+        <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>frame_to_node<span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">post_merge</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+      <span class="main">|</span> False <span class="main">⇒</span> <span class="main">(</span>
+        <span class="inner_comment">― <span class="quoted"><span class="document">‹ steal from right ›</span></span></span> 
+        <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_steal_right<span class="main">)</span> <span class="main">(</span><span class="free"><span class="bound">leaf</span></span><span class="main">,</span><span class="bound">right_leaf</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="main">(</span><span class="main">%</span> <span class="main">(</span><span class="bound">leaf</span><span class="main">,</span><span class="bound">k'</span><span class="main">,</span><span class="bound">right_leaf</span><span class="main">)</span><span class="main">.</span> 
+        <span class="bound">write</span> <span class="main">(</span>Disk_leaf<span class="main">(</span><span class="bound">leaf</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r1'</span><span class="main">.</span>
+        <span class="bound">write</span> <span class="main">(</span>Disk_leaf<span class="main">(</span><span class="bound">right_leaf</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r2'</span><span class="main">.</span>
+        <span class="free"><span class="bound">frm</span></span> <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>replace<span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1'</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k'</span><span class="main">,</span><span class="bound">r2'</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span>
+        <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>frame_to_node<span class="main">)</span> <span class="main">|&gt;</span> Disk_node
+        <span class="main">|&gt;</span> <span class="bound">write</span> <span class="main">|&gt;</span> fmap D_updated_subtree<span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+"</span></span>
+
+<span class="keyword1"><span class="command">definition</span></span> step_up_small_node <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">step_up_small_node</span> <span class="free"><span class="bound">cs</span></span> <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">::</span><span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>leaf_ops<span class="main">)</span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="free"><span class="bound">frm</span></span> <span class="free"><span class="bound">n</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="main">(</span><span class="bound">read</span><span class="main">,</span><span class="bound">write</span><span class="main">)</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>read<span class="main">,</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>wrte<span class="main">)</span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="bound">post_merge</span> <span class="main">=</span> post_merge <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+    <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>get_focus_and_right_sibling<span class="main">)</span> <span class="free"><span class="bound">frm</span></span> <span class="keyword1">of</span> 
+    None <span class="main">⇒</span> <span class="main">(</span>
+      <span class="inner_comment">― <span class="quoted"><span class="document">‹ steal or merge from left ›</span></span></span>
+      <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>get_left_sibling_and_focus<span class="main">)</span> <span class="free"><span class="bound">frm</span></span> <span class="keyword1">of</span> 
+      None <span class="main">⇒</span> failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''impossible''</span><span class="main">)</span>
+      <span class="main">|</span> Some <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+      <span class="bound">r1</span> <span class="main">|&gt;</span> <span class="bound">read</span> <span class="main">|&gt;</span> fmap dest_Disk_node <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">left_sibling</span><span class="main">.</span> 
+      <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_keys_length<span class="main">)</span> <span class="bound">left_sibling</span> <span class="main">=</span> <span class="free"><span class="bound">cs</span></span><span class="main">|&gt;</span>min_node_keys <span class="keyword1">of</span>
+      True <span class="main">⇒</span> <span class="main">(</span>
+        <span class="inner_comment">― <span class="quoted"><span class="document">‹ merge from left ›</span></span></span>      
+        <span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_merge<span class="main">)</span> <span class="main">(</span><span class="bound">left_sibling</span><span class="main">,</span><span class="bound">k2</span><span class="main">,</span><span class="free"><span class="bound">n</span></span><span class="main">)</span> <span class="main">|&gt;</span> <span class="main">(</span><span class="main">%</span> <span class="bound">n</span><span class="main">.</span> 
+        <span class="bound">write</span> <span class="main">(</span>Disk_node<span class="main">(</span><span class="bound">n</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r</span><span class="main">.</span>
+        <span class="free"><span class="bound">frm</span></span> <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>replace<span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="main">[]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> 
+        <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>frame_to_node<span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">post_merge</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+      <span class="main">|</span> False <span class="main">⇒</span> <span class="main">(</span>
+        <span class="inner_comment">― <span class="quoted"><span class="document">‹ steal from left ›</span></span></span>      
+        <span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_steal_left<span class="main">)</span> <span class="main">(</span><span class="bound">left_sibling</span><span class="main">,</span><span class="bound">k2</span><span class="main">,</span><span class="free"><span class="bound">n</span></span><span class="main">)</span> <span class="main">|&gt;</span> <span class="main">(</span><span class="main">%</span> <span class="main">(</span><span class="bound">left_sibling</span><span class="main">,</span><span class="bound">k2'</span><span class="main">,</span><span class="bound">n</span><span class="main">)</span><span class="main">.</span>
+        <span class="bound">write</span> <span class="main">(</span>Disk_node<span class="main">(</span><span class="bound">left_sibling</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r1'</span><span class="main">.</span>
+        <span class="bound">write</span> <span class="main">(</span>Disk_node<span class="main">(</span><span class="bound">n</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r2'</span><span class="main">.</span>
+        <span class="free"><span class="bound">frm</span></span> <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span> <span class="main">|&gt;</span> replace<span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1'</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k2'</span><span class="main">,</span><span class="bound">r2'</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> 
+        <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>frame_to_node<span class="main">)</span> <span class="main">|&gt;</span> Disk_node
+        <span class="main">|&gt;</span> <span class="bound">write</span> <span class="main">|&gt;</span> fmap D_updated_subtree<span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+    <span class="main">|</span> Some <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+      <span class="inner_comment">― <span class="quoted"><span class="document">‹ steal or merge from right ›</span></span></span>
+      <span class="bound">r2</span> <span class="main">|&gt;</span> <span class="bound">read</span> <span class="main">|&gt;</span> fmap dest_Disk_node <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">right_sibling</span><span class="main">.</span> 
+      <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_keys_length<span class="main">)</span> <span class="bound">right_sibling</span> <span class="main">=</span> <span class="free"><span class="bound">cs</span></span><span class="main">|&gt;</span>min_node_keys <span class="keyword1">of</span>
+      True <span class="main">⇒</span> <span class="main">(</span>
+        <span class="inner_comment">― <span class="quoted"><span class="document">‹ merge from right ›</span></span></span>
+        <span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_merge<span class="main">)</span> <span class="main">(</span><span class="free"><span class="bound">n</span></span><span class="main">,</span><span class="bound">k2</span><span class="main">,</span><span class="bound">right_sibling</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="main">(</span><span class="main">%</span> <span class="bound">n</span><span class="main">.</span>
+        <span class="bound">write</span> <span class="main">(</span>Disk_node<span class="main">(</span><span class="bound">n</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r</span><span class="main">.</span> 
+        <span class="free"><span class="bound">frm</span></span> <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>replace<span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="main">[]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> 
+        <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>frame_to_node<span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">post_merge</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+      <span class="main">|</span> False <span class="main">⇒</span> <span class="main">(</span>
+        <span class="inner_comment">― <span class="quoted"><span class="document">‹ steal from right ›</span></span></span>
+        <span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_steal_right<span class="main">)</span> <span class="main">(</span><span class="free"><span class="bound">n</span></span><span class="main">,</span><span class="bound">k2</span><span class="main">,</span><span class="bound">right_sibling</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="main">(</span><span class="main">%</span> <span class="main">(</span><span class="bound">n</span><span class="main">,</span><span class="bound">k2'</span><span class="main">,</span><span class="bound">right_sibling</span><span class="main">)</span><span class="main">.</span>
+        <span class="bound">write</span> <span class="main">(</span>Disk_node<span class="main">(</span><span class="bound">n</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r1'</span><span class="main">.</span>
+        <span class="bound">write</span> <span class="main">(</span>Disk_node<span class="main">(</span><span class="bound">right_sibling</span><span class="main">)</span><span class="main">)</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">r2'</span><span class="main">.</span>
+        <span class="free"><span class="bound">frm</span></span> <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>replace<span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k2</span><span class="main">,</span><span class="bound">r2</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1'</span><span class="main">,</span><span class="main">[</span><span class="main">(</span><span class="bound">k2'</span><span class="main">,</span><span class="bound">r2'</span><span class="main">)</span><span class="main">]</span><span class="main">,</span><span class="bound">k3</span><span class="main">)</span>
+        <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>frame_to_node<span class="main">)</span> <span class="main">|&gt;</span> Disk_node
+        <span class="main">|&gt;</span> <span class="bound">write</span> <span class="main">|&gt;</span> fmap D_updated_subtree<span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+"</span></span>
+
+<span class="keyword1"><span class="command">definition</span></span> step_up <span class="main">::</span> <span class="quoted"><span class="language">"
+constants <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span> leaf_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> node_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span>store_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span>u <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span>u<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">step_up</span> <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="free"><span class="bound">du</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="main">(</span><span class="bound">f</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span> <span class="main">=</span> <span class="free"><span class="bound">du</span></span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="main">(</span><span class="bound">read</span><span class="main">,</span><span class="bound">write</span><span class="main">)</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>read<span class="main">,</span><span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>wrte<span class="main">)</span> <span class="keyword1">in</span>
+  <span class="keyword1">let</span> <span class="bound">post_merge</span> <span class="main">=</span> post_merge <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+  <span class="keyword1">case</span> <span class="bound">stk</span> <span class="keyword1">of</span> <span class="main">[]</span> <span class="main">⇒</span> <span class="main">(</span>failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''delete, step_up''</span><span class="main">)</span><span class="main">)</span> <span class="main">|</span> <span class="bound">frm</span><span class="main">#</span><span class="bound">stk'</span> <span class="main">⇒</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="main"><span class="bound">_</span></span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>dbg_frame<span class="main">)</span> <span class="bound">frm</span> <span class="keyword1">in</span>
+  <span class="inner_comment">― <span class="quoted"><span class="document">‹ NOTE p is the parent ›</span></span></span>
+  <span class="inner_comment">― <span class="quoted"><span class="document">‹ take the result of what follows, and add the stk' component ›</span></span></span>
+  <span class="main">(</span><span class="main">%</span> <span class="bound">x</span><span class="main">.</span> <span class="bound">x</span> <span class="main">|&gt;</span> fmap <span class="main">(</span><span class="main">%</span> <span class="bound">y</span><span class="main">.</span> <span class="main">(</span><span class="bound">y</span><span class="main">,</span><span class="bound">stk'</span><span class="main">)</span><span class="main">)</span><span class="main">)</span> <span class="main">(</span><span class="keyword1">case</span> <span class="bound">f</span> <span class="keyword1">of</span>   
+  D_updated_subtree <span class="bound">r</span> <span class="main">⇒</span> <span class="main">(</span>
+    <span class="bound">frm</span> <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>get_focus<span class="main">)</span> <span class="main">|&gt;</span> <span class="main">(</span> <span class="main">%</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="bound">k2</span><span class="main">)</span><span class="main">.</span>
+    <span class="bound">frm</span> <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>replace<span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r1</span><span class="main">,</span><span class="main">[]</span><span class="main">,</span><span class="bound">k2</span><span class="main">)</span> <span class="main">(</span><span class="bound">k1</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="main">[]</span><span class="main">,</span><span class="bound">k2</span><span class="main">)</span> 
+    <span class="main">|&gt;</span> <span class="main">(</span><span class="free"><span class="bound">frame_ops</span></span><span class="main">|&gt;</span>frame_to_node<span class="main">)</span> <span class="main">|&gt;</span> Disk_node 
+    <span class="main">|&gt;</span> <span class="bound">write</span> <span class="main">|&gt;</span> fmap D_updated_subtree<span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> D_small_leaf<span class="main">(</span><span class="bound">leaf</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+    step_up_small_leaf  <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="bound">frm</span> <span class="bound">leaf</span><span class="main">)</span>
+  <span class="main">|</span> D_small_node<span class="main">(</span><span class="bound">n</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+    step_up_small_node <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="bound">frm</span> <span class="bound">n</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+"</span></span>
+
+
+<span class="keyword1"><span class="command">definition</span></span> delete_step <span class="main">::</span> <span class="quoted"><span class="language">"
+constants <span class="main">⇒</span> 
+ <span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span> leaf_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> node_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span>store_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span>delete_state <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span>delete_state<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> 
+<span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">delete_step</span> <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="bound">write</span> <span class="main">=</span> <span class="free"><span class="bound">store_ops</span></span><span class="main">|&gt;</span>wrte <span class="keyword1">in</span>
+  <span class="main">(</span><span class="main">%</span> <span class="bound">s</span><span class="main">.</span>
+  <span class="keyword1">case</span> <span class="bound">s</span> <span class="keyword1">of</span> 
+  D_down<span class="main">(</span><span class="bound">f</span><span class="main">,</span><span class="bound">r0</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+    <span class="keyword1">case</span> dest_F_finished <span class="bound">f</span> <span class="keyword1">of</span>
+    None <span class="main">⇒</span> <span class="main">(</span>find_step <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="bound">f</span> <span class="main">|&gt;</span> fmap <span class="main">(</span><span class="main">%</span> <span class="bound">f'</span><span class="main">.</span> D_down<span class="main">(</span><span class="bound">f'</span><span class="main">,</span><span class="bound">r0</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+    <span class="main">|</span> Some <span class="bound">x</span> <span class="main">⇒</span> <span class="main">(</span>
+      <span class="keyword1">let</span> <span class="main">(</span><span class="bound">r0</span><span class="main">,</span><span class="bound">k</span><span class="main">,</span><span class="bound">r</span><span class="main">,</span><span class="bound">leaf</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span> <span class="main">=</span> <span class="bound">x</span> <span class="keyword1">in</span>
+      <span class="keyword1">let</span> <span class="bound">vopt</span> <span class="main">::</span> <span class="tfree">'v</span> option <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_lookup<span class="main">)</span> <span class="bound">k</span> <span class="bound">leaf</span> <span class="keyword1">in</span>
+      <span class="keyword1">case</span> <span class="bound">vopt</span> <span class="keyword1">of</span>
+      Some <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> <span class="main">(</span>
+        <span class="keyword1">let</span> <span class="bound">leaf'</span> <span class="main">=</span> <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_remove<span class="main">)</span> <span class="bound">k</span> <span class="bound">leaf</span> <span class="keyword1">in</span>
+        <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">leaf_ops</span></span><span class="main">|&gt;</span>leaf_length<span class="main">)</span> <span class="bound">leaf'</span> <span class="main">&lt;</span> <span class="free"><span class="bound">cs</span></span><span class="main">|&gt;</span>min_leaf_size <span class="keyword1">of</span>
+        True <span class="main">⇒</span> <span class="main">(</span>return <span class="main">(</span>D_up<span class="main">(</span>D_small_leaf<span class="main">(</span><span class="bound">leaf'</span><span class="main">)</span><span class="main">,</span><span class="bound">stk</span><span class="main">,</span><span class="bound">r0</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+        <span class="main">|</span> False <span class="main">⇒</span> <span class="main">(</span>Disk_leaf<span class="main">(</span><span class="bound">leaf'</span><span class="main">)</span> <span class="main">|&gt;</span> <span class="bound">write</span> 
+          <span class="main">|&gt;</span> fmap <span class="main">(</span><span class="main">%</span> <span class="bound">r</span><span class="main">.</span> D_up<span class="main">(</span>D_updated_subtree<span class="main">(</span><span class="bound">r</span><span class="main">)</span><span class="main">,</span><span class="bound">stk</span><span class="main">,</span><span class="bound">r0</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+      <span class="main">|</span> None <span class="main">⇒</span> <span class="main">(</span>return <span class="main">(</span>D_finished <span class="bound">r0</span><span class="main">)</span> <span class="main">)</span><span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> D_up<span class="main">(</span><span class="bound">f</span><span class="main">,</span><span class="bound">stk</span><span class="main">,</span><span class="bound">r0</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+    <span class="keyword1">case</span> is_Nil' <span class="bound">stk</span> <span class="keyword1">of</span>
+    True <span class="main">⇒</span> <span class="main">(</span>
+      <span class="keyword1">case</span> <span class="bound">f</span> <span class="keyword1">of</span>
+      D_small_leaf <span class="bound">leaf</span> <span class="main">⇒</span> <span class="main">(</span>Disk_leaf<span class="main">(</span><span class="bound">leaf</span><span class="main">)</span><span class="main">|&gt;</span><span class="bound">write</span><span class="main">|&gt;</span>fmap D_finished<span class="main">)</span>
+      <span class="main">|</span> D_small_node<span class="main">(</span><span class="bound">n</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>
+        <span class="keyword1">case</span> <span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_keys_length<span class="main">)</span> <span class="bound">n</span> <span class="main">=</span> <span class="main">0</span> <span class="keyword1">of</span>
+        True <span class="main">⇒</span> return <span class="main">(</span>D_finished <span class="main">(</span><span class="main">(</span><span class="free"><span class="bound">node_ops</span></span><span class="main">|&gt;</span>node_get_single_r<span class="main">)</span> <span class="bound">n</span><span class="main">)</span><span class="main">)</span>
+        <span class="main">|</span> False <span class="main">⇒</span> <span class="main">(</span>Disk_node<span class="main">(</span><span class="bound">n</span><span class="main">)</span><span class="main">|&gt;</span><span class="bound">write</span><span class="main">|&gt;</span>fmap D_finished<span class="main">)</span><span class="main">)</span>
+      <span class="main">|</span> D_updated_subtree<span class="main">(</span><span class="bound">r</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>return <span class="main">(</span>D_finished <span class="bound">r</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+    <span class="main">|</span> False <span class="main">⇒</span> <span class="main">(</span>step_up <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="main">(</span><span class="bound">f</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span> <span class="main">|&gt;</span> fmap <span class="main">(</span><span class="main">%</span> <span class="main">(</span><span class="bound">f</span><span class="main">,</span><span class="bound">stk</span><span class="main">)</span><span class="main">.</span> D_up<span class="main">(</span><span class="bound">f</span><span class="main">,</span><span class="bound">stk</span><span class="main">,</span><span class="bound">r0</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> D_finished<span class="main">(</span><span class="bound">r</span><span class="main">)</span> <span class="main">⇒</span> <span class="main">(</span>failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''delete_step 1''</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+
+<span class="keyword1"><span class="command">definition</span></span> delete_big_step <span class="main">::</span> <span class="quoted"><span class="language">"
+constants <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span> leaf_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> node_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span>store_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> delete_state <span class="main">⇒</span> <span class="main">(</span><span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">,</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">)</span> delete_state<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">delete_big_step</span> <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="main">=</span> <span class="main">(</span>
+  <span class="keyword1">let</span> <span class="bound">delete_step</span> <span class="main">=</span> delete_step <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="keyword1">in</span>
+  <span class="main">(</span><span class="main">%</span> <span class="bound">d</span><span class="main">.</span>
+  iter_m <span class="main">(</span><span class="main">%</span> <span class="bound">d</span><span class="main">.</span> <span class="keyword1">case</span> <span class="bound">d</span> <span class="keyword1">of</span>
+    D_finished <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> return None
+    <span class="main">|</span> <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> <span class="main">(</span><span class="bound">delete_step</span> <span class="bound">d</span> <span class="main">|&gt;</span> fmap Some<span class="main">)</span><span class="main">)</span>
+    <span class="bound">d</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+
+<span class="keyword1"><span class="command">definition</span></span> delete <span class="main">::</span> <span class="quoted"><span class="language">"
+constants <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'v</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span> leaf_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> node_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'k</span><span class="main">,</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'frame</span><span class="main">,</span><span class="tfree">'node</span><span class="main">)</span> frame_ops <span class="main">⇒</span> 
+<span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="main">(</span><span class="tfree">'node</span><span class="main">,</span><span class="tfree">'leaf</span><span class="main">)</span>dnode<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span>store_ops <span class="main">⇒</span>
+<span class="main">(</span><span class="tfree">'r</span> <span class="main">⇒</span> <span class="main">(</span>bool<span class="main">,</span><span class="tfree">'t</span><span class="main">)</span>MM<span class="main">)</span> <span class="main">⇒</span> 
+<span class="tfree">'r</span> <span class="main">⇒</span> <span class="tfree">'k</span>  <span class="main">⇒</span> <span class="main">(</span><span class="tfree">'r</span><span class="main">,</span><span class="tfree">'t</span><span class="main">)</span> MM"</span></span> <span class="keyword2"><span class="keyword">where</span></span>
+<span class="quoted"><span class="language">"<span class="free">delete</span> <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="free"><span class="bound">check_tree_at_r'</span></span> <span class="main">=</span> <span class="main">(</span><span class="main">%</span> <span class="bound">r</span> <span class="bound">k</span><span class="main">.</span>
+  <span class="keyword1">let</span> <span class="bound">d</span> <span class="main">=</span> make_initial_delete_state <span class="bound">r</span> <span class="bound">k</span> <span class="keyword1">in</span>
+  delete_big_step <span class="free"><span class="bound">cs</span></span> <span class="free"><span class="bound">leaf_ops</span></span> <span class="free"><span class="bound">node_ops</span></span> <span class="free"><span class="bound">frame_ops</span></span> <span class="free"><span class="bound">store_ops</span></span> <span class="bound">d</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="bound">d</span><span class="main">.</span>
+  <span class="keyword1">case</span> <span class="bound">d</span> <span class="keyword1">of</span>
+  D_finished <span class="bound">r</span> <span class="main">⇒</span> <span class="main">(</span><span class="free"><span class="bound">check_tree_at_r'</span></span> <span class="bound">r</span> <span class="main">|&gt;</span> bind <span class="main">(</span><span class="main">%</span> <span class="main"><span class="bound">_</span></span><span class="main">.</span> return <span class="bound">r</span><span class="main">)</span><span class="main">)</span>
+  <span class="main">|</span> <span class="main"><span class="bound">_</span></span> <span class="main">⇒</span> <span class="main">(</span>failwith <span class="main">(</span><span class="keyword1">STR</span> <span class="inner_quoted">''delete, impossible''</span><span class="main">)</span><span class="main">)</span><span class="main">)</span><span class="main">)</span>"</span></span>
+
+<span class="keyword2"><span class="keyword">end</span></span>
+</pre></body>
