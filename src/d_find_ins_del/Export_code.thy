@@ -24,12 +24,12 @@ make_constants
 
 Key_value.key_lt
 key_le
-LT
+(*LT*)
 (* FIXME remove tests in production code *)
 okl_tests
 ck_tests
 ck2_tests
-kvs_insert_tests
+(*kvs_insert_tests*)
 
 (* Searching_and_splitting.sk2i_tests *)
 (* Stacks_and_frames.Frm *)
@@ -37,7 +37,7 @@ kvs_insert_tests
 Disk_node.Disk_node
 make_leaf_ops
 make_node_ops
-rbt_as_leaf_ops
+(*rbt_as_leaf_ops*)
 
 (* stacks and frames *)
 Stacks_and_frames.make_frame_ops

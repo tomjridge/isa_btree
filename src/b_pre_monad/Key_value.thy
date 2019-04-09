@@ -33,45 +33,6 @@ definition wf_key_ord :: "'k ord \<Rightarrow> bool" where
   (! k1 k2. key_eq ord k1 k2 \<longrightarrow> (k1=k2))  (* FIXME may need this? *)
 )"
 
-(* lt on kv pair is just lt on k components *)
-definition kv_lt :: "'k ord \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v) \<Rightarrow> bool" where
-"kv_lt ord kv1 kv2 = (key_lt ord (fst kv1) (fst kv2))"
-
-datatype compare_t = LT | EQ | GT
-
-definition key_compare :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> compare_t" where
-"key_compare ord k1 k2 = (
-   let n = ord k1 k2 in
-   if n < 0 then LT else
-   if n = 0 then EQ else
-   GT)"
-
-
-
-
-definition kvs_insert :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k*'v) s \<Rightarrow> ('k * 'v) s" where "
-kvs_insert k_cmp k v kvs = (
-  iter_step (% (kvs,kvs').
-    case kvs' of 
-    [] \<Rightarrow> None
-    | (k',v')#kvs' \<Rightarrow> (
-      case key_lt k_cmp k k' of 
-      True \<Rightarrow> None
-      | False \<Rightarrow> (
-        case key_eq k_cmp k k' of 
-        True \<Rightarrow> Some(kvs,kvs') 
-        | False \<Rightarrow> (Some((k',v')#kvs,kvs')))))
-    ([],kvs)
-  |> (% (kvs,kvs'). (List.rev ((k,v)#kvs))@kvs'))"
-
-
-(* check two lists of kv for equality; patched because values may have
-some non-standard equality; used for debugging *)
-
-definition kvs_equal :: "('k*'v) list \<Rightarrow> ('k*'v) list \<Rightarrow> bool" where
-"kvs_equal = failwith (STR ''FIXME patch'')"
-
-
 
 (* ordererd key list ------------------------------------------------ *)
 
@@ -124,6 +85,27 @@ definition ck2_tests :: bool where
   let _ = assert_true (check_keys_2 nat_ord (set[0]) (Some 1) (set[1,2,3]) (Some 4) (set[4,5])) in
   True)"
 
+
+
+end
+
+
+(* old
+
+(* lt on kv pair is just lt on k components *)
+definition kv_lt :: "'k ord \<Rightarrow> ('k*'v) \<Rightarrow> ('k*'v) \<Rightarrow> bool" where
+"kv_lt ord kv1 kv2 = (key_lt ord (fst kv1) (fst kv2))"
+
+datatype compare_t = LT | EQ | GT
+
+definition key_compare :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'k \<Rightarrow> compare_t" where
+"key_compare ord k1 k2 = (
+   let n = ord k1 k2 in
+   if n < 0 then LT else
+   if n = 0 then EQ else
+   GT)"
+
+
 (* insert and delete in list of kv ---------------------------------- *)
 
 (* FIXME may want to use binary search; but this assumes an array-like implementation *)
@@ -141,6 +123,30 @@ primrec kvs_insert :: "'k ord \<Rightarrow> 'k*'v \<Rightarrow> ('k*'v)list \<Ri
 )"
 *)
 
+
+
+definition kvs_insert :: "'k ord \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k*'v) s \<Rightarrow> ('k * 'v) s" where "
+kvs_insert k_cmp k v kvs = (
+  iter_step (% (kvs,kvs').
+    case kvs' of 
+    [] \<Rightarrow> None
+    | (k',v')#kvs' \<Rightarrow> (
+      case key_lt k_cmp k k' of 
+      True \<Rightarrow> None
+      | False \<Rightarrow> (
+        case key_eq k_cmp k k' of 
+        True \<Rightarrow> Some(kvs,kvs') 
+        | False \<Rightarrow> (Some((k',v')#kvs,kvs')))))
+    ([],kvs)
+  |> (% (kvs,kvs'). (List.rev ((k,v)#kvs))@kvs'))"
+
+
+(* check two lists of kv for equality; patched because values may have
+some non-standard equality; used for debugging *)
+
+definition kvs_equal :: "('k*'v) list \<Rightarrow> ('k*'v) list \<Rightarrow> bool" where
+"kvs_equal = failwith (STR ''FIXME patch'')"
+
 definition kvs_insert_tests :: bool where
 "kvs_insert_tests = check_true (% _.
   let _ = assert_true (kvs_insert nat_ord 2 2 (List.map (% x. (x,x)) [0,1,3,4]) = 
@@ -157,5 +163,4 @@ definition kvs_delete :: "'k ord \<Rightarrow> 'k \<Rightarrow> ('k*'v)list \<Ri
 "kvs_delete ord k kvs = List.filter (% kv. ~ (key_eq ord (fst kv) k)) kvs"
   
 
-
-end
+*)

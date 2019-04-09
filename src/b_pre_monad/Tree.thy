@@ -5,6 +5,17 @@ begin
 (* We need two models for trees: the algebraic datatype model, and the
 "blocks and pointers" model. This is the ADT model. *)
 
+(* small node or leaf ----------------------------------------------- *)
+
+(* `min_size_t` is a datatype which flags whether nodes and leaves
+are small or not; a small root can potentially have no children *)
+
+datatype min_size_t = 
+  Small_root_node_or_leaf
+  | Small_node
+  | Small_leaf
+
+type_synonym ms_t = "min_size_t option"
 
 (* tree algebraic datatype ------------------------------------------ *)
 
@@ -99,7 +110,6 @@ definition balanced_1 :: "('k,'v)tree => bool" where
 "balanced_1 t0 = (
   case t0 of Leaf(l) => True
   | Node(l,cs) => (
-  (* FIXME assert cs <> [] *)
   (cs \<noteq> []) & (List.list_all (% c. height c = height (cs!0)) cs)))"
 
 definition balanced :: "('k,'v)tree => bool" where

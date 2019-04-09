@@ -7,9 +7,11 @@ datatype ('k,'v,'r) i12_t = I1 'r | I2 "'r*'k*'r"
 type_synonym ('k,'v,'r) fo = "('k,'v,'r)i12_t"
 
 type_synonym ('k,'v,'r,'leaf,'frame) d (* down_state *) = "('k,'r,'leaf,'frame)find_state*'v"
+
 type_synonym ('k,'v,'r,'frame) u (* up_state *) = "('k,'v,'r)fo*'frame list"
 
-datatype (dead 'k,dead 'v,dead 'r,'leaf, 'frame) insert_state = 
+
+datatype (dead 'k,dead 'v,dead 'r,'leaf, 'frame) insert_state =
   I_down "('k,'v,'r,'leaf,'frame) d"
   | I_up "('k,'v,'r,'frame) u"
   | I_finished 'r
@@ -20,6 +22,12 @@ definition make_initial_insert_state :: "'r \<Rightarrow> 'k \<Rightarrow> 'v \<
 "make_initial_insert_state r k v = (
   let f = make_initial_find_state k r in
   I_down(f,v))"
+
+end
+
+
+(*
+
 
 
 definition split_leaf :: "constants \<Rightarrow> ('k*'v) s \<Rightarrow> ('k*'v)s * 'k * ('k*'v) s" where "
@@ -62,11 +70,6 @@ where
       (ks',rs'))))"
 
 
-
-end
-
-
-(*
 
 (* this to force dependency order in exported code? *)
 definition dummy :: "unit" where "dummy=()"

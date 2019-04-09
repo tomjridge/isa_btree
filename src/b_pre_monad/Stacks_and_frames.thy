@@ -35,26 +35,6 @@ datatype_record ('k,'r,'frame,'node) frame_ops =
   dbg_frame :: "'frame \<Rightarrow> unit"
 
 
-
-(*
-  get_right_sibling_and_separator :: "'frame \<Rightarrow> ('k * 'r) option"
-  remove_right_sibling :: "'frame \<Rightarrow> 'frame"  (* for merge; assumes present *)
-  replace_right_sibling :: "'k \<Rightarrow> 'r \<Rightarrow> 'frame \<Rightarrow> 'frame"  (* NOTE extra k argument; the new lower bound *)
-  get_left_sibling_and_separator :: "'frame \<Rightarrow> ('r * 'k) option"
-  remove_left_sibling :: "'frame \<Rightarrow> 'frame"
-  replace_left_sibling :: "'r \<Rightarrow> 'frame \<Rightarrow> 'frame"
-  unsplit_with_new_focus :: "'r \<Rightarrow> 'frame \<Rightarrow> 'node" 
-  unsplit_with_new_focus_2 :: "'r*'k*'r \<Rightarrow> 'frame \<Rightarrow> 'node" 
-*)
-
-(*
-  left_halfx :: "'frame \<Rightarrow> 'left_half"
-  right_half :: "'frame \<Rightarrow> 'right_half"
-  lh_dest_snoc :: "'left_half \<Rightarrow> ('left_half*'r*'k) option"
-
-*)
-
-
 definition get_bounds :: "
 ('k,'r,'frame,'node) frame_ops \<Rightarrow>
 'frame list \<Rightarrow> ('k option *  'k option)" where

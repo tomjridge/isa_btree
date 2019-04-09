@@ -43,6 +43,19 @@ definition find :: "
   F_finished(r0,k,r,kvs,stk) \<Rightarrow> return (r,kvs,stk)
   | _ \<Rightarrow> failwith (STR ''find 1'')))"
 
+end
+
+
+
+
+
+
+
+
+
+
+(* old =========================================================
+
 
 (* attempt to do the same, but within a locale *)
 (*
@@ -135,20 +148,6 @@ lemma find_def_2[code]: "find2 x y r k =
   apply(simp cong: find_state.case_cong add: f.find_def f.find_big_step_def f.find_step_def)
   done
 *)
-
-end
-
-
-
-
-
-
-
-
-
-
-(* old =========================================================
-
 
 (* find_trans *)
 

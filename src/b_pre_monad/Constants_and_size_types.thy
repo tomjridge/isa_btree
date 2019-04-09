@@ -2,7 +2,6 @@ theory Constants_and_size_types imports A_start_here begin
 
 (* min/max size constants ------------------------------------------- *)
 
-
 (* `constants` record type, which is used to record min and max bounds
 for leaves and nodes *)
 
@@ -17,17 +16,5 @@ definition make_constants :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarr
 
 (* FIXME add wf constraint following docs $l'>=2l-1$ and $m' >= 2m$ *)
 
-
-(* small node or leaf ----------------------------------------------- *)
-
-(* `min_size_t` is a datatype which flags whether nodes and leaves
-are small or not; a small root can potentially have no children; see `get_min_size` in Tree *)
-
-datatype min_size_t = 
-  Small_root_node_or_leaf
-  | Small_node
-  | Small_leaf
-
-type_synonym ms_t = "min_size_t option"
 
 end

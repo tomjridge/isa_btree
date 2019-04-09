@@ -3,31 +3,22 @@ theory Delete imports Find "$SRC/b_pre_monad/Delete_state" begin
 (* FIXME merge in documentation from Delete *)
 
 (* NOTE these are repeated from Delete_state, because otherwise they are shadowed by eg insert.fo *)
-type_synonym ('r,'node,'leaf)fo = "('r,'node,'leaf) del_t"  (* focus *)
-type_synonym ('r,'node,'leaf,'frame)u = "('r,'node,'leaf)fo * 'frame list"  
-type_synonym ('k,'r,'leaf,'frame)d = "('k,'r,'leaf,'frame)find_state * 'r"
+type_synonym ('r,'node,'leaf)d_focus = "('r,'node,'leaf) del_t"  (* focus *)
+type_synonym ('r,'node,'leaf,'frame)d_up = "('r,'node,'leaf)d_focus * 'frame list"  
+type_synonym ('k,'r,'leaf,'frame)d_down = "('k,'r,'leaf,'frame)find_state * 'r"
  
-(* node steal ------------------------------------------------------- *)
-
-(* args are left split node context, focus, right sib; returns updated parent
-
-FIXME maybe it makes more sense to deal with the context in isolation, and return r*k*r
-
-NOTE rs,ks as args for node_steal_xxx
- *)
-
-(* FIXME we also want a version that mutates in place *)
 
 (* delete ----------------------------------------------------------  *)
+
 
 (* after a merge, the parent may become "small", or even have no keys at all if there
 was only one key to begin with; this operation tags a node that is small, or even has no
 keys at all *)
 definition post_merge :: 
-  "constants \<Rightarrow>
+"constants \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t)store_ops \<Rightarrow> 
-'node \<Rightarrow> (('r,'node,'leaf)fo,'t)MM"
+'node \<Rightarrow> (('r,'node,'leaf)d_focus,'t)MM"
 where
 "post_merge cs node_ops store_ops n = (
   case ((node_ops|>node_keys_length)n) < cs|>min_node_keys of 
@@ -36,10 +27,12 @@ where
     Disk_node(n)|>(store_ops|>wrte)|>bind (% r.
     return (D_updated_subtree(r)))))"
 
+
 definition step_up_small_leaf where
-"step_up_small_leaf  cs leaf_ops node_ops frame_ops store_ops frm leaf = (
+"step_up_small_leaf  cs leaf_ops node_ops frame_ops store_ops = (
   let (read,write) = (store_ops|>read,store_ops|>wrte) in
   let post_merge = post_merge cs node_ops store_ops in
+  (% frm leaf.
     \<comment> \<open>NOTE stack is not empty, so at least one sibling; then a small leaf is expected to
       have FIXME minleafsize-1 entries\<close>
     let _ = (frame_ops|>dbg_frame) frm in
@@ -82,13 +75,13 @@ definition step_up_small_leaf where
         write (Disk_leaf(right_leaf)) |> bind (% r2'.
         frm |> (frame_ops|>replace) (k1,r1,[(k2,r2)],k3) (k1,r1',[(k',r2')],k3)
         |> (frame_ops|>frame_to_node) |> Disk_node
-        |> write |> fmap D_updated_subtree)))))))
-"
+        |> write |> fmap D_updated_subtree))))))))"
 
 definition step_up_small_node where
-"step_up_small_node cs (leaf_ops::('k,'v,'leaf)leaf_ops) node_ops frame_ops store_ops frm n = (
+"step_up_small_node cs (leaf_ops::('k,'v,'leaf)leaf_ops) node_ops frame_ops store_ops = (
   let (read,write) = (store_ops|>read,store_ops|>wrte) in
   let post_merge = post_merge cs node_ops store_ops in
+  (%  frm n.
     case (frame_ops|>get_focus_and_right_sibling) frm of 
     None \<Rightarrow> (
       \<comment> \<open> steal or merge from left \<close>
@@ -128,8 +121,7 @@ definition step_up_small_node where
         write (Disk_node(right_sibling)) |> bind (% r2'.
         frm |> (frame_ops|>replace) (k1,r1,[(k2,r2)],k3) (k1,r1',[(k2',r2')],k3)
         |> (frame_ops|>frame_to_node) |> Disk_node
-        |> write |> fmap D_updated_subtree)))))))
-"
+        |> write |> fmap D_updated_subtree))))))))"
 
 definition step_up :: "
 constants \<Rightarrow> 
@@ -137,26 +129,24 @@ constants \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
 ('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t)store_ops \<Rightarrow> 
-('r,'node,'leaf,'frame)u \<Rightarrow> (('r,'node,'leaf,'frame)u,'t) MM" where
-"step_up cs leaf_ops node_ops frame_ops store_ops du = (
-  let (f,stk) = du in
+('r,'node,'leaf,'frame)d_up \<Rightarrow> (('r,'node,'leaf,'frame)d_up,'t) MM" where
+"step_up cs leaf_ops node_ops frame_ops store_ops = (
   let (read,write) = (store_ops|>read,store_ops|>wrte) in
-  let post_merge = post_merge cs node_ops store_ops in
+  (% du .
+  let (f,stk) = du in
   case stk of [] \<Rightarrow> (failwith (STR ''delete, step_up'')) | frm#stk' \<Rightarrow> (
   let _ = (frame_ops|>dbg_frame) frm in
-  \<comment> \<open> NOTE p is the parent \<close>
-  \<comment> \<open> take the result of what follows, and add the stk' component \<close>
-  (% x. x |> fmap (% y. (y,stk'))) (case f of   
-  D_updated_subtree r \<Rightarrow> (
-    frm |> (frame_ops|>get_focus) |> ( % (k1,r1,k2).
-    frm |> (frame_ops|>replace) (k1,r1,[],k2) (k1,r,[],k2) 
-    |> (frame_ops|>frame_to_node) |> Disk_node 
-    |> write |> fmap D_updated_subtree))
-  | D_small_leaf(leaf) \<Rightarrow> (
-    step_up_small_leaf  cs leaf_ops node_ops frame_ops store_ops frm leaf)
-  | D_small_node(n) \<Rightarrow> (
-    step_up_small_node cs leaf_ops node_ops frame_ops store_ops frm n))))
-"
+  (case f of   
+    D_updated_subtree r \<Rightarrow> (
+      frm |> (frame_ops|>get_focus) |> ( % (k1,r1,k2).
+      frm |> (frame_ops|>replace) (k1,r1,[],k2) (k1,r,[],k2) 
+      |> (frame_ops|>frame_to_node) |> Disk_node 
+      |> write |> fmap D_updated_subtree))
+    | D_small_leaf(leaf) \<Rightarrow> (
+      step_up_small_leaf  cs leaf_ops node_ops frame_ops store_ops frm leaf)
+    | D_small_node(n) \<Rightarrow> (
+      step_up_small_node cs leaf_ops node_ops frame_ops store_ops frm n))
+  |> fmap (% y. (y,stk')) )))"
 
 
 definition delete_step :: "
@@ -195,7 +185,9 @@ where
         True \<Rightarrow> return (D_finished ((node_ops|>node_get_single_r) n))
         | False \<Rightarrow> (Disk_node(n)|>write|>fmap D_finished))
       | D_updated_subtree(r) \<Rightarrow> (return (D_finished r)))
-    | False \<Rightarrow> (step_up cs leaf_ops node_ops frame_ops store_ops (f,stk) |> fmap (% (f,stk). D_up(f,stk,r0))))
+    | False \<Rightarrow> (
+      step_up cs leaf_ops node_ops frame_ops store_ops (f,stk) 
+      |> fmap (% (f,stk). D_up(f,stk,r0))))
   | D_finished(r) \<Rightarrow> (failwith (STR ''delete_step 1''))))"
 
 
@@ -229,5 +221,6 @@ constants \<Rightarrow>
   case d of
   D_finished r \<Rightarrow> (check_tree_at_r' r |> bind (% _. return r))
   | _ \<Rightarrow> (failwith (STR ''delete, impossible''))))"
+
 
 end

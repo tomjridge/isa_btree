@@ -1,8 +1,8 @@
 theory Insert imports Find "$SRC/b_pre_monad/Insert_state" begin
 
-type_synonym ('k,'v,'r) fo = "('k,'v,'r)i12_t"
-type_synonym ('k,'v,'r,'leaf,'frame) d (* down_state *) = "('k,'r,'leaf,'frame)find_state*'v"
-type_synonym ('k,'v,'r,'frame) u (* up_state *) = "('k,'v,'r)fo*'frame list"
+type_synonym ('k,'v,'r) i_focus = "('k,'v,'r)i12_t"
+type_synonym ('k,'v,'r,'leaf,'frame) i_down (* down_state *) = "('k,'r,'leaf,'frame)find_state*'v"
+type_synonym ('k,'v,'r,'frame) i_up (* up_state *) = "('k,'v,'r)i_focus*'frame list"
 
 (* insert ----------------------------------------------------------- *)
 
@@ -10,7 +10,7 @@ type_synonym ('k,'v,'r,'frame) u (* up_state *) = "('k,'v,'r)fo*'frame list"
 definition step_down :: "
 ('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r,'leaf,'frame) d \<Rightarrow> (('k,'v,'r,'leaf,'frame) d,'t) MM" where
+('k,'v,'r,'leaf,'frame) i_down \<Rightarrow> (('k,'v,'r,'leaf,'frame) i_down,'t) MM" where
 "step_down frame_ops store_ops = (
   let find_step =  find_step frame_ops store_ops in
   (% d.
@@ -46,7 +46,7 @@ constants \<Rightarrow>
 ('k,'v,'leaf) leaf_ops \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r,'leaf,'frame) d \<Rightarrow> (('k,'v,'r,'frame) u + unit,'t) MM" where
+('k,'v,'r,'leaf,'frame) i_down \<Rightarrow> (('k,'v,'r,'frame) i_up + unit,'t) MM" where
 "step_bottom cs leaf_ops node_ops store_ops d = (
   let (write,rewrite) = (store_ops|>wrte,store_ops|>rewrite) in
   let (fs,v) = d in
@@ -101,7 +101,7 @@ constants \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
 ('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
-('k,'v,'r,'frame) u \<Rightarrow> (('k,'v,'r,'frame) u + unit,'t) MM" where
+('k,'v,'r,'frame) i_up \<Rightarrow> (('k,'v,'r,'frame) i_up + unit,'t) MM" where
 "step_up cs node_ops frame_ops store_ops u = (
   let (write,rewrite) = (store_ops|>wrte,store_ops|>rewrite) in
   let (fo,stk) = u in
