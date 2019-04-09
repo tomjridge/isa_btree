@@ -175,9 +175,12 @@ k_cmp:('a -> 'a -> int) ->
 
 (* See Isabelle defn. See \doc(doc:frame_ops) *)
 
-type 'k or_top = 'k option
+module Internal = struct
+  type 'k or_top = 'k option
 
-type 'k or_bottom = 'k option
+  type 'k or_bottom = 'k option
+end
+open Internal
 
 type ('k,'r) segment = 'k or_bottom * 'r * ('k*'r) list * 'k or_top
 
@@ -200,7 +203,7 @@ type ('k,'r,'frame,'node) frame_ops = {
 (* FIXME maybe move elsewhere *)
 
 type ('k,'r,'node) frame = {
-  midkey: 'k option;  (* may be None *)
+  midkey: 'k or_bottom;  (* may be None *)
   midpoint: 'r;
   node: 'node;
   backing_node_blk_ref: 'r
@@ -386,16 +389,19 @@ let make_find_insert_delete (type t) ~(monad_ops:t monad_ops) =
     let leaf_ops = make_leaf_ops ~k_cmp in
     let node_ops = make_node_ops ~k_cmp in
     let frame_ops = make_frame_ops ~k_cmp ~dbg_frame in
+    let cs,leaf_ops,node_ops,frame_ops,store_ops = 
+      (cs2isa cs),(leaf_ops2isa leaf_ops),(node_ops2isa node_ops),(frame_ops2isa frame_ops),(store_ops2isa store_ops)
+    in
     let find  = 
-      let find = M.Find.find (frame_ops2isa frame_ops) (store_ops2isa store_ops) in
+      let find = M.Find.find frame_ops store_ops in
       fun ~(r:'r) ~(k:'k) -> find r k |> Monad.fmap (fun (a,(b,c)) -> (a,b,c))
     in
     let insert = 
-      let insert = M.Insert.insert (cs2isa cs) (leaf_ops2isa leaf_ops) (node_ops2isa node_ops) (frame_ops2isa frame_ops) (store_ops2isa store_ops) check_tree_at_r' in
+      let insert = M.Insert.insert cs leaf_ops node_ops frame_ops store_ops check_tree_at_r' in
       fun  ~(r:'r) ~(k:'k) ~(v:'v) -> insert r k v
     in
     let delete  =
-      let delete = M.Delete.delete (cs2isa cs) (leaf_ops2isa leaf_ops)  (node_ops2isa node_ops) (frame_ops2isa frame_ops) (store_ops2isa store_ops) check_tree_at_r' in
+      let delete = M.Delete.delete cs leaf_ops node_ops frame_ops store_ops check_tree_at_r' in
       fun ~(r:'r) ~(k:'k) -> delete r k
     in
     {find;insert;delete}

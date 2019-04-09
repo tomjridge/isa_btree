@@ -19,9 +19,6 @@ type_synonym ms_t = "min_size_t option"
 
 (* tree algebraic datatype ------------------------------------------ *)
 
-(* NOTE an alternative might be tree = Tree of (...tree...,_) dnode. For the
-moment we keep this abstract tree type separate. *)
-
 (*:bc:*)
 datatype ('k,'v) tree = 
   Node "('k list * ('k,'v) tree list)" 
