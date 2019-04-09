@@ -16,11 +16,18 @@ clean:
 test: build
 	cd test && dune exec test_main
 
-doc: FORCE
-	$(DUNE) build @doc
+all:
+	$(MAKE) clean
+	$(MAKE) build
+	$(MAKE) test
+	$(MAKE) install
+	$(MAKE) docs
 
-doc_install: doc
-	rm -rf docs/ocamldoc/*
-	cp -R _build/default/_doc/_html/* docs/ocamldoc
+SRC:=_build/default/_doc/_html
+DST:=docs/ocamldoc
+docs: FORCE
+	$(DUNE) build @doc
+	rm -rf $(DST)/*
+	cp -R $(SRC)/* $(DST)
 
 FORCE:
