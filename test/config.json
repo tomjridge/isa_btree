@@ -38,5 +38,13 @@
   "max_leaf_size":3,
   "min_node_keys":1,
   "max_node_keys":2
+},
+{
+  "range_min":1,
+  "range_max":10,
+  "min_leaf_size":2,
+  "max_leaf_size":3,
+  "min_node_keys":1,
+  "max_node_keys":2
 }
 ]

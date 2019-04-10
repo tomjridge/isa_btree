@@ -7,7 +7,7 @@ let _ =
 let enable_isa_checks () = Isa_export.assert_flag:=true
 let disable_isa_checks () = Isa_export.assert_flag:=false
 
-(** Wrap isabelle operations *)
+(* now wrap isabelle operations ------------------------------------- *)
 
 open Tjr_monad.Types
 open Constants_type
