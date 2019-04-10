@@ -19,7 +19,7 @@ run_tests: build
 all:
 	$(MAKE) clean
 	$(MAKE) build
-	$(MAKE) test
+	$(MAKE) run_tests
 	$(MAKE) install
 	$(MAKE) docs
 
