@@ -15,7 +15,7 @@ from_to
 String_error
 (* split_at_tests *) (* FIXME remove tests in production *)
 (* split_at_3_tests *)
-from_to_tests
+(* from_to_tests *)
 
 Constants_and_size_types.min_leaf_size
 Small_leaf
@@ -27,8 +27,8 @@ key_le
 (*LT*)
 (* FIXME remove tests in production code *)
 okl_tests
-ck_tests
-ck2_tests
+check_keys_tests
+check_keys_2_tests
 (*kvs_insert_tests*)
 
 (* Searching_and_splitting.sk2i_tests *)

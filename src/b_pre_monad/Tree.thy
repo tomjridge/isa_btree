@@ -116,7 +116,7 @@ definition balanced_1 :: "('k,'v)tree => bool" where
   (cs \<noteq> []) & (List.list_all (% c. height c = height (cs!0)) cs)))"
 
 definition balanced :: "('k,'v)tree => bool" where
-"balanced t = assert_true (forall_subtrees balanced_1 t)"
+"balanced t = (forall_subtrees balanced_1 t)"
 
 
 (* FIXME height and balanced could be combined - might make proofs shorter? *)
@@ -153,7 +153,7 @@ definition wf_size_1 :: "constants \<Rightarrow> ('k,'v) tree => bool" where
 
 (* NOTE this treats the root differently, depending on ms; wf_size_1 has no ms *)
 definition wf_size :: "constants \<Rightarrow> ms_t => ('k,'v) tree => bool" where
-"wf_size c ms t0 = assert_true (
+"wf_size c ms t0 = (
   case ms of
   None => (forall_subtrees (wf_size_1 c) t0)
   | Some m => (
@@ -176,7 +176,7 @@ definition wf_ks_rs_1 :: "('k,'v)tree => bool" where
   case t0 of Leaf _ => True | Node(l,cs) => ((1+ length l) = (length cs)))"
 
 definition wf_ks_rs :: "('k,'v)tree => bool" where
-"wf_ks_rs t0 = assert_true (forall_subtrees wf_ks_rs_1 t0)"
+"wf_ks_rs t0 = (forall_subtrees wf_ks_rs_1 t0)"
 
 
 
@@ -206,7 +206,7 @@ case t0 of Leaf(l) => True
 
 (* NOTE this is usually the most difficult part of wf to prove *)
 definition keys_consistent :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
-"keys_consistent cmp t = assert_true (forall_subtrees (keys_consistent_1 cmp) t)"
+"keys_consistent cmp t = (forall_subtrees (keys_consistent_1 cmp) t)"
 
 
 
@@ -217,7 +217,7 @@ definition keys_ordered_1 :: "'k ord \<Rightarrow> ('k,'v) tree => bool" where
 "keys_ordered_1 cmp t0 = (t0 |> keys_1 |> ordered_key_list cmp)"
 
 definition keys_ordered :: "'k ord \<Rightarrow> ('k,'v)tree => bool" where
-"keys_ordered cmp t = assert_true (forall_subtrees (keys_ordered_1 cmp) t)"
+"keys_ordered cmp t = (forall_subtrees (keys_ordered_1 cmp) t)"
 
 
 
@@ -227,7 +227,7 @@ definition keys_ordered :: "'k ord \<Rightarrow> ('k,'v)tree => bool" where
 (* This is the main wellformedness constraint *)
 
 definition wf_tree :: "constants \<Rightarrow> ms_t \<Rightarrow> 'k ord => ('k,'v) tree => bool" where
-"wf_tree c ms cmp t0 = assert_true (
+"wf_tree c ms cmp t0 = (
   let b1 = wf_size c ms t0 in
   let b2 = wf_ks_rs t0 in
   let b3 = balanced t0 in

@@ -22,7 +22,7 @@ constants \<Rightarrow>
     let step = (% s.
       let (leaf,len_leaf,kvs) = s in
       case kvs of [] \<Rightarrow> None | (k,v)#kvs \<Rightarrow> (
-      let _ = check_true (% _. len_leaf \<le> (cs|>max_leaf_size)*2) in
+      let _ = assert_true (% _. len_leaf \<le> (cs|>max_leaf_size)*2) in
       let test1 = len_leaf = (cs|>max_leaf_size)*2 in
       let test2 = (case u of None \<Rightarrow> False | Some u \<Rightarrow> key_le k_cmp u k) in 
       case test1 \<or> test2 of

@@ -60,15 +60,15 @@ definition impossible1 :: "String.literal \<Rightarrow> 'a" where
 (* debugging, asserts ----------------------------------------------- *)
 
 
-(* assert_true always evaluates its argument; this is similar to
-assert in OCaml; should be replaced with simple assert in OCaml, which
-can then be disabled with a compilation flag for production *)
+(* assert_true takes a thunk; this is similar to
+assert in OCaml; should be replaced with an assert of the thunk application
+in OCaml, or just unit to disable assertions *)
 
-definition assert_true :: "bool \<Rightarrow> bool" where
-"assert_true b = (if b then b else failwith (STR ''assert_true''))"
+definition assert_true :: "(unit \<Rightarrow> bool) \<Rightarrow> bool" where
+"assert_true f = (STR ''FIXME patch'') |> (% _. undefined)"
 
 
-
+(*
 (* get_check_flag is essentially a mutable reference (exposed as a
 function from unit to bool); flag can be set in OCaml to disable
 checking within Isabelle (but assert_true is still checked... that can
@@ -85,7 +85,7 @@ production *)
 
 definition check_true :: "(unit \<Rightarrow> bool) \<Rightarrow> bool" where
 "check_true f = (STR ''FIXME patch'') |> (% _. undefined)"
-
+*)
 
 
 (* a single error type, for all proof-relevant errors --------------- *)

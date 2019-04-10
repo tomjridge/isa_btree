@@ -9,50 +9,10 @@ let rec comp f g = (fun x -> f (g x));;
 
 end;; (*struct Fun*)
 
-module HOL : sig
-  type 'a equal = {equal : 'a -> 'a -> bool}
-  val equal : 'a equal -> 'a -> 'a -> bool
-  val eq : 'a equal -> 'a -> 'a -> bool
-end = struct
-
-type 'a equal = {equal : 'a -> 'a -> bool};;
-let equal _A = _A.equal;;
-
-let rec eq _A a b = equal _A a b;;
-
-end;; (*struct HOL*)
-
-module Product_Type : sig
-  val equal_prod : 'a HOL.equal -> 'b HOL.equal -> ('a * 'b) HOL.equal
-  val apfst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
-  val apsnd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
-  val fst : 'a * 'b -> 'a
-  val snd : 'a * 'b -> 'b
-end = struct
-
-let rec equal_proda _A _B
-  (x1, x2) (y1, y2) = HOL.eq _A x1 y1 && HOL.eq _B x2 y2;;
-
-let rec equal_prod _A _B =
-  ({HOL.equal = equal_proda _A _B} : ('a * 'b) HOL.equal);;
-
-let rec apfst f (x, y) = (f x, y);;
-
-let rec apsnd f (x, y) = (x, f y);;
-
-let rec fst (x1, x2) = x1;;
-
-let rec snd (x1, x2) = x2;;
-
-end;; (*struct Product_Type*)
-
 module Orderings : sig
   type 'a ord = {less_eq : 'a -> 'a -> bool; less : 'a -> 'a -> bool}
   val less_eq : 'a ord -> 'a -> 'a -> bool
   val less : 'a ord -> 'a -> 'a -> bool
-  type 'a preorder = {ord_preorder : 'a ord}
-  type 'a order = {preorder_order : 'a preorder}
-  type 'a linorder = {order_linorder : 'a order}
   val max : 'a ord -> 'a -> 'a -> 'a
 end = struct
 
@@ -60,20 +20,12 @@ type 'a ord = {less_eq : 'a -> 'a -> bool; less : 'a -> 'a -> bool};;
 let less_eq _A = _A.less_eq;;
 let less _A = _A.less;;
 
-type 'a preorder = {ord_preorder : 'a ord};;
-
-type 'a order = {preorder_order : 'a preorder};;
-
-type 'a linorder = {order_linorder : 'a order};;
-
 let rec max _A a b = (if less_eq _A a b then b else a);;
 
 end;; (*struct Orderings*)
 
 module Arith : sig
   type nat
-  val equal_nata : nat -> nat -> bool
-  val equal_nat : nat HOL.equal
   val less_eq_nat : nat -> nat -> bool
   val less_nat : nat -> nat -> bool
   val ord_nat : nat Orderings.ord
@@ -82,15 +34,14 @@ module Arith : sig
   val plus_nat : nat -> nat -> nat
   val one_nat : nat
   val suc : nat -> nat
-  val divmod_nat : nat -> nat -> nat * nat
   val less_int : int -> int -> bool
   val int_of_nat : nat -> int
   val zero_int : int
   val zero_nat : nat
   val nat_of_integer : Big_int.big_int -> nat
-  val equal_int : int -> int -> bool
   val minus_int : int -> int -> int
   val less_eq_int : int -> int -> bool
+  val equal_nat : nat -> nat -> bool
   val minus_nat : nat -> nat -> nat
   val times_nat : nat -> nat -> nat
 end = struct
@@ -98,11 +49,6 @@ end = struct
 type nat = Nat of Big_int.big_int;;
 
 let rec integer_of_nat (Nat x) = x;;
-
-let rec equal_nata
-  m n = Big_int.eq_big_int (integer_of_nat m) (integer_of_nat n);;
-
-let equal_nat = ({HOL.equal = equal_nata} : nat HOL.equal);;
 
 let rec less_eq_nat
   m n = Big_int.le_big_int (integer_of_nat m) (integer_of_nat n);;
@@ -129,46 +75,6 @@ let one_nat : nat = Nat (Big_int.big_int_of_int 1);;
 
 let rec suc n = plus_nat n one_nat;;
 
-let rec sgn_integer
-  k = (if Big_int.eq_big_int k Big_int.zero_big_int then Big_int.zero_big_int
-        else (if Big_int.lt_big_int k Big_int.zero_big_int
-               then (Big_int.minus_big_int (Big_int.big_int_of_int 1))
-               else (Big_int.big_int_of_int 1)));;
-
-let rec divmod_integer
-  k l = (if Big_int.eq_big_int k Big_int.zero_big_int
-          then (Big_int.zero_big_int, Big_int.zero_big_int)
-          else (if Big_int.eq_big_int l Big_int.zero_big_int
-                 then (Big_int.zero_big_int, k)
-                 else Fun.comp
-                        (Fun.comp Product_Type.apsnd Big_int.mult_big_int)
-                        sgn_integer l
-                        (if Big_int.eq_big_int (sgn_integer k) (sgn_integer l)
-                          then Big_int.quomod_big_int (Big_int.abs_big_int k)
-                                 (Big_int.abs_big_int l)
-                          else (let (r, s) =
-                                  Big_int.quomod_big_int (Big_int.abs_big_int k)
-                                    (Big_int.abs_big_int l)
-                                  in
-                                 (if Big_int.eq_big_int s Big_int.zero_big_int
-                                   then (Big_int.minus_big_int r,
-  Big_int.zero_big_int)
-                                   else (Big_int.sub_big_int
-   (Big_int.minus_big_int r) (Big_int.big_int_of_int 1),
-  Big_int.sub_big_int (Big_int.abs_big_int l) s))))));;
-
-let rec modulo_integer k l = Product_Type.snd (divmod_integer k l);;
-
-let rec modulo_nat
-  m n = Nat (modulo_integer (integer_of_nat m) (integer_of_nat n));;
-
-let rec divide_integer k l = Product_Type.fst (divmod_integer k l);;
-
-let rec divide_nat
-  m n = Nat (divide_integer (integer_of_nat m) (integer_of_nat n));;
-
-let rec divmod_nat m n = (divide_nat m n, modulo_nat m n);;
-
 let rec integer_of_int (Int_of_integer k) = k;;
 
 let rec less_int
@@ -183,15 +89,15 @@ let zero_nat : nat = Nat Big_int.zero_big_int;;
 let rec nat_of_integer
   k = Nat (Orderings.max ord_integer Big_int.zero_big_int k);;
 
-let rec equal_int
-  k l = Big_int.eq_big_int (integer_of_int k) (integer_of_int l);;
-
 let rec minus_int
   k l = Int_of_integer
           (Big_int.sub_big_int (integer_of_int k) (integer_of_int l));;
 
 let rec less_eq_int
   k l = Big_int.le_big_int (integer_of_int k) (integer_of_int l);;
+
+let rec equal_nat
+  m n = Big_int.eq_big_int (integer_of_nat m) (integer_of_nat n);;
 
 let rec minus_nat
   m n = Nat (Orderings.max ord_integer Big_int.zero_big_int
@@ -204,27 +110,19 @@ end;; (*struct Arith*)
 
 module Lista : sig
   val nth : 'a list -> Arith.nat -> 'a
-  val rev : 'a list -> 'a list
   val upt : Arith.nat -> Arith.nat -> Arith.nat list
   val null : 'a list -> bool
   val foldr : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
   val concat : ('a list) list -> 'a list
-  val hd : 'a list -> 'a
   val map : ('a -> 'b) -> 'a list -> 'b list
   val list_all : ('a -> bool) -> 'a list -> bool
   val size_list : 'a list -> Arith.nat
-  val equal_list : 'a HOL.equal -> 'a list -> 'a list -> bool
 end = struct
 
 let rec nth
   (x :: xs) n =
-    (if Arith.equal_nata n Arith.zero_nat then x
+    (if Arith.equal_nat n Arith.zero_nat then x
       else nth xs (Arith.minus_nat n Arith.one_nat));;
-
-let rec fold f x1 s = match f, x1, s with f, x :: xs, s -> fold f xs (f x s)
-               | f, [], s -> s;;
-
-let rec rev xs = fold (fun a b -> a :: b) xs [];;
 
 let rec upt
   i j = (if Arith.less_nat i j then i :: upt (Arith.suc i) j else []);;
@@ -237,8 +135,6 @@ let rec foldr f x1 = match f, x1 with f, [] -> Fun.id
 
 let rec concat xss = foldr (fun a b -> a @ b) xss [];;
 
-let rec hd (x21 :: x22) = x21;;
-
 let rec map f x1 = match f, x1 with f, [] -> []
               | f, x21 :: x22 -> f x21 :: map f x22;;
 
@@ -250,12 +146,6 @@ let rec list_all p x1 = match p, x1 with p, [] -> true
                    | p, x :: xs -> p x && list_all p xs;;
 
 let rec size_list x = gen_length Arith.zero_nat x;;
-
-let rec equal_list _A
-  x0 x1 = match x0, x1 with [], x21 :: x22 -> false
-    | x21 :: x22, [] -> false
-    | x21 :: x22, y21 :: y22 -> HOL.eq _A x21 y21 && equal_list _A x22 y22
-    | [], [] -> true;;
 
 end;; (*struct Lista*)
 
@@ -273,392 +163,13 @@ let rec is_empty (Set xs) = Lista.null xs;;
 
 end;; (*struct Set*)
 
-module RBT_Impl : sig
-  type color
-  type ('a, 'b) rbt = Empty |
-    Branch of color * ('a, 'b) rbt * 'a * 'b * ('a, 'b) rbt
-  val entries : ('a, 'b) rbt -> ('a * 'b) list
-  val rbtreeify : ('a * 'b) list -> ('a, 'b) rbt
-  val rbt_union :
-    'a Orderings.ord -> ('a, 'b) rbt -> ('a, 'b) rbt -> ('a, 'b) rbt
-  val rbt_delete : 'a Orderings.ord -> 'a -> ('a, 'b) rbt -> ('a, 'b) rbt
-  val rbt_insert : 'a Orderings.ord -> 'a -> 'b -> ('a, 'b) rbt -> ('a, 'b) rbt
-  val rbt_lookup : 'a Orderings.ord -> ('a, 'b) rbt -> 'a -> 'b option
+module Product_Type : sig
+  val fst : 'a * 'b -> 'a
 end = struct
 
-type color = R | B;;
+let rec fst (x1, x2) = x1;;
 
-type ('a, 'b) rbt = Empty |
-  Branch of color * ('a, 'b) rbt * 'a * 'b * ('a, 'b) rbt;;
-
-type compare = LT | GT | EQ;;
-
-let rec fold
-  f xa1 x = match f, xa1, x with
-    f, Branch (c, lt, k, v, rt), x -> fold f rt (f k v (fold f lt x))
-    | f, Empty, x -> x;;
-
-let rec paint c x1 = match c, x1 with c, Empty -> Empty
-                | c, Branch (uu, l, k, v, r) -> Branch (c, l, k, v, r);;
-
-let rec balance
-  x0 s t x3 = match x0, s, t, x3 with
-    Branch (R, a, w, x, b), s, t, Branch (R, c, y, z, d) ->
-      Branch (R, Branch (B, a, w, x, b), s, t, Branch (B, c, y, z, d))
-    | Branch (R, Branch (R, a, w, x, b), s, t, c), y, z, Empty ->
-        Branch (R, Branch (B, a, w, x, b), s, t, Branch (B, c, y, z, Empty))
-    | Branch (R, Branch (R, a, w, x, b), s, t, c), y, z,
-        Branch (B, va, vb, vc, vd)
-        -> Branch
-             (R, Branch (B, a, w, x, b), s, t,
-               Branch (B, c, y, z, Branch (B, va, vb, vc, vd)))
-    | Branch (R, Empty, w, x, Branch (R, b, s, t, c)), y, z, Empty ->
-        Branch (R, Branch (B, Empty, w, x, b), s, t, Branch (B, c, y, z, Empty))
-    | Branch (R, Branch (B, va, vb, vc, vd), w, x, Branch (R, b, s, t, c)), y,
-        z, Empty
-        -> Branch
-             (R, Branch (B, Branch (B, va, vb, vc, vd), w, x, b), s, t,
-               Branch (B, c, y, z, Empty))
-    | Branch (R, Empty, w, x, Branch (R, b, s, t, c)), y, z,
-        Branch (B, va, vb, vc, vd)
-        -> Branch
-             (R, Branch (B, Empty, w, x, b), s, t,
-               Branch (B, c, y, z, Branch (B, va, vb, vc, vd)))
-    | Branch (R, Branch (B, ve, vf, vg, vh), w, x, Branch (R, b, s, t, c)), y,
-        z, Branch (B, va, vb, vc, vd)
-        -> Branch
-             (R, Branch (B, Branch (B, ve, vf, vg, vh), w, x, b), s, t,
-               Branch (B, c, y, z, Branch (B, va, vb, vc, vd)))
-    | Empty, w, x, Branch (R, b, s, t, Branch (R, c, y, z, d)) ->
-        Branch (R, Branch (B, Empty, w, x, b), s, t, Branch (B, c, y, z, d))
-    | Branch (B, va, vb, vc, vd), w, x,
-        Branch (R, b, s, t, Branch (R, c, y, z, d))
-        -> Branch
-             (R, Branch (B, Branch (B, va, vb, vc, vd), w, x, b), s, t,
-               Branch (B, c, y, z, d))
-    | Empty, w, x, Branch (R, Branch (R, b, s, t, c), y, z, Empty) ->
-        Branch (R, Branch (B, Empty, w, x, b), s, t, Branch (B, c, y, z, Empty))
-    | Empty, w, x,
-        Branch (R, Branch (R, b, s, t, c), y, z, Branch (B, va, vb, vc, vd))
-        -> Branch
-             (R, Branch (B, Empty, w, x, b), s, t,
-               Branch (B, c, y, z, Branch (B, va, vb, vc, vd)))
-    | Branch (B, va, vb, vc, vd), w, x,
-        Branch (R, Branch (R, b, s, t, c), y, z, Empty)
-        -> Branch
-             (R, Branch (B, Branch (B, va, vb, vc, vd), w, x, b), s, t,
-               Branch (B, c, y, z, Empty))
-    | Branch (B, va, vb, vc, vd), w, x,
-        Branch (R, Branch (R, b, s, t, c), y, z, Branch (B, ve, vf, vg, vh))
-        -> Branch
-             (R, Branch (B, Branch (B, va, vb, vc, vd), w, x, b), s, t,
-               Branch (B, c, y, z, Branch (B, ve, vf, vg, vh)))
-    | Empty, s, t, Empty -> Branch (B, Empty, s, t, Empty)
-    | Empty, s, t, Branch (B, va, vb, vc, vd) ->
-        Branch (B, Empty, s, t, Branch (B, va, vb, vc, vd))
-    | Empty, s, t, Branch (v, Empty, vb, vc, Empty) ->
-        Branch (B, Empty, s, t, Branch (v, Empty, vb, vc, Empty))
-    | Empty, s, t, Branch (v, Branch (B, ve, vf, vg, vh), vb, vc, Empty) ->
-        Branch
-          (B, Empty, s, t,
-            Branch (v, Branch (B, ve, vf, vg, vh), vb, vc, Empty))
-    | Empty, s, t, Branch (v, Empty, vb, vc, Branch (B, vf, vg, vh, vi)) ->
-        Branch
-          (B, Empty, s, t,
-            Branch (v, Empty, vb, vc, Branch (B, vf, vg, vh, vi)))
-    | Empty, s, t,
-        Branch
-          (v, Branch (B, ve, vj, vk, vl), vb, vc, Branch (B, vf, vg, vh, vi))
-        -> Branch
-             (B, Empty, s, t,
-               Branch
-                 (v, Branch (B, ve, vj, vk, vl), vb, vc,
-                   Branch (B, vf, vg, vh, vi)))
-    | Branch (B, va, vb, vc, vd), s, t, Empty ->
-        Branch (B, Branch (B, va, vb, vc, vd), s, t, Empty)
-    | Branch (B, va, vb, vc, vd), s, t, Branch (B, ve, vf, vg, vh) ->
-        Branch (B, Branch (B, va, vb, vc, vd), s, t, Branch (B, ve, vf, vg, vh))
-    | Branch (B, va, vb, vc, vd), s, t, Branch (v, Empty, vf, vg, Empty) ->
-        Branch
-          (B, Branch (B, va, vb, vc, vd), s, t,
-            Branch (v, Empty, vf, vg, Empty))
-    | Branch (B, va, vb, vc, vd), s, t,
-        Branch (v, Branch (B, vi, vj, vk, vl), vf, vg, Empty)
-        -> Branch
-             (B, Branch (B, va, vb, vc, vd), s, t,
-               Branch (v, Branch (B, vi, vj, vk, vl), vf, vg, Empty))
-    | Branch (B, va, vb, vc, vd), s, t,
-        Branch (v, Empty, vf, vg, Branch (B, vj, vk, vl, vm))
-        -> Branch
-             (B, Branch (B, va, vb, vc, vd), s, t,
-               Branch (v, Empty, vf, vg, Branch (B, vj, vk, vl, vm)))
-    | Branch (B, va, vb, vc, vd), s, t,
-        Branch
-          (v, Branch (B, vi, vn, vo, vp), vf, vg, Branch (B, vj, vk, vl, vm))
-        -> Branch
-             (B, Branch (B, va, vb, vc, vd), s, t,
-               Branch
-                 (v, Branch (B, vi, vn, vo, vp), vf, vg,
-                   Branch (B, vj, vk, vl, vm)))
-    | Branch (v, Empty, vb, vc, Empty), s, t, Empty ->
-        Branch (B, Branch (v, Empty, vb, vc, Empty), s, t, Empty)
-    | Branch (v, Empty, vb, vc, Branch (B, ve, vf, vg, vh)), s, t, Empty ->
-        Branch
-          (B, Branch (v, Empty, vb, vc, Branch (B, ve, vf, vg, vh)), s, t,
-            Empty)
-    | Branch (v, Branch (B, vf, vg, vh, vi), vb, vc, Empty), s, t, Empty ->
-        Branch
-          (B, Branch (v, Branch (B, vf, vg, vh, vi), vb, vc, Empty), s, t,
-            Empty)
-    | Branch
-        (v, Branch (B, vf, vg, vh, vi), vb, vc, Branch (B, ve, vj, vk, vl)),
-        s, t, Empty
-        -> Branch
-             (B, Branch
-                   (v, Branch (B, vf, vg, vh, vi), vb, vc,
-                     Branch (B, ve, vj, vk, vl)),
-               s, t, Empty)
-    | Branch (v, Empty, vf, vg, Empty), s, t, Branch (B, va, vb, vc, vd) ->
-        Branch
-          (B, Branch (v, Empty, vf, vg, Empty), s, t,
-            Branch (B, va, vb, vc, vd))
-    | Branch (v, Empty, vf, vg, Branch (B, vi, vj, vk, vl)), s, t,
-        Branch (B, va, vb, vc, vd)
-        -> Branch
-             (B, Branch (v, Empty, vf, vg, Branch (B, vi, vj, vk, vl)), s, t,
-               Branch (B, va, vb, vc, vd))
-    | Branch (v, Branch (B, vj, vk, vl, vm), vf, vg, Empty), s, t,
-        Branch (B, va, vb, vc, vd)
-        -> Branch
-             (B, Branch (v, Branch (B, vj, vk, vl, vm), vf, vg, Empty), s, t,
-               Branch (B, va, vb, vc, vd))
-    | Branch
-        (v, Branch (B, vj, vk, vl, vm), vf, vg, Branch (B, vi, vn, vo, vp)),
-        s, t, Branch (B, va, vb, vc, vd)
-        -> Branch
-             (B, Branch
-                   (v, Branch (B, vj, vk, vl, vm), vf, vg,
-                     Branch (B, vi, vn, vo, vp)),
-               s, t, Branch (B, va, vb, vc, vd));;
-
-let rec balance_left
-  x0 s y c = match x0, s, y, c with
-    Branch (R, a, k, x, b), s, y, c ->
-      Branch (R, Branch (B, a, k, x, b), s, y, c)
-    | Empty, k, x, Branch (B, a, s, y, b) ->
-        balance Empty k x (Branch (R, a, s, y, b))
-    | Branch (B, va, vb, vc, vd), k, x, Branch (B, a, s, y, b) ->
-        balance (Branch (B, va, vb, vc, vd)) k x (Branch (R, a, s, y, b))
-    | Empty, k, x, Branch (R, Branch (B, a, s, y, b), t, z, c) ->
-        Branch (R, Branch (B, Empty, k, x, a), s, y, balance b t z (paint R c))
-    | Branch (B, va, vb, vc, vd), k, x,
-        Branch (R, Branch (B, a, s, y, b), t, z, c)
-        -> Branch
-             (R, Branch (B, Branch (B, va, vb, vc, vd), k, x, a), s, y,
-               balance b t z (paint R c))
-    | Empty, k, x, Empty -> Empty
-    | Empty, k, x, Branch (R, Empty, vb, vc, vd) -> Empty
-    | Empty, k, x, Branch (R, Branch (R, ve, vf, vg, vh), vb, vc, vd) -> Empty
-    | Branch (B, va, vb, vc, vd), k, x, Empty -> Empty
-    | Branch (B, va, vb, vc, vd), k, x, Branch (R, Empty, vf, vg, vh) -> Empty
-    | Branch (B, va, vb, vc, vd), k, x,
-        Branch (R, Branch (R, vi, vj, vk, vl), vf, vg, vh)
-        -> Empty;;
-
-let rec combine
-  xa0 x = match xa0, x with Empty, x -> x
-    | Branch (v, va, vb, vc, vd), Empty -> Branch (v, va, vb, vc, vd)
-    | Branch (R, a, k, x, b), Branch (R, c, s, y, d) ->
-        (match combine b c
-          with Empty -> Branch (R, a, k, x, Branch (R, Empty, s, y, d))
-          | Branch (R, b2, t, z, c2) ->
-            Branch (R, Branch (R, a, k, x, b2), t, z, Branch (R, c2, s, y, d))
-          | Branch (B, b2, t, z, c2) ->
-            Branch (R, a, k, x, Branch (R, Branch (B, b2, t, z, c2), s, y, d)))
-    | Branch (B, a, k, x, b), Branch (B, c, s, y, d) ->
-        (match combine b c
-          with Empty -> balance_left a k x (Branch (B, Empty, s, y, d))
-          | Branch (R, b2, t, z, c2) ->
-            Branch (R, Branch (B, a, k, x, b2), t, z, Branch (B, c2, s, y, d))
-          | Branch (B, b2, t, z, c2) ->
-            balance_left a k x (Branch (B, Branch (B, b2, t, z, c2), s, y, d)))
-    | Branch (B, va, vb, vc, vd), Branch (R, b, k, x, c) ->
-        Branch (R, combine (Branch (B, va, vb, vc, vd)) b, k, x, c)
-    | Branch (R, a, k, x, b), Branch (B, va, vb, vc, vd) ->
-        Branch (R, a, k, x, combine b (Branch (B, va, vb, vc, vd)));;
-
-let rec gen_entries
-  kvts x1 = match kvts, x1 with
-    kvts, Branch (c, l, k, v, r) -> gen_entries (((k, v), r) :: kvts) l
-    | (kv, t) :: kvts, Empty -> kv :: gen_entries kvts t
-    | [], Empty -> [];;
-
-let rec entries x = gen_entries [] x;;
-
-let rec skip_red = function Branch (R, l, k, v, r) -> l
-                   | Empty -> Empty
-                   | Branch (B, va, vb, vc, vd) -> Branch (B, va, vb, vc, vd);;
-
-let rec rbtreeify_g
-  n kvs =
-    (if Arith.equal_nata n Arith.zero_nat || Arith.equal_nata n Arith.one_nat
-      then (Empty, kvs)
-      else (let (na, r) =
-              Arith.divmod_nat n
-                (Arith.nat_of_integer (Big_int.big_int_of_int 2))
-              in
-             (if Arith.equal_nata r Arith.zero_nat
-               then (let (t1, (k, v) :: kvsa) = rbtreeify_g na kvs in
-                      Product_Type.apfst (fun a -> Branch (B, t1, k, v, a))
-                        (rbtreeify_g na kvsa))
-               else (let (t1, (k, v) :: kvsa) = rbtreeify_f na kvs in
-                      Product_Type.apfst (fun a -> Branch (B, t1, k, v, a))
-                        (rbtreeify_g na kvsa)))))
-and rbtreeify_f
-  n kvs =
-    (if Arith.equal_nata n Arith.zero_nat then (Empty, kvs)
-      else (if Arith.equal_nata n Arith.one_nat
-             then (let (k, v) :: kvsa = kvs in
-                    (Branch (R, Empty, k, v, Empty), kvsa))
-             else (let (na, r) =
-                     Arith.divmod_nat n
-                       (Arith.nat_of_integer (Big_int.big_int_of_int 2))
-                     in
-                    (if Arith.equal_nata r Arith.zero_nat
-                      then (let (t1, (k, v) :: kvsa) = rbtreeify_f na kvs in
-                             Product_Type.apfst
-                               (fun a -> Branch (B, t1, k, v, a))
-                               (rbtreeify_g na kvsa))
-                      else (let (t1, (k, v) :: kvsa) = rbtreeify_f na kvs in
-                             Product_Type.apfst
-                               (fun a -> Branch (B, t1, k, v, a))
-                               (rbtreeify_f na kvsa))))));;
-
-let rec rbtreeify
-  kvs = Product_Type.fst (rbtreeify_g (Arith.suc (Lista.size_list kvs)) kvs);;
-
-let rec skip_black
-  t = (let ta = skip_red t in
-        (match ta with Empty -> ta | Branch (R, _, _, _, _) -> ta
-          | Branch (B, l, _, _, _) -> l));;
-
-let rec balance_right
-  a k x xa3 = match a, k, x, xa3 with
-    a, k, x, Branch (R, b, s, y, c) ->
-      Branch (R, a, k, x, Branch (B, b, s, y, c))
-    | Branch (B, a, k, x, b), s, y, Empty ->
-        balance (Branch (R, a, k, x, b)) s y Empty
-    | Branch (B, a, k, x, b), s, y, Branch (B, va, vb, vc, vd) ->
-        balance (Branch (R, a, k, x, b)) s y (Branch (B, va, vb, vc, vd))
-    | Branch (R, a, k, x, Branch (B, b, s, y, c)), t, z, Empty ->
-        Branch (R, balance (paint R a) k x b, s, y, Branch (B, c, t, z, Empty))
-    | Branch (R, a, k, x, Branch (B, b, s, y, c)), t, z,
-        Branch (B, va, vb, vc, vd)
-        -> Branch
-             (R, balance (paint R a) k x b, s, y,
-               Branch (B, c, t, z, Branch (B, va, vb, vc, vd)))
-    | Empty, k, x, Empty -> Empty
-    | Branch (R, va, vb, vc, Empty), k, x, Empty -> Empty
-    | Branch (R, va, vb, vc, Branch (R, ve, vf, vg, vh)), k, x, Empty -> Empty
-    | Empty, k, x, Branch (B, va, vb, vc, vd) -> Empty
-    | Branch (R, ve, vf, vg, Empty), k, x, Branch (B, va, vb, vc, vd) -> Empty
-    | Branch (R, ve, vf, vg, Branch (R, vi, vj, vk, vl)), k, x,
-        Branch (B, va, vb, vc, vd)
-        -> Empty;;
-
-let rec compare_height
-  sx s t tx =
-    (match (skip_red sx, (skip_red s, (skip_red t, skip_red tx)))
-      with (Empty, (Empty, (_, Empty))) -> EQ
-      | (Empty, (Empty, (_, Branch (_, _, _, _, _)))) -> LT
-      | (Empty, (Branch (_, _, _, _, _), (Empty, _))) -> EQ
-      | (Empty, (Branch (_, _, _, _, _), (Branch (_, _, _, _, _), Empty))) -> EQ
-      | (Empty,
-          (Branch (_, sa, _, _, _),
-            (Branch (_, ta, _, _, _), Branch (_, txa, _, _, _))))
-        -> compare_height Empty sa ta (skip_black txa)
-      | (Branch (_, _, _, _, _), (Empty, (Empty, Empty))) -> GT
-      | (Branch (_, _, _, _, _), (Empty, (Empty, Branch (_, _, _, _, _)))) -> LT
-      | (Branch (_, _, _, _, _), (Empty, (Branch (_, _, _, _, _), Empty))) -> EQ
-      | (Branch (_, _, _, _, _),
-          (Empty, (Branch (_, _, _, _, _), Branch (_, _, _, _, _))))
-        -> LT
-      | (Branch (_, _, _, _, _), (Branch (_, _, _, _, _), (Empty, _))) -> GT
-      | (Branch (_, sxa, _, _, _),
-          (Branch (_, sa, _, _, _), (Branch (_, ta, _, _, _), Empty)))
-        -> compare_height (skip_black sxa) sa ta Empty
-      | (Branch (_, sxa, _, _, _),
-          (Branch (_, sa, _, _, _),
-            (Branch (_, ta, _, _, _), Branch (_, txa, _, _, _))))
-        -> compare_height (skip_black sxa) sa ta (skip_black txa));;
-
-let rec rbt_del _A
-  x xa1 = match x, xa1 with x, Empty -> Empty
-    | x, Branch (c, a, y, s, b) ->
-        (if Orderings.less _A x y then rbt_del_from_left _A x a y s b
-          else (if Orderings.less _A y x then rbt_del_from_right _A x a y s b
-                 else combine a b))
-and rbt_del_from_left _A
-  x xa1 y s b = match x, xa1, y, s, b with
-    x, Branch (B, lt, z, v, rt), y, s, b ->
-      balance_left (rbt_del _A x (Branch (B, lt, z, v, rt))) y s b
-    | x, Empty, y, s, b -> Branch (R, rbt_del _A x Empty, y, s, b)
-    | x, Branch (R, va, vb, vc, vd), y, s, b ->
-        Branch (R, rbt_del _A x (Branch (R, va, vb, vc, vd)), y, s, b)
-and rbt_del_from_right _A
-  x a y s xa4 = match x, a, y, s, xa4 with
-    x, a, y, s, Branch (B, lt, z, v, rt) ->
-      balance_right a y s (rbt_del _A x (Branch (B, lt, z, v, rt)))
-    | x, a, y, s, Empty -> Branch (R, a, y, s, rbt_del _A x Empty)
-    | x, a, y, s, Branch (R, va, vb, vc, vd) ->
-        Branch (R, a, y, s, rbt_del _A x (Branch (R, va, vb, vc, vd)));;
-
-let rec rbt_ins _A
-  f k v x3 = match f, k, v, x3 with
-    f, k, v, Empty -> Branch (R, Empty, k, v, Empty)
-    | f, k, v, Branch (B, l, x, y, r) ->
-        (if Orderings.less _A k x then balance (rbt_ins _A f k v l) x y r
-          else (if Orderings.less _A x k then balance l x y (rbt_ins _A f k v r)
-                 else Branch (B, l, x, f k y v, r)))
-    | f, k, v, Branch (R, l, x, y, r) ->
-        (if Orderings.less _A k x then Branch (R, rbt_ins _A f k v l, x, y, r)
-          else (if Orderings.less _A x k
-                 then Branch (R, l, x, y, rbt_ins _A f k v r)
-                 else Branch (R, l, x, f k y v, r)));;
-
-let rec rbt_insert_with_key _A f k v t = paint B (rbt_ins _A f k v t);;
-
-let rec sunion_with _A
-  f asa bs = match f, asa, bs with
-    f, (ka, va) :: asa, (k, v) :: bs ->
-      (if Orderings.less _A k ka
-        then (k, v) :: sunion_with _A f ((ka, va) :: asa) bs
-        else (if Orderings.less _A ka k
-               then (ka, va) :: sunion_with _A f asa ((k, v) :: bs)
-               else (ka, f ka va v) :: sunion_with _A f asa bs))
-    | f, [], bs -> bs
-    | f, asa, [] -> asa;;
-
-let rec rbt_union_with_key _A
-  f t1 t2 =
-    (match compare_height t1 t1 t2 t2
-      with LT -> fold (rbt_insert_with_key _A (fun k v w -> f k w v)) t1 t2
-      | GT -> fold (rbt_insert_with_key _A f) t2 t1
-      | EQ -> rbtreeify (sunion_with _A f (entries t1) (entries t2)));;
-
-let rec rbt_union _A = rbt_union_with_key _A (fun _ _ rv -> rv);;
-
-let rec rbt_delete _A k t = paint B (rbt_del _A k t);;
-
-let rec rbt_insert _A = rbt_insert_with_key _A (fun _ _ nv -> nv);;
-
-let rec rbt_lookup _A
-  x0 k = match x0, k with Empty, k -> None
-    | Branch (uu, l, x, y, r), k ->
-        (if Orderings.less _A k x then rbt_lookup _A l k
-          else (if Orderings.less _A x k then rbt_lookup _A r k else Some y));;
-
-end;; (*struct RBT_Impl*)
+end;; (*struct Product_Type*)
 
 module Option : sig
   val is_none : 'a option -> bool
@@ -674,17 +185,12 @@ module A_start_here : sig
   val from_to : Arith.nat -> Arith.nat -> Arith.nat list
   val is_Nil : 'a list -> bool
   val is_None : 'a option -> bool
-  val rbt_max : ('a, 'b) RBT_Impl.rbt -> ('a * 'b) option
-  val rbt_min : ('a, 'b) RBT_Impl.rbt -> ('a * 'b) option
   val rev_apply : 'a -> ('a -> 'b) -> 'b
   val failwitha : string -> 'a
-  val dest_Some : 'a option -> 'a
   val iter_step : ('a -> 'a option) -> 'a -> 'a
-  val check_true : (unit -> bool) -> bool
-  val assert_true : bool -> bool
+  val assert_true : (unit -> bool) -> bool
   val impossible1 : string -> 'a
   val max_of_list : Arith.nat list -> Arith.nat
-  val from_to_tests : bool
 end = struct
 
 type error = String_error of string;;
@@ -695,65 +201,20 @@ let rec is_Nil x = (match x with [] -> true | _ :: _ -> false);;
 
 let rec is_None x = Option.is_none x;;
 
-let rec rbt_maxa
-  x sofar =
-    (match x with RBT_Impl.Empty -> sofar
-      | RBT_Impl.Branch (_, _, k, v, r) -> rbt_maxa r (Some (k, v)));;
-
-let rec rbt_max x = rbt_maxa x None;;
-
-let rec rbt_mina
-  x sofar =
-    (match x with RBT_Impl.Empty -> sofar
-      | RBT_Impl.Branch (_, l, k, v, _) -> rbt_mina l (Some (k, v)));;
-
-let rec rbt_min x = rbt_mina x None;;
-
 let rec rev_apply x f = f x;;
 
 let rec failwitha x = rev_apply "FIXME patch" (fun _ -> failwith "undefined");;
 
-let rec dest_Some = function Some x -> x
-                    | None -> failwith "undefined";;
-
 let rec iter_step
   f x = (let a = f x in (match a with None -> x | Some aa -> iter_step f aa));;
 
-let rec check_true f = rev_apply "FIXME patch" (fun _ -> failwith "undefined");;
-
-let rec assert_true b = (if b then b else failwitha "assert_true");;
+let rec assert_true
+  f = rev_apply "FIXME patch" (fun _ -> failwith "undefined");;
 
 let rec impossible1 x = failwitha x;;
 
 let rec max_of_list
   xs = Lista.foldr (Orderings.max Arith.ord_nat) xs Arith.zero_nat;;
-
-let from_to_tests : bool
-  = check_true
-      (fun _ ->
-        (let _ =
-           assert_true
-             (Lista.equal_list Arith.equal_nat
-               (from_to (Arith.nat_of_integer (Big_int.big_int_of_int 3))
-                 (Arith.nat_of_integer (Big_int.big_int_of_int 5)))
-               [Arith.nat_of_integer (Big_int.big_int_of_int 3);
-                 Arith.nat_of_integer (Big_int.big_int_of_int 4);
-                 Arith.nat_of_integer (Big_int.big_int_of_int 5)])
-           in
-         let _ =
-           assert_true
-             (Lista.equal_list Arith.equal_nat
-               (from_to (Arith.nat_of_integer (Big_int.big_int_of_int 3))
-                 (Arith.nat_of_integer (Big_int.big_int_of_int 3)))
-               [Arith.nat_of_integer (Big_int.big_int_of_int 3)])
-           in
-         let _ =
-           assert_true
-             (Lista.null
-               (from_to (Arith.nat_of_integer (Big_int.big_int_of_int 3))
-                 (Arith.nat_of_integer (Big_int.big_int_of_int 2))))
-           in
-          true));;
 
 end;; (*struct A_start_here*)
 
@@ -934,28 +395,38 @@ end;; (*struct Delete_state*)
 
 module Disk_node : sig
   type ('a, 'b) dnode = Disk_node of 'a | Disk_leaf of 'b
-  type ('a, 'b, 'c) leaf_ops =
-    Make_leaf_ops of
-      ('a -> 'c -> 'b option) * ('a -> 'b -> 'c -> 'c * 'b option) *
-        ('a -> 'c -> 'c) * ('c -> Arith.nat) * ('c -> ('a * 'b) list) *
-        ('c * 'c -> 'c * ('a * 'c)) * ('c * 'c -> 'c * ('a * 'c)) *
-        ('c * 'c -> 'c) * (Arith.nat -> 'c -> 'c * ('a * 'c))
-  type ('a, 'b, 'c) node_ops =
-    Make_node_ops of
-      (Arith.nat -> 'c -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c) *
-        ('c * ('a * 'c) -> 'c * ('a * 'c)) *
-        ('c * ('a * 'c) -> 'c * ('a * 'c)) * ('c -> Arith.nat) *
-        ('b * ('a * 'b) -> 'c) * ('c -> 'b)
+  type ('a, 'b, 'c) leaf_ops
+  type ('a, 'b, 'c) node_ops
+  val make_leaf_ops :
+    ('a -> 'b -> 'c option) ->
+      ('a -> 'c -> 'b -> 'b * 'c option) ->
+        ('a -> 'b -> 'b) ->
+          ('b -> Arith.nat) ->
+            ('b * 'b -> 'b * ('a * 'b)) ->
+              ('b * 'b -> 'b * ('a * 'b)) ->
+                ('b * 'b -> 'b) ->
+                  (Arith.nat -> 'b -> 'b * ('a * 'b)) ->
+                    ('b -> ('a * 'c) list) -> ('a, 'c, 'b) leaf_ops
+  val make_node_ops :
+    (Arith.nat -> 'a -> 'a * ('b * 'a)) ->
+      ('a * ('b * 'a) -> 'a) ->
+        ('a * ('b * 'a) -> 'a * ('b * 'a)) ->
+          ('a * ('b * 'a) -> 'a * ('b * 'a)) ->
+            ('a -> Arith.nat) ->
+              ('c * ('b * 'c) -> 'a) ->
+                ('a -> 'c) ->
+                  ('a -> unit) ->
+                    ('a -> 'b list * 'c list) -> ('b, 'c, 'a) node_ops
   val dest_Disk_leaf : ('a, 'b) dnode -> 'b
   val dest_Disk_node : ('a, 'b) dnode -> 'a
-  val rbt_as_leaf_ops :
-    'a Orderings.linorder -> ('a, 'b, ('a, 'b) RBT_Impl.rbt) leaf_ops
   val leaf_merge : ('a, 'b, 'c) leaf_ops -> 'c * 'c -> 'c
   val node_merge : ('a, 'b, 'c) node_ops -> 'c * ('a * 'c) -> 'c
   val leaf_insert : ('a, 'b, 'c) leaf_ops -> 'a -> 'b -> 'c -> 'c * 'b option
   val leaf_length : ('a, 'b, 'c) leaf_ops -> 'c -> Arith.nat
   val leaf_lookup : ('a, 'b, 'c) leaf_ops -> 'a -> 'c -> 'b option
   val leaf_remove : ('a, 'b, 'c) leaf_ops -> 'a -> 'c -> 'c
+  val dbg_leaf_kvs : ('a, 'b, 'c) leaf_ops -> 'c -> ('a * 'b) list
+  val dbg_node_krs : ('a, 'b, 'c) node_ops -> 'c -> 'a list * 'b list
   val leaf_steal_left : ('a, 'b, 'c) leaf_ops -> 'c * 'c -> 'c * ('a * 'c)
   val node_steal_left :
     ('a, 'b, 'c) node_ops -> 'c * ('a * 'c) -> 'c * ('a * 'c)
@@ -976,29 +447,22 @@ type ('a, 'b) dnode = Disk_node of 'a | Disk_leaf of 'b;;
 type ('a, 'b, 'c) leaf_ops =
   Make_leaf_ops of
     ('a -> 'c -> 'b option) * ('a -> 'b -> 'c -> 'c * 'b option) *
-      ('a -> 'c -> 'c) * ('c -> Arith.nat) * ('c -> ('a * 'b) list) *
-      ('c * 'c -> 'c * ('a * 'c)) * ('c * 'c -> 'c * ('a * 'c)) *
-      ('c * 'c -> 'c) * (Arith.nat -> 'c -> 'c * ('a * 'c));;
+      ('a -> 'c -> 'c) * ('c -> Arith.nat) * ('c * 'c -> 'c * ('a * 'c)) *
+      ('c * 'c -> 'c * ('a * 'c)) * ('c * 'c -> 'c) *
+      (Arith.nat -> 'c -> 'c * ('a * 'c)) * ('c -> ('a * 'b) list);;
 
 type ('a, 'b, 'c) node_ops =
   Make_node_ops of
     (Arith.nat -> 'c -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c) *
       ('c * ('a * 'c) -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c * ('a * 'c)) *
-      ('c -> Arith.nat) * ('b * ('a * 'b) -> 'c) * ('c -> 'b);;
+      ('c -> Arith.nat) * ('b * ('a * 'b) -> 'c) * ('c -> 'b) * ('c -> unit) *
+      ('c -> 'a list * 'b list);;
 
-let rec split_list
-  n kvs =
-    A_start_here.rev_apply
-      (A_start_here.iter_step
-        (fun (m, (kvs1, kvs2)) ->
-          (match Arith.less_nat n m with true -> None
-            | false ->
-              (match kvs2 with [] -> None
-                | (k, v) :: kvs2a ->
-                  Some (Arith.plus_nat m Arith.one_nat,
-                         ((k, v) :: kvs1, kvs2a)))))
-        (Arith.zero_nat, ([], kvs)))
-      (fun (_, a) -> (let (xs, aa) = a in (Lista.rev xs, aa)));;
+let rec make_leaf_ops
+  a b c d e f g h i = Make_leaf_ops (a, b, c, d, e, f, g, h, i);;
+
+let rec make_node_ops
+  a b c d e f g h i = Make_node_ops (a, b, c, d, e, f, g, h, i);;
 
 let rec dest_Disk_leaf
   f = (match f with Disk_node _ -> A_start_here.failwitha "dest_Disk_leaf"
@@ -1008,74 +472,9 @@ let rec dest_Disk_node
   f = (match f with Disk_node x -> x
         | Disk_leaf _ -> A_start_here.failwitha "dest_Disk_node");;
 
-let rec rbt_as_leaf_ops _A
-  = Make_leaf_ops
-      ((fun k l ->
-         RBT_Impl.rbt_lookup
-           _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
-           l k),
-        (fun k v l ->
-          (let a =
-             RBT_Impl.rbt_lookup
-               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
-               l k
-             in
-            (RBT_Impl.rbt_insert
-               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
-               k v l,
-              a))),
-        RBT_Impl.rbt_delete
-          _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder,
-        (fun l -> Lista.size_list (RBT_Impl.entries l)), RBT_Impl.entries,
-        (fun (l1, l2) ->
-          (let (k, v) =
-             A_start_here.rev_apply (A_start_here.rbt_min l2)
-               A_start_here.dest_Some
-             in
-           let l2a =
-             RBT_Impl.rbt_delete
-               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
-               k l2
-             in
-           let (ka, _) =
-             A_start_here.rev_apply (A_start_here.rbt_min l2a)
-               A_start_here.dest_Some
-             in
-           let l1a =
-             RBT_Impl.rbt_insert
-               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
-               k v l1
-             in
-            (l1a, (ka, l2a)))),
-        (fun (l1, l2) ->
-          (let (k, v) =
-             A_start_here.rev_apply (A_start_here.rbt_max l1)
-               A_start_here.dest_Some
-             in
-           let l1a =
-             RBT_Impl.rbt_delete
-               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
-               k l1
-             in
-           let l2a =
-             RBT_Impl.rbt_insert
-               _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
-               k v l2
-             in
-            (l1a, (k, l2a)))),
-        (fun (a, b) ->
-          RBT_Impl.rbt_union
-            _A.Orderings.order_linorder.Orderings.preorder_order.Orderings.ord_preorder
-            a b),
-        (fun n l ->
-          (let kvs = RBT_Impl.entries l in
-           let (l1, l2) = split_list n kvs in
-           let (k, _) = Lista.hd l2 in
-            (RBT_Impl.rbtreeify l1, (k, RBT_Impl.rbtreeify l2)))));;
+let rec leaf_merge (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x7;;
 
-let rec leaf_merge (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x8;;
-
-let rec node_merge (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x2;;
+let rec node_merge (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x2;;
 
 let rec leaf_insert (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x2;;
 
@@ -1085,27 +484,36 @@ let rec leaf_lookup (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x1;;
 
 let rec leaf_remove (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x3;;
 
+let rec dbg_leaf_kvs (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x9;;
+
+let rec dbg_node_krs (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x9;;
+
 let rec leaf_steal_left
-  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x7;;
-
-let rec node_steal_left (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x4;;
-
-let rec leaf_steal_right
   (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x6;;
 
+let rec node_steal_left
+  (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x4;;
+
+let rec leaf_steal_right
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x5;;
+
 let rec split_large_leaf
-  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x9;;
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x8;;
 
-let rec node_keys_length (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x5;;
+let rec node_keys_length
+  (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x5;;
 
-let rec node_steal_right (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x3;;
+let rec node_steal_right
+  (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x3;;
 
-let rec node_get_single_r (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x7;;
+let rec node_get_single_r
+  (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x7;;
 
-let rec node_make_small_root (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x6;;
+let rec node_make_small_root
+  (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x6;;
 
 let rec split_node_at_k_index
-  (Make_node_ops (x1, x2, x3, x4, x5, x6, x7)) = x1;;
+  (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x1;;
 
 end;; (*struct Disk_node*)
 
@@ -1120,7 +528,6 @@ end;; (*struct Sum_Type*)
 module Constants_and_size_types : sig
   type constants =
     Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat
-  type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf
   val make_constants :
     Arith.nat -> Arith.nat -> Arith.nat -> Arith.nat -> constants
   val max_leaf_size : constants -> Arith.nat
@@ -1131,8 +538,6 @@ end = struct
 
 type constants =
   Make_constants of Arith.nat * Arith.nat * Arith.nat * Arith.nat;;
-
-type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf;;
 
 let rec make_constants a b c d = Make_constants (a, b, c, d);;
 
@@ -1147,21 +552,15 @@ let rec min_node_keys (Make_constants (x1, x2, x3, x4)) = x3;;
 end;; (*struct Constants_and_size_types*)
 
 module Key_value : sig
-  type compare_t = LT | EQ | GT
   val key_le : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
   val key_lt : ('a -> 'a -> Arith.int) -> 'a -> 'a -> bool
-  val check_keys :
-    ('a -> 'a -> Arith.int) -> 'a option -> 'a Set.set -> 'a option -> bool
-  val ck_tests : bool
-  val ck2_tests : bool
   val ordered_key_list : ('a -> 'a -> Arith.int) -> 'a list -> bool
   val okl_tests : bool
-  val kvs_insert_tests : bool
+  val check_keys :
+    ('a -> 'a -> Arith.int) -> 'a option -> 'a Set.set -> 'a option -> bool
+  val check_keys_tests : bool
+  val check_keys_2_tests : bool
 end = struct
-
-type compare_t = LT | EQ | GT;;
-
-let rec key_eq ord k1 k2 = Arith.equal_int (ord k1 k2) Arith.zero_int;;
 
 let rec key_le ord k1 k2 = Arith.less_eq_int (ord k1 k2) Arith.zero_int;;
 
@@ -1169,65 +568,6 @@ let rec key_lt ord k1 k2 = Arith.less_int (ord k1 k2) Arith.zero_int;;
 
 let rec nat_ord
   x y = (let n2i = Arith.int_of_nat in Arith.minus_int (n2i x) (n2i y));;
-
-let rec check_keys
-  cmp kl ks kr =
-    (let b1 =
-       (match kl with None -> true | Some kla -> Set.ball ks (key_le cmp kla))
-       in
-     let a =
-       (match kr with None -> true
-         | Some kra -> Set.ball ks (fun k -> key_lt cmp k kra))
-       in
-      b1 && a);;
-
-let ck_tests : bool
-  = A_start_here.check_true
-      (fun _ ->
-        (let _ =
-           A_start_here.assert_true
-             (check_keys nat_ord (Some Arith.one_nat)
-               (Set.Set
-                 [Arith.one_nat;
-                   Arith.nat_of_integer (Big_int.big_int_of_int 2);
-                   Arith.nat_of_integer (Big_int.big_int_of_int 3)])
-               (Some (Arith.nat_of_integer (Big_int.big_int_of_int 4))))
-           in
-         let _ =
-           A_start_here.assert_true
-             (not (check_keys nat_ord (Some Arith.one_nat)
-                    (Set.Set
-                      [Arith.one_nat;
-                        Arith.nat_of_integer (Big_int.big_int_of_int 2);
-                        Arith.nat_of_integer (Big_int.big_int_of_int 3)])
-                    (Some (Arith.nat_of_integer (Big_int.big_int_of_int 3)))))
-           in
-          true));;
-
-let rec check_keys_2
-  cmp xs l ks u zs =
-    (match Option.is_none l with true -> Set.is_empty xs | false -> true) &&
-      ((match Option.is_none u with true -> Set.is_empty zs | false -> true) &&
-        (check_keys cmp None xs l &&
-          (check_keys cmp l ks u && check_keys cmp u zs None)));;
-
-let ck2_tests : bool
-  = A_start_here.check_true
-      (fun _ ->
-        (let _ =
-           A_start_here.assert_true
-             (check_keys_2 nat_ord (Set.Set [Arith.zero_nat])
-               (Some Arith.one_nat)
-               (Set.Set
-                 [Arith.one_nat;
-                   Arith.nat_of_integer (Big_int.big_int_of_int 2);
-                   Arith.nat_of_integer (Big_int.big_int_of_int 3)])
-               (Some (Arith.nat_of_integer (Big_int.big_int_of_int 4)))
-               (Set.Set
-                 [Arith.nat_of_integer (Big_int.big_int_of_int 4);
-                   Arith.nat_of_integer (Big_int.big_int_of_int 5)]))
-           in
-          true));;
 
 let rec ordered_key_list
   ord ks =
@@ -1242,91 +582,78 @@ let rec ordered_key_list
             (Arith.nat_of_integer (Big_int.big_int_of_int 2))));;
 
 let okl_tests : bool
-  = A_start_here.check_true
+  = A_start_here.assert_true
       (fun _ ->
-        (let _ =
-           A_start_here.assert_true
-             (ordered_key_list nat_ord
-               [Arith.zero_nat; Arith.one_nat;
-                 Arith.nat_of_integer (Big_int.big_int_of_int 2);
-                 Arith.nat_of_integer (Big_int.big_int_of_int 3)])
-           in
-         let _ =
-           A_start_here.assert_true
-             (not (ordered_key_list nat_ord
-                    [Arith.zero_nat; Arith.one_nat; Arith.one_nat;
-                      Arith.nat_of_integer (Big_int.big_int_of_int 3)]))
-           in
-          true));;
+        ordered_key_list nat_ord
+          [Arith.zero_nat; Arith.one_nat;
+            Arith.nat_of_integer (Big_int.big_int_of_int 2);
+            Arith.nat_of_integer (Big_int.big_int_of_int 3)] &&
+          not (ordered_key_list nat_ord
+                [Arith.zero_nat; Arith.one_nat; Arith.one_nat;
+                  Arith.nat_of_integer (Big_int.big_int_of_int 3)]));;
 
-let rec kvs_insert
-  k_cmp k v kvs =
-    A_start_here.rev_apply
-      (A_start_here.iter_step
-        (fun a ->
-          (match a with (_, []) -> None
-            | (kvsb, (ka, va) :: kvsa) ->
-              (match key_lt k_cmp k ka with true -> None
-                | false ->
-                  (match key_eq k_cmp k ka with true -> Some (kvsb, kvsa)
-                    | false -> Some ((ka, va) :: kvsb, kvsa)))))
-        ([], kvs))
-      (fun (kvsa, a) -> Lista.rev ((k, v) :: kvsa) @ a);;
+let rec check_keys
+  cmp kl ks kr =
+    (let b1 =
+       (match kl with None -> true | Some kla -> Set.ball ks (key_le cmp kla))
+       in
+     let a =
+       (match kr with None -> true
+         | Some kra -> Set.ball ks (fun k -> key_lt cmp k kra))
+       in
+      b1 && a);;
 
-let kvs_insert_tests : bool
-  = A_start_here.check_true
+let rec check_keys_2
+  cmp xs l ks u zs =
+    (match Option.is_none l with true -> Set.is_empty xs | false -> true) &&
+      ((match Option.is_none u with true -> Set.is_empty zs | false -> true) &&
+        (check_keys cmp None xs l &&
+          (check_keys cmp l ks u && check_keys cmp u zs None)));;
+
+let check_keys_tests : bool
+  = A_start_here.assert_true
       (fun _ ->
-        (let _ =
-           A_start_here.assert_true
-             (Lista.equal_list
-               (Product_Type.equal_prod Arith.equal_nat Arith.equal_nat)
-               (kvs_insert nat_ord
-                 (Arith.nat_of_integer (Big_int.big_int_of_int 2))
-                 (Arith.nat_of_integer (Big_int.big_int_of_int 2))
-                 (Lista.map (fun x -> (x, x))
-                   [Arith.zero_nat; Arith.one_nat;
-                     Arith.nat_of_integer (Big_int.big_int_of_int 3);
-                     Arith.nat_of_integer (Big_int.big_int_of_int 4)]))
-               (Lista.map (fun x -> (x, x))
-                 [Arith.zero_nat; Arith.one_nat;
-                   Arith.nat_of_integer (Big_int.big_int_of_int 2);
-                   Arith.nat_of_integer (Big_int.big_int_of_int 3);
-                   Arith.nat_of_integer (Big_int.big_int_of_int 4)]))
-           in
-         let _ =
-           A_start_here.assert_true
-             (Lista.equal_list
-               (Product_Type.equal_prod Arith.equal_nat Arith.equal_nat)
-               (kvs_insert nat_ord
-                 (Arith.nat_of_integer (Big_int.big_int_of_int 6))
-                 (Arith.nat_of_integer (Big_int.big_int_of_int 6))
-                 (Lista.map (fun x -> (x, x))
-                   [Arith.zero_nat; Arith.one_nat;
-                     Arith.nat_of_integer (Big_int.big_int_of_int 3);
-                     Arith.nat_of_integer (Big_int.big_int_of_int 4)]))
-               (Lista.map (fun x -> (x, x))
-                 [Arith.zero_nat; Arith.one_nat;
-                   Arith.nat_of_integer (Big_int.big_int_of_int 3);
-                   Arith.nat_of_integer (Big_int.big_int_of_int 4);
-                   Arith.nat_of_integer (Big_int.big_int_of_int 6)]))
-           in
-          true));;
+        check_keys nat_ord (Some Arith.one_nat)
+          (Set.Set
+            [Arith.one_nat; Arith.nat_of_integer (Big_int.big_int_of_int 2);
+              Arith.nat_of_integer (Big_int.big_int_of_int 3)])
+          (Some (Arith.nat_of_integer (Big_int.big_int_of_int 4))) &&
+          not (check_keys nat_ord (Some Arith.one_nat)
+                (Set.Set
+                  [Arith.one_nat;
+                    Arith.nat_of_integer (Big_int.big_int_of_int 2);
+                    Arith.nat_of_integer (Big_int.big_int_of_int 3)])
+                (Some (Arith.nat_of_integer (Big_int.big_int_of_int 3)))));;
+
+let check_keys_2_tests : bool
+  = A_start_here.assert_true
+      (fun _ ->
+        check_keys_2 nat_ord (Set.Set [Arith.zero_nat]) (Some Arith.one_nat)
+          (Set.Set
+            [Arith.one_nat; Arith.nat_of_integer (Big_int.big_int_of_int 2);
+              Arith.nat_of_integer (Big_int.big_int_of_int 3)])
+          (Some (Arith.nat_of_integer (Big_int.big_int_of_int 4)))
+          (Set.Set
+            [Arith.nat_of_integer (Big_int.big_int_of_int 4);
+              Arith.nat_of_integer (Big_int.big_int_of_int 5)]));;
 
 end;; (*struct Key_value*)
 
 module Tree : sig
   type ('a, 'b) tree = Node of ('a list * ('a, 'b) tree list) |
     Leaf of ('a * 'b) list
+  type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf
   val wf_tree :
     Constants_and_size_types.constants ->
-      Constants_and_size_types.min_size_t option ->
-        ('a -> 'a -> Arith.int) -> ('a, 'b) tree -> bool
+      min_size_t option -> ('a -> 'a -> Arith.int) -> ('a, 'b) tree -> bool
   val dest_Node : ('a, 'b) tree -> 'a list * ('a, 'b) tree list
   val tree_to_leaves : ('a, 'b) tree -> (('a * 'b) list) list
 end = struct
 
 type ('a, 'b) tree = Node of ('a list * ('a, 'b) tree list) |
   Leaf of ('a * 'b) list;;
+
+type min_size_t = Small_root_node_or_leaf | Small_node | Small_leaf;;
 
 let rec tree_to_subtrees
   t0 = (match t0
@@ -1361,18 +688,12 @@ let rec get_min_size
        A_start_here.rev_apply c Constants_and_size_types.min_leaf_size in
      let min_node_keys =
        A_start_here.rev_apply c Constants_and_size_types.min_node_keys in
-      (match mt
-        with (Constants_and_size_types.Small_root_node_or_leaf, Node _) ->
-          Arith.one_nat
-        | (Constants_and_size_types.Small_root_node_or_leaf, Leaf _) ->
-          Arith.zero_nat
-        | (Constants_and_size_types.Small_node, Node _) ->
-          Arith.minus_nat min_node_keys Arith.one_nat
-        | (Constants_and_size_types.Small_node, Leaf _) ->
-          A_start_here.failwitha "get_min_size"
-        | (Constants_and_size_types.Small_leaf, Node _) ->
-          A_start_here.failwitha "get_min_size"
-        | (Constants_and_size_types.Small_leaf, Leaf _) ->
+      (match mt with (Small_root_node_or_leaf, Node _) -> Arith.one_nat
+        | (Small_root_node_or_leaf, Leaf _) -> Arith.zero_nat
+        | (Small_node, Node _) -> Arith.minus_nat min_node_keys Arith.one_nat
+        | (Small_node, Leaf _) -> A_start_here.failwitha "get_min_size"
+        | (Small_leaf, Node _) -> A_start_here.failwitha "get_min_size"
+        | (Small_leaf, Leaf _) ->
           Arith.minus_nat min_leaf_size Arith.one_nat));;
 
 let rec wf_size_1
@@ -1398,24 +719,23 @@ let rec wf_size_1
 
 let rec wf_size
   c ms t0 =
-    A_start_here.assert_true
-      (match ms with None -> forall_subtrees (wf_size_1 c) t0
-        | Some m ->
-          (let min = get_min_size c (m, t0) in
-            (match t0
-              with Node (l, cs) ->
-                (let n = Lista.size_list l in
-                  Arith.less_eq_nat min n &&
-                    (Arith.less_eq_nat n
-                       (A_start_here.rev_apply c
-                         Constants_and_size_types.max_node_keys) &&
-                      Lista.list_all (forall_subtrees (wf_size_1 c)) cs))
-              | Leaf xs ->
-                (let n = Lista.size_list xs in
-                  Arith.less_eq_nat min n &&
-                    Arith.less_eq_nat n
-                      (A_start_here.rev_apply c
-                        Constants_and_size_types.max_leaf_size)))));;
+    (match ms with None -> forall_subtrees (wf_size_1 c) t0
+      | Some m ->
+        (let min = get_min_size c (m, t0) in
+          (match t0
+            with Node (l, cs) ->
+              (let n = Lista.size_list l in
+                Arith.less_eq_nat min n &&
+                  (Arith.less_eq_nat n
+                     (A_start_here.rev_apply c
+                       Constants_and_size_types.max_node_keys) &&
+                    Lista.list_all (forall_subtrees (wf_size_1 c)) cs))
+            | Leaf xs ->
+              (let n = Lista.size_list xs in
+                Arith.less_eq_nat min n &&
+                  Arith.less_eq_nat n
+                    (A_start_here.rev_apply c
+                      Constants_and_size_types.max_leaf_size)))));;
 
 let rec ks_to_max_child_index ks = Lista.size_list ks;;
 
@@ -1429,7 +749,7 @@ let rec subtree_indexes
 let rec index_to_bound
   ks i =
     (let l =
-       (if Arith.equal_nata i min_child_index then None
+       (if Arith.equal_nat i min_child_index then None
          else Some (Lista.nth ks (Arith.minus_nat i Arith.one_nat)))
        in
      let a =
@@ -1450,25 +770,23 @@ let rec keys_consistent_1
           (subtree_indexes (ks, rs))
       | Leaf _ -> true);;
 
-let rec keys_consistent
-  cmp t = A_start_here.assert_true (forall_subtrees (keys_consistent_1 cmp) t);;
+let rec keys_consistent cmp t = forall_subtrees (keys_consistent_1 cmp) t;;
 
 let rec keys_ordered_1
   cmp t0 =
     A_start_here.rev_apply (A_start_here.rev_apply t0 keys_1)
       (Key_value.ordered_key_list cmp);;
 
-let rec keys_ordered
-  cmp t = A_start_here.assert_true (forall_subtrees (keys_ordered_1 cmp) t);;
+let rec keys_ordered cmp t = forall_subtrees (keys_ordered_1 cmp) t;;
 
 let rec wf_ks_rs_1
   t0 = (match t0
          with Node (l, cs) ->
-           Arith.equal_nata (Arith.plus_nat Arith.one_nat (Lista.size_list l))
+           Arith.equal_nat (Arith.plus_nat Arith.one_nat (Lista.size_list l))
              (Lista.size_list cs)
          | Leaf _ -> true);;
 
-let rec wf_ks_rs t0 = A_start_here.assert_true (forall_subtrees wf_ks_rs_1 t0);;
+let rec wf_ks_rs t0 = forall_subtrees wf_ks_rs_1 t0;;
 
 let rec balanced_1
   t0 = (match t0
@@ -1476,22 +794,21 @@ let rec balanced_1
            not (Lista.null cs) &&
              Lista.list_all
                (fun c ->
-                 Arith.equal_nata (height c)
+                 Arith.equal_nat (height c)
                    (height (Lista.nth cs Arith.zero_nat)))
                cs
          | Leaf _ -> true);;
 
-let rec balanced t = A_start_here.assert_true (forall_subtrees balanced_1 t);;
+let rec balanced t = forall_subtrees balanced_1 t;;
 
 let rec wf_tree
-  c ms cmp t0 =
-    A_start_here.assert_true (let b1 = wf_size c ms t0 in
-                              let b2 = wf_ks_rs t0 in
-                              let b3 = balanced t0 in
-                              let b4 = keys_consistent cmp t0 in
-                              let b5 = keys_ordered cmp t0 in
-                              let wf = b1 && (b2 && (b3 && (b4 && b5))) in
-                               wf);;
+  c ms cmp t0 = (let b1 = wf_size c ms t0 in
+                 let b2 = wf_ks_rs t0 in
+                 let b3 = balanced t0 in
+                 let b4 = keys_consistent cmp t0 in
+                 let b5 = keys_ordered cmp t0 in
+                 let wf = b1 && (b2 && (b3 && (b4 && b5))) in
+                  wf);;
 
 let rec dest_Node = function Node (ks, rs) -> (ks, rs)
                     | Leaf uu -> A_start_here.failwitha "dest_Node";;
@@ -1669,160 +986,213 @@ let rec post_merge
             (fun r -> Monad.return (Delete_state.D_updated_subtree r))));;
 
 let rec step_up_small_node
-  cs leaf_ops node_ops frame_ops store_ops frm n =
+  cs leaf_ops node_ops frame_ops store_ops =
     (let (read, write) =
        (A_start_here.rev_apply store_ops Post_monad.read,
          A_start_here.rev_apply store_ops Post_monad.wrte)
        in
      let post_mergea = post_merge cs node_ops store_ops in
-      (match
-        A_start_here.rev_apply frame_ops
-          Stacks_and_frames.get_focus_and_right_sibling frm
-        with None ->
-          (match
-            A_start_here.rev_apply frame_ops
-              Stacks_and_frames.get_left_sibling_and_focus frm
-            with None -> A_start_here.failwitha "impossible"
-            | Some (k1, (r1, (k2, (r2, k3)))) ->
-              A_start_here.rev_apply
-                (A_start_here.rev_apply (A_start_here.rev_apply r1 read)
-                  (Monad.fmap Disk_node.dest_Disk_node))
-                (Monad.bind
-                  (fun left_sibling ->
-                    (match
-                      Arith.equal_nata
-                        (A_start_here.rev_apply node_ops
-                          Disk_node.node_keys_length left_sibling)
-                        (A_start_here.rev_apply cs
-                          Constants_and_size_types.min_node_keys)
-                      with true ->
-                        A_start_here.rev_apply
-                          (A_start_here.rev_apply node_ops Disk_node.node_merge
-                            (left_sibling, (k2, n)))
-                          (fun na ->
-                            A_start_here.rev_apply
-                              (write (Disk_node.Disk_node na))
-                              (Monad.bind
-                                (fun r ->
-                                  A_start_here.rev_apply
-                                    (A_start_here.rev_apply
-                                      (A_start_here.rev_apply frm
-(A_start_here.rev_apply frame_ops Stacks_and_frames.replace
-  (k1, (r1, ([(k2, r2)], k3))) (k1, (r, ([], k3)))))
-                                      (A_start_here.rev_apply frame_ops
-Stacks_and_frames.frame_to_node))
-                                    post_mergea)))
-                      | false ->
-                        A_start_here.rev_apply
+      (fun frm n ->
+        (match
+          A_start_here.rev_apply frame_ops
+            Stacks_and_frames.get_focus_and_right_sibling frm
+          with None ->
+            (match
+              A_start_here.rev_apply frame_ops
+                Stacks_and_frames.get_left_sibling_and_focus frm
+              with None -> A_start_here.failwitha "impossible"
+              | Some (k1, (r1, (k2, (r2, k3)))) ->
+                A_start_here.rev_apply
+                  (A_start_here.rev_apply (A_start_here.rev_apply r1 read)
+                    (Monad.fmap Disk_node.dest_Disk_node))
+                  (Monad.bind
+                    (fun left_sibling ->
+                      (match
+                        Arith.equal_nat
                           (A_start_here.rev_apply node_ops
-                            Disk_node.node_steal_left (left_sibling, (k2, n)))
-                          (fun (left_siblinga, (k2a, na)) ->
-                            A_start_here.rev_apply
-                              (write (Disk_node.Disk_node left_siblinga))
-                              (Monad.bind
-                                (fun r1a ->
-                                  A_start_here.rev_apply
-                                    (write (Disk_node.Disk_node na))
-                                    (Monad.bind
-                                      (fun r2a ->
-A_start_here.rev_apply
-  (A_start_here.rev_apply
-    (A_start_here.rev_apply
-      (A_start_here.rev_apply
-        (A_start_here.rev_apply frm
-          (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
-            (k1, (r1, ([(k2, r2)], k3))) (k1, (r1a, ([(k2a, r2a)], k3)))))
-        (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
-      (fun a -> Disk_node.Disk_node a))
-    write)
-  (Monad.fmap (fun a -> Delete_state.D_updated_subtree a)))))))))))
-        | Some (k1, (r1, (k2, (r2, k3)))) ->
-          A_start_here.rev_apply
-            (A_start_here.rev_apply (A_start_here.rev_apply r2 read)
-              (Monad.fmap Disk_node.dest_Disk_node))
-            (Monad.bind
-              (fun right_sibling ->
-                (match
-                  Arith.equal_nata
-                    (A_start_here.rev_apply node_ops Disk_node.node_keys_length
-                      right_sibling)
-                    (A_start_here.rev_apply cs
-                      Constants_and_size_types.min_node_keys)
-                  with true ->
-                    A_start_here.rev_apply
-                      (A_start_here.rev_apply node_ops Disk_node.node_merge
-                        (n, (k2, right_sibling)))
-                      (fun na ->
-                        A_start_here.rev_apply (write (Disk_node.Disk_node na))
-                          (Monad.bind
-                            (fun r ->
+                            Disk_node.node_keys_length left_sibling)
+                          (A_start_here.rev_apply cs
+                            Constants_and_size_types.min_node_keys)
+                        with true ->
+                          A_start_here.rev_apply
+                            (A_start_here.rev_apply node_ops
+                              Disk_node.node_merge (left_sibling, (k2, n)))
+                            (fun na ->
                               A_start_here.rev_apply
-                                (A_start_here.rev_apply
-                                  (A_start_here.rev_apply frm
-                                    (A_start_here.rev_apply frame_ops
-                                      Stacks_and_frames.replace
-                                      (k1, (r1, ([(k2, r2)], k3)))
-                                      (k1, (r, ([], k3)))))
-                                  (A_start_here.rev_apply frame_ops
-                                    Stacks_and_frames.frame_to_node))
-                                post_mergea)))
-                  | false ->
-                    A_start_here.rev_apply
-                      (A_start_here.rev_apply node_ops
-                        Disk_node.node_steal_right (n, (k2, right_sibling)))
-                      (fun (na, (k2a, right_siblinga)) ->
-                        A_start_here.rev_apply (write (Disk_node.Disk_node na))
-                          (Monad.bind
-                            (fun r1a ->
-                              A_start_here.rev_apply
-                                (write (Disk_node.Disk_node right_siblinga))
+                                (write (Disk_node.Disk_node na))
                                 (Monad.bind
-                                  (fun r2a ->
+                                  (fun r ->
                                     A_start_here.rev_apply
                                       (A_start_here.rev_apply
+(A_start_here.rev_apply frm
+  (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+    (k1, (r1, ([(k2, r2)], k3))) (k1, (r, ([], k3)))))
+(A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
+                                      post_mergea)))
+                        | false ->
+                          A_start_here.rev_apply
+                            (A_start_here.rev_apply node_ops
+                              Disk_node.node_steal_left (left_sibling, (k2, n)))
+                            (fun (left_siblinga, (k2a, na)) ->
+                              A_start_here.rev_apply
+                                (write (Disk_node.Disk_node left_siblinga))
+                                (Monad.bind
+                                  (fun r1a ->
+                                    A_start_here.rev_apply
+                                      (write (Disk_node.Disk_node na))
+                                      (Monad.bind
+(fun r2a ->
+  A_start_here.rev_apply
+    (A_start_here.rev_apply
+      (A_start_here.rev_apply
+        (A_start_here.rev_apply
+          (A_start_here.rev_apply frm
+            (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+              (k1, (r1, ([(k2, r2)], k3))) (k1, (r1a, ([(k2a, r2a)], k3)))))
+          (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
+        (fun a -> Disk_node.Disk_node a))
+      write)
+    (Monad.fmap (fun a -> Delete_state.D_updated_subtree a)))))))))))
+          | Some (k1, (r1, (k2, (r2, k3)))) ->
+            A_start_here.rev_apply
+              (A_start_here.rev_apply (A_start_here.rev_apply r2 read)
+                (Monad.fmap Disk_node.dest_Disk_node))
+              (Monad.bind
+                (fun right_sibling ->
+                  (match
+                    Arith.equal_nat
+                      (A_start_here.rev_apply node_ops
+                        Disk_node.node_keys_length right_sibling)
+                      (A_start_here.rev_apply cs
+                        Constants_and_size_types.min_node_keys)
+                    with true ->
+                      A_start_here.rev_apply
+                        (A_start_here.rev_apply node_ops Disk_node.node_merge
+                          (n, (k2, right_sibling)))
+                        (fun na ->
+                          A_start_here.rev_apply
+                            (write (Disk_node.Disk_node na))
+                            (Monad.bind
+                              (fun r ->
+                                A_start_here.rev_apply
+                                  (A_start_here.rev_apply
+                                    (A_start_here.rev_apply frm
+                                      (A_start_here.rev_apply frame_ops
+Stacks_and_frames.replace (k1, (r1, ([(k2, r2)], k3))) (k1, (r, ([], k3)))))
+                                    (A_start_here.rev_apply frame_ops
+                                      Stacks_and_frames.frame_to_node))
+                                  post_mergea)))
+                    | false ->
+                      A_start_here.rev_apply
+                        (A_start_here.rev_apply node_ops
+                          Disk_node.node_steal_right (n, (k2, right_sibling)))
+                        (fun (na, (k2a, right_siblinga)) ->
+                          A_start_here.rev_apply
+                            (write (Disk_node.Disk_node na))
+                            (Monad.bind
+                              (fun r1a ->
+                                A_start_here.rev_apply
+                                  (write (Disk_node.Disk_node right_siblinga))
+                                  (Monad.bind
+                                    (fun r2a ->
+                                      A_start_here.rev_apply
 (A_start_here.rev_apply
   (A_start_here.rev_apply
-    (A_start_here.rev_apply frm
-      (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
-        (k1, (r1, ([(k2, r2)], k3))) (k1, (r1a, ([(k2a, r2a)], k3)))))
-    (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
-  (fun a -> Disk_node.Disk_node a))
-write)
-                                      (Monad.fmap
-(fun a -> Delete_state.D_updated_subtree a))))))))))));;
+    (A_start_here.rev_apply
+      (A_start_here.rev_apply frm
+        (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+          (k1, (r1, ([(k2, r2)], k3))) (k1, (r1a, ([(k2a, r2a)], k3)))))
+      (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
+    (fun a -> Disk_node.Disk_node a))
+  write)
+(Monad.fmap (fun a -> Delete_state.D_updated_subtree a)))))))))))));;
 
 let rec step_up_small_leaf
-  cs leaf_ops node_ops frame_ops store_ops frm leaf =
+  cs leaf_ops node_ops frame_ops store_ops =
     (let (read, write) =
        (A_start_here.rev_apply store_ops Post_monad.read,
          A_start_here.rev_apply store_ops Post_monad.wrte)
        in
      let post_mergea = post_merge cs node_ops store_ops in
-     let _ = A_start_here.rev_apply frame_ops Stacks_and_frames.dbg_frame frm in
-      (match
-        A_start_here.rev_apply frame_ops
-          Stacks_and_frames.get_focus_and_right_sibling frm
-        with None ->
+      (fun frm leaf ->
+        (let _ =
+           A_start_here.rev_apply frame_ops Stacks_and_frames.dbg_frame frm in
           (match
             A_start_here.rev_apply frame_ops
-              Stacks_and_frames.get_left_sibling_and_focus frm
-            with None -> A_start_here.failwitha "impossible"
+              Stacks_and_frames.get_focus_and_right_sibling frm
+            with None ->
+              (match
+                A_start_here.rev_apply frame_ops
+                  Stacks_and_frames.get_left_sibling_and_focus frm
+                with None -> A_start_here.failwitha "impossible"
+                | Some (k1, (r1, (k2, (r2, k3)))) ->
+                  A_start_here.rev_apply
+                    (A_start_here.rev_apply (A_start_here.rev_apply r1 read)
+                      (Monad.fmap Disk_node.dest_Disk_leaf))
+                    (Monad.bind
+                      (fun left_leaf ->
+                        (match
+                          Arith.equal_nat
+                            (A_start_here.rev_apply leaf_ops
+                              Disk_node.leaf_length left_leaf)
+                            (A_start_here.rev_apply cs
+                              Constants_and_size_types.min_leaf_size)
+                          with true ->
+                            A_start_here.rev_apply
+                              (A_start_here.rev_apply leaf_ops
+                                Disk_node.leaf_merge (left_leaf, leaf))
+                              (fun leafa ->
+                                A_start_here.rev_apply
+                                  (write (Disk_node.Disk_leaf leafa))
+                                  (Monad.bind
+                                    (fun r ->
+                                      A_start_here.rev_apply
+(A_start_here.rev_apply
+  (A_start_here.rev_apply frm
+    (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+      (k1, (r1, ([(k2, r2)], k3))) (k1, (r, ([], k3)))))
+  (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
+post_mergea)))
+                          | false ->
+                            A_start_here.rev_apply
+                              (A_start_here.rev_apply leaf_ops
+                                Disk_node.leaf_steal_left (left_leaf, leaf))
+                              (fun (left_leafa, (k, leafa)) ->
+                                A_start_here.rev_apply
+                                  (write (Disk_node.Disk_leaf left_leafa))
+                                  (Monad.bind
+                                    (fun r1a ->
+                                      A_start_here.rev_apply
+(write (Disk_node.Disk_leaf leafa))
+(Monad.bind
+  (fun r2a ->
+    A_start_here.rev_apply
+      (A_start_here.rev_apply
+        (A_start_here.rev_apply
+          (A_start_here.rev_apply
+            (A_start_here.rev_apply frm
+              (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
+                (k1, (r1, ([(k2, r2)], k3))) (k1, (r1a, ([(k, r2a)], k3)))))
+            (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
+          (fun a -> Disk_node.Disk_node a))
+        write)
+      (Monad.fmap (fun a -> Delete_state.D_updated_subtree a)))))))))))
             | Some (k1, (r1, (k2, (r2, k3)))) ->
               A_start_here.rev_apply
-                (A_start_here.rev_apply (A_start_here.rev_apply r1 read)
+                (A_start_here.rev_apply (A_start_here.rev_apply r2 read)
                   (Monad.fmap Disk_node.dest_Disk_leaf))
                 (Monad.bind
-                  (fun left_leaf ->
+                  (fun right_leaf ->
                     (match
-                      Arith.equal_nata
+                      Arith.equal_nat
                         (A_start_here.rev_apply leaf_ops Disk_node.leaf_length
-                          left_leaf)
+                          right_leaf)
                         (A_start_here.rev_apply cs
                           Constants_and_size_types.min_leaf_size)
                       with true ->
                         A_start_here.rev_apply
                           (A_start_here.rev_apply leaf_ops Disk_node.leaf_merge
-                            (left_leaf, leaf))
+                            (leaf, right_leaf))
                           (fun leafa ->
                             A_start_here.rev_apply
                               (write (Disk_node.Disk_leaf leafa))
@@ -1839,14 +1209,14 @@ Stacks_and_frames.frame_to_node))
                       | false ->
                         A_start_here.rev_apply
                           (A_start_here.rev_apply leaf_ops
-                            Disk_node.leaf_steal_left (left_leaf, leaf))
-                          (fun (left_leafa, (k, leafa)) ->
+                            Disk_node.leaf_steal_right (leaf, right_leaf))
+                          (fun (leafa, (k, right_leafa)) ->
                             A_start_here.rev_apply
-                              (write (Disk_node.Disk_leaf left_leafa))
+                              (write (Disk_node.Disk_leaf leafa))
                               (Monad.bind
                                 (fun r1a ->
                                   A_start_here.rev_apply
-                                    (write (Disk_node.Disk_leaf leafa))
+                                    (write (Disk_node.Disk_leaf right_leafa))
                                     (Monad.bind
                                       (fun r2a ->
 A_start_here.rev_apply
@@ -1859,105 +1229,49 @@ A_start_here.rev_apply
         (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
       (fun a -> Disk_node.Disk_node a))
     write)
-  (Monad.fmap (fun a -> Delete_state.D_updated_subtree a)))))))))))
-        | Some (k1, (r1, (k2, (r2, k3)))) ->
-          A_start_here.rev_apply
-            (A_start_here.rev_apply (A_start_here.rev_apply r2 read)
-              (Monad.fmap Disk_node.dest_Disk_leaf))
-            (Monad.bind
-              (fun right_leaf ->
-                (match
-                  Arith.equal_nata
-                    (A_start_here.rev_apply leaf_ops Disk_node.leaf_length
-                      right_leaf)
-                    (A_start_here.rev_apply cs
-                      Constants_and_size_types.min_leaf_size)
-                  with true ->
-                    A_start_here.rev_apply
-                      (A_start_here.rev_apply leaf_ops Disk_node.leaf_merge
-                        (leaf, right_leaf))
-                      (fun leafa ->
-                        A_start_here.rev_apply
-                          (write (Disk_node.Disk_leaf leafa))
-                          (Monad.bind
-                            (fun r ->
-                              A_start_here.rev_apply
-                                (A_start_here.rev_apply
-                                  (A_start_here.rev_apply frm
-                                    (A_start_here.rev_apply frame_ops
-                                      Stacks_and_frames.replace
-                                      (k1, (r1, ([(k2, r2)], k3)))
-                                      (k1, (r, ([], k3)))))
-                                  (A_start_here.rev_apply frame_ops
-                                    Stacks_and_frames.frame_to_node))
-                                post_mergea)))
-                  | false ->
-                    A_start_here.rev_apply
-                      (A_start_here.rev_apply leaf_ops
-                        Disk_node.leaf_steal_right (leaf, right_leaf))
-                      (fun (leafa, (k, right_leafa)) ->
-                        A_start_here.rev_apply
-                          (write (Disk_node.Disk_leaf leafa))
-                          (Monad.bind
-                            (fun r1a ->
-                              A_start_here.rev_apply
-                                (write (Disk_node.Disk_leaf right_leafa))
-                                (Monad.bind
-                                  (fun r2a ->
-                                    A_start_here.rev_apply
-                                      (A_start_here.rev_apply
-(A_start_here.rev_apply
-  (A_start_here.rev_apply
-    (A_start_here.rev_apply frm
-      (A_start_here.rev_apply frame_ops Stacks_and_frames.replace
-        (k1, (r1, ([(k2, r2)], k3))) (k1, (r1a, ([(k, r2a)], k3)))))
-    (A_start_here.rev_apply frame_ops Stacks_and_frames.frame_to_node))
-  (fun a -> Disk_node.Disk_node a))
-write)
-                                      (Monad.fmap
-(fun a -> Delete_state.D_updated_subtree a))))))))))));;
+  (Monad.fmap (fun a -> Delete_state.D_updated_subtree a))))))))))))));;
 
 let rec step_up
-  cs leaf_ops node_ops frame_ops store_ops du =
-    (let (f, stk) = du in
-     let (_, write) =
+  cs leaf_ops node_ops frame_ops store_ops =
+    (let (_, write) =
        (A_start_here.rev_apply store_ops Post_monad.read,
          A_start_here.rev_apply store_ops Post_monad.wrte)
        in
-     let _ = post_merge cs node_ops store_ops in
-      (match stk with [] -> A_start_here.failwitha "delete, step_up"
-        | frm :: stka ->
-          (let _ =
-             A_start_here.rev_apply frame_ops Stacks_and_frames.dbg_frame frm in
-            A_start_here.rev_apply
-              (match f
-                with Delete_state.D_small_leaf a ->
-                  step_up_small_leaf cs leaf_ops node_ops frame_ops store_ops
-                    frm a
-                | Delete_state.D_small_node a ->
-                  step_up_small_node cs leaf_ops node_ops frame_ops store_ops
-                    frm a
-                | Delete_state.D_updated_subtree r ->
-                  A_start_here.rev_apply
-                    (A_start_here.rev_apply frm
-                      (A_start_here.rev_apply frame_ops
-                        Stacks_and_frames.get_focus))
-                    (fun (k1, (r1, k2)) ->
-                      A_start_here.rev_apply
-                        (A_start_here.rev_apply
+      (fun du ->
+        (match du with (_, []) -> A_start_here.failwitha "delete, step_up"
+          | (f, frm :: stk) ->
+            (let _ =
+               A_start_here.rev_apply frame_ops Stacks_and_frames.dbg_frame frm
+               in
+              A_start_here.rev_apply
+                (match f
+                  with Delete_state.D_small_leaf a ->
+                    step_up_small_leaf cs leaf_ops node_ops frame_ops store_ops
+                      frm a
+                  | Delete_state.D_small_node a ->
+                    step_up_small_node cs leaf_ops node_ops frame_ops store_ops
+                      frm a
+                  | Delete_state.D_updated_subtree r ->
+                    A_start_here.rev_apply
+                      (A_start_here.rev_apply frm
+                        (A_start_here.rev_apply frame_ops
+                          Stacks_and_frames.get_focus))
+                      (fun (k1, (r1, k2)) ->
+                        A_start_here.rev_apply
                           (A_start_here.rev_apply
                             (A_start_here.rev_apply
-                              (A_start_here.rev_apply frm
+                              (A_start_here.rev_apply
+                                (A_start_here.rev_apply frm
+                                  (A_start_here.rev_apply frame_ops
+                                    Stacks_and_frames.replace
+                                    (k1, (r1, ([], k2))) (k1, (r, ([], k2)))))
                                 (A_start_here.rev_apply frame_ops
-                                  Stacks_and_frames.replace (k1, (r1, ([], k2)))
-                                  (k1, (r, ([], k2)))))
-                              (A_start_here.rev_apply frame_ops
-                                Stacks_and_frames.frame_to_node))
-                            (fun a -> Disk_node.Disk_node a))
-                          write)
-                        (Monad.fmap
-                          (fun a -> Delete_state.D_updated_subtree a))))
-              (Monad.fmap (fun y -> (y, stka))))));;
+                                  Stacks_and_frames.frame_to_node))
+                              (fun a -> Disk_node.Disk_node a))
+                            write)
+                          (Monad.fmap
+                            (fun a -> Delete_state.D_updated_subtree a))))
+                (Monad.fmap (fun y -> (y, stk)))))));;
 
 let rec delete_step
   cs leaf_ops node_ops frame_ops store_ops =
@@ -2007,7 +1321,7 @@ let rec delete_step
                       (Monad.fmap (fun aa -> Delete_state.D_finished aa))
                   | Delete_state.D_small_node n ->
                     (match
-                      Arith.equal_nata
+                      Arith.equal_nat
                         (A_start_here.rev_apply node_ops
                           Disk_node.node_keys_length n)
                         Arith.zero_nat
@@ -2086,8 +1400,10 @@ let rec calculate_leaf_split
   cs n =
     (let _ =
        A_start_here.assert_true
-         (Arith.less_nat
-           (A_start_here.rev_apply cs Constants_and_size_types.max_leaf_size) n)
+         (fun _ ->
+           Arith.less_nat
+             (A_start_here.rev_apply cs Constants_and_size_types.max_leaf_size)
+             n)
        in
      let left_possibles =
        Arith.minus_nat n
@@ -2158,8 +1474,10 @@ let rec calculate_node_split
   cs n =
     (let _ =
        A_start_here.assert_true
-         (Arith.less_nat
-           (A_start_here.rev_apply cs Constants_and_size_types.max_node_keys) n)
+         (fun _ ->
+           Arith.less_nat
+             (A_start_here.rev_apply cs Constants_and_size_types.max_node_keys)
+             n)
        in
      let left_possibles =
        Arith.minus_nat (Arith.minus_nat n Arith.one_nat)
@@ -2373,7 +1691,7 @@ let rec im_step_bottom
                  (match s with (_, (_, [])) -> None
                    | (leafa, (len_leaf, (k, v) :: kvs)) ->
                      (let _ =
-                        A_start_here.check_true
+                        A_start_here.assert_true
                           (fun _ ->
                             Arith.less_eq_nat len_leaf
                               (Arith.times_nat
@@ -2383,7 +1701,7 @@ let rec im_step_bottom
                                   (Big_int.big_int_of_int 2))))
                         in
                       let test1 =
-                        Arith.equal_nata len_leaf
+                        Arith.equal_nat len_leaf
                           (Arith.times_nat
                             (A_start_here.rev_apply cs
                               Constants_and_size_types.max_leaf_size)
@@ -2576,6 +1894,35 @@ let rec ls_step_to_next_leaf
               (match a with (_, true) -> None | (lssa, false) -> Some lssa))));;
 
 end;; (*struct Leaf_stream*)
+
+module Disk_node_to_tree : sig
+  val disk_node_to_tree :
+    ('a, 'b, 'c) Disk_node.leaf_ops ->
+      ('a, ('d, 'c) Disk_node.dnode, 'd) Disk_node.node_ops ->
+        ('d, 'c) Disk_node.dnode -> ('a, 'b) Tree.tree
+end = struct
+
+let rec disk_node_to_treea
+  leaf_ops node_ops self =
+    (fun a ->
+      (match a
+        with Disk_node.Disk_node n ->
+          A_start_here.rev_apply
+            (A_start_here.rev_apply n
+              (A_start_here.rev_apply node_ops Disk_node.dbg_node_krs))
+            (fun (ks, rs) -> Tree.Node (ks, Lista.map self rs))
+        | Disk_node.Disk_leaf l ->
+          A_start_here.rev_apply
+            (A_start_here.rev_apply l
+              (A_start_here.rev_apply leaf_ops Disk_node.dbg_leaf_kvs))
+            (fun aa -> Tree.Leaf aa)));;
+
+let rec disk_node_to_tree
+  leaf_ops node_ops dn =
+    (let self = disk_node_to_tree leaf_ops node_ops in
+      disk_node_to_treea leaf_ops node_ops self dn);;
+
+end;; (*struct Disk_node_to_tree*)
 
 module Insert_many_state : sig
   val make_initial_im_state :

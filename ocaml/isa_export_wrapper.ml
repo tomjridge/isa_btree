@@ -1,3 +1,14 @@
+(** Control isabelle assert flag *)
+
+let _ = 
+  Isa_export.assert_flag
+  |> Tjr_global.register ~name:"Isa_export.assert_flag" 
+
+let enable_isa_checks () = Isa_export.assert_flag:=true
+let disable_isa_checks () = Isa_export.assert_flag:=false
+
+(** Wrap isabelle operations *)
+
 open Tjr_monad.Types
 open Constants_type
 open Isa_export
@@ -85,6 +96,8 @@ type ('k,'r,'node) node_ops = {
   node_keys_length: 'node -> int;
   node_make_small_root: 'r*'k*'r -> 'node;
   node_get_single_r: 'node -> 'r;
+  check_node: 'node -> unit;
+  dbg_node_krs: 'node -> ('k list * 'r list)
 }
 
 (*  node_dest_cons: 'node -> 'r * 'k * 'node;  (* NOTE only for a node *)
@@ -160,9 +173,16 @@ let make_node_ops (type k) ~(k_cmp:k -> k -> int) =
     assert(map_ops.cardinal n = 1);
     map_ops.bindings n |> fun [(_,r)] -> r
   in
+  let check_node n = () in (* FIXME *)
+  let dbg_node_krs n = 
+    n |> map_ops.bindings |> List.split |> fun (ks,rs) ->
+    (List.tl ks |> List.map dest_Some,rs)
+  in
   let _ = node_steal_right in
   ({ split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length;
-     node_make_small_root; node_get_single_r } : (k,'v,(k option,'v,unit)Tjr_poly_map.map) node_ops)
+     node_make_small_root; node_get_single_r;
+     check_node; dbg_node_krs
+ } : (k,'v,(k option,'v,unit)Tjr_poly_map.map) node_ops)
 
 let _ :
 k_cmp:('a -> 'a -> int) ->
@@ -203,7 +223,7 @@ type ('k,'r,'frame,'node) frame_ops = {
 (* FIXME maybe move elsewhere *)
 
 type ('k,'r,'node) frame = {
-  midkey: 'k or_bottom;  (* may be None *)
+  midkey: 'k option;  (* really or_bottom; may be None *)
   midpoint: 'r;
   node: 'node;
   backing_node_blk_ref: 'r
@@ -342,24 +362,29 @@ let make_find_insert_delete (type t) ~(monad_ops:t monad_ops) =
            split_large_leaf }
       = leaf_ops 
     in
-    Isa_export.Disk_node.Make_leaf_ops(
-      leaf_lookup,leaf_insert,leaf_remove,
-      (fun l -> leaf_length l |> int2nat),dbg_leaf_kvs,
-      (fun (l1,l2) -> leaf_steal_right (l1,l2) |> fun (a,b,c) -> (a,(b,c))),
-      (fun (l1,l2) -> leaf_steal_left (l1,l2) |> fun (a,b,c) -> (a,(b,c))),
-      leaf_merge,
-      (fun n l -> split_large_leaf (nat2int n) l |> fun (a,b,c) -> (a,(b,c))))
+    Isa_export.Disk_node.make_leaf_ops
+      leaf_lookup 
+      leaf_insert 
+      leaf_remove
+      (fun l -> leaf_length l |> int2nat)
+      (fun (l1,l2) -> leaf_steal_right (l1,l2) |> fun (a,b,c) -> (a,(b,c)))
+      (fun (l1,l2) -> leaf_steal_left (l1,l2) |> fun (a,b,c) -> (a,(b,c)))
+      leaf_merge
+      (fun n l -> split_large_leaf (nat2int n) l |> fun (a,b,c) -> (a,(b,c)))
+      dbg_leaf_kvs
   in
   let node_ops2isa node_ops = 
-    let {split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length; node_make_small_root; node_get_single_r} = node_ops in
-    Isa_export.Disk_node.Make_node_ops (
-      (fun nat n -> split_node_at_k_index (nat2int nat) n |> fun (x,y,z) -> (x,(y,z))), 
-      (fun (a,(b,c)) -> node_merge (a,b,c)), 
-      (fun (a,(b,c)) -> node_steal_right (a,b,c) |> fun (a,b,c) -> (a,(b,c))), 
-      (fun (a,(b,c)) -> node_steal_left (a,b,c) |> fun (a,b,c) -> (a,(b,c))), 
-      (fun x -> x |> node_keys_length |> int2nat), 
-      (fun (a,(b,c)) -> node_make_small_root (a,b,c)), 
-      node_get_single_r)
+    let {split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length; node_make_small_root; node_get_single_r;check_node;dbg_node_krs} = node_ops in
+    Isa_export.Disk_node.make_node_ops
+      (fun nat n -> split_node_at_k_index (nat2int nat) n |> fun (x,y,z) -> (x,(y,z)))
+      (fun (a,(b,c)) -> node_merge (a,b,c))
+      (fun (a,(b,c)) -> node_steal_right (a,b,c) |> fun (a,b,c) -> (a,(b,c)))
+      (fun (a,(b,c)) -> node_steal_left (a,b,c) |> fun (a,b,c) -> (a,(b,c))) 
+      (fun x -> x |> node_keys_length |> int2nat)
+      (fun (a,(b,c)) -> node_make_small_root (a,b,c))
+      node_get_single_r
+      check_node
+      dbg_node_krs
   in
   let frame_ops2isa frame_ops = 
     let   { split_node_on_key; midpoint; get_focus; get_focus_and_right_sibling; 

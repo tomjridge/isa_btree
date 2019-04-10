@@ -34,7 +34,7 @@ We want to split n so that the left leaf has as many keys as possible.
 (* Following returns the length of the left leaf *)
 definition calculate_leaf_split where
 "calculate_leaf_split cs n = (
-  let _ = assert_true (n > cs|>max_leaf_size) in
+  let _ = assert_true (% _. n > cs|>max_leaf_size) in
   let left_possibles = n-(cs|>min_leaf_size) in
   case left_possibles \<le> cs|>max_leaf_size of
   True \<Rightarrow> left_possibles
@@ -89,7 +89,7 @@ We want to split so left node has as many keys as possible.
 
 definition calculate_node_split where 
 "calculate_node_split cs n = (
-  let _ = assert_true (n > cs|>max_node_keys) in
+  let _ = assert_true (% _. n > cs|>max_node_keys) in
   let left_possibles = n - 1 - (cs|>min_node_keys) in
   case left_possibles \<le> cs|>max_node_keys of
   True \<Rightarrow> left_possibles

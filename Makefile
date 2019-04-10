@@ -13,8 +13,8 @@ uninstall:
 clean:
 	$(DUNE) clean
 
-test: build
-	cd test && dune exec test_main
+run_tests: build
+	cd test && time dune exec test_main && time dune exec test_main no_asserts
 
 all:
 	$(MAKE) clean

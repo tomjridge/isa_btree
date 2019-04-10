@@ -48,10 +48,9 @@ definition nat_ord :: "nat \<Rightarrow> nat \<Rightarrow> int" where
   (n2i x)-(n2i y))"
 
 definition okl_tests :: "bool" where
-"okl_tests = check_true (% _.
-  let _ = assert_true(ordered_key_list nat_ord [0,1,2,3]) in
-  let _ = assert_true(~(ordered_key_list nat_ord [0,1,1,3])) in
-  True)"
+"okl_tests = assert_true (% _.
+  (ordered_key_list nat_ord [0,1,2,3]) &
+  (~(ordered_key_list nat_ord [0,1,1,3])))"
 
 
 (* check keys ------------------------------------------------------- *)
@@ -63,11 +62,10 @@ definition check_keys :: "'k ord \<Rightarrow> 'k option => 'k set => 'k option 
   let b2 = (case kr of None => True | Some kr => (! k : ks. key_lt cmp k kr)) in
   b1 & b2)"
 
-definition ck_tests :: bool where
-"ck_tests = check_true (% _.
-  let _ = assert_true (check_keys nat_ord (Some 1) (set[1,2,3]) (Some 4)) in
-  let _ = assert_true (~(check_keys nat_ord (Some 1) (set[1,2,3]) (Some 3))) in
-  True)"
+definition check_keys_tests :: bool where
+"check_keys_tests = assert_true (% _.
+  (check_keys nat_ord (Some 1) (set[1,2,3]) (Some 4)) &
+  (~(check_keys nat_ord (Some 1) (set[1,2,3]) (Some 3))))"
 
 (* FIXME following looks a bit strange for l,u=None; what is the semantics of this function? *)
 (* xs < l \<le> ks < u \<le> zs; an extended version of the above *)
@@ -77,13 +75,11 @@ definition check_keys_2 :: "'k ord \<Rightarrow> 'k set \<Rightarrow> 'k option 
   (case u=None of True \<Rightarrow> zs={} | _ \<Rightarrow> True) &
   (check_keys cmp None xs l) &
   (check_keys cmp l ks u) &
-  (check_keys cmp u zs None)
-)"
+  (check_keys cmp u zs None))"
 
-definition ck2_tests :: bool where
-"ck2_tests = check_true (% _.
-  let _ = assert_true (check_keys_2 nat_ord (set[0]) (Some 1) (set[1,2,3]) (Some 4) (set[4,5])) in
-  True)"
+definition check_keys_2_tests :: bool where
+"check_keys_2_tests = assert_true (% _.
+  (check_keys_2 nat_ord (set[0]) (Some 1) (set[1,2,3]) (Some 4) (set[4,5])))"
 
 
 
