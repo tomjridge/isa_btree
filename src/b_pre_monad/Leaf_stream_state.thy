@@ -13,7 +13,7 @@ definition dummy :: "unit" where "dummy=()"
 
 datatype ('r,'leaf,'frame) leaf_stream_state = 
   LS_down "'r*'frame list"  (* FIXME r can be got from frame? not if frame list is empty; FIXME so
-include the initial r in the type? *)
+include the initial r in the init constructor eg LS_init 'r *)
   | LS_leaf "'leaf * 'frame list" 
   | LS_up "'frame list"
   
