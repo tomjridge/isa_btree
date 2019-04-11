@@ -1,3 +1,7 @@
+(** Wrap Isabelle-exported code in an OCaml-friendly interface *)
+
+(** {2 Isabelle test flag} *)
+
 (** Control isabelle assert flag *)
 
 let _ = 
@@ -9,26 +13,32 @@ let disable_isa_checks () = Isa_export.assert_flag:=false
 
 (* now wrap isabelle operations ------------------------------------- *)
 
+(** {2 Misc} *)
+
 open Tjr_monad.Types
 open Constants_type
 open Isa_export
 
 let dest_Some x = match x with Some x -> x | _ -> failwith "dest_Some"
 
-
+(** Recall [dnode] type *)
 type ('node,'leaf) dnode = ('node,'leaf) Disk_node.dnode
 
+(** {2 Pre-map operations} *)
+
+(** Pre-map ops, with an explicit root pointer *)
 type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
   find: r:'r -> k:'k -> ('r * 'leaf * 'frame list,'t) m;
   insert: r:'r -> k:'k -> v:'v -> ('r option,'t) m;
   delete: r:'r -> k:'k -> ('r,'t) m;
 }
 
+
 (* leaf ops --------------------------------------------------------- *)
 
+(** {2 Leaf operations} *)
 
-(* As Isabelle def. See \doc(doc:leaf_ops). *)
-
+(** As Isabelle def. See \doc(doc:leaf_ops). *)
 type ('k,'v,'leaf) leaf_ops = {
   leaf_lookup: 'k -> 'leaf -> 'v option;
   leaf_insert: 'k -> 'v -> 'leaf -> 'leaf * 'v option;
@@ -95,8 +105,10 @@ let make_leaf_ops ~k_cmp : ('k,'v,('k,'v)_leaf_impl) leaf_ops = make_leaf_ops ~k
 
 (* node ops --------------------------------------------------------- *)
 
+(** {2 Node operations} *)
+
 (* NOTE defn. in Isabelle *)
-type ('k,'r,'node) node_ops' = ('k,'r,'node) Disk_node.node_ops
+(* type ('k,'r,'node) node_ops' = ('k,'r,'node) Disk_node.node_ops *)
 
 (* As Isabelle defn. See \doc(doc:node_ops) *)
 type ('k,'r,'node) node_ops = {
@@ -212,7 +224,7 @@ let make_node_ops ~k_cmp : ('k,'r,('k,'r)_node_impl)node_ops = make_node_ops ~k_
 
 (* frame_ops -------------------------------------------------------- *)
 
-(* See Isabelle defn. See \doc(doc:frame_ops) *)
+(** {2 Frame operations} *)
 
 module Internal_bottom_or_top = struct
   type 'k or_top = 'k option
@@ -223,6 +235,7 @@ open Internal_bottom_or_top
 
 type ('k,'r) segment = 'k or_bottom * 'r * ('k*'r) list * 'k or_top
 
+(** See Isabelle defn. See \doc(doc:frame_ops) *)
 type ('k,'r,'frame,'node) frame_ops = {
   split_node_on_key: 'r -> 'k -> 'node -> 'frame;
   midpoint: 'frame -> 'r;
@@ -358,6 +371,8 @@ let make_frame_ops (type k r)
 
 (* store_ops -------------------------------------------------------- *)
 
+(** {2 Store operations} *)
+
 type ('r,'dnode,'t) store_ops = {
   read: 'r -> ('dnode,'t) m;
   wrte: 'dnode -> ('r,'t) m;
@@ -367,6 +382,8 @@ type ('r,'dnode,'t) store_ops = {
 
 
 (* conversions isa<->ocaml ------------------------------------------ *)
+
+(** {2 Conversions between Isabelle types and OCaml types} *)
 
 module Internal_conversions = struct
   (* isa numbers:
@@ -508,7 +525,10 @@ open Internal_make_find_insert_delete
 
 (* Finally, redeclare make_find_insert_delete, hiding the internal types as much as possible *)
 
-module Export : sig
+
+(** {2 Recap, packaging and export}  *)
+
+module Internal_export : sig
   type ('k,'r) node_impl
   type ('k,'v) leaf_impl
   type ('k,'r) frame_impl
@@ -526,8 +546,7 @@ end = struct
   type ('k,'r) frame_impl = ('k,'r)_frame_impl
   let make_find_insert_delete = make_find_insert_delete
 end
-
-include Export
+include Internal_export
 
 let wf_tree ~cs ~ms ~k_cmp = 
   let open Internal_conversions in
