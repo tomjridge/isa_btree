@@ -40,7 +40,7 @@ end
 
 let _node_map_ops : (int option, test_r, test_node) Tjr_poly_map.map_ops = 
   Tjr_poly_map.make_map_ops 
-    (Isa_btree.Isa_export_wrapper.key_compare Tjr_int.compare)
+    (Isa_btree.Isa_export_wrapper.Internal_node_impl.key_compare Tjr_int.compare)
 
 
 (* convert to yojson *)
@@ -73,4 +73,4 @@ open Isa_export_wrapper
 
 let test_node_to_yojson n = n |> test_node_to_Node' |> tree'_to_yojson
 
-type test_frame = (int,test_r,test_node) frame [@@deriving to_yojson]
+type test_frame = (int,test_r,test_node) Internal_frame_impl.frame [@@deriving to_yojson]

@@ -35,22 +35,18 @@ include struct
       in
       return frm
     in
-    let write frm = 
+    let wrte frm = 
       let node = Test_r frm in
       return node
     in
-    let rewrite r frm = write frm >>= fun r -> return (Some r) in
+    let rewrite r frm = wrte frm >>= fun r -> return (Some r) in
     let free _rs = return () in
-    (read,write,rewrite,free)
+    Isa_export_wrapper.{read;wrte;rewrite;free}
 
-open Tjr_monad.Monad_ops
 open Tjr_monad.Imperative
   let _ :
-(test_r -> ((test_node, test_leaf) dnode, imperative) m) *
-((test_node, test_leaf) dnode -> (test_r, imperative) m) *
-('a -> (test_node, test_leaf) dnode -> (test_r option, imperative) m) *
-('b -> (test_node', imperative) m)
-
+         (test_r, (test_node, test_leaf) dnode, imperative)
+         Isa_export_wrapper.store_ops
 = store_ops
 
 end
