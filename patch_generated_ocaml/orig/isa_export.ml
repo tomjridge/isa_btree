@@ -324,6 +324,29 @@ let rec get_focus_and_right_sibling
 
 end;; (*struct Stacks_and_frames*)
 
+module Leaf_stream_state : sig
+  type ('a, 'b, 'c) leaf_stream_state = LS_down of ('a * 'c list) |
+    LS_leaf of ('b * 'c list) | LS_up of 'c list
+  val dest_LS_leaf : ('a, 'b, 'c) leaf_stream_state -> 'b option
+  val ls_is_finished : ('a, 'b, 'c) leaf_stream_state -> bool
+  val make_initial_ls_state : 'a -> ('a, 'b, 'c) leaf_stream_state
+end = struct
+
+type ('a, 'b, 'c) leaf_stream_state = LS_down of ('a * 'c list) |
+  LS_leaf of ('b * 'c list) | LS_up of 'c list;;
+
+let rec dest_LS_leaf
+  x = (match x with LS_down _ -> None | LS_leaf (leaf, _) -> Some leaf
+        | LS_up _ -> None);;
+
+let rec ls_is_finished
+  lss = (match lss with LS_down _ -> false | LS_leaf _ -> false
+          | LS_up [] -> true | LS_up (_ :: _) -> false);;
+
+let rec make_initial_ls_state r = LS_down (r, []);;
+
+end;; (*struct Leaf_stream_state*)
+
 module Find_state : sig
   type ('a, 'b, 'c, 'd) find_state = F_down of ('b * ('a * ('b * 'd list))) |
     F_finished of ('b * ('a * ('b * ('c * 'd list))))
@@ -826,6 +849,7 @@ module Pre_monad : sig
 end = struct
 
 let dummy : unit = (let _ = (fun x -> x) in
+                    let _ = (fun x -> x) in
                     let _ = (fun x -> x) in
                     let _ = (fun x -> x) in
                     let _ = (fun x -> x) in
@@ -1789,35 +1813,13 @@ let rec im_step
 
 end;; (*struct Insert_many*)
 
-module Leaf_stream_state : sig
-  type ('a, 'b, 'c) ls_state = LS_down of ('a * 'c list) |
-    LS_leaf of ('b * 'c list) | LS_up of 'c list
-  val dest_LS_leaf : ('a, 'b, 'c) ls_state -> 'b option
-  val ls_is_finished : ('a, 'b, 'c) ls_state -> bool
-  val make_initial_ls_state : 'a -> ('a, 'b, 'c) ls_state
-end = struct
-
-type ('a, 'b, 'c) ls_state = LS_down of ('a * 'c list) |
-  LS_leaf of ('b * 'c list) | LS_up of 'c list;;
-
-let rec dest_LS_leaf
-  x = (match x with LS_down _ -> None | LS_leaf (leaf, _) -> Some leaf
-        | LS_up _ -> None);;
-
-let rec ls_is_finished
-  lss = (match lss with LS_down _ -> false | LS_leaf _ -> false
-          | LS_up [] -> true | LS_up (_ :: _) -> false);;
-
-let rec make_initial_ls_state r = LS_down (r, []);;
-
-end;; (*struct Leaf_stream_state*)
-
 module Leaf_stream : sig
   val ls_step_to_next_leaf :
     ('a, 'b, 'c, 'd) Stacks_and_frames.frame_ops ->
       ('b, ('d, 'e) Disk_node.dnode, 'f) Post_monad.store_ops ->
-        ('b, 'e, 'c) Leaf_stream_state.ls_state ->
-          ((('b, 'e, 'c) Leaf_stream_state.ls_state option), 'f) Monad.mm
+        ('b, 'e, 'c) Leaf_stream_state.leaf_stream_state ->
+          ((('b, 'e, 'c) Leaf_stream_state.leaf_stream_state option), 'f)
+            Monad.mm
 end = struct
 
 let rec step_leaf r = (let a = r in

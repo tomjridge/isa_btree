@@ -26,12 +26,6 @@ type ('node,'leaf) dnode = ('node,'leaf) Disk_node.dnode
 
 (** {2 Pre-map operations} *)
 
-(** Pre-map ops, with an explicit root pointer *)
-type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
-  find: r:'r -> k:'k -> ('r * 'leaf * 'frame list,'t) m;
-  insert: r:'r -> k:'k -> v:'v -> ('r option,'t) m;
-  delete: r:'r -> k:'k -> ('r,'t) m;
-}
 
 
 (* leaf ops --------------------------------------------------------- *)
@@ -53,7 +47,6 @@ type ('k,'v,'leaf) leaf_ops = {
 
 
 module Internal_leaf_impl = struct
-
 
   let make_leaf_ops ~k_cmp = 
     let map_ops = Tjr_poly_map.make_map_ops k_cmp in
@@ -381,6 +374,118 @@ type ('r,'dnode,'t) store_ops = {
 }
 
 
+(* leaf stream ------------------------------------------------------ *)
+
+(** {2 Leaf stream operations} *)
+
+(** The type of operations on leaf streams. Note that [ls_leaf]
+    always returns a leaf. So each step transitions from one leaf to
+    the next. *)
+type ('r,'leaf,'leaf_stream_state,'t) leaf_stream_ops = {
+  make_leaf_stream: 'r -> ('leaf_stream_state,'t) m;
+  ls_step: 'leaf_stream_state -> ('leaf_stream_state option,'t) m;
+  ls_leaf: 'leaf_stream_state -> 'leaf;
+}
+
+module Internal_leaf_stream_impl = struct
+  
+  (** We augment the basic Isabelle type with some extra information:
+     the current leaf. This type is for debugging - you shouldn't need
+     to access components. *)
+  type ('r,'leaf,'frame) _t = { 
+    leaf: 'leaf;
+    isa_ls_state: ('r,'leaf,'frame)Isa_export.Leaf_stream_state.leaf_stream_state 
+  }
+
+  (* we need to repeatedly step the leaf state to the point that we
+     hit a leaf and dest_LS_leaf <> None; INVARIANT every ls_state
+     constructed or exposed here has dest_LS_leaf <> None; FIXME do we
+     want to introduce a new type for this? *)
+
+  
+  (* FIXME there is a similarly named function in store_to_map - rename this one *)
+  let make_leaf_stream_ops (type r leaf frame) ~monad_ops ~isa_ls_step_to_next_leaf 
+    : (r, leaf, (r, leaf, frame) _t, 't) leaf_stream_ops
+    =
+    let ( >>= ) = monad_ops.bind in
+    let return = monad_ops.return in
+
+    let dest_leaf = Isa_export.Leaf_stream_state.dest_LS_leaf in
+    let is_finished = Isa_export.Leaf_stream_state.ls_is_finished in
+    
+    let next_leaf t1 : ((r,leaf,frame) _t option,'t) m = 
+      match is_finished t1.isa_ls_state with
+      | true -> return None
+      | false -> (
+          t1.isa_ls_state |> isa_ls_step_to_next_leaf >>= fun (Some isa_ls_state) ->
+          dest_leaf isa_ls_state |> fun (Some leaf) -> 
+          return (Some{leaf;isa_ls_state}))
+    in
+    let _ = next_leaf in
+    
+    let make_leaf_stream r : ((r,leaf,frame) _t,'t) m = 
+      Isa_export.Leaf_stream_state.make_initial_ls_state r |> fun isa_ls_state ->
+      match dest_leaf isa_ls_state with
+      | None -> (
+          isa_ls_step_to_next_leaf isa_ls_state >>= fun (Some isa_ls_state) -> 
+          isa_ls_state |> dest_leaf |> fun (Some leaf) -> 
+          return { leaf; isa_ls_state })
+      | Some leaf -> return { leaf; isa_ls_state }
+    in
+    let ls_leaf t1 = t1.leaf in
+    let ls_step t1 = next_leaf t1 in
+    ({make_leaf_stream; ls_step; ls_leaf} : (r,leaf,(r,leaf,frame)_t,'t)leaf_stream_ops)
+
+  (* 'a,'b,'c = 'r,'leaf,'frame *)
+  let _ :
+    monad_ops:'t monad_ops ->
+    isa_ls_step_to_next_leaf:(
+      ('a, 'b, 'c) Leaf_stream_state.leaf_stream_state ->
+      (('a, 'b, 'c) Leaf_stream_state.leaf_stream_state
+         option, 't) m) ->
+    ('a, 'b, ('a, 'b, 'c) _t, 't) leaf_stream_ops
+    = make_leaf_stream_ops
+
+
+  (* util ---------------------- *)
+
+  (** Get all (key,value) pairs from a leaf stream. Debugging only. *)
+  let _all_leaves ~monad_ops ~leaf_stream_ops ~r : ('leaf list,'t) m = 
+    let ( >>= ) = monad_ops.bind in
+    let return = monad_ops.return in
+    let {make_leaf_stream; ls_step; ls_leaf} = leaf_stream_ops in
+    let rec loop leaves s =
+      Isa_export.Leaf_stream_state.ls_is_finished s |> function
+      | true -> return leaves
+      | false -> 
+        ls_step s >>= fun (Some s) -> loop (ls_leaf s::leaves) s
+    in 
+    r |> make_leaf_stream >>= fun s -> loop [] s
+
+
+(*
+  (** Utility: call [insert_many] in a loop. *)
+  let insert_all ~monad_ops ~insert_many =
+    let ( >>= ) = monad_ops.bind in
+    let return = monad_ops.return in
+    let rec loop k v kvs =
+      insert_many k v kvs >>= (fun kvs' -> 
+        match kvs' with
+        | [] -> return ()
+        | (k,v)::kvs -> loop k v kvs)
+    in loop
+*)
+
+end
+
+(*type ('k,'v,'r) _leaf_stream_impl = 
+  ('r, ('k,'v) _leaf_impl, ('k,'r) _frame_impl) Isa_export.Leaf_stream_state.leaf_stream_state *)
+
+type ('k,'v,'r) _leaf_stream_impl = 
+  ('r, ('k, 'v) _leaf_impl, ('k, 'r) _frame_impl) Internal_leaf_stream_impl._t
+
+
+
 (* conversions isa<->ocaml ------------------------------------------ *)
 
 (** {2 Conversions between Isabelle types and OCaml types} *)
@@ -404,11 +509,21 @@ module Internal_conversions = struct
   let cmp2isa (f: 'k -> 'k -> int) = fun k1 k2 -> f k1 k2 |> int2isa 
 end
 
+
+
+
 (* make_find_insert_delete ------------------------------------------ *)
+
+(** Pre-map ops, with an explicit root pointer *)
+type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
+  find: r:'r -> k:'k -> ('r * 'leaf * 'frame list,'t) m;
+  insert: r:'r -> k:'k -> v:'v -> ('r option,'t) m;
+  delete: r:'r -> k:'k -> ('r,'t) m;
+}
 
 module Internal_make_find_insert_delete = struct
   (* NOTE the following fixes the types for leaves and nodes *)
-  let make_find_insert_delete (type t) ~(monad_ops:t monad_ops) = 
+  let  make_pre_map_ops_and_leaf_stream_ops (type t) ~(monad_ops:t monad_ops) = 
     let module Monad = struct
       type nonrec t = t
       type ('a,'t) mm = ('a,t) Tjr_monad.Types.m 
@@ -498,53 +613,58 @@ module Internal_make_find_insert_delete = struct
         let delete = M.Delete.delete cs leaf_ops node_ops frame_ops store_ops check_tree_at_r' in
         fun ~(r:'r) ~(k:'k) -> delete r k
       in
-      {find;insert;delete}
-
+      let leaf_stream_ops = 
+        let open M.Leaf_stream in
+        Internal_leaf_stream_impl.make_leaf_stream_ops ~monad_ops ~isa_ls_step_to_next_leaf:(ls_step_to_next_leaf frame_ops store_ops)
+      in
+      let _ : 
+('r, 
+('k,'v) _leaf_impl,
+('k,'v,'r) _leaf_stream_impl, 
+t) leaf_stream_ops
+        = leaf_stream_ops in
+      {find;insert;delete},leaf_stream_ops
+      
   let _ :
     monad_ops:'a monad_ops ->
     cs:constants ->
     k_cmp:('k -> 'k -> int) ->
     store_ops:('r, (('k, 'r) _node_impl, ('k, 'v) _leaf_impl) dnode, 'a) store_ops ->
     check_tree_at_r':('r -> (bool, 'a) m) ->
-    dbg_frame:(('k, 'r, ('k, 'r) _node_impl) frame -> unit) ->
-    ('k, 'v, 'r, ('k, 'v) _leaf_impl, ('k, 'r, ('k, 'r) _node_impl) frame, 'a)
-      pre_map_ops
-    = make_find_insert_delete
-
-  let make_find_insert_delete : 
-    monad_ops:'a monad_ops ->
-    cs:constants ->
-    k_cmp:('k -> 'k -> int) ->
-    store_ops:('r, (('k, 'r) _node_impl, ('k, 'v) _leaf_impl) dnode, 'a) store_ops ->
-    check_tree_at_r':('r -> (bool, 'a) m) ->
     dbg_frame:(('k, 'r) _frame_impl -> unit) ->
-    ('k, 'v, 'r, ('k, 'v) _leaf_impl, ('k, 'r) _frame_impl, 'a) pre_map_ops 
-    = make_find_insert_delete
+    ('k, 'v, 'r, ('k, 'v) _leaf_impl, ('k, 'r) _frame_impl, 'a) pre_map_ops * _
+    = make_pre_map_ops_and_leaf_stream_ops
+
 end
 open Internal_make_find_insert_delete
 
-(* Finally, redeclare make_find_insert_delete, hiding the internal types as much as possible *)
 
 
 (** {2 Recap, packaging and export}  *)
+
+(** Finally, redeclare make_find_insert_delete, hiding the internal
+   types as much as possible *)
 
 module Internal_export : sig
   type ('k,'r) node_impl
   type ('k,'v) leaf_impl
   type ('k,'r) frame_impl
-  val make_find_insert_delete : 
+  type ('k,'v,'r) leaf_stream_impl
+  val make_pre_map_ops_and_leaf_stream_ops : 
     monad_ops:'a monad_ops ->
     cs:constants ->
     k_cmp:('k -> 'k -> int) ->
     store_ops:('r, (('k, 'r) node_impl, ('k, 'v) leaf_impl) dnode, 'a) store_ops ->
     check_tree_at_r':('r -> (bool, 'a) m) ->
     dbg_frame:(('k, 'r) frame_impl -> unit) ->
-    ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops 
+    ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops *
+    ('r,('k,'v)leaf_impl,('k,'v,'r)leaf_stream_impl,'a) leaf_stream_ops
 end = struct
   type ('k,'r) node_impl = ('k,'r)_node_impl
   type ('k,'v) leaf_impl = ('k,'v)_leaf_impl
   type ('k,'r) frame_impl = ('k,'r)_frame_impl
-  let make_find_insert_delete = make_find_insert_delete
+  type ('k,'v,'r) leaf_stream_impl = ('k,'v,'r)_leaf_stream_impl
+  let make_pre_map_ops_and_leaf_stream_ops = make_pre_map_ops_and_leaf_stream_ops
 end
 include Internal_export
 

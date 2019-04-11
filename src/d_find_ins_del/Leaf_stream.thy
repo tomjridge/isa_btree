@@ -2,11 +2,10 @@ theory Leaf_stream
 imports Find "$SRC/b_pre_monad/Leaf_stream_state"
 begin
 
-
 definition step_down :: "
 ('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
-('r*'frame list) \<Rightarrow> (('r,'leaf,'frame)ls_state,'t) MM" where
+('r*'frame list) \<Rightarrow> (('r,'leaf,'frame)leaf_stream_state,'t) MM" where
 "step_down frame_ops store_ops r_fs = (
   let (r,fs) = r_fs in
   (store_ops|>read) r |> fmap 
@@ -20,7 +19,7 @@ definition step_down :: "
 
 
 (* don't have to access disk *)
-definition step_leaf :: "'leaf * 'frame list \<Rightarrow> ('r,'leaf,'frame) ls_state" where
+definition step_leaf :: "'leaf * 'frame list \<Rightarrow> ('r,'leaf,'frame) leaf_stream_state" where
 "step_leaf r = (
   let (leaf,fs) = r in
   LS_up fs)"
@@ -29,7 +28,7 @@ definition step_leaf :: "'leaf * 'frame list \<Rightarrow> ('r,'leaf,'frame) ls_
 (* assumes fs <> [] *)
 definition step_up :: "
 ('k,'r,'frame,'node) frame_ops \<Rightarrow> 
-'frame list \<Rightarrow> ('r,'leaf,'frame) ls_state" where
+'frame list \<Rightarrow> ('r,'leaf,'frame) leaf_stream_state" where
 "step_up frame_ops fs = (
   case fs of 
   [] \<Rightarrow> (failwith (STR ''Leaf_stream, step_up''))
@@ -44,7 +43,7 @@ definition step_up :: "
 definition ls_step :: "
 ('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
-('r,'leaf,'frame) ls_state \<Rightarrow> (('r,'leaf,'frame) ls_state,'t) MM" where
+('r,'leaf,'frame) leaf_stream_state \<Rightarrow> (('r,'leaf,'frame) leaf_stream_state,'t) MM" where
 "ls_step frame_ops store_ops lss = (
   case lss of 
   LS_down x \<Rightarrow> (step_down frame_ops store_ops x)
@@ -57,7 +56,7 @@ definition ls_step :: "
 definition ls_step_to_next_leaf :: "
 ('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
-('r,'leaf,'frame) ls_state \<Rightarrow> (('r,'leaf,'frame) ls_state option,'t) MM" where
+('r,'leaf,'frame) leaf_stream_state \<Rightarrow> (('r,'leaf,'frame) leaf_stream_state option,'t) MM" where
 "ls_step_to_next_leaf frame_ops store_ops lss = (
   case ls_is_finished lss of
   True \<Rightarrow> (return None)
