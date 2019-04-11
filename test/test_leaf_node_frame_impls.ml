@@ -65,6 +65,7 @@ let test_r_to_yojson r = r |> test_r_to_tree' |> tree'_to_yojson
 
 let _ = test_r_to_yojson
 
+let test_r_to_tree r = test_r_to_tree' r |> tree'_to_tree
 
 
 (* frame test impl -------------------------------------------------- *)

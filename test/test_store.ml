@@ -2,7 +2,7 @@
    testing. Pointers r are trees themselves. *)
 
 open Isa_btree
-open Test_node_leaf_and_frame_implementations
+open Test_leaf_node_frame_impls
 
 (* a store that works with trees not refs --------------------------- *)
 

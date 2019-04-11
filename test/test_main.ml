@@ -24,6 +24,8 @@ open Test_flag
 open Test_store  (* also includes monad_ops *)
 open Tjr_fs_shared.Kv_op
 
+module Test_impls = Test_leaf_node_frame_impls
+
 module Logger = Tjr_logger
 
 
@@ -58,15 +60,14 @@ let check_tree_at_r' = fun r -> return true
 
 let dbg_frame f = 
   Logger.log_lazy (fun _ -> 
-    Printf.sprintf "dbg_frame: %s\n" (f |> Test_node_leaf_and_frame_implementations.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
+      Printf.sprintf "dbg_frame: %s\n" (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
+
+let _make_find_insert_delete = Internal_make_find_insert_delete.make_find_insert_delete
 
 let execute_tests ~cs ~range ~fuel = 
   let store_ops = Test_store.store_ops in
   let { find; insert; delete } = 
-    (* let open Tjr_monad.Monad_ops in *)
-    (* let open Tjr_monad.Imperative in *)
-    (* let open Test_node_leaf_and_frame_implementations in *)
-    make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r' ~dbg_frame
+    _make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r' ~dbg_frame
   in
   let ops = 
     range|>List.map (fun x -> Insert (x,x)) |> fun xs ->
@@ -74,8 +75,27 @@ let execute_tests ~cs ~range ~fuel =
     xs@ys
   in
   (* s is the spec... a map *)
+  let test r s = 
+    (* FIXME here and later we are a little unsure about
+       Samll_root_node_or_leaf; FIXME the following is very
+       inefficient *)
+    let wf_tree = wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp in
+    let _ = if test_flag() then begin
+        (* tree is wellformed (internal check) *)
+        assert(r |> Test_impls.test_r_to_tree |> wf_tree);
+        (* bindings match (check against spec) *)
+        assert(map_ops.bindings s = (
+            r 
+            |> Test_impls.test_r_to_tree
+            |> Isa_export.Tree.tree_to_leaves |> List.concat));
+      end
+    in
+    ()
+  in
   let rec depth n (r, (s:(int,int,unit)Tjr_poly_map.map) ) =
-    if n = 0 then () else
+    n = 0 |> function
+    | true -> () 
+    | false -> 
       ops |> List.iter (fun op ->
           (* Logger.log(Test_store.t2s r); *)
           (* Logger.jlog (ii_op_to_yojson op); *)
@@ -83,31 +103,12 @@ let execute_tests ~cs ~range ~fuel =
           | Insert (k,v) -> (
               insert ~r ~k ~v |> Imperative.from_m |> function (Some r) ->
                 let s = map_ops.add k v s in
-                (* FIXME here and later we are a little unsure about
-                   Samll_root_node_or_leaf; FIXME the following is very
-                   inefficient *)
-                (if test_flag() then begin
-                    assert(r |> Test_node_leaf_and_frame_implementations.test_r_to_tree'
-                           |> Test_node_leaf_and_frame_implementations.tree'_to_tree
-                           |> Isa_export_wrapper.wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp );
-                    assert(map_ops.bindings s = (
-                        r |> Test_node_leaf_and_frame_implementations.test_r_to_tree'
-                        |> Test_node_leaf_and_frame_implementations.tree'_to_tree
-                        |> Isa_export.Tree.tree_to_leaves |> List.concat));
-                  end);
+                let _ = test r s in
                 depth (n-1) (r,s))
           | Delete k -> (
               delete ~r ~k |> Imperative.from_m |> fun r -> 
               let s = map_ops.remove k s in
-              (if test_flag() then begin
-                  assert(r |> Test_node_leaf_and_frame_implementations.test_r_to_tree'
-                         |> Test_node_leaf_and_frame_implementations.tree'_to_tree
-                         |> Isa_export_wrapper.wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp );
-                  assert(map_ops.bindings s = (
-                      r |> Test_node_leaf_and_frame_implementations.test_r_to_tree'
-                      |> Test_node_leaf_and_frame_implementations.tree'_to_tree
-                      |> Isa_export.Tree.tree_to_leaves |> List.concat));
-                end);
+              let _ = test r s in
               depth (n-1) (r,s)))
   in
   depth fuel (Test_r (Disk_leaf map_ops.empty),map_ops.empty)
@@ -156,15 +157,17 @@ let _ =
     Logger.at_exit ~print:false
   in
   match List.tl (Array.to_list (Sys.argv)) with
-  | [] -> (
+  | [] -> begin
       enable_isa_checks();
       enable_tests();
-      run_tests())
-  | ["no_asserts"] -> (
+      run_tests() 
+    end
+  | ["no_asserts"] -> begin
       disable_isa_checks();
       disable_tests();
-      run_tests())
-  | ["seq_insert"] -> (
+      run_tests()
+    end
+  | ["seq_insert"] -> begin
       let cs = Constants.mk_constants 
           ~min_leaf_size:500
           ~max_leaf_size:1000
@@ -173,22 +176,27 @@ let _ =
       in
       let store_ops = Test_store.store_ops in
       let { find; insert; delete } = 
-        make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r' ~dbg_frame
+        _make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r' ~dbg_frame
       in
       disable_isa_checks();
+      disable_tests();
       let rec loop n r = 
-        if n <= 0 then () else
-          insert ~r ~k:n ~v:n |> Imperative.from_m |> function (Some r) ->
-            loop (n-1) r
+        n <= 0 |> function
+        | true -> () 
+        | false -> 
+          insert ~r ~k:n ~v:n |> Imperative.from_m 
+          |> function (Some r) -> loop (n-1) r  (* guaranteed to return new r *)
       in
       loop (int_of_float 1e6) (Test_r (Disk_leaf map_ops.empty));
       print_profile_summary (profiler.get_marks())
-    )
-  | ["test_polymap"] -> (
+    end
+  | ["test_polymap"] -> begin
       let rec loop n m = 
-        if n <= 0 then () else
+        n <= 0 |> function
+        | true -> ()
+        | false -> 
           map_ops.add n n m |> fun m -> 
           loop (n-1) m
       in
       loop (int_of_float 1e7) map_ops.empty
-    )
+    end
