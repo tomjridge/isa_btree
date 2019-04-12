@@ -235,18 +235,23 @@ let rec max_of_list
 end;; (*struct A_start_here*)
 
 module Stacks_and_frames : sig
-  type ('a, 'b, 'c, 'd) frame_ops =
-    Make_frame_ops of
-      ('b -> 'a -> 'd -> 'c) * ('c -> 'b) *
-        ('c -> 'a option * ('b * 'a option)) *
-        ('c -> ('a option * ('b * ('a * ('b * 'a option)))) option) *
-        ('c -> ('a option * ('b * ('a * ('b * 'a option)))) option) *
-        ('a option * ('b * (('a * 'b) list * 'a option)) ->
-          'a option * ('b * (('a * 'b) list * 'a option)) -> 'c -> 'c) *
-        ('c -> 'd) * ('c -> 'a option * 'a option) * ('c -> 'b) * ('d -> 'c) *
-        ('c -> 'c option) * ('c -> unit)
+  type ('a, 'b, 'c, 'd) frame_ops
   val get_bounds :
     ('a, 'b, 'c, 'd) frame_ops -> 'c list -> 'a option * 'a option
+  val make_frame_ops :
+    ('a -> 'b -> 'c -> 'd) ->
+      ('d -> 'a) ->
+        ('d -> 'b option * ('a * 'b option)) ->
+          ('d -> ('b option * ('a * ('b * ('a * 'b option)))) option) ->
+            ('d -> ('b option * ('a * ('b * ('a * 'b option)))) option) ->
+              ('b option * ('a * (('b * 'a) list * 'b option)) ->
+                'b option * ('a * (('b * 'a) list * 'b option)) -> 'd -> 'd) ->
+                ('d -> 'c) ->
+                  ('d -> 'b option * 'b option) ->
+                    ('d -> 'a) ->
+                      ('c -> 'd) ->
+                        ('d -> 'd option) ->
+                          ('d -> unit) -> ('b, 'a, 'd, 'c) frame_ops
   val replace :
     ('a, 'b, 'c, 'd) frame_ops ->
       'a option * ('b * (('a * 'b) list * 'a option)) ->
@@ -304,6 +309,10 @@ let rec get_bounds
                 | (Some _, Some _) -> None)))
         (None, (None, stk)))
       (fun (l, (u, _)) -> (l, u));;
+
+let rec make_frame_ops
+  a b c d e f g h i j k l =
+    Make_frame_ops (a, b, c, d, e, f, g, h, i, j, k, l);;
 
 let rec replace
   (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)) = x6;;
@@ -445,7 +454,8 @@ module Disk_node : sig
               ('b * 'b -> 'b * ('a * 'b)) ->
                 ('b * 'b -> 'b) ->
                   (Arith.nat -> 'b -> 'b * ('a * 'b)) ->
-                    ('b -> ('a * 'c) list) -> ('a, 'c, 'b) leaf_ops
+                    ('b -> ('a * 'c) list) ->
+                      ('b -> unit) -> ('a, 'c, 'b) leaf_ops
   val make_node_ops :
     (Arith.nat -> 'a -> 'a * ('b * 'a)) ->
       ('a * ('b * 'a) -> 'a) ->
@@ -454,8 +464,8 @@ module Disk_node : sig
             ('a -> Arith.nat) ->
               ('c * ('b * 'c) -> 'a) ->
                 ('a -> 'c) ->
-                  ('a -> unit) ->
-                    ('a -> 'b list * 'c list) -> ('b, 'c, 'a) node_ops
+                  ('a -> 'b list * 'c list) ->
+                    ('a -> unit) -> ('b, 'c, 'a) node_ops
   val dest_Disk_leaf : ('a, 'b) dnode -> 'b
   val dest_Disk_node : ('a, 'b) dnode -> 'a
   val leaf_merge : ('a, 'b, 'c) leaf_ops -> 'c * 'c -> 'c
@@ -488,17 +498,18 @@ type ('a, 'b, 'c) leaf_ops =
     ('a -> 'c -> 'b option) * ('a -> 'b -> 'c -> 'c * 'b option) *
       ('a -> 'c -> 'c) * ('c -> Arith.nat) * ('c * 'c -> 'c * ('a * 'c)) *
       ('c * 'c -> 'c * ('a * 'c)) * ('c * 'c -> 'c) *
-      (Arith.nat -> 'c -> 'c * ('a * 'c)) * ('c -> ('a * 'b) list);;
+      (Arith.nat -> 'c -> 'c * ('a * 'c)) * ('c -> ('a * 'b) list) *
+      ('c -> unit);;
 
 type ('a, 'b, 'c) node_ops =
   Make_node_ops of
     (Arith.nat -> 'c -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c) *
       ('c * ('a * 'c) -> 'c * ('a * 'c)) * ('c * ('a * 'c) -> 'c * ('a * 'c)) *
-      ('c -> Arith.nat) * ('b * ('a * 'b) -> 'c) * ('c -> 'b) * ('c -> unit) *
-      ('c -> 'a list * 'b list);;
+      ('c -> Arith.nat) * ('b * ('a * 'b) -> 'c) * ('c -> 'b) *
+      ('c -> 'a list * 'b list) * ('c -> unit);;
 
 let rec make_leaf_ops
-  a b c d e f g h i = Make_leaf_ops (a, b, c, d, e, f, g, h, i);;
+  a b c d e f g h i j = Make_leaf_ops (a, b, c, d, e, f, g, h, i, j);;
 
 let rec make_node_ops
   a b c d e f g h i = Make_node_ops (a, b, c, d, e, f, g, h, i);;
@@ -511,33 +522,39 @@ let rec dest_Disk_node
   f = (match f with Disk_node x -> x
         | Disk_leaf _ -> A_start_here.failwitha "dest_Disk_node");;
 
-let rec leaf_merge (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x7;;
+let rec leaf_merge
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)) = x7;;
 
 let rec node_merge (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x2;;
 
-let rec leaf_insert (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x2;;
+let rec leaf_insert
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)) = x2;;
 
-let rec leaf_length (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x4;;
+let rec leaf_length
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)) = x4;;
 
-let rec leaf_lookup (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x1;;
+let rec leaf_lookup
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)) = x1;;
 
-let rec leaf_remove (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x3;;
+let rec leaf_remove
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)) = x3;;
 
-let rec dbg_leaf_kvs (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x9;;
+let rec dbg_leaf_kvs
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)) = x9;;
 
-let rec dbg_node_krs (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x9;;
+let rec dbg_node_krs (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x8;;
 
 let rec leaf_steal_left
-  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x6;;
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)) = x6;;
 
 let rec node_steal_left
   (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x4;;
 
 let rec leaf_steal_right
-  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x5;;
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)) = x5;;
 
 let rec split_large_leaf
-  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x8;;
+  (Make_leaf_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)) = x8;;
 
 let rec node_keys_length
   (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x5;;
@@ -1010,7 +1027,7 @@ module Delete : sig
         ('a, 'd, 'e) Disk_node.node_ops ->
           ('a, 'd, 'f, 'e) Stacks_and_frames.frame_ops ->
             ('d, ('e, 'c) Disk_node.dnode, 'g) Post_monad.store_ops ->
-              ('d -> (bool, 'g) Monad.mm) -> 'd -> 'a -> ('d, 'g) Monad.mm
+              ('d -> (unit, 'g) Monad.mm) -> 'd -> 'a -> ('d, 'g) Monad.mm
 end = struct
 
 let rec post_merge
@@ -1401,7 +1418,7 @@ let rec delete_big_step
             | Delete_state.D_finished _ -> Monad.return None)));;
 
 let rec delete
-  cs leaf_ops node_ops frame_ops store_ops check_tree_at_r =
+  cs leaf_ops node_ops frame_ops store_ops dbg_tree_at_r =
     (fun r k ->
       (let d = Delete_state.make_initial_delete_state r k in
         A_start_here.rev_apply
@@ -1414,7 +1431,7 @@ let rec delete
                 | Delete_state.D_up _ ->
                   A_start_here.failwitha "delete, impossible"
                 | Delete_state.D_finished ra ->
-                  A_start_here.rev_apply (check_tree_at_r ra)
+                  A_start_here.rev_apply (dbg_tree_at_r ra)
                     (Monad.bind (fun _ -> Monad.return ra)))))));;
 
 end;; (*struct Delete*)
@@ -1434,7 +1451,7 @@ module Insert : sig
         ('a, 'd, 'e) Disk_node.node_ops ->
           ('a, 'd, 'f, 'e) Stacks_and_frames.frame_ops ->
             ('d, ('e, 'c) Disk_node.dnode, 'g) Post_monad.store_ops ->
-              ('d -> (bool, 'g) Monad.mm) ->
+              ('d -> (unit, 'g) Monad.mm) ->
                 'd -> 'a -> 'b -> (('d option), 'g) Monad.mm
 end = struct
 
@@ -1685,7 +1702,7 @@ let rec insert_big_step
             | Insert_state.I_finished_with_mutate -> Monad.return None)));;
 
 let rec insert
-  cs leaf_ops node_ops frame_ops store_ops check_tree_at_r =
+  cs leaf_ops node_ops frame_ops store_ops dbg_tree_at_r =
     (fun r k v ->
       (let i = Insert_state.make_initial_insert_state r k v in
         A_start_here.rev_apply
@@ -1696,10 +1713,10 @@ let rec insert
                 with Insert_state.I_down _ -> A_start_here.failwitha "insert 1"
                 | Insert_state.I_up _ -> A_start_here.failwitha "insert 1"
                 | Insert_state.I_finished ra ->
-                  A_start_here.rev_apply (check_tree_at_r ra)
+                  A_start_here.rev_apply (dbg_tree_at_r ra)
                     (Monad.bind (fun _ -> Monad.return (Some ra)))
                 | Insert_state.I_finished_with_mutate ->
-                  A_start_here.rev_apply (check_tree_at_r r)
+                  A_start_here.rev_apply (dbg_tree_at_r r)
                     (Monad.bind (fun _ -> Monad.return None)))))));;
 
 end;; (*struct Insert*)

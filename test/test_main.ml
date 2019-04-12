@@ -58,13 +58,13 @@ let map_ops = Tjr_poly_map.make_map_ops k_cmp
 
 let check_tree_at_r' = fun r -> return true
 
-let dbg_frame f = 
-  Logger.log_lazy (fun _ -> 
-      Printf.sprintf "dbg_frame: %s\n" (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
-
 let _make_find_insert_delete = Internal_make_find_insert_delete.make_pre_map_ops_and_leaf_stream_ops
 
 let execute_tests ~cs ~range ~fuel = 
+  let dbg_frame f = 
+    Logger.log_lazy (fun _ -> 
+        Printf.sprintf "dbg_frame: %s\n" (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
+  in
   let store_ops = Test_store.store_ops in
   let { find; insert; delete } = 
     _make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r' ~dbg_frame

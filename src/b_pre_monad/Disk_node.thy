@@ -34,9 +34,10 @@ datatype_record ('k,'v,'leaf) leaf_ops =
   leaf_merge :: "'leaf*'leaf \<Rightarrow> 'leaf"
   split_large_leaf :: "nat \<Rightarrow> 'leaf \<Rightarrow> 'leaf*'k*'leaf"
   dbg_leaf_kvs :: "'leaf \<Rightarrow> ('k*'v) s"  (* avoid for non-dbg code *)
+  dbg_leaf :: "'leaf \<Rightarrow> unit"
 
 definition make_leaf_ops where
-"make_leaf_ops a b c d e f g h i = (
+"make_leaf_ops a b c d e f g h i j = (
 \<lparr> leaf_lookup=a, 
 leaf_insert=b,
 leaf_remove=c,
@@ -45,7 +46,8 @@ leaf_steal_right=e,
 leaf_steal_left=f,
 leaf_merge=g,
 split_large_leaf=h,
-dbg_leaf_kvs=i
+dbg_leaf_kvs=i,
+dbg_leaf=j
 \<rparr>)"
 
 
@@ -61,8 +63,8 @@ datatype_record ('k,'r,'node) node_ops =
   node_keys_length :: "'node \<Rightarrow> nat"
   node_make_small_root :: "'r*'k*'r \<Rightarrow> 'node"
   node_get_single_r :: "'node \<Rightarrow> 'r"  (* when we decrease the size of the tree in delete *)
-  check_node :: "'node \<Rightarrow> unit"
   dbg_node_krs :: "'node \<Rightarrow> ('k s * 'r s)"  (* dbg only *)
+  dbg_node :: "'node \<Rightarrow> unit"
 
 definition make_node_ops where
 "make_node_ops a b c d e f g h i = (
@@ -73,8 +75,9 @@ node_steal_left=d,
 node_keys_length=e,
 node_make_small_root=f,
 node_get_single_r=g,
-check_node=h,
-dbg_node_krs=i\<rparr>)"
+dbg_node_krs=h,
+dbg_node=i
+\<rparr>)"
 
 
 end

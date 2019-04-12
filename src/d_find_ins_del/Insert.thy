@@ -197,14 +197,14 @@ constants \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
 ('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
-('r \<Rightarrow> (bool,'t) MM) \<Rightarrow> 
+('r \<Rightarrow> (unit,'t) MM) \<Rightarrow> 
 'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('r option,'t) MM" where
-"insert cs leaf_ops node_ops frame_ops store_ops check_tree_at_r'  = (% r k v.
+"insert cs leaf_ops node_ops frame_ops store_ops dbg_tree_at_r  = (% r k v.
   let i = make_initial_insert_state r k v in
   insert_big_step cs leaf_ops node_ops frame_ops store_ops i |> bind (% i.
   case i of
-  I_finished r \<Rightarrow> (check_tree_at_r' r |> bind (% _. return (Some r)))
-  | I_finished_with_mutate \<Rightarrow> (check_tree_at_r' r |> bind (% _. return None))
+  I_finished r \<Rightarrow> (dbg_tree_at_r r |> bind (% _. return (Some r)))
+  | I_finished_with_mutate \<Rightarrow> (dbg_tree_at_r r |> bind (% _. return None))
   | _ \<Rightarrow> failwith (STR ''insert 1'')
 ))"
 

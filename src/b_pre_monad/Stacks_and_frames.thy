@@ -34,6 +34,21 @@ datatype_record ('k,'r,'frame,'node) frame_ops =
 
   dbg_frame :: "'frame \<Rightarrow> unit"
 
+definition make_frame_ops where
+"make_frame_ops a b c d e f g h i j k l = ( \<lparr>
+  split_node_on_key=a,
+  midpoint=b,
+  get_focus=c,
+  get_focus_and_right_sibling=d,
+  get_left_sibling_and_focus=e,
+  replace=f,
+  frame_to_node=g,
+  get_midpoint_bounds=h,
+  backing_node_blk_ref=i,
+  split_node_on_first_key=j,
+  step_frame_for_ls=k,
+  dbg_frame=l
+\<rparr>)"
 
 definition get_bounds :: "
 ('k,'r,'frame,'node) frame_ops \<Rightarrow>

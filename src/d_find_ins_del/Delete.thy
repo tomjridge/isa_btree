@@ -213,13 +213,13 @@ constants \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
 ('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t)store_ops \<Rightarrow>
-('r \<Rightarrow> (bool,'t)MM) \<Rightarrow> 
+('r \<Rightarrow> (unit,'t)MM) \<Rightarrow> 
 'r \<Rightarrow> 'k  \<Rightarrow> ('r,'t) MM" where
-"delete cs leaf_ops node_ops frame_ops store_ops check_tree_at_r' = (% r k.
+"delete cs leaf_ops node_ops frame_ops store_ops dbg_tree_at_r = (% r k.
   let d = make_initial_delete_state r k in
   delete_big_step cs leaf_ops node_ops frame_ops store_ops d |> bind (% d.
   case d of
-  D_finished r \<Rightarrow> (check_tree_at_r' r |> bind (% _. return r))
+  D_finished r \<Rightarrow> (dbg_tree_at_r r |> bind (% _. return r))
   | _ \<Rightarrow> (failwith (STR ''delete, impossible''))))"
 
 
