@@ -58,7 +58,8 @@ let map_ops = Tjr_poly_map.make_map_ops k_cmp
 
 let dbg_tree_at_r = fun r -> return ()
 
-let _make_find_insert_delete = Internal_make_ops.make_pre_map_ops_and_leaf_stream_ops
+let _make_pre_map_ops_etc = 
+  Internal_make_pre_map_ops.make_pre_map_ops_etc
 
 let execute_tests ~cs ~range ~fuel = 
   let dbg_frame f = 
@@ -66,8 +67,9 @@ let execute_tests ~cs ~range ~fuel =
         Printf.sprintf "dbg_frame: %s\n" (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
   in
   let store_ops = Test_store.store_ops in
-  let { find; insert; delete } = 
-    (_make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r).pre_map_ops
+  let { leaf_lookup; find; insert; delete } = 
+    let (`Pre_map_ops ops,_,_,_,_,_,_) = _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r in
+    ops
   in
   let ops = 
     range|>List.map (fun x -> Insert (x,x)) |> fun xs ->
@@ -175,8 +177,9 @@ let _ =
           ~max_node_keys:1000
       in
       let store_ops = Test_store.store_ops in
-      let { find; insert; delete } = 
-        (_make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r).pre_map_ops
+      let { leaf_lookup; find; insert; delete } = 
+        let (`Pre_map_ops ops,_,_,_,_,_,_) = _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r in
+        ops
       in
       disable_isa_checks();
       disable_tests();

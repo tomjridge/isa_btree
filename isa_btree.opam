@@ -13,8 +13,8 @@ bug-reports: "https://github.com/tomjridge/isa_btree/issues"
 
 depends: [
   "num"
+  "yojson"
   "ppx_deriving_yojson"
-  "tjr_lib"
   "tjr_fs_shared"
 ]
 

@@ -1,1 +1,1 @@
-num ppx_deriving_yojson
+num yojson ppx_deriving_yojson

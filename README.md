@@ -16,9 +16,10 @@ See the docs directory. A pdf rendering of the ocamldoc for the isa_export_wrapp
 
 ## Dependencies (for OCaml code)
 
-| Dependency          | Comment                                           |
-| ------------------- | ------------------------------------------------- |
-| num                 | isa exported code uses Big_int                    |
-| ppx_deriving_yojson |                                                   |
-| tjr_lib             | register isa_test global flag; tjr_poly_map; etc. |
+| Dependency                  | Comment                                           |
+| -------------------         | ------------------------------------------------- |
+| num                         | isa exported code uses Big_int                    |
+| yojson, ppx_deriving_yojson |                                                   |
+| tjr_fs_shared               | shared lib                                        |
+|                             |                                                   |
 
