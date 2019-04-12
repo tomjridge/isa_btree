@@ -56,9 +56,9 @@ let k_cmp : int -> int -> int = Tjr_int.compare
 
 let map_ops = Tjr_poly_map.make_map_ops k_cmp
 
-let check_tree_at_r' = fun r -> return true
+let dbg_tree_at_r = fun r -> return ()
 
-let _make_find_insert_delete = Internal_make_find_insert_delete.make_pre_map_ops_and_leaf_stream_ops
+let _make_find_insert_delete = Internal_make_ops.make_pre_map_ops_and_leaf_stream_ops
 
 let execute_tests ~cs ~range ~fuel = 
   let dbg_frame f = 
@@ -67,8 +67,7 @@ let execute_tests ~cs ~range ~fuel =
   in
   let store_ops = Test_store.store_ops in
   let { find; insert; delete } = 
-    _make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r' ~dbg_frame
-    |> fst
+    (_make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r).pre_map_ops
   in
   let ops = 
     range|>List.map (fun x -> Insert (x,x)) |> fun xs ->
@@ -177,8 +176,7 @@ let _ =
       in
       let store_ops = Test_store.store_ops in
       let { find; insert; delete } = 
-        _make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~check_tree_at_r' ~dbg_frame
-        |> fst
+        (_make_find_insert_delete ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r).pre_map_ops
       in
       disable_isa_checks();
       disable_tests();
