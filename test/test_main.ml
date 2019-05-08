@@ -139,14 +139,10 @@ let _ = monad_ops
 
 open Tjr_profile
 
-let _ =
-  Profile_manager.now := 
-    Core.Time_stamp_counter.(fun () ->
+let profiler = 
+  Tjr_profile.make_int_profiler 
+    ~now:Core.Time_stamp_counter.(fun () ->
         now () |> to_int63 |> Core.Int63.to_int |> fun (Some x) -> x)
-[@@ocaml.warning "-8"]
-
-let profiler = Profile_manager.create_profiler ~name:"my_profiler"
-
 
 let _ = 
   let run_tests () = 
@@ -191,7 +187,7 @@ let _ =
           |> function (Some r) -> loop (n-1) r  (* guaranteed to return new r *)
       in
       loop (int_of_float 1e6) (Test_r (Disk_leaf map_ops.empty));
-      print_profile_summary (profiler.get_marks())
+      profiler.print_summary()
     end
   | ["test_polymap"] -> begin
       let rec loop n m = 
