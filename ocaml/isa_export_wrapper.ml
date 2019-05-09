@@ -22,7 +22,8 @@ open Isa_export
 let dest_Some x = match x with Some x -> x | _ -> failwith "dest_Some"
 
 (** Recall [dnode] type *)
-type ('node,'leaf) dnode = ('node,'leaf) Disk_node.dnode
+type ('node,'leaf) dnode = ('node,'leaf) Disk_node.dnode = 
+    Disk_node of 'node | Disk_leaf of 'leaf
 
 
 (* leaf ops --------------------------------------------------------- *)
@@ -679,11 +680,23 @@ open Internal_make_pre_map_ops
 module Internal_export : sig
   type ('k,'r) node_impl
   type ('k,'v) leaf_impl
+  type ('k,'v,'r) dnode_impl = (('k,'r) node_impl, ('k,'v) leaf_impl)dnode
   type ('k,'r) frame_impl
   type ('k,'v,'r) leaf_stream_impl
 
   (** The [ops] type is what is exported by the make function; use the projections such as pre_map_ops to break this down *)
   type ('k,'v,'r,'t) isa_btree_ops
+(** Internal impl: {%html:<pre>
+  type ('k,'v,'r,'a) isa_btree_ops = 
+    ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops 
+    * ('r, ('k,'v)leaf_impl, ('k,'v,'r) leaf_stream_impl, 'a) leaf_stream_ops 
+    * ('k, 'v, ('k, 'v) leaf_impl) leaf_ops 
+    * ('k, 'r, ('k, 'r) node_impl) node_ops
+    * ('k, 'r, ('k, 'r) frame_impl, ('k,'r) node_impl) frame_ops 
+    * (('k * 'v) list -> ('k, 'v) leaf_impl)
+    * ('k list * 'r list -> ('k,'r) node_impl)
+</pre>%}*)
+
 
   val make_pre_map_ops_etc : 
     monad_ops:'a monad_ops ->
@@ -693,6 +706,15 @@ module Internal_export : sig
         store_ops ->
     dbg_tree_at_r:('r -> (unit, 'a) m) ->
     ('k,'v,'r,'a)isa_btree_ops
+(** Prettier type: {%html:
+<pre>
+    monad_ops:'a monad_ops ->
+    cs:constants ->
+    k_cmp:('k -> 'k -> int) ->
+    store_ops:('r, (('k, 'r) node_impl, ('k, 'v) leaf_impl) dnode, 'a) store_ops ->
+    dbg_tree_at_r:('r -> (unit, 'a) m) ->
+    ('k,'v,'r,'a)isa_btree_ops
+</pre> %} *)
 
   val pre_map_ops: ('k,'v,'r,'a) isa_btree_ops -> 
     ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops 
@@ -703,14 +725,15 @@ module Internal_export : sig
   val node_ops:  ('k,'v,'r,'a) isa_btree_ops -> 
     ('k, 'r, ('k, 'r) node_impl) node_ops
 
-  val leaf_of_kvs : ('k,'v,'r,'a) isa_btree_ops -> 
+  val kvs_to_leaf : ('k,'v,'r,'a) isa_btree_ops -> 
     (('k * 'v) list -> ('k, 'v) leaf_impl)
 
-  val node_of_krs : ('k,'v,'r,'a) isa_btree_ops -> 
+  val krs_to_node : ('k,'v,'r,'a) isa_btree_ops -> 
     ('k list * 'r list -> ('k,'r) node_impl)
 end = struct
   type ('k,'r) node_impl = ('k,'r)_node_impl
   type ('k,'v) leaf_impl = ('k,'v)_leaf_impl
+  type ('k,'v,'r) dnode_impl = (('k,'r) node_impl, ('k,'v) leaf_impl)dnode
   type ('k,'r) frame_impl = ('k,'r)_frame_impl
   type ('k,'v,'r) leaf_stream_impl = ('k,'v,'r)_leaf_stream_impl
   type ('k,'v,'r,'a) isa_btree_ops = 
@@ -741,9 +764,9 @@ end = struct
 
   let node_ops = fun (a,b,c,d,e,f,g) -> d
 
-  let leaf_of_kvs = fun (a,b,c,d,e,f,g) -> f
+  let kvs_to_leaf = fun (a,b,c,d,e,f,g) -> f
     
-  let node_of_krs = fun (a,b,c,d,e,f,g) -> g
+  let krs_to_node = fun (a,b,c,d,e,f,g) -> g
 end
 include Internal_export
 

@@ -19,12 +19,12 @@ run_tests: build
 all:
 	$(MAKE) clean
 	$(MAKE) build
-	$(MAKE) run_tests
 	$(MAKE) install
 	$(MAKE) docs
+#	$(MAKE) run_tests
 
 SRC:=_build/default/_doc/_html
-DST:=docs
+DST:=docs/ocamldoc
 DST2:=/tmp/isa_btree
 docs: FORCE
 	$(DUNE) build @doc
