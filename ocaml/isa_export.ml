@@ -1755,6 +1755,19 @@ let rec insert
 
 end;; (*struct Insert*)
 
+module Insert_many_state : sig
+  val make_initial_im_state :
+    'a -> 'b -> 'c -> ('b * 'c) list ->
+                        ('b, 'c, 'a, 'd, 'e) Insert_state.insert_state *
+                          ('b * 'c) list
+end = struct
+
+let rec make_initial_im_state
+  r k v kvs =
+    (let i = Insert_state.make_initial_insert_state r k v in (i, kvs));;
+
+end;; (*struct Insert_many_state*)
+
 module Insert_many : sig
   val im_step :
     Constants_and_size_types.constants ->
@@ -1769,6 +1782,14 @@ module Insert_many : sig
                      ('a * 'b) list),
                     'g)
                     Monad.mm
+  val insert_many :
+    Constants_and_size_types.constants ->
+      ('a -> 'a -> Arith.int) ->
+        ('a, 'b, 'c) Disk_node.leaf_ops ->
+          ('a, 'd, 'e) Disk_node.node_ops ->
+            ('a, 'd, 'f, 'e) Stacks_and_frames.frame_ops ->
+              ('d, ('e, 'c) Disk_node.dnode, 'g) Post_monad.store_ops ->
+                'd -> 'a -> 'b -> ('a * 'b) list -> (('d option), 'g) Monad.mm
 end = struct
 
 let rec im_step_bottom
@@ -1880,6 +1901,37 @@ let rec im_step
         | Insert_state.I_finished_with_mutate ->
           A_start_here.failwitha " im_step 2"));;
 
+let rec im_big_step
+  cs k_cmp leaf_ops node_ops frame_ops store_ops =
+    (let im_stepa = im_step cs k_cmp leaf_ops node_ops frame_ops store_ops in
+      Post_monad.iter_m
+        (fun (i, kvs) ->
+          (match i
+            with Insert_state.I_down _ ->
+              A_start_here.rev_apply (im_stepa (i, kvs))
+                (Monad.fmap (fun a -> Some a))
+            | Insert_state.I_up _ ->
+              A_start_here.rev_apply (im_stepa (i, kvs))
+                (Monad.fmap (fun a -> Some a))
+            | Insert_state.I_finished _ -> Monad.return None
+            | Insert_state.I_finished_with_mutate -> Monad.return None)));;
+
+let rec insert_many
+  cs k_cmp leaf_ops node_ops frame_ops store_ops =
+    (fun r k v kvs ->
+      (let im = Insert_many_state.make_initial_im_state r k v kvs in
+        A_start_here.rev_apply
+          (im_big_step cs k_cmp leaf_ops node_ops frame_ops store_ops im)
+          (Monad.bind
+            (fun ima ->
+              (match ima
+                with (Insert_state.I_down _, _) ->
+                  A_start_here.failwitha "insert 1"
+                | (Insert_state.I_up _, _) -> A_start_here.failwitha "insert 1"
+                | (Insert_state.I_finished ra, _) -> Monad.return (Some ra)
+                | (Insert_state.I_finished_with_mutate, _) ->
+                  Monad.return None)))));;
+
 end;; (*struct Insert_many*)
 
 module Leaf_stream : sig
@@ -1966,17 +2018,5 @@ let rec ls_step_to_next_leaf
 
 end;; (*struct Leaf_stream*)
 
-module Insert_many_state : sig
-  val make_initial_im_state :
-    'a -> 'b -> 'c -> ('b * 'c) list ->
-                        ('b, 'c, 'a, 'd, 'e) Insert_state.insert_state *
-                          ('b * 'c) list
-end = struct
-
-let rec make_initial_im_state
-  r k v kvs =
-    (let i = Insert_state.make_initial_insert_state r k v in (i, kvs));;
-
-end;; (*struct Insert_many_state*)
 
 end (* Make *)

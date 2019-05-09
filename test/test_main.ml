@@ -69,6 +69,7 @@ let execute_tests ~cs ~range ~fuel =
   let store_ops = Test_store.store_ops in
   _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
   fun ~pre_map_ops
+    ~pre_insert_many_op
     ~leaf_stream_ops
     ~leaf_ops:leaf_ops0
     ~node_ops:node_ops0
@@ -182,6 +183,7 @@ let _ =
       let store_ops = Test_store.store_ops in
       _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
       fun ~pre_map_ops
+        ~pre_insert_many_op
         ~leaf_stream_ops
         ~leaf_ops:leaf_ops0
         ~node_ops:node_ops0

@@ -65,4 +65,41 @@ constants \<Rightarrow>
   | I_finished_with_mutate \<Rightarrow> failwith (STR '' im_step 2'')
 )"
 
+
+definition im_big_step :: "
+constants \<Rightarrow> 
+('k ord) \<Rightarrow>  
+('k,'v,'leaf) leaf_ops \<Rightarrow>
+('k,'r,'node) node_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
+('k,'v,'r,'leaf,'frame) im_state \<Rightarrow> (('k,'v,'r,'leaf,'frame) im_state,'t) MM" where
+"im_big_step cs k_cmp leaf_ops node_ops frame_ops store_ops = (
+  let im_step = im_step cs k_cmp leaf_ops node_ops frame_ops store_ops in
+  (% i.
+  iter_m (% im. let (i,kvs) = im in 
+    case i of
+    I_finished r \<Rightarrow> (return None)
+    | I_finished_with_mutate \<Rightarrow> (return None)
+    | _ \<Rightarrow> (im_step (i,kvs) |> fmap Some))
+    i))"
+
+definition insert_many :: "
+constants \<Rightarrow> 
+('k ord) \<Rightarrow>
+('k,'v,'leaf) leaf_ops \<Rightarrow>
+('k,'r,'node) node_ops \<Rightarrow> 
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
+'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k*'v) list \<Rightarrow> ('r option,'t) MM" where
+"insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops = (% r k v kvs.
+  let im = make_initial_im_state r k v kvs in
+  im_big_step cs k_cmp leaf_ops node_ops frame_ops store_ops im |> bind (% im.
+  let (i,kvs) = im in
+  case i of
+  I_finished r \<Rightarrow> (return (Some r))
+  | I_finished_with_mutate \<Rightarrow> (return None)
+  | _ \<Rightarrow> failwith (STR ''insert 1'')
+))"
+
 end

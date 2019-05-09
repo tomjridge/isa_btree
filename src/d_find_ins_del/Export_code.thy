@@ -103,6 +103,7 @@ Delete.delete_step delete
 Leaf_stream.ls_step_to_next_leaf
 
 Insert_many.im_step
+Insert_many.insert_many
 
 in OCaml file "/tmp/isa_export.ml"
 
