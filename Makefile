@@ -33,5 +33,5 @@ docs: FORCE
 
 promote_docs: FORCE
 	PROMOTE_DOCS=true $(MAKE) docs
-
+	cd docs && tree -H . -L 1 --charset utf-8 >index.html
 FORCE:
