@@ -67,10 +67,17 @@ let execute_tests ~cs ~range ~fuel =
         Printf.sprintf "dbg_frame: %s\n" (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
   in
   let store_ops = Test_store.store_ops in
-  let { leaf_lookup; find; insert; delete } = 
-    let (`Pre_map_ops ops,_,_,_,_,_,_) = _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r in
-    ops
-  in
+  _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
+  fun ~pre_map_ops
+    ~leaf_stream_ops
+    ~leaf_ops:leaf_ops0
+    ~node_ops:node_ops0
+    ~frame_ops:frame_ops0
+    ~kvs_to_leaf
+    ~leaf_to_kvs
+    ~krs_to_node
+    ~node_to_krs ->
+  let { leaf_lookup; find; insert; delete } = pre_map_ops in
   let ops = 
     range|>List.map (fun x -> Insert (x,x)) |> fun xs ->
     range|>List.map (fun x -> Delete x) |> fun ys -> 
@@ -173,10 +180,17 @@ let _ =
           ~max_node_keys:1000
       in
       let store_ops = Test_store.store_ops in
-      let { leaf_lookup; find; insert; delete } = 
-        let (`Pre_map_ops ops,_,_,_,_,_,_) = _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r in
-        ops
-      in
+      _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
+      fun ~pre_map_ops
+        ~leaf_stream_ops
+        ~leaf_ops:leaf_ops0
+        ~node_ops:node_ops0
+        ~frame_ops:frame_ops0
+        ~kvs_to_leaf
+        ~leaf_to_kvs
+        ~krs_to_node
+        ~node_to_krs ->
+      let { leaf_lookup; find; insert; delete } = pre_map_ops in
       disable_isa_checks();
       disable_tests();
       let rec loop n r = 

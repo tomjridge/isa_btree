@@ -356,75 +356,6 @@ let rec make_initial_ls_state r = LS_down (r, []);;
 
 end;; (*struct Leaf_stream_state*)
 
-module Find_state : sig
-  type ('a, 'b, 'c, 'd) find_state = F_down of ('b * ('a * ('b * 'd list))) |
-    F_finished of ('b * ('a * ('b * ('c * 'd list))))
-  val dest_F_finished :
-    ('a, 'b, 'c, 'd) find_state -> ('b * ('a * ('b * ('c * 'd list)))) option
-  val make_initial_find_state : 'a -> 'b -> ('a, 'b, 'c, 'd) find_state
-end = struct
-
-type ('a, 'b, 'c, 'd) find_state = F_down of ('b * ('a * ('b * 'd list))) |
-  F_finished of ('b * ('a * ('b * ('c * 'd list))));;
-
-let rec dest_F_finished
-  fs = (match fs with F_down _ -> None
-         | F_finished (r0, (k, (r, (kvs, stk)))) ->
-           Some (r0, (k, (r, (kvs, stk)))));;
-
-let rec make_initial_find_state k r = F_down (r, (k, (r, [])));;
-
-end;; (*struct Find_state*)
-
-module Insert_state : sig
-  type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c))
-  type ('a, 'b, 'c, 'd, 'e) insert_state =
-    I_down of (('a, 'c, 'd, 'e) Find_state.find_state * 'b) |
-    I_up of (('a, 'b, 'c) i12_t * 'e list) | I_finished of 'c |
-    I_finished_with_mutate
-  val make_initial_insert_state :
-    'a -> 'b -> 'c -> ('b, 'c, 'a, 'd, 'e) insert_state
-end = struct
-
-type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c));;
-
-type ('a, 'b, 'c, 'd, 'e) insert_state =
-  I_down of (('a, 'c, 'd, 'e) Find_state.find_state * 'b) |
-  I_up of (('a, 'b, 'c) i12_t * 'e list) | I_finished of 'c |
-  I_finished_with_mutate;;
-
-let rec make_initial_insert_state
-  r k v = (let f = Find_state.make_initial_find_state k r in I_down (f, v));;
-
-end;; (*struct Insert_state*)
-
-module Delete_state : sig
-  type ('a, 'b, 'c) del_t = D_small_leaf of 'c | D_small_node of 'b |
-    D_updated_subtree of 'a
-  type ('a, 'b, 'c, 'd, 'e, 'f) delete_state =
-    D_down of (('a, 'c, 'd, 'f) Find_state.find_state * 'c) |
-    D_up of (('c, 'e, 'd) del_t * ('f list * 'c)) | D_finished of 'c
-  val dest_D_finished : ('a, 'b, 'c, 'd, 'e, 'f) delete_state -> 'c option
-  val make_initial_delete_state :
-    'a -> 'b -> ('b, 'c, 'a, 'd, 'e, 'f) delete_state
-end = struct
-
-type ('a, 'b, 'c) del_t = D_small_leaf of 'c | D_small_node of 'b |
-  D_updated_subtree of 'a;;
-
-type ('a, 'b, 'c, 'd, 'e, 'f) delete_state =
-  D_down of (('a, 'c, 'd, 'f) Find_state.find_state * 'c) |
-  D_up of (('c, 'e, 'd) del_t * ('f list * 'c)) | D_finished of 'c;;
-
-let rec dest_D_finished
-  x = (match x with D_down _ -> None | D_up _ -> None
-        | D_finished a -> Some a);;
-
-let rec make_initial_delete_state
-  r k = D_down (Find_state.make_initial_find_state k r, r);;
-
-end;; (*struct Delete_state*)
-
 module Disk_node : sig
   type ('a, 'b) dnode = Disk_node of 'a | Disk_leaf of 'b
   type ('a, 'b, 'c) leaf_ops
@@ -556,14 +487,6 @@ let rec split_node_at_k_index
   (Make_node_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9)) = x1;;
 
 end;; (*struct Disk_node*)
-
-module Sum_Type : sig
-  type ('a, 'b) sum = Inl of 'a | Inr of 'b
-end = struct
-
-type ('a, 'b) sum = Inl of 'a | Inr of 'b;;
-
-end;; (*struct Sum_Type*)
 
 module Constants_and_size_types : sig
   type constants =
@@ -861,6 +784,115 @@ let rec tree_to_leaves
 
 end;; (*struct Tree*)
 
+module Disk_node_to_tree : sig
+  val dummy : unit
+  val disk_node_to_tree :
+    ('a, 'b, 'c) Disk_node.leaf_ops ->
+      ('a, ('d, 'c) Disk_node.dnode, 'd) Disk_node.node_ops ->
+        ('d, 'c) Disk_node.dnode -> ('a, 'b) Tree.tree
+end = struct
+
+let dummy : unit = ();;
+
+let rec disk_node_to_treea
+  leaf_ops node_ops self =
+    (fun a ->
+      (match a
+        with Disk_node.Disk_node n ->
+          A_start_here.rev_apply
+            (A_start_here.rev_apply n
+              (A_start_here.rev_apply node_ops Disk_node.dbg_node_krs))
+            (fun (ks, rs) -> Tree.Node (ks, Lista.map self rs))
+        | Disk_node.Disk_leaf l ->
+          A_start_here.rev_apply
+            (A_start_here.rev_apply l
+              (A_start_here.rev_apply leaf_ops Disk_node.dbg_leaf_kvs))
+            (fun aa -> Tree.Leaf aa)));;
+
+let rec disk_node_to_tree
+  leaf_ops node_ops dn =
+    (let self = disk_node_to_tree leaf_ops node_ops in
+      disk_node_to_treea leaf_ops node_ops self dn);;
+
+end;; (*struct Disk_node_to_tree*)
+
+module Find_state : sig
+  type ('a, 'b, 'c, 'd) find_state = F_down of ('b * ('a * ('b * 'd list))) |
+    F_finished of ('b * ('a * ('b * ('c * 'd list))))
+  val dest_F_finished :
+    ('a, 'b, 'c, 'd) find_state -> ('b * ('a * ('b * ('c * 'd list)))) option
+  val make_initial_find_state : 'a -> 'b -> ('a, 'b, 'c, 'd) find_state
+end = struct
+
+type ('a, 'b, 'c, 'd) find_state = F_down of ('b * ('a * ('b * 'd list))) |
+  F_finished of ('b * ('a * ('b * ('c * 'd list))));;
+
+let rec dest_F_finished
+  fs = (match fs with F_down _ -> None
+         | F_finished (r0, (k, (r, (kvs, stk)))) ->
+           Some (r0, (k, (r, (kvs, stk)))));;
+
+let rec make_initial_find_state k r = F_down (r, (k, (r, [])));;
+
+end;; (*struct Find_state*)
+
+module Insert_state : sig
+  type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c))
+  type ('a, 'b, 'c, 'd, 'e) insert_state =
+    I_down of (('a, 'c, 'd, 'e) Find_state.find_state * 'b) |
+    I_up of (('a, 'b, 'c) i12_t * 'e list) | I_finished of 'c |
+    I_finished_with_mutate
+  val make_initial_insert_state :
+    'a -> 'b -> 'c -> ('b, 'c, 'a, 'd, 'e) insert_state
+end = struct
+
+type ('a, 'b, 'c) i12_t = I1 of 'c | I2 of ('c * ('a * 'c));;
+
+type ('a, 'b, 'c, 'd, 'e) insert_state =
+  I_down of (('a, 'c, 'd, 'e) Find_state.find_state * 'b) |
+  I_up of (('a, 'b, 'c) i12_t * 'e list) | I_finished of 'c |
+  I_finished_with_mutate;;
+
+let rec make_initial_insert_state
+  r k v = (let f = Find_state.make_initial_find_state k r in I_down (f, v));;
+
+end;; (*struct Insert_state*)
+
+module Delete_state : sig
+  type ('a, 'b, 'c) del_t = D_small_leaf of 'c | D_small_node of 'b |
+    D_updated_subtree of 'a
+  type ('a, 'b, 'c, 'd, 'e, 'f) delete_state =
+    D_down of (('a, 'c, 'd, 'f) Find_state.find_state * 'c) |
+    D_up of (('c, 'e, 'd) del_t * ('f list * 'c)) | D_finished of 'c
+  val dest_D_finished : ('a, 'b, 'c, 'd, 'e, 'f) delete_state -> 'c option
+  val make_initial_delete_state :
+    'a -> 'b -> ('b, 'c, 'a, 'd, 'e, 'f) delete_state
+end = struct
+
+type ('a, 'b, 'c) del_t = D_small_leaf of 'c | D_small_node of 'b |
+  D_updated_subtree of 'a;;
+
+type ('a, 'b, 'c, 'd, 'e, 'f) delete_state =
+  D_down of (('a, 'c, 'd, 'f) Find_state.find_state * 'c) |
+  D_up of (('c, 'e, 'd) del_t * ('f list * 'c)) | D_finished of 'c;;
+
+let rec dest_D_finished
+  x = (match x with D_down _ -> None | D_up _ -> None
+        | D_finished a -> Some a);;
+
+let rec make_initial_delete_state
+  r k = D_down (Find_state.make_initial_find_state k r, r);;
+
+end;; (*struct Delete_state*)
+
+module Sum_Type : sig
+  type ('a, 'b) sum = Inl of 'a | Inr of 'b
+end = struct
+
+type ('a, 'b) sum = Inl of 'a | Inr of 'b;;
+
+end;; (*struct Sum_Type*)
+
 module Pre_monad : sig
   val dummy : unit
 end = struct
@@ -872,6 +904,8 @@ let dummy : unit = (let _ = (fun x -> x) in
                     let _ = (fun x -> x) in
                     let _ = (fun x -> x) in
                     let _ = (fun x -> x) in
+                    let _ = (fun x -> x) in
+                    let _ = Disk_node_to_tree.dummy in
                      ());;
 
 end;; (*struct Pre_monad*)
@@ -1913,35 +1947,6 @@ let rec ls_step_to_next_leaf
               (match a with (_, true) -> None | (lssa, false) -> Some lssa))));;
 
 end;; (*struct Leaf_stream*)
-
-module Disk_node_to_tree : sig
-  val disk_node_to_tree :
-    ('a, 'b, 'c) Disk_node.leaf_ops ->
-      ('a, ('d, 'c) Disk_node.dnode, 'd) Disk_node.node_ops ->
-        ('d, 'c) Disk_node.dnode -> ('a, 'b) Tree.tree
-end = struct
-
-let rec disk_node_to_treea
-  leaf_ops node_ops self =
-    (fun a ->
-      (match a
-        with Disk_node.Disk_node n ->
-          A_start_here.rev_apply
-            (A_start_here.rev_apply n
-              (A_start_here.rev_apply node_ops Disk_node.dbg_node_krs))
-            (fun (ks, rs) -> Tree.Node (ks, Lista.map self rs))
-        | Disk_node.Disk_leaf l ->
-          A_start_here.rev_apply
-            (A_start_here.rev_apply l
-              (A_start_here.rev_apply leaf_ops Disk_node.dbg_leaf_kvs))
-            (fun aa -> Tree.Leaf aa)));;
-
-let rec disk_node_to_tree
-  leaf_ops node_ops dn =
-    (let self = disk_node_to_tree leaf_ops node_ops in
-      disk_node_to_treea leaf_ops node_ops self dn);;
-
-end;; (*struct Disk_node_to_tree*)
 
 module Insert_many_state : sig
   val make_initial_im_state :

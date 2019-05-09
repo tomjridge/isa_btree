@@ -25,6 +25,8 @@ termination disk_node_to_tree
 
 (* find_consts "('k,'v)tree" *)
 
+definition dummy :: unit where "dummy = ()"
+
 end
 
 
