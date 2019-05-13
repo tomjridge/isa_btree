@@ -2,6 +2,7 @@
 
 (** {2 Public interfaces} *)
 
+
 (** {2 Constants} *)
 
 type constants = Constants.constants =
@@ -14,6 +15,12 @@ type constants = Constants.constants =
 
 module Constants = Constants
 
+
+(** {2 Disk-backed nodes} *)
+
+include Isa_export_wrapper.Dnode_type
+
+
 (** {2 Node/leaf conversions to/from lists} *)
 
 include Isa_export_wrapper.Node_leaf_conversions_type
@@ -22,6 +29,7 @@ include Isa_export_wrapper.Node_leaf_conversions_type
 include Isa_export_wrapper.Leaf_ops_type
 include Isa_export_wrapper.Node_ops_type
 *)
+
 
 (** {2 Pre-map ops} *)
 

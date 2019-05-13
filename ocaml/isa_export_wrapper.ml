@@ -21,10 +21,12 @@ open Isa_export
 
 let dest_Some x = match x with Some x -> x | _ -> failwith "dest_Some"
 
-(** Recall [dnode] type *)
-type ('node,'leaf) dnode = ('node,'leaf) Disk_node.dnode = 
-    Disk_node of 'node | Disk_leaf of 'leaf
-
+module Dnode_type = struct
+  (** Recall [dnode] type *)
+  type ('node,'leaf) dnode = ('node,'leaf) Disk_node.dnode = 
+      Disk_node of 'node | Disk_leaf of 'leaf
+end
+include Dnode_type
 
 (* leaf ops --------------------------------------------------------- *)
 
