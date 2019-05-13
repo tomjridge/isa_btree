@@ -16,7 +16,7 @@ let disable_isa_checks () = Isa_export.assert_flag:=false
 (** {2 Misc} *)
 
 (* open Tjr_monad.Types *)
-open Constants_type
+(* open Constants_type *)
 open Isa_export
 
 let dest_Some x = match x with Some x -> x | _ -> failwith "dest_Some"
@@ -30,20 +30,22 @@ type ('node,'leaf) dnode = ('node,'leaf) Disk_node.dnode =
 
 (** {2 Leaf operations} *)
 
-(** As Isabelle def. See \doc(doc:leaf_ops). *)
-type ('k,'v,'leaf) leaf_ops = {
-  leaf_lookup: 'k -> 'leaf -> 'v option;
-  leaf_insert: 'k -> 'v -> 'leaf -> 'leaf * 'v option;
-  leaf_remove: 'k -> 'leaf -> 'leaf;
-  leaf_length: 'leaf -> int;
-  leaf_steal_right: 'leaf * 'leaf -> 'leaf * 'k * 'leaf;
-  leaf_steal_left: 'leaf*'leaf -> 'leaf*'k*'leaf;
-  leaf_merge: 'leaf * 'leaf -> 'leaf;
-  split_large_leaf: int -> 'leaf -> 'leaf*'k*'leaf;
-  dbg_leaf_kvs: 'leaf -> ('k*'v) list;
-  dbg_leaf: 'leaf -> unit;
-}
-
+module Leaf_ops_type = struct
+  (** As Isabelle def. See \doc(doc:leaf_ops). *)
+  type ('k,'v,'leaf) leaf_ops = {
+    leaf_lookup: 'k -> 'leaf -> 'v option;
+    leaf_insert: 'k -> 'v -> 'leaf -> 'leaf * 'v option;
+    leaf_remove: 'k -> 'leaf -> 'leaf;
+    leaf_length: 'leaf -> int;
+    leaf_steal_right: 'leaf * 'leaf -> 'leaf * 'k * 'leaf;
+    leaf_steal_left: 'leaf*'leaf -> 'leaf*'k*'leaf;
+    leaf_merge: 'leaf * 'leaf -> 'leaf;
+    split_large_leaf: int -> 'leaf -> 'leaf*'k*'leaf;
+    dbg_leaf_kvs: 'leaf -> ('k*'v) list;
+    dbg_leaf: 'leaf -> unit;
+  }
+end
+include Leaf_ops_type
 
 module Internal_leaf_impl = struct
 
@@ -115,18 +117,21 @@ let make_leaf_ops ~k_cmp : ('k,'v,('k,'v)_leaf_impl) leaf_ops =
 (* NOTE defn. in Isabelle *)
 (* type ('k,'r,'node) node_ops' = ('k,'r,'node) Disk_node.node_ops *)
 
-(* As Isabelle defn. See \doc(doc:node_ops) *)
-type ('k,'r,'node) node_ops = {
-  split_node_at_k_index: int -> 'node -> ('node*'k*'node);
-  node_merge: 'node*'k*'node -> 'node;
-  node_steal_right: 'node*'k*'node -> 'node*'k*'node;
-  node_steal_left: 'node*'k*'node -> 'node*'k*'node;
-  node_keys_length: 'node -> int;
-  node_make_small_root: 'r*'k*'r -> 'node;
-  node_get_single_r: 'node -> 'r;
-  dbg_node_krs: 'node -> ('k list * 'r list);
-  dbg_node: 'node -> unit
-}
+module Node_ops_type = struct
+  (* As Isabelle defn. See \doc(doc:node_ops) *)
+  type ('k,'r,'node) node_ops = {
+    split_node_at_k_index: int -> 'node -> ('node*'k*'node);
+    node_merge: 'node*'k*'node -> 'node;
+    node_steal_right: 'node*'k*'node -> 'node*'k*'node;
+    node_steal_left: 'node*'k*'node -> 'node*'k*'node;
+    node_keys_length: 'node -> int;
+    node_make_small_root: 'r*'k*'r -> 'node;
+    node_get_single_r: 'node -> 'r;
+    dbg_node_krs: 'node -> ('k list * 'r list);
+    dbg_node: 'node -> unit
+  }
+end
+include Node_ops_type
 
 module Internal_node_impl = struct
 
@@ -384,13 +389,15 @@ let make_frame_ops (type k r)
 
 (** {2 Store operations} *)
 
-type ('r,'dnode,'t) store_ops = {
-  read: 'r -> ('dnode,'t) m;
-  wrte: 'dnode -> ('r,'t) m;
-  rewrite: 'r -> 'dnode -> ('r option, 't) m;
-  free: 'r list -> (unit,'t) m
-}
-
+module Store_ops_type = struct
+  type ('r,'dnode,'t) store_ops = {
+    read: 'r -> ('dnode,'t) m;
+    wrte: 'dnode -> ('r,'t) m;
+    rewrite: 'r -> 'dnode -> ('r option, 't) m;
+    free: 'r list -> (unit,'t) m
+  }
+end
+include Store_ops_type
 
 (* leaf stream ------------------------------------------------------ *)
 
@@ -526,6 +533,7 @@ module Internal_conversions = struct
   let bigint2int = Big_int.int_of_big_int 
   let nat2int (n:Arith.nat) = n |> nat2bigint |> bigint2int 
   let int2isa i = Arith.Int_of_integer(Big_int.big_int_of_int i) 
+  open Constants_type
   let cs2isa (cs:constants) = 
     Constants_and_size_types.make_constants 
       (int2nat cs.min_leaf_size) 
@@ -541,14 +549,16 @@ end
 
 (** {2 Pre-map operations} *)
 
-(** Pre-map ops, with an explicit root pointer *)
-type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
-  leaf_lookup: 'k -> 'leaf -> 'v option;
-  find: r:'r -> k:'k -> ('r * 'leaf * 'frame list,'t) m;
-  insert: r:'r -> k:'k -> v:'v -> ('r option,'t) m;
-  delete: r:'r -> k:'k -> ('r,'t) m;
-}
-
+module Pre_map_ops_type = struct
+  (** Pre-map ops, with an explicit root pointer *)
+  type ('k,'v,'r,'leaf,'frame,'t) pre_map_ops = {
+    leaf_lookup: 'k -> 'leaf -> 'v option;
+    find: r:'r -> k:'k -> ('r * 'leaf * 'frame list,'t) m;
+    insert: r:'r -> k:'k -> v:'v -> ('r option,'t) m;
+    delete: r:'r -> k:'k -> ('r,'t) m;
+  }
+end
+include Pre_map_ops_type
 
 (* make_find_insert_delete ------------------------------------------ *)
 
@@ -671,7 +681,7 @@ t) leaf_stream_ops
       
   let _ :
 monad_ops:'a monad_ops ->
-cs:constants ->
+cs:Constants.constants ->
 k_cmp:('k -> 'k -> int) ->
 store_ops:('r, (('k, 'r) _node_impl, ('k, 'v) _leaf_impl) dnode, 'a)
           store_ops ->
@@ -749,7 +759,7 @@ module Internal_export : sig
 
   val make_isa_btree : 
     monad_ops:'a monad_ops ->
-    cs:constants ->
+    cs:Constants.constants ->
     k_cmp:('k -> 'k -> int) ->
     store_ops:('r, (('k, 'r) node_impl, ('k, 'v) leaf_impl) dnode, 'a)
         store_ops ->
@@ -779,12 +789,13 @@ module Internal_export : sig
                      m)    
 *)
 
+(* FIXME do we have to expose these?
   val leaf_ops: ('k,'v,'r,'a) isa_btree -> 
     ('k, 'v, ('k, 'v) leaf_impl) leaf_ops
 
   val node_ops:  ('k,'v,'r,'a) isa_btree -> 
     ('k, 'r, ('k, 'r) node_impl) node_ops
-
+*)
 
 (*
   val kvs_to_leaf : ('k,'v,'r,'a) isa_btree -> 
