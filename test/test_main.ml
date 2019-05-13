@@ -61,10 +61,14 @@ let dbg_tree_at_r = fun r -> return ()
 let _make_pre_map_ops_etc = 
   Internal_make_pre_map_ops.make_pre_map_ops_etc
 
+type test_r = Test_leaf_node_frame_impls.test_r
+type spec = (int,int,unit)Tjr_poly_map.map
+
 let execute_tests ~cs ~range ~fuel = 
   let dbg_frame f = 
     Logger.log_lazy (fun _ -> 
-        Printf.sprintf "dbg_frame: %s\n" (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
+        Printf.sprintf "dbg_frame: %s\n" 
+          (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
   in
   let store_ops = Test_store.store_ops in
   _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
@@ -85,7 +89,7 @@ let execute_tests ~cs ~range ~fuel =
     xs@ys
   in
   (* s is the spec... a map *)
-  let test r s = 
+  let test (r:test_r) (s:spec) = 
     (* FIXME here and later we are a little unsure about
        Samll_root_node_or_leaf; FIXME the following is very
        inefficient *)
@@ -102,7 +106,7 @@ let execute_tests ~cs ~range ~fuel =
     in
     ()
   in
-  let rec depth n (r, (s:(int,int,unit)Tjr_poly_map.map) ) =
+  let rec depth n ((r:test_r), (s: spec)) =
     n = 0 |> function
     | true -> () 
     | false -> 
@@ -111,12 +115,12 @@ let execute_tests ~cs ~range ~fuel =
           (* Logger.jlog (ii_op_to_yojson op); *)
           match op with
           | Insert (k,v) -> (
-              insert ~r ~k ~v |> Imperative.from_m |> function (Some r) ->
+              sp_to_fun (insert ~r ~k ~v) r |> function (Some r,_) ->
                 let s = map_ops.add k v s in
                 let _ = test r s in
                 depth (n-1) (r,s))
           | Delete k -> (
-              delete ~r ~k |> Imperative.from_m |> fun r -> 
+              sp_to_fun (delete ~r ~k) r |> fun (r,_) -> 
               let s = map_ops.remove k s in
               let _ = test r s in
               depth (n-1) (r,s)))
@@ -199,8 +203,8 @@ let _ =
         n <= 0 |> function
         | true -> () 
         | false -> 
-          insert ~r ~k:n ~v:n |> Imperative.from_m 
-          |> function (Some r) -> loop (n-1) r  (* guaranteed to return new r *)
+          sp_to_fun (insert ~r ~k:n ~v:n) r |> function (Some r,_) -> 
+            loop (n-1) r  (* guaranteed to return new r *)
       in
       loop (int_of_float 1e6) (Test_r (Disk_leaf map_ops.empty));
       profiler.print_summary()

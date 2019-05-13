@@ -11,12 +11,8 @@ module State = struct
   let compare (x:t) (y:t) = Pervasives.compare x y
 end
 
-include struct
-  open Tjr_monad.Types
-  open Tjr_monad.Imperative
-  let monad_ops : imperative monad_ops = 
-    Tjr_monad.Imperative.monad_ops
-end
+let monad_ops : State.t state_passing monad_ops = 
+  state_passing_monad_ops ()
 
 let return = monad_ops.return
 
@@ -43,11 +39,9 @@ include struct
     let free _rs = return () in
     Isa_export_wrapper.{read;wrte;rewrite;free}
 
-open Tjr_monad.Imperative
-  let _ :
-         (test_r, (test_node, test_leaf) dnode, imperative)
-         Isa_export_wrapper.store_ops
-= store_ops
+  let _ : (test_r, (test_node, test_leaf) dnode, test_r state_passing)
+Isa_export_wrapper.store_ops
+    = store_ops
 
 end
 

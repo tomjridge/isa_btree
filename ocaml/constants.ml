@@ -1,3 +1,14 @@
+(** B-tree constants: minimum leaf size etc. These constants should be
+    chosen so that nodes and leaves fit in a block. Clearly this
+    depends on the block size, the size of keys and values, the
+    on-disk format etc. 
+
+NOTE this module also contains deriving yojson functions.
+*)
+
+;;
+
+
 include Constants_type
 
 let mk_constants ~min_leaf_size ~max_leaf_size ~min_node_keys ~max_node_keys 

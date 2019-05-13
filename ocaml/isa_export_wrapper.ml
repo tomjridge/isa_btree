@@ -15,7 +15,7 @@ let disable_isa_checks () = Isa_export.assert_flag:=false
 
 (** {2 Misc} *)
 
-open Tjr_monad.Types
+(* open Tjr_monad.Types *)
 open Constants_type
 open Isa_export
 
@@ -558,7 +558,7 @@ module Internal_make_pre_map_ops = struct
   let  make_pre_map_ops_etc (type t) ~(monad_ops:t monad_ops) =
     let module Monad = struct
       type nonrec t = t
-      type ('a,'t) mm = ('a,t) Tjr_monad.Types.m 
+      type ('a,'t) mm = ('a,t) m 
       let bind ab a = monad_ops.bind a ab
       let return a = monad_ops.return a
       let fmap f a = a |> bind (fun a -> return (f a))
@@ -714,15 +714,16 @@ open Internal_make_pre_map_ops
 (** Finally, redeclare make_find_insert_delete, hiding the internal
    types as much as possible. If you need access to the implementations, use the {!Internal_make_ops} module above. *)
 
-
-(** Type for converting nodes and leaves into lists of k,v,r *)
-type ('k,'v,'r,'node,'leaf) node_leaf_conversions = {
-  node_to_krs: 'node -> ('k list * 'r list);
-  leaf_to_kvs: 'leaf -> ('k*'v) list;
-  krs_to_node: ('k list * 'r list) -> 'node;
-  kvs_to_leaf: ('k*'v)list -> 'leaf
-}
-
+module Node_leaf_conversions_type = struct
+  (** Type for converting nodes and leaves into lists of k,v,r *)
+  type ('k,'v,'r,'node,'leaf) node_leaf_conversions = {
+    node_to_krs: 'node -> ('k list * 'r list);
+    leaf_to_kvs: 'leaf -> ('k*'v) list;
+    krs_to_node: ('k list * 'r list) -> 'node;
+    kvs_to_leaf: ('k*'v)list -> 'leaf
+  }
+end
+open Node_leaf_conversions_type
 
 module Internal_export : sig
   type ('k,'r) node_impl
@@ -746,7 +747,7 @@ module Internal_export : sig
 </pre>%}*)
 
 
-  val make_pre_map_ops_etc : 
+  val make_isa_btree : 
     monad_ops:'a monad_ops ->
     cs:constants ->
     k_cmp:('k -> 'k -> int) ->
@@ -810,7 +811,7 @@ end = struct
     * ('k list * 'r list -> ('k,'r) node_impl)
     * (('k,'r) node_impl -> 'k list * 'r list)
     
-  let make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r : ('k,'v,'r,'a) isa_btree = 
+  let make_isa_btree ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r : ('k,'v,'r,'a) isa_btree = 
     make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r
     @@ fun ~pre_map_ops
       ~pre_insert_many_op
@@ -850,3 +851,5 @@ let wf_tree ~cs ~ms ~k_cmp =
     (cs |> cs2isa)
     ms
     (k_cmp |> cmp2isa)
+
+let _ = wf_tree
