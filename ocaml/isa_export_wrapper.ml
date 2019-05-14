@@ -3,13 +3,15 @@
 (** {2 Isabelle test flag} *)
 
 (** Control isabelle assert flag *)
+module Isa_export_assert_flag = struct
+  let _ = 
+    Isa_export.assert_flag
+    |> Tjr_global.register ~name:"Isa_export.assert_flag" 
 
-let _ = 
-  Isa_export.assert_flag
-  |> Tjr_global.register ~name:"Isa_export.assert_flag" 
-
-let enable_isa_checks () = Isa_export.assert_flag:=true
-let disable_isa_checks () = Isa_export.assert_flag:=false
+  let enable_isa_checks () = Isa_export.assert_flag:=true
+  let disable_isa_checks () = Isa_export.assert_flag:=false
+end
+include Isa_export_assert_flag
 
 (* now wrap isabelle operations ------------------------------------- *)
 

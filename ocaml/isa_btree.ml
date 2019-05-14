@@ -2,6 +2,9 @@
 
 (** {2 Public interfaces} *)
 
+(** {2 Assertion checking etc} *)
+include Isa_export_wrapper.Isa_export_assert_flag
+
 
 (** {2 Constants} *)
 
