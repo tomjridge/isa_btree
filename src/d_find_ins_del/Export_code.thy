@@ -73,7 +73,6 @@ dest_D_finished
 Insert_many_state.make_initial_im_state 
 
 Leaf_stream_state.make_initial_ls_state
-ls_step_to_next_leaf 
 dest_LS_leaf 
 
 Pre_monad.dummy
@@ -97,13 +96,19 @@ Find.find_step
 find
 
 Insert.insert_step insert
+Insert.dummy
 
 Delete.delete_step delete
-
-Leaf_stream.ls_step_to_next_leaf
+Delete.dummy
 
 Insert_many.im_step
 Insert_many.insert_many
+Insert_many.dummy
+
+Leaf_stream.ls_step_to_next_leaf
+initial_ls_state
+Leaf_stream.dummy
+
 
 in OCaml file "/tmp/isa_export.ml"
 

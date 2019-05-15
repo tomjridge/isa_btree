@@ -1,5 +1,5 @@
 theory Insert_many
-  imports "$SRC/d_find_ins_del/Post_monad" Find Insert
+  imports "$SRC/d_find_ins_del/Post_monad" Find Insert Delete
 begin
 
 (* im_step defns ---------------------------------------------------- *)
@@ -84,6 +84,9 @@ constants \<Rightarrow>
     | _ \<Rightarrow> (im_step (i,kvs) |> fmap Some))
     i))"
 
+(* We insert as many kv as possible, upto twice the leaf size; we return the remaining kvs, and 
+an optional pointer to the new root of the tree (maybe the leaf was mutated; or maybe a subtree
+was mutated) *)
 definition insert_many :: "
 constants \<Rightarrow> 
 ('k ord) \<Rightarrow>
@@ -91,15 +94,17 @@ constants \<Rightarrow>
 ('k,'r,'node) node_ops \<Rightarrow> 
 ('k,'r,'frame,'node) frame_ops \<Rightarrow> 
 ('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>
-'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k*'v) list \<Rightarrow> ('r option,'t) MM" where
+'r \<Rightarrow> 'k \<Rightarrow> 'v \<Rightarrow> ('k*'v) list \<Rightarrow> (('k*'v)list * 'r option,'t) MM" where
 "insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops = (% r k v kvs.
   let im = make_initial_im_state r k v kvs in
   im_big_step cs k_cmp leaf_ops node_ops frame_ops store_ops im |> bind (% im.
   let (i,kvs) = im in
   case i of
-  I_finished r \<Rightarrow> (return (Some r))
-  | I_finished_with_mutate \<Rightarrow> (return None)
+  I_finished r \<Rightarrow> (return (kvs, Some r))
+  | I_finished_with_mutate \<Rightarrow> (return (kvs,None))
   | _ \<Rightarrow> failwith (STR ''insert 1'')
 ))"
+
+definition dummy where "dummy = Delete.dummy"
 
 end

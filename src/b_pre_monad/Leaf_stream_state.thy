@@ -4,9 +4,6 @@ begin
 
 (* NOTE use prefix ls *)
 
-(* this to force dependency order in exported code? *)
-definition dummy :: "unit" where "dummy=()"
-
 (* leaf stream types ------------------------------------------------ *)
 
 (* we need these exposed outside functor body in ML *)
@@ -39,5 +36,7 @@ definition dest_LS_leaf :: "('r,'leaf,'frame) leaf_stream_state \<Rightarrow> 'l
   case x of 
   LS_leaf (leaf,_) \<Rightarrow> Some leaf
   | _ \<Rightarrow> None)"
+
+definition dummy :: unit where "dummy = ()"
 
 end

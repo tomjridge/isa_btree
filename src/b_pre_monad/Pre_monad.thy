@@ -23,6 +23,8 @@ definition dummy :: "unit" where "dummy = (
   let _ = (% x :: (int + int). x) in
   let _ = (% x :: (int,int,int,int,int) im_state. x) in
   let _ = Disk_node_to_tree.dummy in
+  let _ = Leaf_stream_state.dummy in
+  let _ = Insert_many_state.dummy in
   ()
 )"
 

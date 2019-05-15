@@ -407,14 +407,18 @@ include Store_ops_type
 
 (** {2 Leaf stream operations} *)
 
-(** The type of operations on leaf streams. Note that [ls_leaf]
-    always returns a leaf. So each step transitions from one leaf to
-    the next. *)
-type ('r,'leaf,'leaf_stream_state,'t) leaf_stream_ops = {
-  make_leaf_stream: 'r -> ('leaf_stream_state,'t) m;
-  ls_step: 'leaf_stream_state -> ('leaf_stream_state option,'t) m;
-  ls_leaf: 'leaf_stream_state -> 'leaf;
-}
+
+module Leaf_stream_ops_type = struct
+  (** The type of operations on leaf streams. Note that [ls_leaf]
+      always returns a leaf. So each step transitions from one leaf to
+      the next. *)
+  type ('r,'leaf,'leaf_stream_state,'t) leaf_stream_ops = {
+    make_leaf_stream: 'r -> ('leaf_stream_state,'t) m;
+    ls_step: 'leaf_stream_state -> ('leaf_stream_state option,'t) m;
+    ls_leaf: 'leaf_stream_state -> 'leaf;
+  }
+end
+include Leaf_stream_ops_type
 
 module Internal_leaf_stream_impl = struct
   
@@ -511,18 +515,6 @@ type ('k,'v,'r) _leaf_stream_impl =
   ('r, ('k, 'v) _leaf_impl, ('k, 'r) _frame_impl) Internal_leaf_stream_impl._t
 
 
-(* ------------------------------------------------------------------ *)
-(** {2 Insert many} 
-
-The semantics of this operation is: for a list of (k,v), the operation
-inserts all kvs, and returns the updated root (or None to indicate the
-tree was updated in place).
-
-*) 
-
-type ('k,'v,'r,'t) pre_insert_many_op = r:'r -> kvs:('k*'v)list -> ('r option,'t) m
-
-
 (* conversions isa<->ocaml ------------------------------------------ *)
 
 (** {2 Conversions between Isabelle types and OCaml types} *)
@@ -563,6 +555,23 @@ module Pre_map_ops_type = struct
   }
 end
 include Pre_map_ops_type
+
+
+(* ------------------------------------------------------------------ *)
+(** {2 Insert many} 
+
+The semantics of this operation is: for a list of (k,v), the operation
+inserts all kvs, and returns the updated root (or None to indicate the
+tree was updated in place).
+
+*) 
+
+module Pre_insert_many_type = struct
+  type ('k,'v,'r,'t) pre_insert_many_op = {
+    insert_many: r:'r -> kvs:('k*'v)list -> (('k*'v)list * 'r option,'t) m
+  }
+end
+include Pre_insert_many_type
 
 (* make_find_insert_delete ------------------------------------------ *)
 
@@ -670,7 +679,16 @@ module Internal_make_pre_map_ops = struct
 t) leaf_stream_ops
         = leaf_stream_ops in
       let pre_map_ops = {leaf_lookup;find;insert;delete} in
-      let pre_insert_many_op = M.Insert_many.im_step cs k_cmp leaf_ops node_ops frame_ops store_ops in
+      let pre_insert_many_op = 
+        (* let im_step = M.Insert_many.im_step cs k_cmp leaf_ops node_ops frame_ops store_ops in *)
+        let insert_many = M.Insert_many.insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops in 
+        let insert_many ~r ~kvs = 
+          match kvs with 
+          [] -> Monad.return ([],None)
+          | (k,v)::kvs -> insert_many r k v kvs 
+        in
+        { insert_many }
+      in
       fun f -> f
         ~pre_map_ops
         ~pre_insert_many_op
@@ -685,7 +703,7 @@ t) leaf_stream_ops
       
   let _ :
 monad_ops:'a monad_ops ->
-cs:Constants.constants ->
+cs:Constants_type.constants ->
 k_cmp:('k -> 'k -> int) ->
 store_ops:('r, (('k, 'r) _node_impl, ('k, 'v) _leaf_impl) dnode, 'a)
           store_ops ->
@@ -693,13 +711,7 @@ dbg_tree_at_r:('r -> (unit, 'a) m) ->
 (pre_map_ops:('k, 'v, 'r, ('k, 'v) _leaf_impl,
               ('k, 'r, ('k, 'r) _node_impl) frame, 'a)
              pre_map_ops ->
- pre_insert_many_op:(('k, 'v, 'r, ('k, 'v) _leaf_impl,
-                      ('k, 'r, ('k, 'r) _node_impl) frame)
-                     Insert_state.insert_state * ('k * 'v) list ->
-                     (('k, 'v, 'r, ('k, 'v) _leaf_impl,
-                       ('k, 'r, ('k, 'r) _node_impl) frame)
-                      Insert_state.insert_state * ('k * 'v) list, 'a)
-                     m) ->
+ pre_insert_many_op:('k, 'v, 'r, 'a) pre_insert_many_op ->
  leaf_stream_ops:('r, ('k, 'v) _leaf_impl,
                   ('r, ('k, 'v) _leaf_impl,
                    ('k, 'r, ('k, 'r) _node_impl) frame)
@@ -782,6 +794,12 @@ module Internal_export : sig
   val pre_map_ops: ('k,'v,'r,'a) isa_btree -> 
     ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops 
 
+  val pre_insert_many_op : ('k,'v,'r,'a) isa_btree -> 
+    ('k,'v,'r,'a) pre_insert_many_op
+
+  val leaf_stream_ops: ('k,'v,'r,'a) isa_btree -> 
+    ('r, ('k,'v)leaf_impl, ('k,'v,'r) leaf_stream_impl, 'a) leaf_stream_ops
+
 (*
   val pre_insert_many_op: ('k,'v,'r,'a) isa_btree -> 
 (('k, 'v, 'r, ('k, 'v) _leaf_impl,
@@ -801,6 +819,10 @@ module Internal_export : sig
     ('k, 'r, ('k, 'r) node_impl) node_ops
 *)
 
+
+  val leaf_to_kvs : ('k,'v,'r,'a) isa_btree -> 
+    ('k, 'v) leaf_impl -> ('k * 'v) list
+
 (*
   val kvs_to_leaf : ('k,'v,'r,'a) isa_btree -> 
     (('k * 'v) list -> ('k, 'v) leaf_impl)
@@ -815,17 +837,19 @@ end = struct
   type ('k,'v,'r) dnode_impl = (('k,'r) node_impl, ('k,'v) leaf_impl)dnode
   type ('k,'r) frame_impl = ('k,'r)_frame_impl
   type ('k,'v,'r) leaf_stream_impl = ('k,'v,'r)_leaf_stream_impl
+
   type ('k,'v,'r,'a) isa_btree = 
-    ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops 
-    * ('r, ('k,'v)leaf_impl, ('k,'v,'r) leaf_stream_impl, 'a) leaf_stream_ops 
-    * ('k, 'v, ('k, 'v) leaf_impl) leaf_ops 
-    * ('k, 'r, ('k, 'r) node_impl) node_ops
-    * ('k, 'r, ('k, 'r) frame_impl, ('k,'r) node_impl) frame_ops 
-    * (('k * 'v) list -> ('k, 'v) leaf_impl)
-    * (('k, 'v) leaf_impl -> ('k * 'v) list)
-    * ('k list * 'r list -> ('k,'r) node_impl)
-    * (('k,'r) node_impl -> 'k list * 'r list)
-    
+(* a *)    ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops 
+(* b *)    * ('r, ('k,'v)leaf_impl, ('k,'v,'r) leaf_stream_impl, 'a) leaf_stream_ops 
+(* c *)    * ('k, 'v, ('k, 'v) leaf_impl) leaf_ops 
+(* d *)    * ('k, 'r, ('k, 'r) node_impl) node_ops
+(* e *)    * ('k, 'r, ('k, 'r) frame_impl, ('k,'r) node_impl) frame_ops 
+(* f *)    * (('k * 'v) list -> ('k, 'v) leaf_impl)
+(* g *)    * (('k, 'v) leaf_impl -> ('k * 'v) list)
+(* h *)    * ('k list * 'r list -> ('k,'r) node_impl)
+(* i *)    * (('k,'r) node_impl -> 'k list * 'r list)
+(* j *)    * ('k, 'v, 'r, 'a) pre_insert_many_op    
+
   let make_isa_btree ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r : ('k,'v,'r,'a) isa_btree = 
     make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r
     @@ fun ~pre_map_ops
@@ -838,7 +862,7 @@ end = struct
         ~leaf_to_kvs
         ~krs_to_node
         ~node_to_krs ->
-    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,kvs_to_leaf,leaf_to_kvs,krs_to_node,node_to_krs)
+    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,kvs_to_leaf,leaf_to_kvs,krs_to_node,node_to_krs,pre_insert_many_op)
 
   let node_leaf_conversions ~k_cmp = 
     Internal_node_impl.make_node_ops ~k_cmp @@  fun ~node_ops ~krs_to_node ~node_to_krs ->
@@ -848,15 +872,24 @@ end = struct
 
   let _ = make_pre_map_ops_etc
     
-  let pre_map_ops = fun (a,b,c,d,e,f,g,h,i) -> a
+  let pre_map_ops = fun (a,b,c,d,e,f,g,h,i,j) -> a
 
-  let leaf_ops = fun (a,b,c,d,e,f,g,h,i) -> c
+  let leaf_stream_ops = fun (a,b,c,d,e,f,g,h,i,j) -> b
 
-  let node_ops = fun (a,b,c,d,e,f,g,h,i) -> d
+  let leaf_ops = fun (a,b,c,d,e,f,g,h,i,j) -> c
 
-  let kvs_to_leaf = fun (a,b,c,d,e,f,g,h,i) -> f
+  let node_ops = fun (a,b,c,d,e,f,g,h,i,j) -> d
+
+  let kvs_to_leaf = fun (a,b,c,d,e,f,g,h,i,j) -> f
     
-  let krs_to_node = fun (a,b,c,d,e,f,g,h,i) -> g
+  let leaf_to_kvs = fun (a,b,c,d,e,f,g,h,i,j) -> g
+    
+  let krs_to_node = fun (a,b,c,d,e,f,g,h,i,j) -> h
+
+  let pre_insert_many_op = fun (a,b,c,d,e,f,g,h,i,j) -> j
+
+  
+
 end
 include Internal_export
 

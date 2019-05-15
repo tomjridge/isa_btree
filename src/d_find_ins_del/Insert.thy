@@ -1,4 +1,5 @@
-theory Insert imports Find "$SRC/b_pre_monad/Insert_state" begin
+theory Insert imports Find "$SRC/b_pre_monad/Insert_state" 
+begin
 
 type_synonym ('k,'v,'r) i_focus = "('k,'v,'r)i12_t"
 type_synonym ('k,'v,'r,'leaf,'frame) i_down (* down_state *) = "('k,'r,'leaf,'frame)find_state*'v"
@@ -209,7 +210,7 @@ constants \<Rightarrow>
 ))"
 
 
-
+definition dummy where "dummy=()"
 end
 
 

@@ -1,5 +1,5 @@
 theory Leaf_stream 
-imports Find "$SRC/b_pre_monad/Leaf_stream_state"
+imports Find "$SRC/b_pre_monad/Leaf_stream_state" Insert_many
 begin
 
 definition step_down :: "
@@ -80,7 +80,19 @@ definition ls_step_to_next_leaf :: "
     True \<Rightarrow> None
     | False \<Rightarrow> (Some(lss)))))"
 
+(* we also need to establish the initial leaf stream state, from a root pointer and stepping down 
+to the first leaf *)
+definition initial_ls_state :: "
+('k,'r,'frame,'node) frame_ops \<Rightarrow> 
+('r,('node,'leaf)dnode,'t) store_ops \<Rightarrow>  
+'r \<Rightarrow> (('r,'leaf,'frame)leaf_stream_state,'t) MM" where
+"initial_ls_state frame_ops store_ops r = (
+  ls_step_to_next_leaf frame_ops store_ops (LS_down (r,[])) |> fmap (% s.
+  case s of 
+  None \<Rightarrow> failwith (STR ''impossible, there must be at least one leaf'')
+  | Some x \<Rightarrow> x))
+"
 
-
+definition dummy where "dummy = Insert_many.dummy"
 
 end

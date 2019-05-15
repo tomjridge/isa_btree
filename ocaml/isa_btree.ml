@@ -38,9 +38,19 @@ include Isa_export_wrapper.Node_ops_type
 
 include Isa_export_wrapper.Pre_map_ops_type
 
+
+(** {2 Insert many} *)
+
+include Isa_export_wrapper.Pre_insert_many_type
+
 (** {2 Store ops} *)
 
 include Isa_export_wrapper.Store_ops_type
+
+
+(** {2 Leaf stream ops} *)
+
+include Isa_export_wrapper.Leaf_stream_ops_type
 
 
 (** {2 Main functionality: make_isa_btree} *)

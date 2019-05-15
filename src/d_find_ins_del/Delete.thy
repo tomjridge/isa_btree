@@ -1,4 +1,4 @@
-theory Delete imports Find "$SRC/b_pre_monad/Delete_state" begin
+theory Delete imports Find "$SRC/b_pre_monad/Delete_state" Insert begin
 
 (* FIXME merge in documentation from Delete *)
 
@@ -222,5 +222,6 @@ constants \<Rightarrow>
   D_finished r \<Rightarrow> (dbg_tree_at_r r |> bind (% _. return r))
   | _ \<Rightarrow> (failwith (STR ''delete, impossible''))))"
 
+definition dummy where "dummy = Insert.dummy"
 
 end
