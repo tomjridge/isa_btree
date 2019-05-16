@@ -29,8 +29,8 @@ datatype_record ('k,'r,'frame,'node) frame_ops =
   backing_node_blk_ref :: "'frame \<Rightarrow> 'r"  (* for rewriting in place *)
 
   (* FIXME may want to use lists for the following *)
-  split_node_on_first_key :: "'node \<Rightarrow> 'frame"  (* for leaf stream *)
-  step_frame_for_ls :: "'frame \<Rightarrow> 'frame option"
+  split_node_for_leaf_stream :: "'r \<Rightarrow> 'node \<Rightarrow> 'frame"  (* for leaf stream *)
+  step_frame_for_leaf_stream :: "'frame \<Rightarrow> 'frame option"
 
   dbg_frame :: "'frame \<Rightarrow> unit"
 
@@ -45,8 +45,8 @@ definition make_frame_ops where
   frame_to_node=g,
   get_midpoint_bounds=h,
   backing_node_blk_ref=i,
-  split_node_on_first_key=j,
-  step_frame_for_ls=k,
+  split_node_for_leaf_stream=j,
+  step_frame_for_leaf_stream=k,
   dbg_frame=l
 \<rparr>)"
 

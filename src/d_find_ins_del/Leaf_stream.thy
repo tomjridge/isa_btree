@@ -11,7 +11,7 @@ definition step_down :: "
   (store_ops|>read) r |> fmap 
   (% f. case f of 
     Disk_node n \<Rightarrow> (
-      let frm = (frame_ops|>split_node_on_first_key) n in
+      let frm = (frame_ops|>split_node_for_leaf_stream) r n in
       let r = (frame_ops|>midpoint) frm in
       LS_down (r,frm#fs)) 
     | Disk_leaf leaf \<Rightarrow> LS_leaf (leaf,fs))
@@ -33,7 +33,7 @@ definition step_up :: "
   case fs of 
   [] \<Rightarrow> (failwith (STR ''Leaf_stream, step_up''))
   | frm#fs \<Rightarrow> (
-    case (frame_ops|>step_frame_for_ls) frm of 
+    case (frame_ops|>step_frame_for_leaf_stream) frm of 
     None \<Rightarrow> (LS_up fs)
     | Some frm' \<Rightarrow> (
       let r = (frame_ops|>midpoint) frm' in    
@@ -76,7 +76,7 @@ definition ls_step_to_next_leaf :: "
           (Some(lss,False))))
         | Some _ \<Rightarrow> return None))))
   |> fmap (% (lss,known_finished).
-    case known_finished of 
+    case known_finished \<or> ls_is_finished lss of 
     True \<Rightarrow> None
     | False \<Rightarrow> (Some(lss)))))"
 

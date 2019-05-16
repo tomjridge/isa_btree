@@ -233,7 +233,7 @@ module Stacks_and_frames : sig
                 ('d -> 'c) ->
                   ('d -> 'b option * 'b option) ->
                     ('d -> 'a) ->
-                      ('c -> 'd) ->
+                      ('a -> 'c -> 'd) ->
                         ('d -> 'd option) ->
                           ('d -> unit) -> ('b, 'a, 'd, 'c) frame_ops
   val replace :
@@ -246,12 +246,12 @@ module Stacks_and_frames : sig
     ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'a option * ('b * 'a option)
   val frame_to_node : ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'd
   val split_node_on_key : ('a, 'b, 'c, 'd) frame_ops -> 'b -> 'a -> 'd -> 'c
-  val step_frame_for_ls : ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'c option
   val backing_node_blk_ref : ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'b
-  val split_node_on_first_key : ('a, 'b, 'c, 'd) frame_ops -> 'd -> 'c
   val get_left_sibling_and_focus :
     ('a, 'b, 'c, 'd) frame_ops ->
       'c -> ('a option * ('b * ('a * ('b * 'a option)))) option
+  val split_node_for_leaf_stream : ('a, 'b, 'c, 'd) frame_ops -> 'b -> 'd -> 'c
+  val step_frame_for_leaf_stream : ('a, 'b, 'c, 'd) frame_ops -> 'c -> 'c option
   val get_focus_and_right_sibling :
     ('a, 'b, 'c, 'd) frame_ops ->
       'c -> ('a option * ('b * ('a * ('b * 'a option)))) option
@@ -264,8 +264,8 @@ type ('a, 'b, 'c, 'd) frame_ops =
       ('c -> ('a option * ('b * ('a * ('b * 'a option)))) option) *
       ('a option * ('b * (('a * 'b) list * 'a option)) ->
         'a option * ('b * (('a * 'b) list * 'a option)) -> 'c -> 'c) *
-      ('c -> 'd) * ('c -> 'a option * 'a option) * ('c -> 'b) * ('d -> 'c) *
-      ('c -> 'c option) * ('c -> unit);;
+      ('c -> 'd) * ('c -> 'a option * 'a option) * ('c -> 'b) *
+      ('b -> 'd -> 'c) * ('c -> 'c option) * ('c -> unit);;
 
 let rec get_midpoint_bounds
   (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)) = x8;;
@@ -316,17 +316,17 @@ let rec frame_to_node
 let rec split_node_on_key
   (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)) = x1;;
 
-let rec step_frame_for_ls
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)) = x11;;
-
 let rec backing_node_blk_ref
   (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)) = x9;;
 
-let rec split_node_on_first_key
-  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)) = x10;;
-
 let rec get_left_sibling_and_focus
   (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)) = x5;;
+
+let rec split_node_for_leaf_stream
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)) = x10;;
+
+let rec step_frame_for_leaf_stream
+  (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)) = x11;;
 
 let rec get_focus_and_right_sibling
   (Make_frame_ops (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)) = x4;;
@@ -1966,7 +1966,7 @@ let rec step_down
               with Disk_node.Disk_node n ->
                 (let frm =
                    A_start_here.rev_apply frame_ops
-                     Stacks_and_frames.split_node_on_first_key n
+                     Stacks_and_frames.split_node_for_leaf_stream r n
                    in
                  let ra =
                    A_start_here.rev_apply frame_ops Stacks_and_frames.midpoint
@@ -1981,8 +1981,8 @@ let rec step_up
     (match fs with [] -> A_start_here.failwitha "Leaf_stream, step_up"
       | frm :: fsa ->
         (match
-          A_start_here.rev_apply frame_ops Stacks_and_frames.step_frame_for_ls
-            frm
+          A_start_here.rev_apply frame_ops
+            Stacks_and_frames.step_frame_for_leaf_stream frm
           with None -> Leaf_stream_state.LS_up fsa
           | Some frma ->
             (let r =
@@ -2021,8 +2021,9 @@ let rec ls_step_to_next_leaf
                                       (fun lssc -> Some (lssc, false)))
                                 | Some _ -> Monad.return None))))))))
           (Monad.fmap
-            (fun a ->
-              (match a with (_, true) -> None | (lssa, false) -> Some lssa))));;
+            (fun (lssa, known_finished) ->
+              (match known_finished || Leaf_stream_state.ls_is_finished lssa
+                with true -> None | false -> Some lssa))));;
 
 let rec initial_ls_state
   frame_ops store_ops r =
