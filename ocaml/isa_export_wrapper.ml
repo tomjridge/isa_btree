@@ -1,6 +1,23 @@
 (** Wrap Isabelle-exported code in an OCaml-friendly interface *)
 
 (** {2 Isabelle test flag} *)
+module Profiler2 = struct
+  let profiler: string profiler ref = 
+    ref dummy_profiler
+    |> Tjr_global.register ~name:"Isa_export_wrapper.profiler"
+
+
+  let profile x y z =
+    !profiler.mark x;
+    let r = z() in
+    !profiler.mark y;
+    r
+
+  let profile x z = 
+    profile x (x^"'") z
+end
+(* open Profiler *)
+let profile x z = z ()
 
 (** Control isabelle assert flag *)
 module Isa_export_assert_flag = struct
@@ -55,28 +72,44 @@ module Internal_leaf_impl = struct
 
   let make_leaf_ops ~k_cmp = 
     let map_ops = Tjr_poly_map.make_map_ops k_cmp in
-    let leaf_lookup k l = map_ops.find_opt k l in
+    let leaf_lookup k l = 
+      profile "ab" @@ fun () -> 
+      map_ops.find_opt k l
+    in
     let leaf_insert k v l = 
+      profile "ae" @@ fun () -> 
       map_ops.find_opt k l |> fun v' ->
       map_ops.add k v l |> fun l -> (l,v')
     in
-    let leaf_remove k l = map_ops.remove k l in
-    let leaf_length l = map_ops.cardinal l in
-    let dbg_leaf_kvs l = map_ops.bindings l in
+    let leaf_remove k l = 
+      profile "ah" @@ fun () -> 
+      map_ops.remove k l in
+    let leaf_length l = 
+      profile "aj" @@ fun () -> 
+      map_ops.cardinal l in
+    let dbg_leaf_kvs l = 
+      profile "ak" @@ fun () -> 
+      map_ops.bindings l in
     let leaf_steal_right (l1,l2) =
+      profile "al" @@ fun () ->      
       map_ops.min_binding_opt l2 |> dest_Some |> fun (k,v) ->
       l2 |> map_ops.remove k |> map_ops.min_binding_opt |> dest_Some |> fun (k',_) ->
       l1 |> map_ops.add k v |> fun l1 ->
       (l1,k',l2)
     in
     let leaf_steal_left (l1,l2) =
+      profile "am" @@ fun () ->      
       map_ops.max_binding_opt l1 |> dest_Some |> fun (k,v) ->
       l1 |> map_ops.remove k |> fun l1 ->
       l2 |> map_ops.add k v |> fun l2 ->
       (l1,k,l2)
     in
-    let leaf_merge (l1,l2) = map_ops.disjoint_union l1 l2 in
+    let leaf_merge (l1,l2) = 
+      profile "an" @@ fun () ->      
+      map_ops.disjoint_union l1 l2 
+    in
     let split_large_leaf i l1 = 
+      profile "ao" @@ fun () ->      
       l1 |> map_ops.bindings |> Tjr_list.drop i |> fun binds -> 
       match binds with
       | [] -> failwith __LOC__
@@ -87,8 +120,12 @@ module Internal_leaf_impl = struct
     in
     (* by default, there is no debugging; override the dbg_leaf field to enable *)
     let dbg_leaf = fun l -> () in
-    let kvs_to_leaf = fun kvs -> map_ops.of_bindings kvs in
-    let leaf_to_kvs = fun l -> dbg_leaf_kvs l in
+    let kvs_to_leaf = fun kvs -> 
+      profile "ap" @@ fun () ->      
+      map_ops.of_bindings kvs in
+    let leaf_to_kvs = fun l -> 
+      profile "aq" @@ fun () ->      
+      dbg_leaf_kvs l in
     let ops = ({ leaf_lookup; leaf_insert; leaf_remove; leaf_length; 
        leaf_steal_right; leaf_steal_left; 
        leaf_merge; split_large_leaf; dbg_leaf_kvs; dbg_leaf } : ('k,'v,('k,'v,unit)Tjr_poly_map.map) leaf_ops)
@@ -153,6 +190,7 @@ module Internal_node_impl = struct
   let make_node_ops (type k) ~(k_cmp:k -> k -> int) = 
     let map_ops = Tjr_poly_map.make_map_ops (key_compare k_cmp) in
     let make_node ks rs = 
+      profile "bb" @@ fun () -> 
       assert(List.length rs = 1 + List.length ks);
       let ks = None::(List.map (fun x -> Some x) ks) in
       let krs = List.combine ks rs in
@@ -160,6 +198,7 @@ module Internal_node_impl = struct
     in
     let _ = make_node in
     let split_node_at_k_index i n =   (* i counts from 0 *)
+      profile "bc" @@ fun () -> 
       (* FIXME this is rather inefficient... is there a better way?
          without altering the map implementation? *)
       map_ops.bindings n |> fun krs -> 
@@ -180,11 +219,13 @@ module Internal_node_impl = struct
       (n1,k,n2)
     in
     let node_merge (n1,k,n2) = 
+      profile "bd" @@ fun () -> 
       n2 |> map_ops.find_opt None |> dest_Some |> fun r2 -> 
       n2 |> map_ops.remove None |> map_ops.add (Some k) r2 |> fun n2 ->
       map_ops.disjoint_union n1 n2
     in
     let node_steal_right (n1,k,n2) =
+      profile "be" @@ fun () -> 
       n2 |> map_ops.find_opt None |> dest_Some |> fun r2 ->
       n2 |> map_ops.remove None |> fun n2 ->
       n1 |> map_ops.add (Some k) r2 |> fun n1 ->
@@ -193,6 +234,7 @@ module Internal_node_impl = struct
       (n1,k,n2)
     in
     let node_steal_left (n1,k,n2) = 
+      profile "bf" @@ fun () -> 
       n1 |> map_ops.max_binding_opt |> dest_Some |> fun (k,r) ->
       k |> dest_Some |> fun k ->
       n1 |> map_ops.remove (Some k) |> fun n1 ->
@@ -200,17 +242,21 @@ module Internal_node_impl = struct
       (n1,k,n2)
     in
     let node_keys_length n = 
+      profile "bg" @@ fun () -> 
       (map_ops.cardinal n) -1
     in
     let node_make_small_root (r1,k,r2) =
+      profile "bh" @@ fun () -> 
       Printf.printf "Making small root\n%!";
       map_ops.empty |> map_ops.add None r1 |> map_ops.add (Some k) r2
     in
     let node_get_single_r n =
+      profile "bi" @@ fun () -> 
       assert(map_ops.cardinal n = 1);
       map_ops.bindings n |> fun [(_,r)] -> r
     in
     let dbg_node_krs n = 
+      profile "bj" @@ fun () -> 
       n |> map_ops.bindings |> List.split |> fun (ks,rs) ->
       (List.tl ks |> List.map dest_Some,rs)
     in
@@ -285,13 +331,12 @@ module Internal_frame_impl = struct
     backing_node_blk_ref: 'r
   } [@@deriving to_yojson]
 
-
-
   let make_frame_ops (type k) ~(k_cmp:k->k->int) =
     let map_ops = Tjr_poly_map.make_map_ops (key_compare k_cmp) in
     Tjr_fs_shared.Map_with_key_traversal.make_ops ~map_ops @@ fun ~get_next_binding ~get_prev_binding ->
     (* map_ops is a map from 'k option *)
     let split_node_on_key backing_node_blk_ref k n = 
+      profile "cb" @@ fun () -> 
       (* get the relevant key *)
       let midkey,midpoint = 
         n |> map_ops.find_last_opt (fun k' -> key_compare k_cmp k' (Some k) <= 0) |> function
@@ -309,6 +354,7 @@ module Internal_frame_impl = struct
     let _ = split_node_on_key in
     let midpoint f = f.midpoint in
     let get_focus f = 
+      profile "cc" @@ fun () -> 
       let k1 = f.midkey in
       let k2 = f.node |> get_next_binding f.midkey |> function 
         | None -> None 
@@ -317,6 +363,7 @@ module Internal_frame_impl = struct
       (k1,f.midpoint,k2)
     in
     let get_focus_and_right_sibling f =
+      profile "cd" @@ fun () -> 
       let k1,r1 = f.midkey,f.midpoint in
       f.node |> get_next_binding f.midkey |> function
       | None -> None
@@ -326,6 +373,7 @@ module Internal_frame_impl = struct
         Some(k1,r1,k2,r2,None)
     in
     let get_left_sibling_and_focus f = 
+      profile "ce" @@ fun () -> 
       f.node |> get_prev_binding f.midkey |> function
       | None -> None 
       | Some(k1,r1) ->
@@ -335,6 +383,7 @@ module Internal_frame_impl = struct
         Some(k1,r1,k2,r2,None)
     in
     let replace (k,r,krs,_) (k',r',krs',_) f =
+      profile "cf" @@ fun () -> 
       assert(key_compare k_cmp k k' = 0);
       f.node |> map_ops.add k' r' |> fun n ->
       (* remove old ks *)
@@ -359,6 +408,7 @@ module Internal_frame_impl = struct
     in
     let frame_to_node f = f.node in
     let get_midpoint_bounds f = 
+      profile "cg" @@ fun () -> 
       let l : k option = f.midkey in
       let u = f.node |> get_next_binding f.midkey |> function
         | None -> None
@@ -368,6 +418,7 @@ module Internal_frame_impl = struct
     in
     let backing_node_blk_ref f = f.backing_node_blk_ref in
     let split_node_for_leaf_stream r n = 
+      profile "ch" @@ fun () -> 
       let midkey = None in
       let midpoint = map_ops.min_binding_opt n |> function
         | None -> Printf.sprintf "impossible %s" __LOC__ |> failwith
@@ -378,6 +429,7 @@ module Internal_frame_impl = struct
       { midkey; midpoint; node=n; backing_node_blk_ref=r }
     in
     let step_frame_for_leaf_stream f = 
+      profile "ci" @@ fun () -> 
       f.node |> get_next_binding f.midkey |> function
       | None -> None
       | Some (k,r) -> Some {f with midkey=k; midpoint=r}
@@ -458,7 +510,8 @@ module Internal_leaf_stream_impl = struct
 
   
   (* FIXME there is a similarly named function in store_to_map - rename this one *)
-  let make_leaf_stream_ops (type k v r leaf frame) ~monad_ops ~(leaf_kvs:leaf -> (k*v)list)  ~isa_ls_step_to_next_leaf 
+  let make_leaf_stream_ops (type k v r leaf frame) ~monad_ops ~(leaf_kvs:leaf -> (k*v)list)  
+      ~isa_ls_step_to_next_leaf 
     =
     let ( >>= ) = monad_ops.bind in
     let return = monad_ops.return in
@@ -764,6 +817,7 @@ module Node_leaf_conversions_type = struct
 end
 open Node_leaf_conversions_type
 
+
 module Internal_export : sig
   type ('k,'r) node_impl
   type ('k,'v) leaf_impl
@@ -877,9 +931,17 @@ end = struct
         ~node_to_krs ->
     (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,kvs_to_leaf,leaf_to_kvs,krs_to_node,node_to_krs,pre_insert_many_op)
 
+  let profile x z = Profiler2.profile x z
+  (* let profile x z = if true then failwith "" else z() *)
+
   let node_leaf_conversions ~k_cmp = 
     Internal_node_impl.make_node_ops ~k_cmp @@  fun ~node_ops ~krs_to_node ~node_to_krs ->
     Internal_leaf_impl.make_leaf_ops ~k_cmp @@  fun ~leaf_ops ~kvs_to_leaf ~leaf_to_kvs ->
+    (* FIXME remove profiling *)
+    let node_to_krs n = profile "gb" @@ fun () -> node_to_krs n in
+    let krs_to_node krs = profile "gc" @@ fun () -> krs_to_node krs in
+    let leaf_to_kvs l = profile "gd" @@ fun () -> leaf_to_kvs l in
+    let kvs_to_leaf kvs = profile "ge" @@ fun () -> kvs_to_leaf kvs in
     { node_to_krs; krs_to_node; leaf_to_kvs; kvs_to_leaf }
 
 

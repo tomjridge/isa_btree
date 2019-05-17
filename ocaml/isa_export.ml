@@ -1,3 +1,22 @@
+
+module Profiler = struct
+  let profiler: string profiler ref = 
+    ref dummy_profiler
+    |> Tjr_global.register ~name:"Isa_export.profiler"
+
+
+  let profile x y z =
+    !profiler.mark x;
+    let r = z() in
+    !profiler.mark y;
+    r
+
+  let profile x z = 
+    profile x (x^"'") z
+end
+open Profiler
+
+
 (** This file is exported from Isabelle, and lightly patched (eg to
    include this comment!). The OCaml interfaces wrap this basic
    functionality. *)
@@ -1813,6 +1832,7 @@ let dummy : unit = Delete.dummy;;
 let rec im_step_bottom
   cs k_cmp leaf_ops node_ops frame_ops store_ops =
     (fun d kvs0 ->
+      (* !profiler.mark "db"; *)
       (let (fs, _) = d in
         (match Find_state.dest_F_finished fs
           with None -> A_start_here.impossible1 "insert, step_bottom"
@@ -1870,7 +1890,7 @@ let rec im_step_bottom
                       A_start_here.rev_apply
                         (A_start_here.rev_apply (Disk_node.Disk_leaf leafa)
                           (A_start_here.rev_apply store_ops Post_monad.wrte))
-                        (Monad.fmap (fun r -> ((Insert_state.I1 r, stk), kvs)))
+                        (Monad.fmap (fun r ->  (* !profiler.mark "dc"; *) ((Insert_state.I1 r, stk), kvs)))
                     | false ->
                       (let (leaf1, (k, leaf2)) =
                          A_start_here.rev_apply leaf_ops
@@ -1890,7 +1910,7 @@ let rec im_step_bottom
                                   (A_start_here.rev_apply store_ops
                                     Post_monad.wrte))
                                 (Monad.fmap
-                                  (fun r2 ->
+                                  (fun r2 -> (* !profiler.mark "dd"; *)
                                     ((Insert_state.I2 (r1, (k, r2)), stk),
                                       kvs))))))))))));;
 
@@ -1937,11 +1957,13 @@ let rec im_big_step
 let rec insert_many
   cs k_cmp leaf_ops node_ops frame_ops store_ops =
     (fun r k v kvs ->
+      !profiler.mark "eb";
       (let im = Insert_many_state.make_initial_im_state r k v kvs in
         A_start_here.rev_apply
           (im_big_step cs k_cmp leaf_ops node_ops frame_ops store_ops im)
           (Monad.bind
             (fun ima ->
+              !profiler.mark "ec";
               (match ima
                 with (Insert_state.I_down _, _) ->
                   A_start_here.failwitha "insert 1"
