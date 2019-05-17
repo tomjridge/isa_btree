@@ -203,6 +203,7 @@ module Internal_node_impl = struct
       (map_ops.cardinal n) -1
     in
     let node_make_small_root (r1,k,r2) =
+      Printf.printf "Making small root\n%!";
       map_ops.empty |> map_ops.add None r1 |> map_ops.add (Some k) r2
     in
     let node_get_single_r n =
