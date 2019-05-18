@@ -1,23 +1,6 @@
+open Util.No_profiler
+
 (** Wrap Isabelle-exported code in an OCaml-friendly interface *)
-
-(** {2 Isabelle test flag} *)
-module Profiler2 = struct
-  let profiler: string profiler ref = 
-    ref dummy_profiler
-    |> Tjr_global.register ~name:"Isa_export_wrapper.profiler"
-
-
-  let profile x y z =
-    !profiler.mark x;
-    let r = z() in
-    !profiler.mark y;
-    r
-
-  let profile x z = 
-    profile x (x^"'") z
-end
-(* open Profiler *)
-let profile x z = z ()
 
 (** Control isabelle assert flag *)
 module Isa_export_assert_flag = struct
@@ -930,9 +913,6 @@ end = struct
         ~krs_to_node
         ~node_to_krs ->
     (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,kvs_to_leaf,leaf_to_kvs,krs_to_node,node_to_krs,pre_insert_many_op)
-
-  let profile x z = Profiler2.profile x z
-  (* let profile x z = if true then failwith "" else z() *)
 
   let node_leaf_conversions ~k_cmp = 
     Internal_node_impl.make_node_ops ~k_cmp @@  fun ~node_ops ~krs_to_node ~node_to_krs ->
