@@ -1,4 +1,4 @@
-open Util.No_profiler
+(* open Tjr_profile.Util.Profiler *)
 
 (** Wrap Isabelle-exported code in an OCaml-friendly interface *)
 
@@ -53,6 +53,18 @@ include Leaf_ops_type
 
 module Internal_leaf_impl = struct
 
+  let leaf_profiler = ref dummy_profiler
+
+  module Internal_ = struct
+    let profile x z =
+      let profiler = leaf_profiler in
+      !profiler.mark x;
+      let r = z() in
+      !profiler.mark (x^"'");
+      r
+  end
+  open Internal_
+
   let make_leaf_ops ~k_cmp = 
     let map_ops = Tjr_poly_map.make_map_ops k_cmp in
     let leaf_lookup k l = 
@@ -61,8 +73,15 @@ module Internal_leaf_impl = struct
     in
     let leaf_insert k v l = 
       profile "ae" @@ fun () -> 
-      map_ops.find_opt k l |> fun v' ->
-      map_ops.add k v l |> fun l -> (l,v')
+      let old = ref None in
+      map_ops.update 
+        k 
+        (function
+          | None -> Some v
+          | Some v' -> 
+            old:=Some v';
+            Some v)
+        l,!old
     in
     let leaf_remove k l = 
       profile "ah" @@ fun () -> 
@@ -159,6 +178,18 @@ include Node_ops_type
 
 module Internal_node_impl = struct
 
+  let node_profiler = ref dummy_profiler
+
+  module Internal_ = struct
+    let profile x z =
+      let profiler = node_profiler in
+      !profiler.mark x;
+      let r = z() in
+      !profiler.mark (x^"'");
+      r
+  end
+  open Internal_
+
   (* implement node ops using a map from option; see impl notes in \doc(doc:node_ops) *)
 
   (* None is less than any other lower bound; this corresponds to the
@@ -174,12 +205,26 @@ module Internal_node_impl = struct
     let map_ops = Tjr_poly_map.make_map_ops (key_compare k_cmp) in
     let make_node ks rs = 
       profile "bb" @@ fun () -> 
-      assert(List.length rs = 1 + List.length ks);
+      (* assert(List.length rs = 1 + List.length ks); *)
+
+(* attempt at optimization; failed see test_btree_main.2019-05-19_19:06:49.log
+      let b1 = None,List.hd rs in
+      let rest = 
+        (ks,List.tl rs,[])
+        |> Tjr_list.iter_opt 
+             (function
+              | ([],[],acc) -> None
+              | (k::ks,r::rs,acc) -> Some(ks,rs,(Some k,r)::acc)
+              | _ -> failwith __LOC__)
+        |> fun (_,_,acc) -> acc
+      in              
+*)
       let ks = None::(List.map (fun x -> Some x) ks) in
       let krs = List.combine ks rs in
       map_ops.of_bindings krs
     in
     let _ = make_node in
+
     let split_node_at_k_index i n =   (* i counts from 0 *)
       profile "bc" @@ fun () -> 
       (* FIXME this is rather inefficient... is there a better way?
@@ -306,6 +351,18 @@ type ('k,'r,'frame,'node) frame_ops = {
 (* FIXME maybe move elsewhere *)
 
 module Internal_frame_impl = struct
+
+  let frame_profiler = ref dummy_profiler
+
+  module Internal_ = struct
+    let profile x z =
+      let profiler = frame_profiler in
+      !profiler.mark x;
+      let r = z() in
+      !profiler.mark (x^"'");
+      r
+  end
+  open Internal_
 
   type ('k,'r,'node) frame = {
     midkey: 'k option;  (* really or_bottom; may be None *)
@@ -800,6 +857,7 @@ module Node_leaf_conversions_type = struct
 end
 open Node_leaf_conversions_type
 
+let export_profiler = ref dummy_profiler
 
 module Internal_export : sig
   type ('k,'r) node_impl
@@ -881,6 +939,18 @@ module Internal_export : sig
     ('k list * 'r list -> ('k,'r) node_impl)
 *)
 end = struct
+
+  module Internal_ = struct
+    let profile x z =
+      let profiler = export_profiler in
+      !profiler.mark x;
+      let r = z() in
+      !profiler.mark (x^"'");
+      r
+  end
+  open Internal_
+
+
   type ('k,'r) node_impl = ('k,'r)_node_impl
   type ('k,'v) leaf_impl = ('k,'v)_leaf_impl
       
