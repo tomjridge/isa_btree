@@ -1,5 +1,3 @@
-open Util.No_profiler
-
 (** This file is exported from Isabelle, and lightly patched (eg to
    include this comment!). The OCaml interfaces wrap this basic
    functionality. *)
@@ -226,7 +224,7 @@ let rec iter_step
 
 let rec assert_true f = (
   !assert_flag |> function
-  | true -> f()
+  | true -> assert(f());true
   | false -> true)
 
 let rec impossible1 x = failwitha x;;
@@ -1815,7 +1813,6 @@ let dummy : unit = Delete.dummy;;
 let rec im_step_bottom
   cs k_cmp leaf_ops node_ops frame_ops store_ops =
     (fun d kvs0 ->
-      (* !profiler.mark "db"; *)
       (let (fs, _) = d in
         (match Find_state.dest_F_finished fs
           with None -> A_start_here.impossible1 "insert, step_bottom"
@@ -1865,37 +1862,46 @@ let rec im_step_bottom
                     (A_start_here.rev_apply leaf_ops Disk_node.leaf_length leaf,
                       kvs0)))
                 (fun (leafa, (len_leaf, kvs)) ->
-                  (match
-                    Arith.less_eq_nat len_leaf
-                      (A_start_here.rev_apply cs
-                        Constants_and_size_types.max_leaf_size)
-                    with true ->
-                      A_start_here.rev_apply
-                        (A_start_here.rev_apply (Disk_node.Disk_leaf leafa)
-                          (A_start_here.rev_apply store_ops Post_monad.wrte))
-                        (Monad.fmap (fun r ->  (* !profiler.mark "dc"; *) ((Insert_state.I1 r, stk), kvs)))
-                    | false ->
-                      (let (leaf1, (k, leaf2)) =
-                         A_start_here.rev_apply leaf_ops
-                           Disk_node.split_large_leaf
-                           (A_start_here.rev_apply cs
-                             Constants_and_size_types.max_leaf_size)
-                           leafa
-                         in
+                  (let _ =
+                     A_start_here.assert_true
+                       (fun _ ->
+                         Arith.equal_nat len_leaf
+                           (A_start_here.rev_apply leaf_ops
+                             Disk_node.leaf_length leafa))
+                     in
+                    (match
+                      Arith.less_eq_nat len_leaf
+                        (A_start_here.rev_apply cs
+                          Constants_and_size_types.max_leaf_size)
+                      with true ->
                         A_start_here.rev_apply
-                          (A_start_here.rev_apply (Disk_node.Disk_leaf leaf1)
+                          (A_start_here.rev_apply (Disk_node.Disk_leaf leafa)
                             (A_start_here.rev_apply store_ops Post_monad.wrte))
-                          (Monad.bind
-                            (fun r1 ->
-                              A_start_here.rev_apply
-                                (A_start_here.rev_apply
-                                  (Disk_node.Disk_leaf leaf2)
-                                  (A_start_here.rev_apply store_ops
-                                    Post_monad.wrte))
-                                (Monad.fmap
-                                  (fun r2 -> (* !profiler.mark "dd"; *)
-                                    ((Insert_state.I2 (r1, (k, r2)), stk),
-                                      kvs))))))))))));;
+                          (Monad.fmap
+                            (fun r -> ((Insert_state.I1 r, stk), kvs)))
+                      | false ->
+                        (let (leaf1, (k, leaf2)) =
+                           A_start_here.rev_apply leaf_ops
+                             Disk_node.split_large_leaf
+                             (A_start_here.rev_apply cs
+                               Constants_and_size_types.max_leaf_size)
+                             leafa
+                           in
+                          A_start_here.rev_apply
+                            (A_start_here.rev_apply (Disk_node.Disk_leaf leaf1)
+                              (A_start_here.rev_apply store_ops
+                                Post_monad.wrte))
+                            (Monad.bind
+                              (fun r1 ->
+                                A_start_here.rev_apply
+                                  (A_start_here.rev_apply
+                                    (Disk_node.Disk_leaf leaf2)
+                                    (A_start_here.rev_apply store_ops
+                                      Post_monad.wrte))
+                                  (Monad.fmap
+                                    (fun r2 ->
+                                      ((Insert_state.I2 (r1, (k, r2)), stk),
+kvs)))))))))))));;
 
 let rec im_step
   cs k_cmp leaf_ops node_ops frame_ops store_ops im =
@@ -1940,13 +1946,11 @@ let rec im_big_step
 let rec insert_many
   cs k_cmp leaf_ops node_ops frame_ops store_ops =
     (fun r k v kvs ->
-      mark "eb";
       (let im = Insert_many_state.make_initial_im_state r k v kvs in
         A_start_here.rev_apply
           (im_big_step cs k_cmp leaf_ops node_ops frame_ops store_ops im)
           (Monad.bind
             (fun ima ->
-              mark "ec";
               (match ima
                 with (Insert_state.I_down _, _) ->
                   A_start_here.failwitha "insert 1"

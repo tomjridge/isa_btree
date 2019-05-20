@@ -35,6 +35,7 @@ constants \<Rightarrow>
     in
     iter_step step (leaf,(leaf_ops|>leaf_length) leaf,kvs0) 
     |> (% (leaf,len_leaf,kvs).
+    let _ = assert_true (% _. len_leaf = (leaf_ops|>leaf_length) leaf) in
     case len_leaf \<le> cs|>max_leaf_size of
     True \<Rightarrow> (
       Disk_leaf leaf |> (store_ops|>wrte) |> fmap (% r'. ((I1(r'),stk),kvs)))

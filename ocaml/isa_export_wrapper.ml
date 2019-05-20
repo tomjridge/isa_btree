@@ -74,14 +74,17 @@ module Internal_leaf_impl = struct
     let leaf_insert k v l = 
       profile "ae" @@ fun () -> 
       let old = ref None in
-      map_ops.update 
-        k 
-        (function
-          | None -> Some v
-          | Some v' -> 
-            old:=Some v';
-            Some v)
-        l,!old
+      let l' = 
+        map_ops.update 
+          k 
+          (function
+            | None -> Some v
+            | Some v' -> 
+              old:=Some v';
+              Some v)
+          l
+      in
+      l',!old
     in
     let leaf_remove k l = 
       profile "ah" @@ fun () -> 
@@ -112,6 +115,9 @@ module Internal_leaf_impl = struct
     in
     let split_large_leaf i l1 = 
       profile "ao" @@ fun () ->      
+(*      Printf.printf "split_large_leaf: i=%d len=%d"
+        i
+        (map_ops.cardinal l1);*)
       l1 |> map_ops.bindings |> Tjr_list.drop i |> fun binds -> 
       match binds with
       | [] -> failwith __LOC__
@@ -123,7 +129,7 @@ module Internal_leaf_impl = struct
     (* by default, there is no debugging; override the dbg_leaf field to enable *)
     let dbg_leaf = fun l -> () in
     let kvs_to_leaf = fun kvs -> 
-      profile "ap" @@ fun () ->      
+      profile "kvs2l" @@ fun () ->      
       map_ops.of_bindings kvs in
     let leaf_to_kvs = fun l -> 
       profile "aq" @@ fun () ->      
@@ -991,7 +997,7 @@ end = struct
     let node_to_krs n = profile "gb" @@ fun () -> node_to_krs n in
     let krs_to_node krs = profile "gc" @@ fun () -> krs_to_node krs in
     let leaf_to_kvs l = profile "gd" @@ fun () -> leaf_to_kvs l in
-    let kvs_to_leaf kvs = profile "ge" @@ fun () -> kvs_to_leaf kvs in
+    let kvs_to_leaf kvs = profile "kvs2l'" @@ fun () -> kvs_to_leaf kvs in
     { node_to_krs; krs_to_node; leaf_to_kvs; kvs_to_leaf }
 
 

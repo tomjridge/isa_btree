@@ -1844,37 +1844,46 @@ let rec im_step_bottom
                     (A_start_here.rev_apply leaf_ops Disk_node.leaf_length leaf,
                       kvs0)))
                 (fun (leafa, (len_leaf, kvs)) ->
-                  (match
-                    Arith.less_eq_nat len_leaf
-                      (A_start_here.rev_apply cs
-                        Constants_and_size_types.max_leaf_size)
-                    with true ->
-                      A_start_here.rev_apply
-                        (A_start_here.rev_apply (Disk_node.Disk_leaf leafa)
-                          (A_start_here.rev_apply store_ops Post_monad.wrte))
-                        (Monad.fmap (fun r -> ((Insert_state.I1 r, stk), kvs)))
-                    | false ->
-                      (let (leaf1, (k, leaf2)) =
-                         A_start_here.rev_apply leaf_ops
-                           Disk_node.split_large_leaf
-                           (A_start_here.rev_apply cs
-                             Constants_and_size_types.max_leaf_size)
-                           leafa
-                         in
+                  (let _ =
+                     A_start_here.assert_true
+                       (fun _ ->
+                         Arith.equal_nat len_leaf
+                           (A_start_here.rev_apply leaf_ops
+                             Disk_node.leaf_length leafa))
+                     in
+                    (match
+                      Arith.less_eq_nat len_leaf
+                        (A_start_here.rev_apply cs
+                          Constants_and_size_types.max_leaf_size)
+                      with true ->
                         A_start_here.rev_apply
-                          (A_start_here.rev_apply (Disk_node.Disk_leaf leaf1)
+                          (A_start_here.rev_apply (Disk_node.Disk_leaf leafa)
                             (A_start_here.rev_apply store_ops Post_monad.wrte))
-                          (Monad.bind
-                            (fun r1 ->
-                              A_start_here.rev_apply
-                                (A_start_here.rev_apply
-                                  (Disk_node.Disk_leaf leaf2)
-                                  (A_start_here.rev_apply store_ops
-                                    Post_monad.wrte))
-                                (Monad.fmap
-                                  (fun r2 ->
-                                    ((Insert_state.I2 (r1, (k, r2)), stk),
-                                      kvs))))))))))));;
+                          (Monad.fmap
+                            (fun r -> ((Insert_state.I1 r, stk), kvs)))
+                      | false ->
+                        (let (leaf1, (k, leaf2)) =
+                           A_start_here.rev_apply leaf_ops
+                             Disk_node.split_large_leaf
+                             (A_start_here.rev_apply cs
+                               Constants_and_size_types.max_leaf_size)
+                             leafa
+                           in
+                          A_start_here.rev_apply
+                            (A_start_here.rev_apply (Disk_node.Disk_leaf leaf1)
+                              (A_start_here.rev_apply store_ops
+                                Post_monad.wrte))
+                            (Monad.bind
+                              (fun r1 ->
+                                A_start_here.rev_apply
+                                  (A_start_here.rev_apply
+                                    (Disk_node.Disk_leaf leaf2)
+                                    (A_start_here.rev_apply store_ops
+                                      Post_monad.wrte))
+                                  (Monad.fmap
+                                    (fun r2 ->
+                                      ((Insert_state.I2 (r1, (k, r2)), stk),
+kvs)))))))))))));;
 
 let rec im_step
   cs k_cmp leaf_ops node_ops frame_ops store_ops im =
