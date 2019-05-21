@@ -121,7 +121,10 @@ constants \<Rightarrow>
       | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
     | I2 (r,k,r') \<Rightarrow> (
       let (k1,r1,k2) = (frame_ops|>get_focus) frm in
-      let n = frm |> (frame_ops|>replace) (k1,r1,[],k2) (k1,r,[(k,r')],k2) |> (frame_ops|>frame_to_node) in
+      let n = 
+        frm 
+        |> (frame_ops|>replace) (k1,r1,[],k2) (k1,r,[(k,r')],k2) 
+        |> (frame_ops|>frame_to_node) in
       let n_keys_length = (node_ops|>node_keys_length) n in
       case n_keys_length \<le> (cs|>max_node_keys) of
       True \<Rightarrow> (
