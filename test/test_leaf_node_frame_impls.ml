@@ -21,10 +21,10 @@ let rec tree'_to_tree t = match t with
 
 type test_leaf' = unit
 
-type test_leaf = (int,int,test_leaf') Tjr_poly_map.map
+type test_leaf = (int,int,test_leaf') Poly_map.map
 
-let _leaf_map_ops : (int, int, test_leaf) Tjr_poly_map.map_ops = 
-  Tjr_poly_map.make_map_ops Tjr_int.compare
+let _leaf_map_ops : (int, int, test_leaf) Poly_map.map_ops = 
+  Poly_map.make_map_ops Int_.compare
 
 
 include struct
@@ -32,15 +32,15 @@ include struct
 
   type test_node' = unit
 
-  type test_node = (int option, test_r, test_node') Tjr_poly_map.map
+  type test_node = (int option, test_r, test_node') Poly_map.map
 
   (* test_r is the type of r for the test_store *)
   and test_r = Test_r of (test_node,test_leaf)dnode
 end
 
-let _node_map_ops : (int option, test_r, test_node) Tjr_poly_map.map_ops = 
-  Tjr_poly_map.make_map_ops 
-    (Isa_btree.Isa_export_wrapper.Internal_node_impl.key_compare Tjr_int.compare)
+let _node_map_ops : (int option, test_r, test_node) Poly_map.map_ops = 
+  Poly_map.make_map_ops 
+    (Isa_btree.Isa_export_wrapper.Internal_node_impl.key_compare Int_.compare)
 
 
 (* convert to yojson *)

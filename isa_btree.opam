@@ -1,13 +1,15 @@
-opam-version: "2.0"
-name: "isa_btree"
-version: "0.0.1"
+opam-version : "2.0"
+name         : "isa_btree"
+version      : "0.0.1"
+synopsis     : "B-tree definitions in Isabelle"
 
 # ----------------------------------------------------------------------
 
-authors: "Tom Ridge <tom.j.ridge@googlemail.com>"
-maintainer: "Tom Ridge <tom.j.ridge@googlemail.com>"
-homepage: "https://github.com/tomjridge/isa_btree"
-bug-reports: "https://github.com/tomjridge/isa_btree/issues"
+authors      : "Tom Ridge <tom.j.ridge@googlemail.com>"
+maintainer   : "Tom Ridge <tom.j.ridge@googlemail.com>"
+homepage     : "https://github.com/tomjridge/isa_btree"
+bug-reports  : "https://github.com/tomjridge/isa_btree/issues"
+dev-repo     : "git://github.com/tomjridge/isa_btree.git"
 
 # ----------------------------------------------------------------------
 
@@ -19,7 +21,6 @@ depends: [
 ]
 
 # ----------------------------------------------------------------------
-
 
 build: [
 #  ["dune" "subst"] {pinned}

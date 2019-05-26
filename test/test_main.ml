@@ -26,7 +26,6 @@ open Tjr_fs_shared.Kv_op
 
 module Test_impls = Test_leaf_node_frame_impls
 
-module Logger = Tjr_logger
 
 
 
@@ -52,9 +51,9 @@ open Isa_export_wrapper
 
 type ii_op = (int,int) op [@@deriving yojson]
 
-let k_cmp : int -> int -> int = Tjr_int.compare
+let k_cmp : int -> int -> int = Int_.compare
 
-let map_ops = Tjr_poly_map.make_map_ops k_cmp
+let map_ops = Poly_map.make_map_ops k_cmp
 
 let dbg_tree_at_r = fun r -> return ()
 
@@ -62,7 +61,7 @@ let _make_pre_map_ops_etc =
   Internal_make_pre_map_ops.make_pre_map_ops_etc
 
 type test_r = Test_leaf_node_frame_impls.test_r
-type spec = (int,int,unit)Tjr_poly_map.map
+type spec = (int,int,unit)Poly_map.map
 
 let execute_tests ~cs ~range ~fuel = 
   let dbg_frame f = 
@@ -130,7 +129,7 @@ let execute_tests ~cs ~range ~fuel =
 ;;
 
 let main' ~range_min ~range_max ~constants = 
-  let range = Tjr_list.mk_range ~min:range_min ~max:range_max ~step:1 in
+  let range = List_.mk_range ~min:range_min ~max:range_max ~step:1 in
   execute_tests ~cs:constants ~range ~fuel:5 
 
 let _ = main'
@@ -158,7 +157,7 @@ let profiler =
 
 let _ = 
   let run_tests () = 
-    Logger.logger := Some (Tjr_log.mk_log_ops());
+    Logger.logger := Some (Log.mk_log_ops());
     Logger.at_exit ~print:true;
     Logger.log_lazy (fun _ -> "Logger initialized");
     Printf.printf "%s: tests begin\n%!" __MODULE__;

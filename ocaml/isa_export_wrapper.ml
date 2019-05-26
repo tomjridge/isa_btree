@@ -6,7 +6,7 @@
 module Isa_export_assert_flag = struct
   let _ = 
     Isa_export.assert_flag
-    |> Tjr_global.register ~name:"Isa_export.assert_flag" 
+    |> Global.register ~name:"Isa_export.assert_flag" 
 
   let enable_isa_checks () = Isa_export.assert_flag:=true
   let disable_isa_checks () = Isa_export.assert_flag:=false
@@ -66,7 +66,7 @@ module Internal_leaf_impl = struct
   open Internal_
 
   let make_leaf_ops ~k_cmp = 
-    let map_ops = Tjr_poly_map.make_map_ops k_cmp in
+    let map_ops = Poly_map.make_map_ops k_cmp in
     let leaf_lookup k l = 
       profile "ab" @@ fun () -> 
       map_ops.find_opt k l
@@ -118,7 +118,7 @@ module Internal_leaf_impl = struct
 (*      Printf.printf "split_large_leaf: i=%d len=%d"
         i
         (map_ops.cardinal l1);*)
-      l1 |> map_ops.bindings |> Tjr_list.drop i |> fun binds -> 
+      l1 |> map_ops.bindings |> List_.drop i |> fun binds -> 
       match binds with
       | [] -> failwith __LOC__
       | (k,v)::rest -> 
@@ -136,15 +136,15 @@ module Internal_leaf_impl = struct
       dbg_leaf_kvs l in
     let ops = ({ leaf_lookup; leaf_insert; leaf_remove; leaf_length; 
        leaf_steal_right; leaf_steal_left; 
-       leaf_merge; split_large_leaf; dbg_leaf_kvs; dbg_leaf } : ('k,'v,('k,'v,unit)Tjr_poly_map.map) leaf_ops)
+       leaf_merge; split_large_leaf; dbg_leaf_kvs; dbg_leaf } : ('k,'v,('k,'v,unit)Poly_map.map) leaf_ops)
     in
     fun f -> f ~leaf_ops:ops ~kvs_to_leaf ~leaf_to_kvs
 
   let _ :
 k_cmp:('k -> 'k -> int) ->
-(leaf_ops:('k, 'v, ('k, 'v, unit) Tjr_poly_map.map) leaf_ops ->
- kvs_to_leaf:(('k * 'v) list -> ('k, 'v, unit) Tjr_poly_map.map) ->
- leaf_to_kvs:(('k, 'v, unit) Tjr_poly_map.map -> ('k * 'v) list) -> 'a) ->
+(leaf_ops:('k, 'v, ('k, 'v, unit) Poly_map.map) leaf_ops ->
+ kvs_to_leaf:(('k * 'v) list -> ('k, 'v, unit) Poly_map.map) ->
+ leaf_to_kvs:(('k, 'v, unit) Poly_map.map -> ('k * 'v) list) -> 'a) ->
 'a
     = make_leaf_ops
     
@@ -152,7 +152,7 @@ k_cmp:('k -> 'k -> int) ->
 end
 open Internal_leaf_impl
 
-type ('k,'v) _leaf_impl = ('k,'v,unit) Tjr_poly_map.map
+type ('k,'v) _leaf_impl = ('k,'v,unit) Poly_map.map
 
 (*
 let make_leaf_ops ~k_cmp : ('k,'v,('k,'v)_leaf_impl) leaf_ops = 
@@ -208,7 +208,7 @@ module Internal_node_impl = struct
     | Some k1, Some k2 -> k_cmp k1 k2
 
   let make_node_ops (type k) ~(k_cmp:k -> k -> int) = 
-    let map_ops = Tjr_poly_map.make_map_ops (key_compare k_cmp) in
+    let map_ops = Poly_map.make_map_ops (key_compare k_cmp) in
     let make_node ks rs = 
       profile "bb" @@ fun () -> 
       (* assert(List.length rs = 1 + List.length ks); *)
@@ -299,7 +299,7 @@ module Internal_node_impl = struct
       ({ split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length;
          node_make_small_root; node_get_single_r;
          dbg_node_krs; dbg_node
-       } : (k,'v,(k option,'v,unit)Tjr_poly_map.map) node_ops)
+       } : (k,'v,(k option,'v,unit)Poly_map.map) node_ops)
     in
     let krs_to_node = fun (ks,rs) -> make_node ks rs in
     let node_to_krs = dbg_node_krs in
@@ -307,9 +307,9 @@ module Internal_node_impl = struct
     
   let _ :
 k_cmp:('a -> 'a -> int) ->
-(node_ops:('a, 'v, ('a option, 'v, unit) Tjr_poly_map.map) node_ops ->
- krs_to_node:('a list * 'v list -> ('a option, 'v, unit) Tjr_poly_map.map) ->
- node_to_krs:(('a option, 'v, unit) Tjr_poly_map.map -> 'a list * 'v list) ->
+(node_ops:('a, 'v, ('a option, 'v, unit) Poly_map.map) node_ops ->
+ krs_to_node:('a list * 'v list -> ('a option, 'v, unit) Poly_map.map) ->
+ node_to_krs:(('a option, 'v, unit) Poly_map.map -> 'a list * 'v list) ->
  'b) ->
 'b
     = make_node_ops
@@ -317,7 +317,7 @@ k_cmp:('a -> 'a -> int) ->
 end
 open Internal_node_impl
 
-type ('k,'r) _node_impl = ('k option, 'r, unit) Tjr_poly_map.map
+type ('k,'r) _node_impl = ('k option, 'r, unit) Poly_map.map
 
 (* let make_node_ops ~k_cmp : ('k,'r,('k,'r)_node_impl)node_ops = make_node_ops ~k_cmp *)
 
@@ -378,7 +378,7 @@ module Internal_frame_impl = struct
   } [@@deriving to_yojson]
 
   let make_frame_ops (type k) ~(k_cmp:k->k->int) =
-    let map_ops = Tjr_poly_map.make_map_ops (key_compare k_cmp) in
+    let map_ops = Poly_map.make_map_ops (key_compare k_cmp) in
     Tjr_fs_shared.Map_with_key_traversal.make_ops ~map_ops @@ fun ~get_next_binding ~get_prev_binding ->
     (* map_ops is a map from 'k option *)
     let split_node_on_key backing_node_blk_ref k n = 
@@ -434,7 +434,7 @@ module Internal_frame_impl = struct
       f.node |> map_ops.add k' r' |> fun n ->
       (* remove old ks *)
       (krs,n) 
-      |> Tjr_list.iter_opt (fun (krs,n) ->
+      |> List_.iter_opt (fun (krs,n) ->
           match krs with 
           | [] -> None
           | (k,r)::krs ->
@@ -443,7 +443,7 @@ module Internal_frame_impl = struct
       (* add new krs *)
       |> fun n ->
       (krs',n) 
-      |> Tjr_list.iter_opt (fun (krs,n) -> 
+      |> List_.iter_opt (fun (krs,n) -> 
           match krs with
           | [] -> None
           | (k,r)::krs ->
@@ -815,29 +815,29 @@ module Internal_make_pre_map_ops = struct
 cs:Constants_type.constants ->
 k_cmp:('k -> 'k -> int) ->
 store_ops:('r,
-           (('k or_top, 'r, unit) Tjr_poly_map.map,
-            ('k, 'v, unit) Tjr_poly_map.map)
+           (('k or_top, 'r, unit) Poly_map.map,
+            ('k, 'v, unit) Poly_map.map)
            dnode, 'a)
           store_ops ->
 dbg_tree_at_r:('r -> (unit, 'a) m) ->
-(pre_map_ops:('k, 'v, 'r, ('k, 'v, unit) Tjr_poly_map.map,
-              ('k, 'r, ('k or_top, 'r, unit) Tjr_poly_map.map) frame, 'a)
+(pre_map_ops:('k, 'v, 'r, ('k, 'v, unit) Poly_map.map,
+              ('k, 'r, ('k or_top, 'r, unit) Poly_map.map) frame, 'a)
              pre_map_ops ->
  pre_insert_many_op:('k, 'v, 'r, 'a) pre_insert_many_op ->
  leaf_stream_ops:('k, 'v, 'r,
-                  ('r, ('k, 'v, unit) Tjr_poly_map.map,
-                   ('k, 'r, ('k or_top, 'r, unit) Tjr_poly_map.map) frame)
+                  ('r, ('k, 'v, unit) Poly_map.map,
+                   ('k, 'r, ('k or_top, 'r, unit) Poly_map.map) frame)
                   Internal_leaf_stream_impl._t, 'a)
                  leaf_stream_ops ->
- leaf_ops:('k, 'v, ('k, 'v, unit) Tjr_poly_map.map) leaf_ops ->
- node_ops:('k, 'r, ('k or_top, 'r, unit) Tjr_poly_map.map) node_ops ->
- frame_ops:('k, 'r, ('k, 'r, ('k or_top, 'r, unit) Tjr_poly_map.map) frame,
-            ('k or_top, 'r, unit) Tjr_poly_map.map)
+ leaf_ops:('k, 'v, ('k, 'v, unit) Poly_map.map) leaf_ops ->
+ node_ops:('k, 'r, ('k or_top, 'r, unit) Poly_map.map) node_ops ->
+ frame_ops:('k, 'r, ('k, 'r, ('k or_top, 'r, unit) Poly_map.map) frame,
+            ('k or_top, 'r, unit) Poly_map.map)
            frame_ops ->
- kvs_to_leaf:(('k * 'v) list -> ('k, 'v, unit) Tjr_poly_map.map) ->
- leaf_to_kvs:(('k, 'v, unit) Tjr_poly_map.map -> ('k * 'v) list) ->
- krs_to_node:('k list * 'r list -> ('k or_top, 'r, unit) Tjr_poly_map.map) ->
- node_to_krs:(('k or_top, 'r, unit) Tjr_poly_map.map -> 'k list * 'r list) ->
+ kvs_to_leaf:(('k * 'v) list -> ('k, 'v, unit) Poly_map.map) ->
+ leaf_to_kvs:(('k, 'v, unit) Poly_map.map -> ('k * 'v) list) ->
+ krs_to_node:('k list * 'r list -> ('k or_top, 'r, unit) Poly_map.map) ->
+ node_to_krs:(('k or_top, 'r, unit) Poly_map.map -> 'k list * 'r list) ->
  'b) ->
 'b
     = make_pre_map_ops_etc
