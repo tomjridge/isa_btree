@@ -3,7 +3,7 @@
 
 (executable
   (name test_main)
-  (public_name test_main)
+  (public_name isa_btree_test_main)
   (preprocess (pps ppx_deriving_yojson))
   (libraries isa_btree tjr_monad tjr_lib_core tjr_lib tjr_fs_shared tjr_profile core))
 

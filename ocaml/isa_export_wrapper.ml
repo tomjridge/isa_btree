@@ -678,13 +678,27 @@ inserts all kvs, and returns the updated root (or None to indicate the
 tree was updated in place).
 
 *) 
-
+(*
 module Pre_insert_many_type = struct
   type ('k,'v,'r,'t) pre_insert_many_op = {
     insert_many: r:'r -> kvs:('k*'v)list -> (('k*'v)list * 'r option,'t) m
   }
 end
 include Pre_insert_many_type
+*)
+
+(** {2 Insert all}
+
+The semantics of this operation is: for a list of (k,v), the operation
+   inserts all kvs, and returns the updated root (or the original root
+   if tree was updated in place).  *)
+
+module Pre_insert_all_type = struct
+  type ('k,'v,'r,'t) pre_insert_all_op = {
+    insert_all: r:'r -> kvs:('k*'v)list -> ('r,'t) m
+  }
+end
+include Pre_insert_all_type
 
 (* make_find_insert_delete ------------------------------------------ *)
 
@@ -788,19 +802,30 @@ module Internal_make_pre_map_ops = struct
       let _ = leaf_stream_ops in
       let leaf_lookup = leaf_ops0.leaf_lookup in
       let pre_map_ops = {leaf_lookup;find;insert;delete} in
-      let pre_insert_many_op = 
+      let pre_insert_all_op = 
         (* let im_step = M.Insert_many.im_step cs k_cmp leaf_ops node_ops frame_ops store_ops in *)
         let insert_many = M.Insert_many.insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops in 
-        let insert_many ~r ~kvs = 
-          match kvs with 
-          [] -> Monad.return ([],None)
-          | (k,v)::kvs -> insert_many r k v kvs 
+        let iter_m = iter_m ~monad_ops in
+        let ( >>= ) = monad_ops.bind in
+        let return = monad_ops.return in
+        let insert_all ~r ~kvs = 
+          (r,kvs) |> 
+          iter_m  (fun (r,kvs) -> 
+              match kvs with 
+              [] -> return None
+              | (k,v)::kvs -> (
+                  insert_many r k v kvs >>= fun (kvs,r') -> 
+                  match r' with
+                  | None -> return (Some(r,kvs))
+                  | Some r' -> return (Some(r',kvs))))
+          >>= fun (r',_) -> return r'  (* NOTE may return the original r *)
         in
-        { insert_many }
+        let _ = insert_all in
+        { insert_all }
       in
       fun f -> f
         ~pre_map_ops
-        ~pre_insert_many_op
+        ~pre_insert_all_op
         ~leaf_stream_ops
         ~leaf_ops:leaf_ops0
         ~node_ops:node_ops0
@@ -811,36 +836,34 @@ module Internal_make_pre_map_ops = struct
         ~node_to_krs
       
   let _ :
-    monad_ops:'a monad_ops ->
+monad_ops:'a monad_ops ->
 cs:Constants_type.constants ->
 k_cmp:('k -> 'k -> int) ->
 store_ops:('r,
-           (('k or_top, 'r, unit) Tjr_map.map,
-            ('k, 'v, unit) Tjr_map.map)
+           (('k or_bottom, 'r, unit) Tjr_map.map, ('k, 'v, unit) Tjr_map.map)
            dnode, 'a)
           store_ops ->
 dbg_tree_at_r:('r -> (unit, 'a) m) ->
 (pre_map_ops:('k, 'v, 'r, ('k, 'v, unit) Tjr_map.map,
-              ('k, 'r, ('k or_top, 'r, unit) Tjr_map.map) frame, 'a)
+              ('k, 'r, ('k or_bottom, 'r, unit) Tjr_map.map) frame, 'a)
              pre_map_ops ->
- pre_insert_many_op:('k, 'v, 'r, 'a) pre_insert_many_op ->
+ pre_insert_all_op:('k, 'v, 'r, 'a) pre_insert_all_op ->
  leaf_stream_ops:('k, 'v, 'r,
                   ('r, ('k, 'v, unit) Tjr_map.map,
-                   ('k, 'r, ('k or_top, 'r, unit) Tjr_map.map) frame)
+                   ('k, 'r, ('k or_bottom, 'r, unit) Tjr_map.map) frame)
                   Internal_leaf_stream_impl._t, 'a)
                  leaf_stream_ops ->
  leaf_ops:('k, 'v, ('k, 'v, unit) Tjr_map.map) leaf_ops ->
- node_ops:('k, 'r, ('k or_top, 'r, unit) Tjr_map.map) node_ops ->
- frame_ops:('k, 'r, ('k, 'r, ('k or_top, 'r, unit) Tjr_map.map) frame,
-            ('k or_top, 'r, unit) Tjr_map.map)
+ node_ops:('k, 'r, ('k or_bottom, 'r, unit) Tjr_map.map) node_ops ->
+ frame_ops:('k, 'r, ('k, 'r, ('k or_bottom, 'r, unit) Tjr_map.map) frame,
+            ('k or_bottom, 'r, unit) Tjr_map.map)
            frame_ops ->
  kvs_to_leaf:(('k * 'v) list -> ('k, 'v, unit) Tjr_map.map) ->
  leaf_to_kvs:(('k, 'v, unit) Tjr_map.map -> ('k * 'v) list) ->
- krs_to_node:('k list * 'r list -> ('k or_top, 'r, unit) Tjr_map.map) ->
- node_to_krs:(('k or_top, 'r, unit) Tjr_map.map -> 'k list * 'r list) ->
+ krs_to_node:('k list * 'r list -> ('k or_bottom, 'r, unit) Tjr_map.map) ->
+ node_to_krs:(('k or_bottom, 'r, unit) Tjr_map.map -> 'k list * 'r list) ->
  'b) ->
-'b
-    = make_pre_map_ops_etc
+'b    = make_pre_map_ops_etc
 
 end
 open Internal_make_pre_map_ops
@@ -908,8 +931,8 @@ module Internal_export : sig
   val pre_map_ops: ('k,'v,'r,'a) isa_btree -> 
     ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops 
 
-  val pre_insert_many_op : ('k,'v,'r,'a) isa_btree -> 
-    ('k,'v,'r,'a) pre_insert_many_op
+  val pre_insert_all_op : ('k,'v,'r,'a) isa_btree -> 
+    ('k,'v,'r,'a) pre_insert_all_op
 
   val leaf_stream_ops: ('k,'v,'r,'a) isa_btree -> 
     ('k,'v,'r, ('k,'v,'r) leaf_stream_impl, 'a) leaf_stream_ops
@@ -974,12 +997,12 @@ end = struct
 (* g *)    * (('k, 'v) leaf_impl -> ('k * 'v) list)
 (* h *)    * ('k list * 'r list -> ('k,'r) node_impl)
 (* i *)    * (('k,'r) node_impl -> 'k list * 'r list)
-(* j *)    * ('k, 'v, 'r, 'a) pre_insert_many_op    
+(* j *)    * ('k, 'v, 'r, 'a) pre_insert_all_op    
 
   let make_isa_btree ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r : ('k,'v,'r,'a) isa_btree = 
     make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r
     @@ fun ~pre_map_ops
-      ~pre_insert_many_op
+      ~pre_insert_all_op
         ~leaf_stream_ops
         ~leaf_ops
         ~node_ops
@@ -988,7 +1011,7 @@ end = struct
         ~leaf_to_kvs
         ~krs_to_node
         ~node_to_krs ->
-    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,kvs_to_leaf,leaf_to_kvs,krs_to_node,node_to_krs,pre_insert_many_op)
+    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,kvs_to_leaf,leaf_to_kvs,krs_to_node,node_to_krs,pre_insert_all_op)
 
   let node_leaf_conversions ~k_cmp = 
     Internal_node_impl.make_node_ops ~k_cmp @@  fun ~node_ops ~krs_to_node ~node_to_krs ->
@@ -1017,7 +1040,7 @@ end = struct
     
   let krs_to_node = fun (a,b,c,d,e,f,g,h,i,j) -> h
 
-  let pre_insert_many_op = fun (a,b,c,d,e,f,g,h,i,j) -> j
+  let pre_insert_all_op = fun (a,b,c,d,e,f,g,h,i,j) -> j
 
 end
 include Internal_export

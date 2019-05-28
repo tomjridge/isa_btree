@@ -22,6 +22,7 @@ open Isa_export
 open Tjr_monad
 open Test_flag
 open Test_store  (* also includes monad_ops *)
+open Test_util
 open Tjr_fs_shared.Kv_op
 
 module Test_impls = Test_leaf_node_frame_impls
@@ -57,8 +58,10 @@ let map_ops = Tjr_map.make_map_ops k_cmp
 
 let dbg_tree_at_r = fun r -> return ()
 
+(*
 let _make_pre_map_ops_etc = 
   Internal_make_pre_map_ops.make_pre_map_ops_etc
+*)
 
 type test_r = Test_leaf_node_frame_impls.test_r
 type spec = (int,int,unit)Tjr_map.map
@@ -70,9 +73,9 @@ let execute_tests ~cs ~range ~fuel =
           (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
   in
   let store_ops = Test_store.store_ops in
-  _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
+  Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
   fun ~pre_map_ops
-    ~pre_insert_many_op
+    ~pre_insert_all_op
     ~leaf_stream_ops
     ~leaf_ops:leaf_ops0
     ~node_ops:node_ops0
@@ -145,6 +148,43 @@ let main ~pre_config:c =
 
 let _ = monad_ops
 
+(* test insert all -------------------------------------------------- *)
+
+let test_insert_all cs = 
+  let dbg_frame f = 
+    Logger.log_lazy (fun _ -> 
+        Printf.sprintf "dbg_frame: %s\n" 
+          (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
+  in
+  let store_ops = Test_store.store_ops in
+  Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
+  fun ~pre_map_ops
+    ~pre_insert_all_op
+    ~leaf_stream_ops
+    ~leaf_ops:leaf_ops0
+    ~node_ops:node_ops0
+    ~frame_ops:frame_ops0
+    ~kvs_to_leaf
+    ~leaf_to_kvs
+    ~krs_to_node
+    ~node_to_krs ->
+  let { insert_all } = pre_insert_all_op in
+  (* s is the spec... a map *)
+  let open Test_leaf_node_frame_impls in
+  let r = Test_r(Disk_leaf map_ops.empty) in
+  let kvs = List_.from_to 1 (int_of_string "1E6") |> List.map(fun x -> (x,x)) in
+  let r' = 
+    sp_to_fun (insert_all ~r ~kvs) r
+    |> fun (r',_) -> r'
+  in
+  let wf_tree = wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp in
+  assert (wf_tree (Test_impls.test_r_to_tree r'));
+  assert (
+    (r 
+     |> Test_impls.test_r_to_tree
+     |> Isa_export.Tree.tree_to_leaves |> List.concat)
+    = kvs);
+  ()
 
 (* setup profiler ----------------------------------------------- *)
 
@@ -154,6 +194,11 @@ let profiler =
   Tjr_profile.make_int_profiler 
     ~now:Core.Time_stamp_counter.(fun () ->
         now () |> to_int63 |> Core.Int63.to_int |> fun (Some x) -> x)
+
+let _ = 
+  enable_isa_checks();
+  enable_tests();
+  ()
 
 let _ = 
   let run_tests () = 
@@ -171,9 +216,11 @@ let _ =
       enable_tests();
       run_tests() 
     end
+  | ["insert_all"] -> 
+    List.iter test_insert_all Constants.all_constants
   | ["no_asserts"] -> begin
       disable_isa_checks();
-      disable_tests();
+      disable_tests();  (* disable test flag *)
       run_tests()
     end
   | ["seq_insert"] -> begin
@@ -184,9 +231,9 @@ let _ =
           ~max_node_keys:1000
       in
       let store_ops = Test_store.store_ops in
-      _make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
+      Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
       fun ~pre_map_ops
-        ~pre_insert_many_op
+        ~pre_insert_all_op
         ~leaf_stream_ops
         ~leaf_ops:leaf_ops0
         ~node_ops:node_ops0
@@ -196,8 +243,8 @@ let _ =
         ~krs_to_node
         ~node_to_krs ->
       let { leaf_lookup; find; insert; delete } = pre_map_ops in
-      disable_isa_checks();
-      disable_tests();
+      (* disable_isa_checks(); *)
+      (* disable_tests(); *)
       let rec loop n r = 
         n <= 0 |> function
         | true -> () 

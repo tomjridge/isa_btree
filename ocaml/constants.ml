@@ -44,6 +44,7 @@ let cs3512 = mk_cs 3 5 1 2
 let cs3524 = mk_cs 3 5 2 4
 let cs3536 = mk_cs 3 5 3 6
 
+let all_constants = [cs1112; cs1124; cs1136; cs2312; cs2324; cs2336; cs3512; cs3524; cs3536]
 
 
 
