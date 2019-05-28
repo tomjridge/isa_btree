@@ -21,7 +21,6 @@ include Isa_export_assert_flag
 (* open Constants_type *)
 open Isa_export
 
-let dest_Some x = match x with Some x -> x | _ -> failwith "dest_Some"
 
 module Dnode_type = struct
   (** Recall [dnode] type *)
@@ -154,10 +153,6 @@ open Internal_leaf_impl
 
 type ('k,'v) _leaf_impl = ('k,'v,unit) Tjr_map.map
 
-(*
-let make_leaf_ops ~k_cmp : ('k,'v,('k,'v)_leaf_impl) leaf_ops = 
-  make_leaf_ops ~k_cmp 
-*)
 
 (* node ops --------------------------------------------------------- *)
 
@@ -281,7 +276,7 @@ module Internal_node_impl = struct
     in
     let node_make_small_root (r1,k,r2) =
       profile "bh" @@ fun () -> 
-      Printf.printf "Making small root\n%!";
+      (* Printf.printf "Making small root\n%!"; *)
       map_ops.empty |> map_ops.add None r1 |> map_ops.add (Some k) r2
     in
     let node_get_single_r n =
@@ -694,7 +689,7 @@ The semantics of this operation is: for a list of (k,v), the operation
    if tree was updated in place).  *)
 
 module Pre_insert_all_type = struct
-  type ('k,'v,'r,'t) pre_insert_all_op = {
+  type ('k,'v,'r,'t) insert_all_type = {
     insert_all: r:'r -> kvs:('k*'v)list -> ('r,'t) m
   }
 end
@@ -802,7 +797,7 @@ module Internal_make_pre_map_ops = struct
       let _ = leaf_stream_ops in
       let leaf_lookup = leaf_ops0.leaf_lookup in
       let pre_map_ops = {leaf_lookup;find;insert;delete} in
-      let pre_insert_all_op = 
+      let insert_all = 
         (* let im_step = M.Insert_many.im_step cs k_cmp leaf_ops node_ops frame_ops store_ops in *)
         let insert_many = M.Insert_many.insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops in 
         let iter_m = iter_m ~monad_ops in
@@ -825,7 +820,7 @@ module Internal_make_pre_map_ops = struct
       in
       fun f -> f
         ~pre_map_ops
-        ~pre_insert_all_op
+        ~insert_all
         ~leaf_stream_ops
         ~leaf_ops:leaf_ops0
         ~node_ops:node_ops0
@@ -847,7 +842,7 @@ dbg_tree_at_r:('r -> (unit, 'a) m) ->
 (pre_map_ops:('k, 'v, 'r, ('k, 'v, unit) Tjr_map.map,
               ('k, 'r, ('k or_bottom, 'r, unit) Tjr_map.map) frame, 'a)
              pre_map_ops ->
- pre_insert_all_op:('k, 'v, 'r, 'a) pre_insert_all_op ->
+ insert_all:('k, 'v, 'r, 'a) insert_all_type ->
  leaf_stream_ops:('k, 'v, 'r,
                   ('r, ('k, 'v, unit) Tjr_map.map,
                    ('k, 'r, ('k or_bottom, 'r, unit) Tjr_map.map) frame)
@@ -865,6 +860,30 @@ dbg_tree_at_r:('r -> (unit, 'a) m) ->
  'b) ->
 'b    = make_pre_map_ops_etc
 
+  module Internal_experiment_w_first_class_modules = struct
+
+    module type Kvs_to_leaf = sig
+      type k
+      type v
+      type leaf 
+      val leaf_to_kvs: leaf -> (k*v)list
+    end
+
+    let make' (type k' v') ~monad_ops ~cs ~(k_cmp:k' -> k' -> int) ~store_ops ~dbg_tree_at_r =
+      make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@ fun 
+        ~pre_map_ops ~insert_all ~leaf_stream_ops
+        ~leaf_ops ~node_ops ~frame_ops
+        ~kvs_to_leaf ~leaf_to_kvs ~krs_to_node ~node_to_krs -> 
+      let _ = leaf_to_kvs in
+      let m = (module struct
+        type k = k'
+        type v = v'
+        type leaf = (k', v', unit) Tjr_map.map 
+        let leaf_to_kvs = leaf_to_kvs end : Kvs_to_leaf with type k = k' and type v = v') in
+      m
+
+    let _ = make'
+  end
 end
 open Internal_make_pre_map_ops
 
@@ -931,8 +950,8 @@ module Internal_export : sig
   val pre_map_ops: ('k,'v,'r,'a) isa_btree -> 
     ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops 
 
-  val pre_insert_all_op : ('k,'v,'r,'a) isa_btree -> 
-    ('k,'v,'r,'a) pre_insert_all_op
+  val insert_all : ('k,'v,'r,'a) isa_btree -> 
+    ('k,'v,'r,'a) insert_all_type
 
   val leaf_stream_ops: ('k,'v,'r,'a) isa_btree -> 
     ('k,'v,'r, ('k,'v,'r) leaf_stream_impl, 'a) leaf_stream_ops
@@ -997,12 +1016,12 @@ end = struct
 (* g *)    * (('k, 'v) leaf_impl -> ('k * 'v) list)
 (* h *)    * ('k list * 'r list -> ('k,'r) node_impl)
 (* i *)    * (('k,'r) node_impl -> 'k list * 'r list)
-(* j *)    * ('k, 'v, 'r, 'a) pre_insert_all_op    
+(* j *)    * ('k, 'v, 'r, 'a) insert_all_type
 
   let make_isa_btree ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r : ('k,'v,'r,'a) isa_btree = 
     make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r
     @@ fun ~pre_map_ops
-      ~pre_insert_all_op
+      ~insert_all
         ~leaf_stream_ops
         ~leaf_ops
         ~node_ops
@@ -1011,7 +1030,7 @@ end = struct
         ~leaf_to_kvs
         ~krs_to_node
         ~node_to_krs ->
-    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,kvs_to_leaf,leaf_to_kvs,krs_to_node,node_to_krs,pre_insert_all_op)
+    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,kvs_to_leaf,leaf_to_kvs,krs_to_node,node_to_krs,insert_all)
 
   let node_leaf_conversions ~k_cmp = 
     Internal_node_impl.make_node_ops ~k_cmp @@  fun ~node_ops ~krs_to_node ~node_to_krs ->
@@ -1040,7 +1059,7 @@ end = struct
     
   let krs_to_node = fun (a,b,c,d,e,f,g,h,i,j) -> h
 
-  let pre_insert_all_op = fun (a,b,c,d,e,f,g,h,i,j) -> j
+  let insert_all = fun (a,b,c,d,e,f,g,h,i,j) -> j
 
 end
 include Internal_export

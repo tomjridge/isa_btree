@@ -3,7 +3,7 @@
 
 open Isa_btree
 
-let dest_Some = Isa_export_wrapper.dest_Some
+(* let dest_Some = Isa_export_wrapper.dest_Some *)
 
 
 type tree' = 

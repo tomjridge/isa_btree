@@ -42,7 +42,7 @@ module C = struct
     max_node_keys:int
   } [@@deriving yojson]
   type config = pre_config list [@@deriving yojson]
-  let filename="config.json"
+  let filename="test_config.json"
 end
 
 (* declares val config *)
@@ -75,7 +75,7 @@ let execute_tests ~cs ~range ~fuel =
   let store_ops = Test_store.store_ops in
   Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
   fun ~pre_map_ops
-    ~pre_insert_all_op
+    ~insert_all
     ~leaf_stream_ops
     ~leaf_ops:leaf_ops0
     ~node_ops:node_ops0
@@ -159,7 +159,7 @@ let test_insert_all cs =
   let store_ops = Test_store.store_ops in
   Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
   fun ~pre_map_ops
-    ~pre_insert_all_op
+    ~insert_all
     ~leaf_stream_ops
     ~leaf_ops:leaf_ops0
     ~node_ops:node_ops0
@@ -168,22 +168,35 @@ let test_insert_all cs =
     ~leaf_to_kvs
     ~krs_to_node
     ~node_to_krs ->
-  let { insert_all } = pre_insert_all_op in
+  let { insert_all } = insert_all in
   (* s is the spec... a map *)
   let open Test_leaf_node_frame_impls in
   let r = Test_r(Disk_leaf map_ops.empty) in
-  let kvs = List_.from_to 1 (int_of_string "1E6") |> List.map(fun x -> (x,x)) in
-  let r' = 
-    sp_to_fun (insert_all ~r ~kvs) r
-    |> fun (r',_) -> r'
+  let open Tjr_seq in
+  let high = int_of_string "1E4" in
+  let {take_and_drop},kvs = (1 -- high) in
+  let {take_and_drop} = {take_and_drop} |> Tjr_seq.map (fun x -> (x,x)) in
+  let rec loop r kvs = 
+    match take_and_drop 100 kvs with
+    | [],_ -> r
+    | kvs,rest -> 
+      List.iter (fun (x,_) -> Printf.printf "x %d\n" x) kvs;
+      sp_to_fun (insert_all ~r ~kvs) r |> fun (r',_) -> 
+      loop r' rest
   in
+  loop r kvs |> fun r -> 
   let wf_tree = wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp in
-  assert (wf_tree (Test_impls.test_r_to_tree r'));
-  assert (
-    (r 
+  assert (wf_tree (Test_impls.test_r_to_tree r));
+  let kvs' = r
      |> Test_impls.test_r_to_tree
-     |> Isa_export.Tree.tree_to_leaves |> List.concat)
-    = kvs);
+     |> Isa_export.Tree.tree_to_leaves |> List.concat
+  in
+  Printf.printf "After insert, %d entries\n%!" (List.length kvs');
+  let _ = List.iter (fun (x,_) -> Printf.printf "%d\n" x) kvs' in
+  assert(high = List.length kvs');
+  assert (
+    kvs'
+    = (take_and_drop 10000 kvs |> fun (kvs,_) -> kvs)); 
   ()
 
 (* setup profiler ----------------------------------------------- *)
@@ -233,7 +246,7 @@ let _ =
       let store_ops = Test_store.store_ops in
       Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
       fun ~pre_map_ops
-        ~pre_insert_all_op
+        ~insert_all
         ~leaf_stream_ops
         ~leaf_ops:leaf_ops0
         ~node_ops:node_ops0
