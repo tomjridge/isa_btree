@@ -53,7 +53,7 @@ type ii_op = (int,int) op [@@deriving yojson]
 
 let k_cmp : int -> int -> int = Int_.compare
 
-let map_ops = Poly_map.make_map_ops k_cmp
+let map_ops = Tjr_map.make_map_ops k_cmp
 
 let dbg_tree_at_r = fun r -> return ()
 
@@ -61,7 +61,7 @@ let _make_pre_map_ops_etc =
   Internal_make_pre_map_ops.make_pre_map_ops_etc
 
 type test_r = Test_leaf_node_frame_impls.test_r
-type spec = (int,int,unit)Poly_map.map
+type spec = (int,int,unit)Tjr_map.map
 
 let execute_tests ~cs ~range ~fuel = 
   let dbg_frame f = 
