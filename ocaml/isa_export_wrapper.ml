@@ -250,6 +250,17 @@ module Internal_node_impl = struct
     in
     let _ = make_node in
 
+    (* check a node has a binding for None *)
+    let check_node_has_none_binding n = 
+      assert(map_ops.min_binding_opt n |> function
+        | None -> failwith __LOC__
+        | Some(None,_) -> true
+        | _ -> failwith __LOC__);
+      ()
+    in
+
+    let check_node = check_node_has_none_binding in
+
     let split_node_at_k_index i n =   (* i counts from 0 *)
       profile "bc" @@ fun () -> 
       (* FIXME this is rather inefficient... is there a better way?
@@ -269,29 +280,39 @@ module Internal_node_impl = struct
       let r = map_ops.find_opt (Some k) n |> dest_Some in
       let (n1,_,n2) = map_ops.split (Some k) n in
       n2 |> map_ops.add None r |> fun n2 ->
+      Test.test (fun () -> check_node n1;check_node n2);
       (n1,k,n2)
     in
     let node_merge (n1,k,n2) = 
       profile "bd" @@ fun () -> 
       n2 |> map_ops.find_opt None |> dest_Some |> fun r2 -> 
       n2 |> map_ops.remove None |> map_ops.add (Some k) r2 |> fun n2 ->
-      map_ops.disjoint_union n1 n2
+      map_ops.disjoint_union n1 n2 |> fun n -> 
+      Test.test (fun () -> check_node n);
+      n
     in
-    let node_steal_right (n1,k,n2) =
+    let node_steal_right (n1,k0,n2) =
       profile "be" @@ fun () -> 
-      n2 |> map_ops.find_opt None |> dest_Some |> fun r2 ->
+      n2 |> map_ops.find_opt None |> dest_Some |> fun r ->
       n2 |> map_ops.remove None |> fun n2 ->
-      n1 |> map_ops.add (Some k) r2 |> fun n1 ->
-      n2 |> map_ops.min_binding_opt |> dest_Some |> fun (k,_) ->
-      k |> dest_Some |> fun k ->
-      (n1,k,n2)
+      n2 |> map_ops.min_binding_opt |> dest_Some |> fun (k',r') ->
+      k' |> dest_Some |> fun k' ->
+      n2 |> map_ops.remove (Some k') |> map_ops.add None r' |> fun n2 ->
+      n1 |> map_ops.add (Some k0) r |> fun n1 ->
+      Test.test (fun () -> check_node n1;check_node n2);
+      (n1,k',n2)
     in
-    let node_steal_left (n1,k,n2) = 
+    let node_steal_left (n1,k0,n2) = 
       profile "bf" @@ fun () -> 
       n1 |> map_ops.max_binding_opt |> dest_Some |> fun (k,r) ->
       k |> dest_Some |> fun k ->
       n1 |> map_ops.remove (Some k) |> fun n1 ->
-      n2 |> map_ops.add (Some k) r |> fun n2 ->
+      n2 |> map_ops.min_binding_opt |> dest_Some |> fun (k',r') -> 
+      assert(k'=None);
+      n2 |> map_ops.remove None |> fun n2 -> 
+      n2 |> map_ops.add (Some k0) r' |> fun n2 ->
+      n2 |> map_ops.add None r |> fun n2 -> 
+      Test.test (fun () -> check_node n1;check_node n2);
       (n1,k,n2)
     in
     let node_keys_length n = 
@@ -327,6 +348,48 @@ module Internal_node_impl = struct
 k_cmp:('a -> 'a -> int) ->
 ('a, 'v, ('a option, 'v, unit) Tjr_map.map) node_ops
     = make_node_ops
+
+  let test_node_impl () = 
+    let k_cmp: int -> int -> int = Pervasives.compare in
+    let ops = make_node_ops ~k_cmp in
+    (* debugging *)
+    let node_to_string n =
+      let opt_to_string = function None -> "*" | Some k -> (string_of_int k) in
+      n |> ops.node_to_krs |> fun (ks,rs) -> 
+      let ks = "*"::(List.map string_of_int ks)  in
+      List.combine ks rs 
+      |> List.map (fun (k,v) -> (k^","^(string_of_int v)))
+      |> String.concat ","
+    in
+    let krs0 = [1;2;3],[91;92;93;94] in
+    let n0 = krs0 |> ops.krs_to_node in    
+    let n1,k,n2 = ops.split_node_at_k_index 0 n0 in
+    (* Printf.printf "%s k is %d\n%!" __LOC__ k; *)
+    assert(k=1);
+    let n3 = ops.node_merge (n1,k,n2) in
+    assert(ops.node_to_krs n3 = krs0);
+    let n1,k,n2 = ops.split_node_at_k_index 1 n0 in
+    assert(k=2);
+    (* steal right *)
+    let n1,k,n2 = ops.node_steal_right (n1,k,n2) in
+    assert(ops.node_merge(n1,k,n2) |> ops.node_to_krs = krs0);
+    (* steal left *)
+    let (n1,k,n2) = ops.split_node_at_k_index 1 n0 in
+    Logger.log(Printf.sprintf "%d %s" __LINE__ (n1 |> node_to_string));
+    Logger.log(Printf.sprintf "%d %d" __LINE__ k);
+    Logger.log(Printf.sprintf "%d %s" __LINE__ (n2 |> node_to_string));
+    Logger.log(Printf.sprintf "%d %s" __LINE__ (n3 |> node_to_string));
+    let n1,k,n2 = ops.node_steal_left (n1,k,n2) in
+    let n3 = ops.node_merge (n1,k,n2) in
+    Logger.log(Printf.sprintf "%d %s" __LINE__ (n1 |> node_to_string));
+    Logger.log(Printf.sprintf "%d %d" __LINE__ k);
+    Logger.log(Printf.sprintf "%d %s" __LINE__ (n2 |> node_to_string));
+    Logger.log(Printf.sprintf "%d %s" __LINE__ (n3 |> node_to_string));
+    assert(n3 |> ops.node_to_krs = krs0);
+    ()
+
+  let _ = Global.register ~name:(__MODULE__^".test_node_impl") test_node_impl
+
 
 end
 open Internal_node_impl

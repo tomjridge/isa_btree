@@ -19,6 +19,7 @@ $(test_main):
 	$(DUNE) build $(test_main)
 
 run_tests: build $(test_main)
+	time dune exec $(test_main) test_node_impl
 	time dune exec $(test_main) exhaustive
 	time dune exec $(test_main) test_delete
 	# time dune exec $(test_main) test_leaf_impl

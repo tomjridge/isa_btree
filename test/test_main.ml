@@ -172,7 +172,7 @@ let test_insert_all cs =
   let high = int_of_string "1E4" in
   let {take_and_drop},kvs = (1 -- high) in
   let {take_and_drop} = {take_and_drop} |> Tjr_seq.map (fun x -> (x,x)) in
-  let rec loop r kvs = 
+   let rec loop r kvs = 
     match take_and_drop 100 kvs with
     | [],_ -> r
     | kvs,rest -> 
@@ -216,15 +216,19 @@ let _ =
   (* enable_tests(); *)
   ()
 
-let _ = 
-  let run_tests () = 
+let with_logger f = 
     Logger.logger := Some (Log.mk_log_ops());
     Logger.at_exit ~print:true;
     Logger.log_lazy (fun _ -> "Logger initialized");
+    f();
+    Logger.at_exit ~print:false
+    
+let _ = 
+  let run_tests () = 
+    with_logger (fun () -> 
     Printf.printf "%s: tests begin\n%!" __MODULE__;
     List.iter (fun pre_config -> main ~pre_config) config;
-    Printf.printf "%s: tests OK\n%!" __MODULE__;
-    Logger.at_exit ~print:false
+    Printf.printf "%s: tests OK\n%!" __MODULE__)
   in
   match List.tl (Array.to_list (Sys.argv)) with
   | [] | ["exhaustive"] -> begin
@@ -236,6 +240,8 @@ let _ =
     end
   | ["test_leaf_impl"] -> 
     Isa_export_wrapper.Internal_leaf_impl.test_leaf_impl()
+  | ["test_node_impl"] -> 
+    with_logger (fun () -> Isa_export_wrapper.Internal_node_impl.test_node_impl())
   | ["test_delete"] -> 
     Test_delete.test()
   | ["insert_all"] -> 
