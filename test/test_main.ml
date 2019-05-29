@@ -50,6 +50,8 @@ end
 (* declares val config *)
 include Tjr_config.Make(C)
 
+let default_fuel = 6  (* 5 is not enough *)
+
 open Isa_export_wrapper
 
 type ii_op = (int,int) op [@@deriving yojson]
@@ -89,23 +91,21 @@ let execute_tests ~cs ~range ~fuel =
     range|>List.map (fun x -> Delete x) |> fun ys -> 
     xs@ys
   in
+  (* FIXME here and later we are a little unsure about
+     Small_root_node_or_leaf; FIXME the following is very inefficient
+     *)
+  let wf_tree = wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp in
   (* s is the spec... a map *)
   let test (r:test_r) (s:spec) = 
-    (* FIXME here and later we are a little unsure about
-       Samll_root_node_or_leaf; FIXME the following is very
-       inefficient *)
-    let wf_tree = wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp in
-    (* let _ = assert(test_flag()) in *)
-    let _ = if true (* test_flag()*) then begin
-        (* tree is wellformed (internal check) *)
-        assert(r |> test_r_to_tree |> wf_tree);
-        (* bindings match (check against spec) *)
-        assert(map_ops.bindings s = (
-            r 
-            |> test_r_to_tree
-            |> Isa_export.Tree.tree_to_leaves |> List.concat));
-      end
-    in
+    Logger.log(__LOC__);
+    Logger.log(test_r_to_string r);
+    (* tree is wellformed (internal check) *)
+    assert(r |> test_r_to_tree |> wf_tree);
+    (* bindings match (check against spec) *)
+    assert(map_ops.bindings s = (
+        r 
+        |> test_r_to_tree
+        |> Isa_export.Tree.tree_to_leaves |> List.concat));
     ()
   in
   let rec depth n ((r:test_r), (s: spec)) =
@@ -113,8 +113,8 @@ let execute_tests ~cs ~range ~fuel =
     | true -> () 
     | false -> 
       ops |> List.iter (fun op ->
-          (* Logger.log(Test_store.t2s r); *)
-          (* Logger.jlog (ii_op_to_yojson op); *)
+          Logger.log(test_r_to_string r);
+          Logger.jlog (ii_op_to_yojson op);
           match op with
           | Insert (k,v) -> (
               sp_to_fun (insert ~r ~k ~v) r |> function (Some r,_) ->
@@ -133,7 +133,7 @@ let execute_tests ~cs ~range ~fuel =
 
 let main' ~range_min ~range_max ~constants = 
   let range = List_.mk_range ~min:range_min ~max:range_max ~step:1 in
-  execute_tests ~cs:constants ~range ~fuel:5 
+  execute_tests ~cs:constants ~range ~fuel:default_fuel
 
 let _ = main'
 

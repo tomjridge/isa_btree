@@ -97,6 +97,8 @@ module Internal = struct
     let _ = test_r_to_yojson
 
     let test_r_to_tree r = test_r_to_tree' r |> tree'_to_tree
+
+    let test_r_to_string r = test_r_to_yojson r |> Yojson.Safe.pretty_to_string
   end
   include Test_r_to_tree
 
@@ -120,6 +122,7 @@ module Export = struct
   let tree'_to_test_r = tree'_to_test_r
   let test_r_to_tree = test_r_to_tree
   let test_r_to_yojson = test_r_to_yojson
+  let test_r_to_string = test_r_to_string
   let test_frame_to_yojson = test_frame_to_yojson
 end
 
