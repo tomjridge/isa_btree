@@ -20,12 +20,14 @@ We can also take ('a,t) m = 'a
 open Isa_btree
 open Isa_export
 open Tjr_monad
-open Test_flag
-open Test_store  (* also includes monad_ops *)
+(* open Test_flag *)
+open Test_monad
+(* open Test_store  *)
 open Test_util
 open Tjr_fs_shared.Kv_op
 
-module Test_impls = Test_leaf_node_frame_impls
+open Test_leaf_node_frame_impls
+(* module Test_impls = Test_leaf_node_frame_impls *)
 
 
 
@@ -70,7 +72,7 @@ let execute_tests ~cs ~range ~fuel =
   let dbg_frame f = 
     Logger.log_lazy (fun _ -> 
         Printf.sprintf "dbg_frame: %s\n" 
-          (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
+          (f |> test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
   in
   let store_ops = Test_store.store_ops in
   Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
@@ -80,10 +82,7 @@ let execute_tests ~cs ~range ~fuel =
     ~leaf_ops:leaf_ops0
     ~node_ops:node_ops0
     ~frame_ops:frame_ops0
-    ~kvs_to_leaf
-    ~leaf_to_kvs
-    ~krs_to_node
-    ~node_to_krs ->
+    ->
   let { leaf_lookup; find; insert; delete } = pre_map_ops in
   let ops = 
     range|>List.map (fun x -> Insert (x,x)) |> fun xs ->
@@ -96,13 +95,14 @@ let execute_tests ~cs ~range ~fuel =
        Samll_root_node_or_leaf; FIXME the following is very
        inefficient *)
     let wf_tree = wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp in
-    let _ = if test_flag() then begin
+    (* let _ = assert(test_flag()) in *)
+    let _ = if true (* test_flag()*) then begin
         (* tree is wellformed (internal check) *)
-        assert(r |> Test_impls.test_r_to_tree |> wf_tree);
+        assert(r |> test_r_to_tree |> wf_tree);
         (* bindings match (check against spec) *)
         assert(map_ops.bindings s = (
             r 
-            |> Test_impls.test_r_to_tree
+            |> test_r_to_tree
             |> Isa_export.Tree.tree_to_leaves |> List.concat));
       end
     in
@@ -154,7 +154,7 @@ let test_insert_all cs =
   let dbg_frame f = 
     Logger.log_lazy (fun _ -> 
         Printf.sprintf "dbg_frame: %s\n" 
-          (f |> Test_impls.test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
+          (f |> test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
   in
   let store_ops = Test_store.store_ops in
   Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
@@ -164,13 +164,9 @@ let test_insert_all cs =
     ~leaf_ops:leaf_ops0
     ~node_ops:node_ops0
     ~frame_ops:frame_ops0
-    ~kvs_to_leaf
-    ~leaf_to_kvs
-    ~krs_to_node
-    ~node_to_krs ->
+    -> 
   let { insert_all } = insert_all in
   (* s is the spec... a map *)
-  let open Test_leaf_node_frame_impls in
   let r = Test_r(Disk_leaf map_ops.empty) in
   let open Tjr_seq in
   let high = int_of_string "1E4" in
@@ -186,9 +182,9 @@ let test_insert_all cs =
   in
   loop r kvs |> fun r -> 
   let wf_tree = wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp in
-  assert (wf_tree (Test_impls.test_r_to_tree r));
+  assert (wf_tree (test_r_to_tree r));
   let kvs' = r
-     |> Test_impls.test_r_to_tree
+     |> test_r_to_tree
      |> Isa_export.Tree.tree_to_leaves |> List.concat
   in
   Printf.printf "After insert, %d entries\n%!" (List.length kvs');
@@ -203,14 +199,21 @@ let test_insert_all cs =
 
 open Tjr_profile
 
+(*
 let profiler = 
   Tjr_profile.make_int_profiler 
+    ~now:Core.Time_stamp_counter.(fun () ->
+        now () |> to_int63 |> Core.Int63.to_int |> fun (Some x) -> x)
+*)
+
+let profiler = 
+  Tjr_profile.make_string_profiler 
     ~now:Core.Time_stamp_counter.(fun () ->
         now () |> to_int63 |> Core.Int63.to_int |> fun (Some x) -> x)
 
 let _ = 
   enable_isa_checks();
-  enable_tests();
+  (* enable_tests(); *)
   ()
 
 let _ = 
@@ -224,18 +227,24 @@ let _ =
     Logger.at_exit ~print:false
   in
   match List.tl (Array.to_list (Sys.argv)) with
-  | [] -> begin
+  | [] | ["exhaustive"] -> begin
+      Isa_export_wrapper.Internal_leaf_impl.leaf_profiler := profiler;
       enable_isa_checks();
-      enable_tests();
-      run_tests() 
+      (* enable_tests(); *)
+      run_tests();
+      profiler.print_summary()
     end
+  | ["test_leaf_impl"] -> 
+    Isa_export_wrapper.Internal_leaf_impl.test_leaf_impl()
+  | ["test_delete"] -> 
+    Test_delete.test()
   | ["insert_all"] -> 
     List.iter test_insert_all Constants.all_constants
-  | ["no_asserts"] -> begin
+(*  | ["no_asserts"] -> begin
       disable_isa_checks();
       disable_tests();  (* disable test flag *)
       run_tests()
-    end
+    end*)
   | ["seq_insert"] -> begin
       let cs = Constants.mk_constants 
           ~min_leaf_size:500
@@ -251,10 +260,7 @@ let _ =
         ~leaf_ops:leaf_ops0
         ~node_ops:node_ops0
         ~frame_ops:frame_ops0
-        ~kvs_to_leaf
-        ~leaf_to_kvs
-        ~krs_to_node
-        ~node_to_krs ->
+        ->
       let { leaf_lookup; find; insert; delete } = pre_map_ops in
       (* disable_isa_checks(); *)
       (* disable_tests(); *)

@@ -44,8 +44,10 @@ module Leaf_ops_type = struct
     leaf_steal_left: 'leaf*'leaf -> 'leaf*'k*'leaf;
     leaf_merge: 'leaf * 'leaf -> 'leaf;
     split_large_leaf: int -> 'leaf -> 'leaf*'k*'leaf;
-    dbg_leaf_kvs: 'leaf -> ('k*'v) list;
-    dbg_leaf: 'leaf -> unit;
+    leaf_to_kvs: 'leaf -> ('k*'v) list;
+    kvs_to_leaf: ('k*'v) list -> 'leaf;
+    (* dbg_leaf_kvs: 'leaf -> ('k*'v) list; *)
+    (* dbg_leaf: 'leaf -> unit; *)
   }
 end
 include Leaf_ops_type
@@ -67,11 +69,11 @@ module Internal_leaf_impl = struct
   let make_leaf_ops ~k_cmp = 
     let map_ops = Tjr_map.make_map_ops k_cmp in
     let leaf_lookup k l = 
-      profile "ab" @@ fun () -> 
+      profile (*"ab"*) "ll" @@ fun () -> 
       map_ops.find_opt k l
     in
     let leaf_insert k v l = 
-      profile "ae" @@ fun () -> 
+      profile (*"ae"*) "li" @@ fun () -> 
       let old = ref None in
       let l' = 
         map_ops.update 
@@ -86,34 +88,36 @@ module Internal_leaf_impl = struct
       l',!old
     in
     let leaf_remove k l = 
-      profile "ah" @@ fun () -> 
+      profile (*"ah"*) "lr" @@ fun () -> 
       map_ops.remove k l in
     let leaf_length l = 
-      profile "aj" @@ fun () -> 
+      profile (*"aj"*) "llen" @@ fun () -> 
       map_ops.cardinal l in
-    let dbg_leaf_kvs l = 
+(*    let dbg_leaf_kvs l = 
       profile "ak" @@ fun () -> 
-      map_ops.bindings l in
+      map_ops.bindings l in*)
     let leaf_steal_right (l1,l2) =
-      profile "al" @@ fun () ->      
+      Printf.printf "leaf_steal_right\n";
+      profile (*"al"*) "lsr" @@ fun () -> 
       map_ops.min_binding_opt l2 |> dest_Some |> fun (k,v) ->
-      l2 |> map_ops.remove k |> map_ops.min_binding_opt |> dest_Some |> fun (k',_) ->
+      l2 |> map_ops.remove k |> fun l2 -> 
+      l2 |> map_ops.min_binding_opt |> dest_Some |> fun (k',_) ->
       l1 |> map_ops.add k v |> fun l1 ->
       (l1,k',l2)
     in
     let leaf_steal_left (l1,l2) =
-      profile "am" @@ fun () ->      
+      profile (*"am"*) "lsl" @@ fun () ->      
       map_ops.max_binding_opt l1 |> dest_Some |> fun (k,v) ->
       l1 |> map_ops.remove k |> fun l1 ->
       l2 |> map_ops.add k v |> fun l2 ->
       (l1,k,l2)
     in
     let leaf_merge (l1,l2) = 
-      profile "an" @@ fun () ->      
+      profile (*"an"*) "lm" @@ fun () ->      
       map_ops.disjoint_union l1 l2 
     in
     let split_large_leaf i l1 = 
-      profile "ao" @@ fun () ->      
+      profile (*"ao"*) "lspl" @@ fun () ->      
 (*      Printf.printf "split_large_leaf: i=%d len=%d"
         i
         (map_ops.cardinal l1);*)
@@ -131,23 +135,41 @@ module Internal_leaf_impl = struct
       profile "kvs2l" @@ fun () ->      
       map_ops.of_bindings kvs in
     let leaf_to_kvs = fun l -> 
-      profile "aq" @@ fun () ->      
-      dbg_leaf_kvs l in
+      profile "l2kvs" @@ fun () ->      
+      map_ops.bindings l in
     let ops = ({ leaf_lookup; leaf_insert; leaf_remove; leaf_length; 
        leaf_steal_right; leaf_steal_left; 
-       leaf_merge; split_large_leaf; dbg_leaf_kvs; dbg_leaf } : ('k,'v,('k,'v,unit)Tjr_map.map) leaf_ops)
+       leaf_merge; split_large_leaf; leaf_to_kvs; kvs_to_leaf } : ('k,'v,('k,'v,unit)Tjr_map.map) leaf_ops)
     in
-    fun f -> f ~leaf_ops:ops ~kvs_to_leaf ~leaf_to_kvs
+    ops
 
   let _ :
-k_cmp:('k -> 'k -> int) ->
-(leaf_ops:('k, 'v, ('k, 'v, unit) Tjr_map.map) leaf_ops ->
- kvs_to_leaf:(('k * 'v) list -> ('k, 'v, unit) Tjr_map.map) ->
- leaf_to_kvs:(('k, 'v, unit) Tjr_map.map -> ('k * 'v) list) -> 'a) ->
-'a
+k_cmp:('k -> 'k -> int) -> ('k, 'v, ('k, 'v, unit) Tjr_map.map) leaf_ops
     = make_leaf_ops
-    
 
+  let test_leaf_impl () = 
+    let k_cmp: int -> int -> int = Pervasives.compare in
+    let ops = make_leaf_ops ~k_cmp in
+    let kvs0 = List_.from_to 1 20 |> List.map (fun x -> (x,2*x)) in
+    let l0 = kvs0 |> ops.kvs_to_leaf in
+    let l1,k,l2 = ops.split_large_leaf 10 l0 in
+    (* Printf.printf "%s k is %d\n%!" __LOC__ k; *)
+    assert(k=11);
+    let xs,ys = ops.leaf_to_kvs l1,ops.leaf_to_kvs l2 in
+    assert(xs@ys=kvs0);
+    assert(List.hd ys = (k,2*k));
+    let (l1',k',l2') = ops.leaf_steal_right (l1,l2) in
+    assert(k'=12);
+    let xs',ys' = ops.leaf_to_kvs l1',ops.leaf_to_kvs l2' in
+    let zs = xs'@ys' |> List.map fst |> List.map string_of_int |> String.concat "," in
+    (* Printf.printf "%s %s\n%!" __LOC__ zs; *)
+    assert(xs'@ys'=kvs0);
+    ()
+
+  let _ = Global.register ~name:(__MODULE__^".test_leaf_impl") test_leaf_impl
+
+
+     
 end
 open Internal_leaf_impl
 
@@ -171,8 +193,10 @@ module Node_ops_type = struct
     node_keys_length: 'node -> int;
     node_make_small_root: 'r*'k*'r -> 'node;
     node_get_single_r: 'node -> 'r;
-    dbg_node_krs: 'node -> ('k list * 'r list);
-    dbg_node: 'node -> unit
+    node_to_krs: 'node -> ('k list * 'r list);
+    krs_to_node: ('k list * 'r list) -> 'node;
+    (* dbg_node_krs: 'node -> ('k list * 'r list); *)
+    (* dbg_node: 'node -> unit *)
   }
 end
 include Node_ops_type
@@ -284,29 +308,24 @@ module Internal_node_impl = struct
       assert(map_ops.cardinal n = 1);
       map_ops.bindings n |> fun [(_,r)] -> r
     in
-    let dbg_node_krs n = 
+    let node_to_krs n = 
       profile "bj" @@ fun () -> 
       n |> map_ops.bindings |> List.split |> fun (ks,rs) ->
       (List.tl ks |> List.map dest_Some,rs)
     in
-    let dbg_node = fun n -> () in
+    let krs_to_node = fun (ks,rs) -> make_node ks rs in
+    (* let dbg_node = fun n -> () in *)
     let node_ops = 
-      ({ split_node_at_k_index; node_merge; node_steal_right; node_steal_left; node_keys_length;
-         node_make_small_root; node_get_single_r;
-         dbg_node_krs; dbg_node
+      ({ split_node_at_k_index; node_merge; node_steal_right;
+         node_steal_left; node_keys_length; node_make_small_root;
+         node_get_single_r; node_to_krs; krs_to_node
        } : (k,'v,(k option,'v,unit)Tjr_map.map) node_ops)
     in
-    let krs_to_node = fun (ks,rs) -> make_node ks rs in
-    let node_to_krs = dbg_node_krs in
-    fun f -> f ~node_ops ~krs_to_node ~node_to_krs
+    node_ops
     
   let _ :
 k_cmp:('a -> 'a -> int) ->
-(node_ops:('a, 'v, ('a option, 'v, unit) Tjr_map.map) node_ops ->
- krs_to_node:('a list * 'v list -> ('a option, 'v, unit) Tjr_map.map) ->
- node_to_krs:(('a option, 'v, unit) Tjr_map.map -> 'a list * 'v list) ->
- 'b) ->
-'b
+('a, 'v, ('a option, 'v, unit) Tjr_map.map) node_ops
     = make_node_ops
 
 end
@@ -314,7 +333,6 @@ open Internal_node_impl
 
 type ('k,'r) _node_impl = ('k option, 'r, unit) Tjr_map.map
 
-(* let make_node_ops ~k_cmp : ('k,'r,('k,'r)_node_impl)node_ops = make_node_ops ~k_cmp *)
 
 (* frame_ops -------------------------------------------------------- *)
 
@@ -714,8 +732,9 @@ module Internal_make_pre_map_ops = struct
     let leaf_ops2isa leaf_ops  = 
       let { leaf_lookup; leaf_insert; leaf_remove; leaf_length;
             leaf_steal_right; leaf_steal_left;
-            leaf_merge; split_large_leaf; dbg_leaf_kvs; dbg_leaf } = leaf_ops 
+            leaf_merge; split_large_leaf; leaf_to_kvs; kvs_to_leaf } = leaf_ops 
       in
+      let dbg_leaf = fun l -> () in  (* FIXME *)
       Isa_export.Disk_node.make_leaf_ops
         leaf_lookup 
         leaf_insert 
@@ -725,13 +744,14 @@ module Internal_make_pre_map_ops = struct
         (fun (l1,l2) -> leaf_steal_left (l1,l2) |> fun (a,b,c) -> (a,(b,c)))
         leaf_merge
         (fun n l -> split_large_leaf (nat2int n) l |> fun (a,b,c) -> (a,(b,c)))
-        dbg_leaf_kvs
+        leaf_to_kvs 
         dbg_leaf
     in
+    let dbg_node = fun n -> () in  (* FIXME *)
     let node_ops2isa node_ops = 
       let {split_node_at_k_index; node_merge; node_steal_right;
            node_steal_left; node_keys_length; node_make_small_root;
-           node_get_single_r;dbg_node_krs; dbg_node} = node_ops 
+           node_get_single_r;node_to_krs;krs_to_node} = node_ops 
       in
       Isa_export.Disk_node.make_node_ops
         (fun nat n -> split_node_at_k_index (nat2int nat) n |> fun (x,y,z) -> (x,(y,z)))
@@ -741,7 +761,7 @@ module Internal_make_pre_map_ops = struct
         (fun x -> x |> node_keys_length |> int2nat)
         (fun (a,(b,c)) -> node_make_small_root (a,b,c))
         node_get_single_r
-        dbg_node_krs
+        node_to_krs
         dbg_node
     in
     let frame_ops2isa frame_ops = 
@@ -772,8 +792,8 @@ module Internal_make_pre_map_ops = struct
       M.Post_monad.make_store_ops read wrte rewrite free
     in
     fun ~cs ~k_cmp ~store_ops ~dbg_tree_at_r -> 
-      make_leaf_ops ~k_cmp @@ fun ~leaf_ops:leaf_ops0 ~kvs_to_leaf ~leaf_to_kvs -> 
-      make_node_ops ~k_cmp @@ fun ~node_ops:node_ops0 ~krs_to_node ~node_to_krs -> 
+      let leaf_ops0 = make_leaf_ops ~k_cmp in
+      let node_ops0 = make_node_ops ~k_cmp in
       let frame_ops0 = Internal_frame_impl.make_frame_ops ~k_cmp in
       let cs,k_cmp,leaf_ops,node_ops,frame_ops,store_ops = 
         (cs2isa cs),(cmp2isa k_cmp),(leaf_ops2isa leaf_ops0),(node_ops2isa node_ops0),(frame_ops2isa frame_ops0),(store_ops2isa store_ops)
@@ -792,7 +812,7 @@ module Internal_make_pre_map_ops = struct
       in
       let leaf_stream_ops = 
         let open M.Leaf_stream in
-        Internal_leaf_stream_impl.make_leaf_stream_ops ~monad_ops ~leaf_kvs:leaf_to_kvs ~isa_ls_step_to_next_leaf:(ls_step_to_next_leaf frame_ops store_ops)
+        Internal_leaf_stream_impl.make_leaf_stream_ops ~monad_ops ~leaf_kvs:leaf_ops0.leaf_to_kvs ~isa_ls_step_to_next_leaf:(ls_step_to_next_leaf frame_ops store_ops)
       in
       let _ = leaf_stream_ops in
       let leaf_lookup = leaf_ops0.leaf_lookup in
@@ -825,10 +845,6 @@ module Internal_make_pre_map_ops = struct
         ~leaf_ops:leaf_ops0
         ~node_ops:node_ops0
         ~frame_ops:frame_ops0
-        ~kvs_to_leaf
-        ~leaf_to_kvs
-        ~krs_to_node
-        ~node_to_krs
       
   let _ :
 monad_ops:'a monad_ops ->
@@ -853,35 +869,27 @@ dbg_tree_at_r:('r -> (unit, 'a) m) ->
  frame_ops:('k, 'r, ('k, 'r, ('k or_bottom, 'r, unit) Tjr_map.map) frame,
             ('k or_bottom, 'r, unit) Tjr_map.map)
            frame_ops ->
- kvs_to_leaf:(('k * 'v) list -> ('k, 'v, unit) Tjr_map.map) ->
- leaf_to_kvs:(('k, 'v, unit) Tjr_map.map -> ('k * 'v) list) ->
- krs_to_node:('k list * 'r list -> ('k or_bottom, 'r, unit) Tjr_map.map) ->
- node_to_krs:(('k or_bottom, 'r, unit) Tjr_map.map -> 'k list * 'r list) ->
  'b) ->
-'b    = make_pre_map_ops_etc
+'b
+    = make_pre_map_ops_etc
 
   module Internal_experiment_w_first_class_modules = struct
-
     module type Kvs_to_leaf = sig
       type k
       type v
       type leaf 
       val leaf_to_kvs: leaf -> (k*v)list
     end
-
     let make' (type k' v') ~monad_ops ~cs ~(k_cmp:k' -> k' -> int) ~store_ops ~dbg_tree_at_r =
       make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@ fun 
         ~pre_map_ops ~insert_all ~leaf_stream_ops
-        ~leaf_ops ~node_ops ~frame_ops
-        ~kvs_to_leaf ~leaf_to_kvs ~krs_to_node ~node_to_krs -> 
-      let _ = leaf_to_kvs in
-      let m = (module struct
+        ~leaf_ops ~node_ops ~frame_ops ->
+    let m = (module struct
         type k = k'
         type v = v'
         type leaf = (k', v', unit) Tjr_map.map 
-        let leaf_to_kvs = leaf_to_kvs end : Kvs_to_leaf with type k = k' and type v = v') in
+        let leaf_to_kvs = leaf_ops.leaf_to_kvs end : Kvs_to_leaf with type k = k' and type v = v') in
       m
-
     let _ = make'
   end
 end
@@ -893,7 +901,7 @@ open Internal_make_pre_map_ops
 
 (** Finally, redeclare make_find_insert_delete, hiding the internal
    types as much as possible. If you need access to the implementations, use the {!Internal_make_ops} module above. *)
-
+(*
 module Node_leaf_conversions_type = struct
   (** Type for converting nodes and leaves into lists of k,v,r *)
   type ('k,'v,'r,'node,'leaf) node_leaf_conversions = {
@@ -904,13 +912,14 @@ module Node_leaf_conversions_type = struct
   }
 end
 open Node_leaf_conversions_type
+*)
 
-let export_profiler = ref dummy_profiler
+(* let export_profiler = ref dummy_profiler *)
 
 module Internal_export : sig
   type ('k,'r) node_impl
   type ('k,'v) leaf_impl
-  val node_leaf_conversions: k_cmp:('k -> 'k -> int) -> ('k,'v,'r,('k,'r) node_impl,('k,'v) leaf_impl)node_leaf_conversions
+  (* val node_leaf_conversions: k_cmp:('k -> 'k -> int) -> ('k,'v,'r,('k,'r) node_impl,('k,'v) leaf_impl)node_leaf_conversions *)
   type ('k,'v,'r) dnode_impl = (('k,'r) node_impl, ('k,'v) leaf_impl)dnode
   type ('k,'r) frame_impl 
   type ('k,'v,'r) leaf_stream_impl
@@ -976,8 +985,8 @@ module Internal_export : sig
 *)
 
 
-  val leaf_to_kvs : ('k,'v,'r,'a) isa_btree -> 
-    ('k, 'v) leaf_impl -> ('k * 'v) list
+(*  val leaf_to_kvs : ('k,'v,'r,'a) isa_btree -> 
+    ('k, 'v) leaf_impl -> ('k * 'v) list *)
 
 (*
   val kvs_to_leaf : ('k,'v,'r,'a) isa_btree -> 
@@ -988,16 +997,17 @@ module Internal_export : sig
 *)
 end = struct
 
+(*
   module Internal_ = struct
     let profile x z =
-      let profiler = export_profiler in
+      let profiler = Tjr_profile.string_profiler in
       !profiler.mark x;
       let r = z() in
       !profiler.mark (x^"'");
       r
   end
-  open Internal_
-
+  (* open Internal_ *)
+*)
 
   type ('k,'r) node_impl = ('k,'r)_node_impl
   type ('k,'v) leaf_impl = ('k,'v)_leaf_impl
@@ -1012,11 +1022,7 @@ end = struct
 (* c *)    * ('k, 'v, ('k, 'v) leaf_impl) leaf_ops 
 (* d *)    * ('k, 'r, ('k, 'r) node_impl) node_ops
 (* e *)    * ('k, 'r, ('k, 'r) frame_impl, ('k,'r) node_impl) frame_ops 
-(* f *)    * (('k * 'v) list -> ('k, 'v) leaf_impl)
-(* g *)    * (('k, 'v) leaf_impl -> ('k * 'v) list)
-(* h *)    * ('k list * 'r list -> ('k,'r) node_impl)
-(* i *)    * (('k,'r) node_impl -> 'k list * 'r list)
-(* j *)    * ('k, 'v, 'r, 'a) insert_all_type
+(* f *)    * ('k, 'v, 'r, 'a) insert_all_type
 
   let make_isa_btree ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r : ('k,'v,'r,'a) isa_btree = 
     make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r
@@ -1026,40 +1032,32 @@ end = struct
         ~leaf_ops
         ~node_ops
         ~frame_ops
-        ~kvs_to_leaf
-        ~leaf_to_kvs
-        ~krs_to_node
-        ~node_to_krs ->
-    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,kvs_to_leaf,leaf_to_kvs,krs_to_node,node_to_krs,insert_all)
+        -> 
+    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,insert_all)
 
+(*
   let node_leaf_conversions ~k_cmp = 
-    Internal_node_impl.make_node_ops ~k_cmp @@  fun ~node_ops ~krs_to_node ~node_to_krs ->
-    Internal_leaf_impl.make_leaf_ops ~k_cmp @@  fun ~leaf_ops ~kvs_to_leaf ~leaf_to_kvs ->
+    let node_ops = Internal_node_impl.make_node_ops ~k_cmp in
+    let leaf_ops = Internal_leaf_impl.make_leaf_ops ~k_cmp in
     (* FIXME remove profiling *)
-    let node_to_krs n = profile "gb" @@ fun () -> node_to_krs n in
-    let krs_to_node krs = profile "gc" @@ fun () -> krs_to_node krs in
-    let leaf_to_kvs l = profile "gd" @@ fun () -> leaf_to_kvs l in
-    let kvs_to_leaf kvs = profile "kvs2l'" @@ fun () -> kvs_to_leaf kvs in
+    (* let node_to_krs n = profile "gb" @@ fun () -> node_to_krs n in *)
+    (* let krs_to_node krs = profile "gc" @@ fun () -> krs_to_node krs in *)
+    (* let leaf_to_kvs l = profile "gd" @@ fun () -> leaf_to_kvs l in *)
+    (* let kvs_to_leaf kvs = profile "kvs2l'" @@ fun () -> kvs_to_leaf kvs in *)
     { node_to_krs; krs_to_node; leaf_to_kvs; kvs_to_leaf }
-
+*)
 
   let _ = make_pre_map_ops_etc
     
-  let pre_map_ops = fun (a,b,c,d,e,f,g,h,i,j) -> a
+  let pre_map_ops = fun (a,b,c,d,e,f) -> a
 
-  let leaf_stream_ops = fun (a,b,c,d,e,f,g,h,i,j) -> b
+  let leaf_stream_ops = fun (a,b,c,d,e,f) -> b
 
-  let leaf_ops = fun (a,b,c,d,e,f,g,h,i,j) -> c
+  let leaf_ops = fun (a,b,c,d,e,f) -> c
 
-  let node_ops = fun (a,b,c,d,e,f,g,h,i,j) -> d
+  let node_ops = fun (a,b,c,d,e,f) -> d
 
-  let kvs_to_leaf = fun (a,b,c,d,e,f,g,h,i,j) -> f
-    
-  let leaf_to_kvs = fun (a,b,c,d,e,f,g,h,i,j) -> g
-    
-  let krs_to_node = fun (a,b,c,d,e,f,g,h,i,j) -> h
-
-  let insert_all = fun (a,b,c,d,e,f,g,h,i,j) -> j
+  let insert_all = fun (a,b,c,d,e,f) -> f
 
 end
 include Internal_export
