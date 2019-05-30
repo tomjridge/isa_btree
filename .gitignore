@@ -13,3 +13,5 @@ docs/pics/*.ps
 /isa_btree.install
 /ocaml/.merlin
 /test/.merlin
+/isa_btree_test.install
+.merlin

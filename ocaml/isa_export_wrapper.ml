@@ -97,7 +97,7 @@ module Internal_leaf_impl = struct
       profile "ak" @@ fun () -> 
       map_ops.bindings l in*)
     let leaf_steal_right (l1,l2) =
-      Printf.printf "leaf_steal_right\n";
+      (* Printf.printf "leaf_steal_right\n"; *)
       profile (*"al"*) "lsr" @@ fun () -> 
       map_ops.min_binding_opt l2 |> dest_Some |> fun (k,v) ->
       l2 |> map_ops.remove k |> fun l2 -> 

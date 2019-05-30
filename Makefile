@@ -13,19 +13,17 @@ uninstall:
 clean:
 	$(DUNE) clean
 
-test_main:=test/test_main.exe
+test_main:=test_bin/test_main.exe
 
 $(test_main):
 	$(DUNE) build $(test_main)
 
 run_tests: build $(test_main)
 	time dune exec $(test_main) test_node_impl
-	time dune exec $(test_main) exhaustive
+	time dune exec $(test_main) test_leaf_impl
 	time dune exec $(test_main) test_delete
-	# time dune exec $(test_main) test_leaf_impl
+	time dune exec $(test_main) test_exhaustive_2
 	# time dune exec $(test_main) insert_all
-	#time dune exec $(test_main) exhaustive
-	# && time dune exec $(test_main) no_asserts
 
 all:
 	$(MAKE) clean

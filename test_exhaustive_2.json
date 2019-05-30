@@ -1,9 +1,7 @@
 [
-
    {
      "range_min":1,
      "range_max":6,
-     "fuel":10,
      "min_leaf_size":1,
      "max_leaf_size":1,
      "min_node_keys":1,
@@ -12,7 +10,6 @@
    {
      "range_min":1,
      "range_max":6,
-     "fuel":10,
      "min_leaf_size":1,
      "max_leaf_size":2,
      "min_node_keys":1,
@@ -21,7 +18,6 @@
    {
      "range_min":1,
      "range_max":6,
-     "fuel":6,
      "min_leaf_size":1,
      "max_leaf_size":1,
      "min_node_keys":2,
@@ -30,7 +26,6 @@
    {
      "range_min":1,
      "range_max":6,
-     "fuel":6,
      "min_leaf_size":2,
      "max_leaf_size":3,
      "min_node_keys":1,
@@ -39,7 +34,6 @@
    {
      "range_min":1,
      "range_max":6,
-     "fuel":6,
      "min_leaf_size":3,
      "max_leaf_size":5,
      "min_node_keys":3,
@@ -48,7 +42,6 @@
    {
      "range_min":1,
      "range_max":8,
-     "fuel":6,
      "min_leaf_size":2,
      "max_leaf_size":3,
      "min_node_keys":1,
@@ -57,7 +50,6 @@
    {
      "range_min":1,
      "range_max":10,
-     "fuel":6,
      "min_leaf_size":2,
      "max_leaf_size":3,
      "min_node_keys":1,
