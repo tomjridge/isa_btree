@@ -77,7 +77,7 @@ let execute_tests ~cs ~range ~fuel =
           (f |> test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
   in
   let store_ops = Test_store.store_ops in
-  Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
+  Internal_make_pre_map_ops_etc.make ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
   fun ~pre_map_ops
     ~insert_all
     ~leaf_stream_ops
@@ -157,7 +157,7 @@ let test_insert_all cs =
           (f |> test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
   in
   let store_ops = Test_store.store_ops in
-  Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
+  Internal_make_pre_map_ops_etc.make ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
   fun ~pre_map_ops
     ~insert_all
     ~leaf_stream_ops
@@ -259,7 +259,7 @@ let _ =
           ~max_node_keys:1000
       in
       let store_ops = Test_store.store_ops in
-      Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
+      Internal_make_pre_map_ops_etc.make ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
       fun ~pre_map_ops
         ~insert_all
         ~leaf_stream_ops

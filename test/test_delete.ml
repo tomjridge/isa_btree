@@ -28,7 +28,7 @@ let wf_tree = wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp
 let test_1 () = assert(wf_tree (tree'_to_tree init_tree'))
 
 let pre_map_ops = 
-  Internal_make_pre_map_ops.make_pre_map_ops_etc ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r:(fun _ -> return ()) @@
+  Internal_make_pre_map_ops_etc.make ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r:(fun _ -> return ()) @@
   fun ~pre_map_ops
     ~insert_all
     ~leaf_stream_ops
