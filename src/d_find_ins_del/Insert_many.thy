@@ -33,7 +33,7 @@ constants \<Rightarrow>
         Some(leaf,len_leaf,kvs)
       )))
     in
-    iter_step step (leaf,(leaf_ops|>leaf_length) leaf,kvs0) 
+    iter_step step (leaf,(leaf_ops|>leaf_length) leaf,(k,v)#kvs0) 
     |> (% (leaf,len_leaf,kvs).
     let _ = assert_true (% _. len_leaf = (leaf_ops|>leaf_length) leaf) in
     case len_leaf \<le> cs|>max_leaf_size of

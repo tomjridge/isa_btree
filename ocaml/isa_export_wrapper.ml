@@ -769,12 +769,19 @@ The semantics of this operation is: for a list of (k,v), the operation
    inserts all kvs, and returns the updated root (or the original root
    if tree was updated in place).  *)
 
-module Pre_insert_all_type = struct
+module Insert_all_type = struct
   type ('k,'v,'r,'t) insert_all_type = {
     insert_all: r:'r -> kvs:('k*'v)list -> ('r,'t) m
   }
 end
-include Pre_insert_all_type
+include Insert_all_type
+
+module Insert_many_type = struct
+  type ('k,'v,'r,'t) insert_many_type = {
+    insert_many: r:'r -> k:'k -> v:'v -> kvs:('k*'v)list -> (('k*'v)list*'r option, 't)m
+  }
+end
+include Insert_many_type
 
 (* make_find_insert_delete ------------------------------------------ *)
 
@@ -898,6 +905,11 @@ module Internal_make_pre_map_ops_etc = struct
       let ( >>= ) = monad_ops.bind
       let return = monad_ops.return
 
+      let insert_many =
+        let insert_many = M.Insert_many.insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops in 
+        let insert_many = fun ~(r:'r) ~(k:'k) ~(v:'v) ~kvs -> insert_many r k v kvs in
+        { insert_many }
+
       let insert_all = 
         (* let im_step = M.Insert_many.im_step cs k_cmp leaf_ops node_ops frame_ops store_ops in *)
         let insert_many = M.Insert_many.insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops in 
@@ -921,6 +933,7 @@ module Internal_make_pre_map_ops_etc = struct
     let open A in
     fun f -> f
         ~pre_map_ops
+        ~insert_many
         ~insert_all
         ~leaf_stream_ops
         ~leaf_ops:leaf_ops0
@@ -972,6 +985,9 @@ module Internal_export : sig
   val insert_all : ('k,'v,'r,'a) isa_btree -> 
     ('k,'v,'r,'a) insert_all_type
 
+  val insert_many: ('k,'v,'r,'a) isa_btree -> 
+    ('k,'v,'r,'a) insert_many_type
+
   val leaf_stream_ops: ('k,'v,'r,'a) isa_btree -> 
     ('k,'v,'r, ('k,'v,'r) leaf_stream_impl, 'a) leaf_stream_ops
 end = struct
@@ -990,27 +1006,32 @@ end = struct
 (* d *)    * ('k, 'r, ('k, 'r) node_impl) node_ops
 (* e *)    * ('k, 'r, ('k, 'r) frame_impl, ('k,'r) node_impl) frame_ops 
 (* f *)    * ('k, 'v, 'r, 'a) insert_all_type
+(* g *)    * ('k, 'v, 'r, 'a) insert_many_type
 
   let make_isa_btree ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r : ('k,'v,'r,'a) isa_btree = 
     Internal_make_pre_map_ops_etc.make ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r
-    @@ fun ~pre_map_ops
+    @@ fun 
+      ~pre_map_ops
+      ~insert_many
       ~insert_all
-        ~leaf_stream_ops
-        ~leaf_ops
-        ~node_ops
-        ~frame_ops
-        -> 
-    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,insert_all)
+      ~leaf_stream_ops
+      ~leaf_ops
+      ~node_ops
+      ~frame_ops
+    -> 
+    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,insert_all,insert_many)
 
-  let pre_map_ops = fun (a,b,c,d,e,f) -> a
+  let pre_map_ops = fun (a,b,c,d,e,f,g) -> a
 
-  let leaf_stream_ops = fun (a,b,c,d,e,f) -> b
+  let leaf_stream_ops = fun (a,b,c,d,e,f,g) -> b
 
-  let leaf_ops = fun (a,b,c,d,e,f) -> c
+  let leaf_ops = fun (a,b,c,d,e,f,g) -> c
 
-  let node_ops = fun (a,b,c,d,e,f) -> d
+  let node_ops = fun (a,b,c,d,e,f,g) -> d
 
-  let insert_all = fun (a,b,c,d,e,f) -> f
+  let insert_all = fun (a,b,c,d,e,f,g) -> f
+
+  let insert_many = fun (a,b,c,d,e,f,g) -> g
 
 end
 include Internal_export

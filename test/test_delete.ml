@@ -30,6 +30,7 @@ let test_1 () = assert(wf_tree (tree'_to_tree init_tree'))
 let pre_map_ops = 
   Internal_make_pre_map_ops_etc.make ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r:(fun _ -> return ()) @@
   fun ~pre_map_ops
+    ~insert_many
     ~insert_all
     ~leaf_stream_ops
     ~leaf_ops:leaf_ops0

@@ -42,7 +42,9 @@ include Isa_export_wrapper.Pre_map_ops_type
 
 (** {2 Insert many} *)
 
-include Isa_export_wrapper.Pre_insert_all_type
+include Isa_export_wrapper.Insert_all_type
+
+include Isa_export_wrapper.Insert_many_type
 
 (** {2 Store ops} *)
 

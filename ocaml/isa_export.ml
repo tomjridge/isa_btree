@@ -1813,15 +1813,15 @@ let dummy : unit = Delete.dummy;;
 let rec im_step_bottom
   cs k_cmp leaf_ops node_ops frame_ops store_ops =
     (fun d kvs0 ->
-      (let (fs, _) = d in
+      (let (fs, v) = d in
         (match Find_state.dest_F_finished fs
           with None -> A_start_here.impossible1 "insert, step_bottom"
-          | Some (_, (_, (_, (leaf, stk)))) ->
+          | Some (_, (k, (_, (leaf, stk)))) ->
             (let (_, u) = Stacks_and_frames.get_bounds frame_ops stk in
              let step =
                (fun s ->
                  (match s with (_, (_, [])) -> None
-                   | (leafa, (len_leaf, (k, v) :: kvs)) ->
+                   | (leafa, (len_leaf, (ka, va) :: kvs)) ->
                      (let _ =
                         A_start_here.assert_true
                           (fun _ ->
@@ -1841,13 +1841,13 @@ let rec im_step_bottom
                         in
                       let test2 =
                         (match u with None -> false
-                          | Some ua -> Key_value.key_le k_cmp ua k)
+                          | Some ua -> Key_value.key_le k_cmp ua ka)
                         in
                        (match test1 || test2 with true -> None
                          | false ->
                            (let (leafb, old_v) =
                               A_start_here.rev_apply leaf_ops
-                                Disk_node.leaf_insert k v leafa
+                                Disk_node.leaf_insert ka va leafa
                               in
                             let len_leafa =
                               (if A_start_here.is_None old_v
@@ -1860,7 +1860,7 @@ let rec im_step_bottom
                 (A_start_here.iter_step step
                   (leaf,
                     (A_start_here.rev_apply leaf_ops Disk_node.leaf_length leaf,
-                      kvs0)))
+                      (k, v) :: kvs0)))
                 (fun (leafa, (len_leaf, kvs)) ->
                   (let _ =
                      A_start_here.assert_true
@@ -1880,7 +1880,7 @@ let rec im_step_bottom
                           (Monad.fmap
                             (fun r -> ((Insert_state.I1 r, stk), kvs)))
                       | false ->
-                        (let (leaf1, (k, leaf2)) =
+                        (let (leaf1, (ka, leaf2)) =
                            A_start_here.rev_apply leaf_ops
                              Disk_node.split_large_leaf
                              (A_start_here.rev_apply cs
@@ -1900,7 +1900,7 @@ let rec im_step_bottom
                                       Post_monad.wrte))
                                   (Monad.fmap
                                     (fun r2 ->
-                                      ((Insert_state.I2 (r1, (k, r2)), stk),
+                                      ((Insert_state.I2 (r1, (ka, r2)), stk),
 kvs)))))))))))));;
 
 let rec im_step

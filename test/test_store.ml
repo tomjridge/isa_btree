@@ -4,7 +4,13 @@
 open Isa_btree
 open Test_leaf_node_frame_impls
 open Test_monad
+
+
 (* a store that works with trees not refs --------------------------- *)
+
+(* FIXME perhaps r should just be unit, and the store passes the tree
+   around; at the moment we have r as the tree, and the tree is
+   duplicated in the store *)
 
 
 open Isa_export.Disk_node
@@ -20,7 +26,7 @@ let store_ops =
   in
   let wrte frm = 
     let node = Test_r frm in
-    return node
+    State_passing.of_fun (fun _ -> (node,node))
   in
   let rewrite r frm = wrte frm >>= fun r -> return (Some r) in
   let free _rs = return () in

@@ -69,8 +69,13 @@ let _ =
   | ["test_delete"] -> 
     Test_delete.test()
 
+  | ["test_insert_many"] -> 
+    with_logger (fun () -> 
+        List.iter Test_insert_all.test_insert_many Constants.all_constants)
+
   | ["test_insert_all"] -> 
-    List.iter Test_insert_all.test_insert_all Constants.all_constants
+    with_logger (fun () -> 
+        List.iter Test_insert_all.test_insert_all Constants.all_constants)
 
   | ["test_seq_insert"] -> 
       with_logger (fun () -> Test_sequential_insert.test_seq_insert ())
