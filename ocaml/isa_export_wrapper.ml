@@ -10,6 +10,7 @@ module Isa_export_assert_flag = struct
 
   let enable_isa_checks () = Isa_export.assert_flag:=true
   let disable_isa_checks () = Isa_export.assert_flag:=false
+  let _ = disable_isa_checks ()  (* default is to disable *)
 end
 include Isa_export_assert_flag
 
@@ -54,9 +55,10 @@ include Leaf_ops_type
 
 module Internal_leaf_impl = struct
 
-  let leaf_profiler = ref dummy_profiler
-
+  let leaf_profiler = Init_ref.create dummy_profiler
+      
   module Internal_ = struct
+    open Init_ref
     let profile x z =
       let profiler = leaf_profiler in
       !profiler.mark x;
@@ -203,9 +205,10 @@ include Node_ops_type
 
 module Internal_node_impl = struct
 
-  let node_profiler = ref dummy_profiler
+  let node_profiler = Init_ref.create dummy_profiler
 
   module Internal_ = struct
+    open Init_ref
     let profile x z =
       let profiler = node_profiler in
       !profiler.mark x;
@@ -268,7 +271,7 @@ module Internal_node_impl = struct
       map_ops.bindings n |> fun krs -> 
       let ks,rs = List.split krs in
       let ks = List.tl ks |> List.map dest_Some in  (* drop None *)
-      assert(
+      assert(  (* FIXME use Test.assert_ or similar *)
         let len = List.length ks in 
         let _ = 
           match i < len with
@@ -434,9 +437,10 @@ type ('k,'r,'frame,'node) frame_ops = {
 
 module Internal_frame_impl = struct
 
-  let frame_profiler = ref dummy_profiler
+  let frame_profiler = Init_ref.create dummy_profiler
 
   module Internal_ = struct
+    open Init_ref
     let profile x z =
       let profiler = frame_profiler in
       !profiler.mark x;
