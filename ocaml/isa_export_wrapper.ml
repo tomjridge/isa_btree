@@ -990,6 +990,12 @@ module Internal_export : sig
 
   val leaf_stream_ops: ('k,'v,'r,'a) isa_btree -> 
     ('k,'v,'r, ('k,'v,'r) leaf_stream_impl, 'a) leaf_stream_ops
+
+  (** NOTE node_ops and leaf_ops should only be used for conversions to/from lists *)
+  val node_ops: ('k,'v,'r,'a) isa_btree -> ('k, 'r, ('k, 'r) node_impl) node_ops
+
+  val leaf_ops: ('k,'v,'r,'a) isa_btree -> ('k, 'v, ('k, 'v) leaf_impl) leaf_ops
+  
 end = struct
 
   type ('k,'r) node_impl = ('k,'r)_node_impl
@@ -999,14 +1005,15 @@ end = struct
   type ('k,'r) frame_impl = ('k,'r)_frame_impl
   type ('k,'v,'r) leaf_stream_impl = ('k,'v,'r)_leaf_stream_impl
 
-  type ('k,'v,'r,'a) isa_btree = 
-(* a *)    ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops 
-(* b *)    * ('k, 'v, 'r, ('k,'v,'r)leaf_stream_impl, 'a) leaf_stream_ops
-(* c *)    * ('k, 'v, ('k, 'v) leaf_impl) leaf_ops 
-(* d *)    * ('k, 'r, ('k, 'r) node_impl) node_ops
-(* e *)    * ('k, 'r, ('k, 'r) frame_impl, ('k,'r) node_impl) frame_ops 
-(* f *)    * ('k, 'v, 'r, 'a) insert_all_type
-(* g *)    * ('k, 'v, 'r, 'a) insert_many_type
+  type ('k,'v,'r,'a) isa_btree = {
+    pre_map_ops     : ('k, 'v, 'r, ('k, 'v) leaf_impl, ('k, 'r) frame_impl, 'a) pre_map_ops;
+    leaf_stream_ops : ('k, 'v, 'r, ('k,'v,'r)leaf_stream_impl, 'a) leaf_stream_ops;
+    leaf_ops        : ('k, 'v, ('k, 'v) leaf_impl) leaf_ops;
+    node_ops        : ('k, 'r, ('k, 'r) node_impl) node_ops;
+    frame_ops       : ('k, 'r, ('k, 'r) frame_impl, ('k,'r) node_impl) frame_ops;
+    insert_all      : ('k, 'v, 'r, 'a) insert_all_type;
+    insert_many     : ('k, 'v, 'r, 'a) insert_many_type;
+  }
 
   let make_isa_btree ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r : ('k,'v,'r,'a) isa_btree = 
     Internal_make_pre_map_ops_etc.make ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r
@@ -1019,23 +1026,25 @@ end = struct
       ~node_ops
       ~frame_ops
     -> 
-    (pre_map_ops,leaf_stream_ops,leaf_ops,node_ops,frame_ops,insert_all,insert_many)
+    {pre_map_ops;leaf_stream_ops;leaf_ops;node_ops;frame_ops;insert_all;insert_many}
 
-  let pre_map_ops = fun (a,b,c,d,e,f,g) -> a
+  let pre_map_ops x = x.pre_map_ops
 
-  let leaf_stream_ops = fun (a,b,c,d,e,f,g) -> b
+  let leaf_stream_ops x = x.leaf_stream_ops
 
-  let leaf_ops = fun (a,b,c,d,e,f,g) -> c
+  let leaf_ops x = x.leaf_ops
 
-  let node_ops = fun (a,b,c,d,e,f,g) -> d
+  let node_ops x = x.node_ops
 
-  let insert_all = fun (a,b,c,d,e,f,g) -> f
+  let insert_all x = x.insert_all
 
-  let insert_many = fun (a,b,c,d,e,f,g) -> g
+  let insert_many x = x.insert_many
 
 end
 include Internal_export
 
+
+(* FIXME perhaps include this as a component of isa_btree *)
 let wf_tree ~cs ~ms ~k_cmp = 
   let open Internal_conversions in
   Isa_export.Tree.wf_tree 

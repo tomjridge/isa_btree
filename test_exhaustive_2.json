@@ -9,7 +9,7 @@
    },
    {
      "range_min":1,
-     "range_max":6,
+     "range_max":8,
      "min_leaf_size":1,
      "max_leaf_size":2,
      "min_node_keys":1,
