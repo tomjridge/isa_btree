@@ -995,7 +995,13 @@ module Internal_export : sig
   val node_ops: ('k,'v,'r,'a) isa_btree -> ('k, 'r, ('k, 'r) node_impl) node_ops
 
   val leaf_ops: ('k,'v,'r,'a) isa_btree -> ('k, 'v, ('k, 'v) leaf_impl) leaf_ops
-  
+
+  (** When dealing with store_ops and lower interfaces (blocks etc) we
+     need access to node_ops and leaf_ops without constructing the
+     full B-tree *)
+  val make_node_ops: k_cmp:('k -> 'k -> int) -> ('k,'r,('k,'r) node_impl) node_ops
+  val make_leaf_ops: k_cmp:('k -> 'k -> int) -> ('k,'v,('k,'v) leaf_impl) leaf_ops
+
 end = struct
 
   type ('k,'r) node_impl = ('k,'r)_node_impl
@@ -1040,6 +1046,9 @@ end = struct
 
   let insert_many x = x.insert_many
 
+
+  let make_node_ops ~k_cmp = Internal_node_impl.make_node_ops ~k_cmp
+  let make_leaf_ops ~k_cmp = Internal_leaf_impl.make_leaf_ops ~k_cmp
 end
 include Internal_export
 
