@@ -21,6 +21,7 @@ module C = struct
     max_node_keys:int
   } [@@deriving yojson]
   type config = pre_config list [@@deriving yojson]
+  let default_config = None
   let filename="test_exhaustive_2.json"
 end
 
