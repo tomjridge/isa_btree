@@ -21,7 +21,7 @@ module Constants = Constants
 
 (** {2 Disk-backed nodes} *)
 
-include Isa_export_wrapper.Dnode_type
+include Isa_btree_intf.Dnode_type
 
 
 (*
@@ -37,7 +37,7 @@ include Isa_export_wrapper.Node_ops_type
 
 (** {2 Pre-map ops} *)
 
-include Isa_export_wrapper.Pre_map_ops_type
+include Isa_btree_intf.Pre_map_ops_type
 
 
 (** {2 Insert many} *)
@@ -48,17 +48,17 @@ include Isa_export_wrapper.Insert_many_type
 
 (** {2 Store ops} *)
 
-include Isa_export_wrapper.Store_ops_type
+include Isa_btree_intf.Store_ops_type
 
 
 (** {2 Leaf stream ops} *)
 
-include Isa_export_wrapper.Leaf_stream_ops_type
+include Isa_btree_intf.Leaf_stream_ops_type
 
 
 (** {2 Main functionality: make_isa_btree} *)
 
-include Isa_export_wrapper.Internal_export
+(* include Isa_export_wrapper.Internal_export *)
 
 (** {2 Internal interfaces} *)
 

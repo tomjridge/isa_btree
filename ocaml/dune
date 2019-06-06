@@ -4,6 +4,6 @@
 (library
   (name isa_btree)
   (public_name isa_btree)
-  (preprocess (pps ppx_deriving_yojson))
+  (preprocess (pps ppx_deriving_yojson ppx_jane))
   (libraries num yojson ppx_deriving_yojson ppx_deriving_yojson.runtime tjr_fs_shared tjr_profile))
 
