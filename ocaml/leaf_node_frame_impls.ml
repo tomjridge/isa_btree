@@ -328,17 +328,9 @@ end
 
 (** {2 Frame operations} *)
 
-module Frame_type = struct
-  type ('k,'r,'node) frame = {
-    midkey: 'k option;  (* really or_bottom; may be None *)
-    midpoint: 'r;
-    node: 'node;
-    backing_node_blk_ref: 'r
-  } [@@deriving to_yojson]
-end
-open Frame_type
-
 module Internal_frame_impl = struct
+
+  open Isa_btree_intf.Frame_type
 
   let frame_profiler = Init_ref.create dummy_profiler
 

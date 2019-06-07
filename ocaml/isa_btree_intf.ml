@@ -124,32 +124,59 @@ include Leaf_stream_ops_type
     (* ls_leaf: 'leaf_stream_state -> 'leaf; *)
 
 
+(** {2 Insert many} 
 
+The semantics of this operation is: for a list of (k,v), the operation
+inserts some kvs, and returns the rest.
 
-module type Ctxt0 = sig
+*) 
 
-  type t
-  val monad_ops: t monad_ops
-      
-  (* val cs: Constants.constants *)
-
-  type k
-  type v
-  type r
-  val k_cmp: k -> k -> int
+module Insert_many_type = struct
+  type ('k,'v,'r,'t) insert_many_type = {
+    insert_many: r:'r -> k:'k -> v:'v -> kvs:('k*'v)list -> (('k*'v)list*'r option, 't)m
+  }
 end
+include Insert_many_type
 
 
-module type Ctxt_with_node_leaf_frame_impls = sig
+(** {2 Insert all}
 
-  include Ctxt0
+The semantics of this operation is: for a list of (k,v), the operation
+   inserts all kvs, and returns the updated root (or the original root
+   if tree was updated in place).  *)
 
-  type node_impl
-  type leaf_impl
-  type frame_impl
-  type dnode_impl = (node_impl,leaf_impl)dnode
+module Insert_all_type = struct
+  type ('k,'v,'r,'t) insert_all_type = {
+    insert_all: r:'r -> kvs:('k*'v)list -> ('r,'t) m
+  }
+end
+include Insert_all_type
 
-  val node_ops: (k,r,node_impl) node_ops
-  val leaf_ops: (k,v,leaf_impl) leaf_ops
-  val frame_ops: (k,r,frame_impl,node_impl) frame_ops
+
+(* this is really an implementation type *)
+module Frame_type = struct
+  type ('k,'r,'node) frame = {
+    midkey: 'k option;  (* really or_bottom; may be None *)
+    midpoint: 'r;
+    node: 'node;
+    backing_node_blk_ref: 'r
+  } [@@deriving to_yojson]
+end
+open Frame_type
+
+module Btree_ops_type = struct
+  type ('k,'v,'r,'t,'leaf,'node,'leaf_stream) btree_ops = {
+    find : r:'r -> k:'k -> ('r * 'leaf * ('k, 'r, 'node) frame list, 't) m;
+    insert : r:'r -> k:'k -> v:'v -> ('r option, 't) m;
+    delete: r:'r -> k:'k -> ('r, 't) m;
+    leaf_stream_ops :
+      ('k, 'v, 'r,
+       'leaf_stream,
+       't)
+        leaf_stream_ops;
+    leaf_lookup : 'k -> 'leaf -> 'v option;
+    pre_map_ops : ('k, 'v, 'r, 'leaf, ('k, 'r, 'node) frame, 't) pre_map_ops;
+    insert_many : ('k, 'v, 'r, 't) insert_many_type;
+    insert_all : ('k, 'v, 'r, 't) insert_all_type
+  }
 end

@@ -1,5 +1,6 @@
 SHELL:=bash
 DUNE:=dune
+# or something like DUNE:=dune build --only-packages isa_btree @doc
 
 build:
 	$(DUNE) build @install
@@ -45,5 +46,9 @@ docs: FORCE
 promote_docs: FORCE
 	PROMOTE_DOCS=true $(MAKE) docs
 #	cd docs && tree -H . -L 1 --charset utf-8 >index.html
+
+isa_btree_doc: FORCE
+	$(DUNE) build --only-packages isa_btree @doc
+	rsync -vaz $(SRC)/* $(DST2); echo "docs built in $(DST2) but not promoted to docs/"
 
 FORCE:
