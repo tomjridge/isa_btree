@@ -175,6 +175,8 @@ module Btree_ops_type = struct
        't)
         leaf_stream_ops;
     leaf_lookup : 'k -> 'leaf -> 'v option;
+    leaf_ops: ('k,'v,'leaf) leaf_ops;
+    node_ops: ('k,'r,'node) node_ops;
     pre_map_ops : ('k, 'v, 'r, 'leaf, ('k, 'r, 'node) frame, 't) pre_map_ops;
     insert_many : ('k, 'v, 'r, 't) insert_many_type;
     insert_all : ('k, 'v, 'r, 't) insert_all_type

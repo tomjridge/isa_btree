@@ -294,28 +294,42 @@ module Internal2 = struct
       end
     end
     in
-    (A.Export.{find;insert;delete;leaf_stream_ops;leaf_lookup;pre_map_ops;insert_many;insert_all} : (k,v,r,t,leaf,node,(r, leaf, (k, r, node) Frame_type.frame) Internal_leaf_stream_impl._t)btree_ops)
+    (A.Export.{find;insert;delete;leaf_stream_ops;leaf_lookup;pre_map_ops;insert_many;insert_all;leaf_ops=A.leaf_ops0; node_ops=A.node_ops0} : (k,v,r,t,leaf,node,(r, leaf, (k, r, node) Frame_type.frame) Internal_leaf_stream_impl._t)btree_ops)
 end
 
 open Isa_btree_intf.Btree_ops_type
 
-module Export = struct
-(** {%html:<pre>
+module Internal_make_with_kargs = struct
+  type ('a,'b,'c) k_args = {
+    k_cmp: 'a;
+    k_map: 'b;
+    kopt_map: 'c;
+  }
+
+
+  (** {%html:<pre>
 monad_ops:'t monad_ops ->
 cs:Constants_type.constants ->
-k_cmp:('k -> 'k -> int) ->
-k_map:('k, 'v, 'leaf) Leaf_node_frame_impls.map_ops ->
-kopt_map:('k option, 'r, 'node) Leaf_node_frame_impls.map_ops ->
+k_args:('k -> 'k -> int, ('k, 'v, 'leaf) Leaf_node_frame_impls.map_ops,
+        ('k option, 'r, 'node) Leaf_node_frame_impls.map_ops)
+       k_args ->
 dbg_tree_at_r:('r -> (unit, 't) m) ->
 store_ops:('r, ('node, 'leaf) dnode, 't) store_ops ->
 ('k, 'v, 'r, 't, 'leaf, 'node,
  ('r, 'leaf, ('k, 'r, 'node) Frame_type.frame) Internal_leaf_stream_impl._t)
 btree_ops
-</pre>}
-*)
-  let make ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops 
-    : ('k,'v,'r,'t,'leaf,'node,'leaf_stream)btree_ops 
-    = Internal2.make ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops
+      </pre> %}
+  *)
 
-  let _ = make
+  let make_with_kargs ~monad_ops ~cs ~k_args ~dbg_tree_at_r ~store_ops 
+    : ('k,'v,'r,'t,'leaf,'node,'leaf_stream)btree_ops 
+    = 
+    let { k_cmp; k_map; kopt_map } = k_args in
+    Internal2.make ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops
+
+  let _ = make_with_kargs
 end
+
+
+let make_with_kargs = Internal_make_with_kargs.make_with_kargs
+
