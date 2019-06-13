@@ -80,12 +80,9 @@ include Pre_btree_ops_type
 
  *)
 module Make(S:sig 
-    type t
     type k
     type v
     type r
-    val monad_ops: t monad_ops
-    val cs: Constants.constants
     val k_cmp: k -> k -> int
   end) : (sig
   open S
@@ -93,8 +90,11 @@ module Make(S:sig
   type leaf 
   type frame
   type leaf_stream
-  val make_btree_ops: store_ops:(r, (node, leaf) dnode, t) store_ops ->
-    (k, v, r, t, leaf, node, leaf_stream) pre_btree_ops
+  val make_btree_ops: 
+    monad_ops:'a monad_ops ->
+    cs:constants ->
+    store_ops:(r, (node, leaf) dnode, 'a) store_ops ->
+    (k, v, r, 'a, leaf, node, leaf_stream) pre_btree_ops
 end)
 = struct
   open Isa_export_wrapper
@@ -107,19 +107,17 @@ end)
     end)
   open Map_ops
 
-  let dbg_tree_at_r r = monad_ops.return ()
-
   type node = (k option, r, kopt_comparator) Base.Map.t
   type leaf = (k, v, k_comparator) Base.Map.t
   type frame = (k, r, node) Frame_type.frame
   type leaf_stream = (r, leaf, frame) Internal_leaf_stream_impl._t
 
-
-  let make_btree_ops ~(store_ops:(r,(node,leaf)dnode,t)store_ops) 
-    : (k,v,r,t,leaf,node,leaf_stream) pre_btree_ops
+  let make_btree_ops (type t) ~monad_ops ~cs ~(store_ops:(r,(node,leaf)dnode,t)store_ops)
+      : (k,v,r,t,leaf,node,leaf_stream)pre_btree_ops
     = 
+    let dbg_tree_at_r r = monad_ops.return () in
+    let k_args = { k_cmp; k_map=k_map(); kopt_map=kopt_map() } in
     Internal_make_with_kargs.(
-      let k_args = { k_cmp; k_map=k_map(); kopt_map=kopt_map() } in
       make_with_kargs ~monad_ops ~cs ~k_args ~dbg_tree_at_r ~store_ops)
 
   let _ = make_btree_ops
