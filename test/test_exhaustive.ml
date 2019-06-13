@@ -53,16 +53,10 @@ module Internal = struct
             (f |> test_frame_to_yojson |> Yojson.Safe.pretty_to_string))
     in
     let store_ops = Test_store.store_ops in
-    Internal_make_pre_map_ops_etc.make ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
-    fun ~pre_map_ops
-      ~insert_many
-      ~insert_all
-      ~leaf_stream_ops
-      ~leaf_ops:leaf_ops0
-      ~node_ops:node_ops0
-      ~frame_ops:frame_ops0
-    ->
-    let { leaf_lookup; find; insert; delete } = pre_map_ops in
+    let bt = Test_leaf_node_frame_impls.make_btree_ops
+                      ~monad_ops ~cs ~dbg_tree_at_r:(fun _ -> return ()) ~store_ops
+    in
+    let { leaf_ops; find; insert; delete; _ } = bt in
     let ops = 
       range|>List.map (fun x -> Insert (x,x)) |> fun xs ->
       range|>List.map (fun x -> Delete x) |> fun ys -> 
@@ -104,7 +98,7 @@ module Internal = struct
                 let _ = test r s in
                 depth (n-1) (r,s)))
     in
-    depth fuel (Test_r (Disk_leaf map_ops.empty),map_ops.empty)
+    depth fuel (Test_r (Disk_leaf (leaf_ops.kvs_to_leaf [])),map_ops.empty)
 
 
   let main' ~range_min ~range_max ~fuel ~constants = 

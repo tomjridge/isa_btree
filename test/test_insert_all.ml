@@ -38,18 +38,12 @@ let test_insert_many cs =
 
 let test_insert_all cs = 
   let store_ops = Test_store.store_ops in
-  Internal_make_pre_map_ops_etc.make ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
-  fun ~pre_map_ops
-    ~insert_many
-    ~insert_all
-    ~leaf_stream_ops
-    ~leaf_ops:leaf_ops0
-    ~node_ops:node_ops0
-    ~frame_ops:frame_ops0
-  -> 
-  let { insert_all } = insert_all in
+  let bt = Test_leaf_node_frame_impls.make_btree_ops
+                      ~monad_ops ~cs ~dbg_tree_at_r:(fun _ -> return ()) ~store_ops
+  in
+  let insert_all = bt.insert_all.insert_all in
   (* s is the spec... a map *)
-  let r = Test_r(Disk_leaf map_ops.empty) in
+  let r = Test_r(Disk_leaf (bt.leaf_ops.kvs_to_leaf [])) in
   let open Tjr_seq in
   let high = int_of_string "2" in
   let {take_and_drop},kvs = (1 -- high) in

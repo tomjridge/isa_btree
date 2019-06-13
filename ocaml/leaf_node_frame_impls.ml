@@ -107,10 +107,11 @@ module Internal_leaf_impl = struct
     in
     ops
 
-(* FIXME 
   let test_leaf_impl () = 
     let k_cmp: int -> int -> int = Pervasives.compare in
-    let map_ops = Tjr_map.make_map_ops k_cmp in
+    let module Comp = Util.Internal_make_map_ops(struct type k = int let k_cmp = k_cmp end) in
+    let open Comp in
+    let map_ops = Tjr_map.With_base.make_map_ops k_comparator in
     let ops = make_leaf_ops ~map_ops in
     let kvs0 = List_.from_to 1 20 |> List.map (fun x -> (x,2*x)) in
     let l0 = kvs0 |> ops.kvs_to_leaf in
@@ -129,7 +130,6 @@ module Internal_leaf_impl = struct
     ()
 
   let _ = Global.register ~name:(__MODULE__^".test_leaf_impl") test_leaf_impl
-*)
 
 end
 

@@ -138,6 +138,9 @@ module Export = struct
   let test_frame_to_yojson = test_frame_to_yojson
   let k_args = Isa_export_wrapper.{ 
       k_cmp=Pervasives.compare; k_map=_leaf_map_ops; kopt_map=_node_map_ops }
+  let make_btree_ops ~monad_ops ~cs ~dbg_tree_at_r = 
+    Isa_export_wrapper.Internal_make_with_kargs.make_with_kargs
+      ~monad_ops ~cs ~k_args ~dbg_tree_at_r 
 end
 
 include Export
