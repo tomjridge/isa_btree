@@ -189,11 +189,16 @@ module Internal1 = struct
       split_node_for_leaf_stream
       step_frame_for_leaf_stream
       dbg_frame 
+
+  let wf_tree ~cs ~ms ~k_cmp = Isa_export.Tree.wf_tree (cs2isa cs) ms (cmp2isa k_cmp)
 end
 
 
+let wf_tree = Internal1.wf_tree
+
+
 module Internal2 = struct
-  open Isa_btree_intf.Btree_ops_type
+  open Isa_btree_intf.Pre_btree_ops_type
 
   let make (type k v r t leaf node) ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops =
     let module A = struct
@@ -294,10 +299,17 @@ module Internal2 = struct
       end
     end
     in
-    (A.Export.{find;insert;delete;leaf_stream_ops;leaf_lookup;pre_map_ops;insert_many;insert_all;leaf_ops=A.leaf_ops0; node_ops=A.node_ops0} : (k,v,r,t,leaf,node,(r, leaf, (k, r, node) Frame_type.frame) Internal_leaf_stream_impl._t)btree_ops)
+    (A.Export.{
+        find;insert;delete;leaf_stream_ops;
+        (* leaf_lookup; *)
+        pre_map_ops;insert_many;insert_all;leaf_ops=A.leaf_ops0;
+        node_ops=A.node_ops0} 
+     : 
+       (k,v,r,t,leaf,node,(r, leaf, (k, r, node) Frame_type.frame) Internal_leaf_stream_impl._t)
+         pre_btree_ops)
 end
 
-open Isa_btree_intf.Btree_ops_type
+open Isa_btree_intf.Pre_btree_ops_type
 
 module Internal_make_with_kargs = struct
   type ('a,'b,'c) k_args = {
@@ -317,12 +329,12 @@ dbg_tree_at_r:('r -> (unit, 't) m) ->
 store_ops:('r, ('node, 'leaf) dnode, 't) store_ops ->
 ('k, 'v, 'r, 't, 'leaf, 'node,
  ('r, 'leaf, ('k, 'r, 'node) Frame_type.frame) Internal_leaf_stream_impl._t)
-btree_ops
+pre_btree_ops
       </pre> %}
   *)
 
   let make_with_kargs ~monad_ops ~cs ~k_args ~dbg_tree_at_r ~store_ops 
-    : ('k,'v,'r,'t,'leaf,'node,'leaf_stream)btree_ops 
+    : ('k,'v,'r,'t,'leaf,'node,'leaf_stream)pre_btree_ops 
     = 
     let { k_cmp; k_map; kopt_map } = k_args in
     Internal2.make ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops
@@ -331,5 +343,48 @@ btree_ops
 end
 
 
-let make_with_kargs = Internal_make_with_kargs.make_with_kargs
+include Internal_make_with_kargs
+
+module Internal_make_map_ops(S:sig type k val k_cmp: k->k->int end) = struct
+  open S
+  module K_comp = Base.Comparator.Make(struct
+      type t = k
+      let compare = k_cmp
+      let sexp_of_t f = failwith __LOC__
+    end)
+
+  type k_comparator = K_comp.comparator_witness
+
+  (* Base.Map.comparator is different from Comparator.comparator *)
+  let k_comparator : (k,k_comparator)Base.Map.comparator = 
+    (module struct type t = k include K_comp end)
+
+  let k_map () :(k,'v,_)Tjr_map.With_base.map_ops = 
+    Tjr_map.With_base.make_map_ops k_comparator
+
+  module Kopt_comp = Base.Comparator.Make(struct
+      type t = k option
+
+      (* None is less than any other lower bound; this corresponds to the
+         "lowest" interval below k0 *)
+      let rec kopt_compare k1 k2 =
+        match k1,k2 with 
+        | None,None -> 0
+        | None,_ -> -1
+        | _,None -> 1
+        | Some k1, Some k2 -> k_cmp k1 k2
+
+      let compare = kopt_compare
+      let sexp_of_t f = failwith __LOC__
+    end)
+
+  type kopt_comparator = Kopt_comp.comparator_witness
+
+  let kopt_comparator : (k option,kopt_comparator)Base.Map.comparator = 
+    (module struct type t = k option include Kopt_comp end)
+
+  let kopt_map () : (k option,'r,_)Tjr_map.With_base.map_ops = 
+    Tjr_map.With_base.make_map_ops kopt_comparator
+
+end
 

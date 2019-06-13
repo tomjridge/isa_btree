@@ -7,6 +7,10 @@ open Isa_btree_intf
 include Isa_export_wrapper.Isa_export_assert_flag
 
 
+(** {2 Collection of all the interfaces in a separate module (we pull
+   some of these out in the following).} *)
+module Isa_btree_intf = Isa_btree_intf
+
 (** {2 Constants} *)
 
 type constants = Constants.constants =
@@ -61,13 +65,19 @@ include Leaf_stream_ops_type
 
 (* include Isa_export_wrapper.Internal_export *)
 
-include Btree_ops_type
+include Pre_btree_ops_type
 
 (** This functor takes various types and constants (including, in
    particular, the type of keys and the value for the comparison on
    keys) and generates extra types [k_comparator...] for the map
    implementations. Then there is a function [make_btree_ops] which
-   takes a [store_ops] and returns the B-tree operations *)
+   takes a [store_ops] and returns the B-tree operations.
+
+    Note that these are "pre_btree_ops" because they expose internal
+   types that we may want to hide: leaf, node, frame, leaf_stream(?).
+   See tjr_btree for the simpler versions.
+
+ *)
 module Make(S:sig 
     type t
     type k
@@ -83,21 +93,18 @@ module Make(S:sig
   type frame
   type leaf_stream
   val make_btree_ops: store_ops:(r, (node, leaf) dnode, t) store_ops ->
-    (k, v, r, t, leaf, node, leaf_stream) btree_ops
+    (k, v, r, t, leaf, node, leaf_stream) pre_btree_ops
 end)
 = struct
   open Isa_export_wrapper
   open S
 
-
-  (* TODO convert k_cmp to k_comparator *)
-  type k_comparator
-  let k_comparator : (k,k_comparator)Base.Map.comparator = failwith "FIXME"
-  let k_map :(k,v,_)Tjr_map.With_base.map_ops = Tjr_map.With_base.make_map_ops k_comparator
-
-  type kopt_comparator
-  let kopt_comparator : (k option,kopt_comparator)Base.Map.comparator = failwith "FIXME"
-  let kopt_map : (k option,r,_)Tjr_map.With_base.map_ops = Tjr_map.With_base.make_map_ops kopt_comparator
+  module Map_ops = Isa_export_wrapper.Internal_make_map_ops(
+    struct 
+      type nonrec k = k 
+      let k_cmp = k_cmp 
+    end)
+  open Map_ops
 
   let dbg_tree_at_r r = monad_ops.return ()
 
@@ -108,10 +115,10 @@ end)
 
 
   let make_btree_ops ~(store_ops:(r,(node,leaf)dnode,t)store_ops) 
-    : (k,v,r,t,leaf,node,leaf_stream) btree_ops
+    : (k,v,r,t,leaf,node,leaf_stream) pre_btree_ops
     = 
     Internal_make_with_kargs.(
-      let k_args = { k_cmp; k_map; kopt_map } in
+      let k_args = { k_cmp; k_map=k_map(); kopt_map=kopt_map() } in
       make_with_kargs ~monad_ops ~cs ~k_args ~dbg_tree_at_r ~store_ops)
 
   let _ = make_btree_ops

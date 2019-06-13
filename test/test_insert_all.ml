@@ -8,21 +8,15 @@ open Test_util
 
 let store_ops = Test_store.store_ops
 
+
 let test_insert_many cs =
-  Internal_make_pre_map_ops_etc.make ~monad_ops ~cs ~k_cmp ~store_ops ~dbg_tree_at_r @@
-  fun ~pre_map_ops
-    ~insert_many
-    ~insert_all
-    ~leaf_stream_ops
-    ~leaf_ops:leaf_ops0
-    ~node_ops:node_ops0
-    ~frame_ops:frame_ops0
-  -> 
+  let pre_btree_ops as b = Isa_export_wrapper.make_with_kargs ~monad_ops ~cs ~k_args ~store_ops ~dbg_tree_at_r in
   Logger.log_lazy (fun () -> Printf.sprintf "Constants: %s\n" (cs|>Constants.cs2s));
-  let { insert_all } = insert_all in
-  let { insert_many } = insert_many in
+  let { insert_all; insert_many; leaf_ops; _ } = b in
+  let Isa_btree_intf.Insert_all_type.{ insert_all } = insert_all in
+  let Isa_btree_intf.Insert_many_type.{ insert_many } = insert_many in
   (* s is the spec... a map *)
-  let r = Test_r(Disk_leaf map_ops.empty) in
+  let r = Test_r(Disk_leaf (leaf_ops.kvs_to_leaf [])) in
   let open Tjr_seq in
   let high = int_of_string "10" in
   let {take_and_drop},kvs = (1 -- high) in

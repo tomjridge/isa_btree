@@ -30,9 +30,9 @@ let store_ops =
   in
   let rewrite r frm = wrte frm >>= fun r -> return (Some r) in
   let free _rs = return () in
-  Isa_export_wrapper.{read;wrte;rewrite;free}
+  {read;wrte;rewrite;free}
 
 let _ : (test_r, (test_node, test_leaf) dnode, test_r state_passing)
-    Isa_export_wrapper.store_ops
+    Isa_btree.store_ops
   = store_ops
 

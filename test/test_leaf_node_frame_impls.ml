@@ -36,56 +36,68 @@ module Internal = struct
 
   (* leaf and node test impls ----------------------------------------- *)
 
-  type test_leaf' = unit
 
+  module Map_ops = Isa_export_wrapper.Internal_make_map_ops(struct
+      type k=int
+      let k_cmp = Pervasives.compare
+    end)
+  open Map_ops
+       
   module T2 = struct
-    type test_leaf = (int,int,test_leaf') Tjr_map.map
+    type test_leaf = (int,int,k_comparator) Base.Map.t
   end
   include T2
 
-  let _leaf_map_ops : (int, int, test_leaf) Tjr_map.map_ops = 
-    Tjr_map.make_map_ops Int_.compare
+  let _leaf_map_ops : (int, int, (int, int, k_comparator) Base.Map.t) Tjr_map.With_base.map_ops = k_map()
+
+  module Leaf_map_ops = (val _leaf_map_ops)
 
   open Isa_export.Disk_node
 
-  type test_node' = unit
-
   module T3 = struct
-    type test_node = (int option, test_r, test_node') Tjr_map.map
+    type test_node = (int option, test_r, kopt_comparator) Base.Map.t
 
     (* test_r is the type of r for the test_store *)
     and test_r = Test_r of (test_node,test_leaf)dnode
   end
   include T3
 
-  let _node_map_ops : (int option, test_r, test_node) Tjr_map.map_ops = 
-    Tjr_map.make_map_ops 
-      (Isa_btree.Isa_export_wrapper.Internal_node_impl.key_compare Int_.compare)
+  let _node_map_ops : 
+    (int option, test_r, (int option, test_r, kopt_comparator) Base.Map.t) Tjr_map.With_base.map_ops 
+    = kopt_map()
+
+  let _ = _node_map_ops
+
+  module Node_map_ops = (val _node_map_ops)
+
+
 
 
   (* tree' test_r conversions --------------------------------------- *)
+
+  (* open Tjr_map.With_base *)
       
   let rec tree'_to_test_r = function
-    | Leaf' kvs -> Test_r(Disk_leaf(_leaf_map_ops.of_bindings kvs))
+    | Leaf' kvs -> Test_r(Disk_leaf(Leaf_map_ops.of_bindings kvs))
     | Node' (ks,rs) -> 
       let ks = None::(List.map (fun x -> Some x) ks) in
       let rs = List.map tree'_to_test_r rs in
       let krs = List.combine ks rs in
-      Test_r(Disk_node(_node_map_ops.of_bindings krs))
+      Test_r(Disk_node(Node_map_ops.of_bindings krs))
 
   (* convert to yojson *)
 
   module Test_r_to_tree = struct
     let rec test_node_to_Node' n = 
       n 
-      |> _node_map_ops.bindings
+      |> Node_map_ops.bindings
       |> List.split |> fun (ks,rs) -> 
       List.(tl ks |> map dest_Some,map test_r_to_tree' rs) |> fun (ks,rs) ->
       Node' (ks,rs)
 
     and test_leaf_to_Leaf' l = 
       l 
-      |> _leaf_map_ops.bindings
+      |> Leaf_map_ops.bindings
       |> fun xs -> Leaf' xs
 
     and test_r_to_tree' (Test_r r) = match r with
@@ -104,12 +116,12 @@ module Internal = struct
 
 
   (* frame test impl -------------------------------------------------- *)
-  open Isa_export_wrapper
+  (* open Isa_export_wrapper *)
 
   let test_node_to_yojson n = n |> test_node_to_Node' |> tree'_to_yojson
 
-  type test_frame = (int,test_r,test_node) Internal_frame_impl.frame
-  [@@deriving to_yojson]
+  type test_frame = (int,test_r,test_node) Isa_btree_intf.Frame_type.frame
+  [@@deriving to_yojson] 
 end
 open Internal
 
@@ -124,6 +136,8 @@ module Export = struct
   let test_r_to_yojson = test_r_to_yojson
   let test_r_to_string = test_r_to_string
   let test_frame_to_yojson = test_frame_to_yojson
+  let k_args = Isa_export_wrapper.{ 
+      k_cmp=Pervasives.compare; k_map=_leaf_map_ops; kopt_map=_node_map_ops }
 end
 
 include Export

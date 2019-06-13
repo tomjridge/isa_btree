@@ -162,10 +162,10 @@ module Frame_type = struct
     backing_node_blk_ref: 'r
   } [@@deriving to_yojson]
 end
-open Frame_type
+open Frame_type  (* lots of other frames lying around, so just open here *)
 
-module Btree_ops_type = struct
-  type ('k,'v,'r,'t,'leaf,'node,'leaf_stream) btree_ops = {
+module Pre_btree_ops_type = struct
+  type ('k,'v,'r,'t,'leaf,'node,'leaf_stream) pre_btree_ops = {
     find : r:'r -> k:'k -> ('r * 'leaf * ('k, 'r, 'node) frame list, 't) m;
     insert : r:'r -> k:'k -> v:'v -> ('r option, 't) m;
     delete: r:'r -> k:'k -> ('r, 't) m;
@@ -174,7 +174,7 @@ module Btree_ops_type = struct
        'leaf_stream,
        't)
         leaf_stream_ops;
-    leaf_lookup : 'k -> 'leaf -> 'v option;
+    (* leaf_lookup : 'k -> 'leaf -> 'v option; *)
     leaf_ops: ('k,'v,'leaf) leaf_ops;
     node_ops: ('k,'r,'node) node_ops;
     pre_map_ops : ('k, 'v, 'r, 'leaf, ('k, 'r, 'node) frame, 't) pre_map_ops;
@@ -182,3 +182,4 @@ module Btree_ops_type = struct
     insert_all : ('k, 'v, 'r, 't) insert_all_type
   }
 end
+include Pre_btree_ops_type
