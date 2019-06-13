@@ -197,10 +197,10 @@ end
 let wf_tree = Internal1.wf_tree
 
 
-module Internal2 = struct
+module Internal_make_with_k_maps = struct
   open Isa_btree_intf.Pre_btree_ops_type
 
-  let make (type k v r t leaf node) ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops =
+  let make_with_k_maps (type k v r t leaf node) ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops =
     let module A = struct
       open Internal_conversions
       open Internal1
@@ -308,6 +308,7 @@ module Internal2 = struct
        (k,v,r,t,leaf,node,(r, leaf, (k, r, node) Frame_type.frame) Internal_leaf_stream_impl._t)
          pre_btree_ops)
 end
+include Internal_make_with_k_maps
 
 open Isa_btree_intf.Pre_btree_ops_type
 
@@ -337,7 +338,7 @@ pre_btree_ops
     : ('k,'v,'r,'t,'leaf,'node,'leaf_stream)pre_btree_ops 
     = 
     let { k_cmp; k_map; kopt_map } = k_args in
-    Internal2.make ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops
+    make_with_k_maps ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops
 
   let _ = make_with_kargs
 end

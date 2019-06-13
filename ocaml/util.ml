@@ -1,3 +1,5 @@
+(** Given a value [k_cmp], construct the corresponding map_ops, with
+   keys: k, k option *)
 module Internal_make_map_ops(S:sig type k val k_cmp: k->k->int end) = struct
   open S
   module K_comp = Base.Comparator.Make(struct
@@ -40,3 +42,6 @@ module Internal_make_map_ops(S:sig type k val k_cmp: k->k->int end) = struct
     Tjr_map.With_base.make_map_ops kopt_comparator
 
 end
+
+(** For testing *)
+module Int_map_ops = Internal_make_map_ops(struct type k = int let k_cmp=Pervasives.compare end)
