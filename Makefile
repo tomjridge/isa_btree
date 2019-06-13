@@ -22,10 +22,10 @@ $(test_main):
 run_tests: build $(test_main)
 	time dune exec $(test_main) test_insert_many
 	time dune exec $(test_main) test_insert_all
-#	time dune exec $(test_main) test_node_impl
-#	time dune exec $(test_main) test_leaf_impl
-#	time dune exec $(test_main) test_delete
-#	time dune exec $(test_main) test_exhaustive_2
+	time dune exec $(test_main) test_node_impl
+	time dune exec $(test_main) test_leaf_impl
+	time dune exec $(test_main) test_delete
+	time dune exec $(test_main) test_exhaustive_2
 
 
 all:

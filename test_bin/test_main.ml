@@ -32,9 +32,9 @@ let profiler =
         now () |> to_int63 |> Core.Int63.to_int |> fun (Some x) -> x)
 
 let _ = 
-  Init_ref.set 
+(*  Init_ref.set 
     Isa_btree.Leaf_node_frame_impls.Internal_leaf_impl.leaf_profiler 
-    profiler;
+    profiler;*)
   Init_ref.set_post_init ()
 
 
@@ -56,21 +56,23 @@ let _ =
   | ["exhaustive_deprecated"] -> begin
       with_logger (fun () -> 
           Printf.printf "%s: tests begin\n%!" __MODULE__;
-          List.iter (fun pre_config -> Test_exhaustive.test_exhaustive ~pre_config) Test_exhaustive.config;
+          Test_exhaustive.config |> List.iter (fun pre_config -> 
+              Test_exhaustive.test_exhaustive ~pre_config);
           Printf.printf "%s: tests OK\n%!" __MODULE__);
       profiler.print_summary()
     end
 
   | ["test_exhaustive_2"] -> with_logger (fun () -> 
       Printf.printf "%s: tests begin\n%!" __MODULE__;
-      List.iter (fun pre_config -> Test_exhaustive_2.test_exhaustive ~pre_config) Test_exhaustive_2.config;
+      Test_exhaustive_2.config |> List.iter (fun pre_config -> 
+          Test_exhaustive_2.test_exhaustive ~pre_config);
       Printf.printf "%s: tests OK\n%!" __MODULE__)
 
   | ["test_leaf_impl"] -> 
-    Isa_btree.Leaf_node_frame_impls.Internal_leaf_impl.test_leaf_impl()
+    Leaf_node_frame_impls.Internal_leaf_impl.test_leaf_impl()
 
   | ["test_node_impl"] -> 
-    with_logger (fun () -> Isa_btree.Leaf_node_frame_impls.Internal_node_impl.test_node_impl())
+    with_logger (fun () -> Leaf_node_frame_impls.Internal_node_impl.test_node_impl())
 
   | ["test_delete"] -> 
     Test_delete.test()
