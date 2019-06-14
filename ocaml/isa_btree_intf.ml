@@ -153,6 +153,8 @@ end
 include Insert_all_type
 
 
+(** {2 Frames} *)
+
 (* this is really an implementation type *)
 module Frame_type = struct
   type ('k,'r,'node) frame = {
@@ -163,6 +165,9 @@ module Frame_type = struct
   } [@@deriving to_yojson]
 end
 open Frame_type  (* lots of other frames lying around, so just open here *)
+
+
+(** {2 B-tree (pre-) ops} *)
 
 module Pre_btree_ops_type = struct
   type ('k,'v,'r,'t,'leaf,'node,'leaf_stream) pre_btree_ops = {
@@ -183,3 +188,11 @@ module Pre_btree_ops_type = struct
   }
 end
 include Pre_btree_ops_type
+
+
+module Leaf_node_frame_map_ops_type = struct
+  (** To avoid dependency on any particular map implementation, we
+      define the exact interface we require here. *)
+  type ('k,'v,'t) map_ops = ('k,'v,'t) Tjr_map.With_base_as_record.map_ops
+end
+(* don't include to avoid too many map types in scope *)

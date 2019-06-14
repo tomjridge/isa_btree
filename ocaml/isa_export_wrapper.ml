@@ -199,7 +199,8 @@ let wf_tree = Internal1.wf_tree
 
 module Internal_make_with_k_maps = struct
   open Isa_btree_intf.Pre_btree_ops_type
-
+         
+  (* FIXME do we need k_cmp? can we just get it from k_map? *)
   let make_with_k_maps (type k v r t leaf node) ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops =
     let module A = struct
       open Internal_conversions
@@ -312,6 +313,7 @@ include Internal_make_with_k_maps
 
 open Isa_btree_intf.Pre_btree_ops_type
 
+(** The advantage of this interface is that we provide the types of the k_map and kopt_map from the "outside", thereby avoiding type generativity issues. *)
 module Internal_make_with_kargs = struct
   type ('a,'b,'c) k_args = {
     k_cmp: 'a;
@@ -333,10 +335,10 @@ store_ops:('r, ('node, 'leaf) dnode, 't) store_ops ->
 pre_btree_ops
       </pre> %}
   *)
-
-  let make_with_kargs ~monad_ops ~cs ~k_args ~dbg_tree_at_r ~store_ops 
+  let make_with_kargs ~monad_ops ~cs ~k_args ~store_ops 
     : ('k,'v,'r,'t,'leaf,'node,'leaf_stream)pre_btree_ops 
     = 
+    let dbg_tree_at_r = fun _ -> monad_ops.return () in
     let { k_cmp; k_map; kopt_map } = k_args in
     make_with_k_maps ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops
 
@@ -346,4 +348,32 @@ end
 
 include Internal_make_with_kargs
 
-include Util
+module Internal_make_with_comparators = struct
+
+  let make_with_comparators 
+    (type k k_cmp kopt_cmp)
+    ~monad_ops
+    ~cs
+    ~(k_cmp:(k,k_cmp)Base.Map.comparator)
+    ~(kopt_cmp:(k option,kopt_cmp)Base.Map.comparator)
+    ~store_ops
+    =
+    let k_args = 
+      let k_map = Tjr_map.With_base_as_record.make_map_ops k_cmp in
+      let kopt_map = Tjr_map.With_base_as_record.make_map_ops kopt_cmp in
+      let k_cmp =
+        let (module A) = k_cmp in
+        A.comparator.compare
+      in
+      { k_cmp; k_map; kopt_map }
+    in
+    make_with_kargs ~monad_ops ~cs ~k_args ~store_ops
+               
+       
+  let _ = make_with_comparators
+end
+
+include Internal_make_with_comparators
+
+include Isa_btree_util
+

@@ -27,8 +27,9 @@ let wf_tree = wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp
 
 let test_1 () = assert(wf_tree (tree'_to_tree init_tree'))
 
-let pre_btree_ops = Test_leaf_node_frame_impls.make_btree_ops
-                      ~monad_ops ~cs ~dbg_tree_at_r:(fun _ -> return ()) ~store_ops
+let pre_btree_ops = 
+  Test_leaf_node_frame_impls.make_btree_ops
+    ~monad_ops ~cs ~store_ops
 
 let { delete; _ } = pre_btree_ops
 

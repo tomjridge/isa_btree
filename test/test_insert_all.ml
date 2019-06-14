@@ -10,7 +10,9 @@ let store_ops = Test_store.store_ops
 
 
 let test_insert_many cs =
-  let pre_btree_ops as b = Isa_export_wrapper.make_with_kargs ~monad_ops ~cs ~k_args ~store_ops ~dbg_tree_at_r in
+  let pre_btree_ops as b = 
+    Isa_export_wrapper.make_with_kargs ~monad_ops ~cs ~k_args ~store_ops 
+  in
   Logger.log_lazy (fun () -> Printf.sprintf "Constants: %s\n" (cs|>Constants.cs2s));
   let { insert_all; insert_many; leaf_ops; _ } = b in
   let Isa_btree_intf.Insert_all_type.{ insert_all } = insert_all in
@@ -38,8 +40,8 @@ let test_insert_many cs =
 
 let test_insert_all cs = 
   let store_ops = Test_store.store_ops in
-  let bt = Test_leaf_node_frame_impls.make_btree_ops
-                      ~monad_ops ~cs ~dbg_tree_at_r:(fun _ -> return ()) ~store_ops
+  let bt = 
+    Test_leaf_node_frame_impls.make_btree_ops ~monad_ops ~cs ~store_ops
   in
   let insert_all = bt.insert_all.insert_all in
   (* s is the spec... a map *)

@@ -11,7 +11,7 @@ let test_seq_insert () =
   in
   let store_ops = Test_store.store_ops in
   let bt = Test_leaf_node_frame_impls.make_btree_ops
-                      ~monad_ops ~cs ~dbg_tree_at_r:(fun _ -> return ()) ~store_ops
+      ~monad_ops ~cs ~store_ops
   in
   let { leaf_ops; find; insert; delete; _ } = bt in
   (* disable_isa_checks(); *)

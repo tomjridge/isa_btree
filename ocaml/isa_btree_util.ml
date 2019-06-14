@@ -1,5 +1,11 @@
 (** Given a value [k_cmp], construct the corresponding map_ops, with
    keys: k, k option *)
+
+open Tjr_map.With_base_as_record
+
+open Isa_btree_intf
+(* open Isa_btree_intf.Leaf_node_frame_map_ops_type *)
+
 module Internal_make_map_ops(S:sig type k val k_cmp: k->k->int end) = struct
   open S
   module K_comp = Base.Comparator.Make(struct
@@ -12,10 +18,11 @@ module Internal_make_map_ops(S:sig type k val k_cmp: k->k->int end) = struct
 
   (* Base.Map.comparator is different from Comparator.comparator *)
   let k_comparator : (k,k_comparator)Base.Map.comparator = 
-    (module struct type t = k include K_comp end)
+    (module struct type t = k include K_comp end)      
+    
 
-  let k_map () :(k,'v,_)Tjr_map.With_base.map_ops = 
-    Tjr_map.With_base.make_map_ops k_comparator
+  let k_map () :(k,'v,_) Leaf_node_frame_map_ops_type.map_ops = 
+    make_map_ops k_comparator 
 
   module Kopt_comp = Base.Comparator.Make(struct
       type t = k option
@@ -38,10 +45,11 @@ module Internal_make_map_ops(S:sig type k val k_cmp: k->k->int end) = struct
   let kopt_comparator : (k option,kopt_comparator)Base.Map.comparator = 
     (module struct type t = k option include Kopt_comp end)
 
-  let kopt_map () : (k option,'r,_)Tjr_map.With_base.map_ops = 
-    Tjr_map.With_base.make_map_ops kopt_comparator
+  let kopt_map () : (k option,'r,_)Leaf_node_frame_map_ops_type.map_ops = 
+    make_map_ops kopt_comparator 
 
 end
 
 (** For testing *)
-module Int_map_ops = Internal_make_map_ops(struct type k = int let k_cmp=Pervasives.compare end)
+module Int_map_ops = Internal_make_map_ops(
+  struct type k = int let k_cmp=Pervasives.compare end)

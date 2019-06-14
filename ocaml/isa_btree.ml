@@ -79,12 +79,15 @@ include Pre_btree_ops_type
    See tjr_btree for the simpler versions.
 
  *)
-module Make(S:sig 
+
+module type S = sig 
     type k
     type v
     type r
     val k_cmp: k -> k -> int
-  end) : (sig
+  end
+
+module Make(S:S) : (sig
   open S
   type node
   type leaf 
@@ -115,17 +118,68 @@ end)
   let make_btree_ops (type t) ~monad_ops ~cs ~(store_ops:(r,(node,leaf)dnode,t)store_ops)
       : (k,v,r,t,leaf,node,leaf_stream)pre_btree_ops
     = 
-    let dbg_tree_at_r r = monad_ops.return () in
+    (* let dbg_tree_at_r r = monad_ops.return () in *)
     let k_args = { k_cmp; k_map=k_map(); kopt_map=kopt_map() } in
     Internal_make_with_kargs.(
-      make_with_kargs ~monad_ops ~cs ~k_args ~dbg_tree_at_r ~store_ops)
+      make_with_kargs ~monad_ops ~cs ~k_args ~store_ops)
 
   let _ = make_btree_ops
 end
 
 
+
+let make_with_comparators = Isa_export_wrapper.make_with_comparators
+
 (** {2 Internal interfaces} *)
+
+module Make_with_first_class_module = struct
+
+  module type T = sig
+    type k 
+    type v 
+    type r
+    type node
+    type leaf
+    type frame
+    type leaf_stream
+    val make_btree_ops :
+      monad_ops:'a monad_ops ->
+      cs:constants ->
+      store_ops:(r, (node, leaf) dnode, 'a) store_ops ->
+      (k, v, r, 'a, leaf, node, leaf_stream) pre_btree_ops
+  end
+
+  let make_with_first_class_module (type k v r) ~monad_ops ~cs ~k_cmp = 
+    let module A = struct 
+      type nonrec k=k
+      type nonrec v=v
+      type nonrec r=r
+      let k_cmp=k_cmp
+    end
+    in
+    let module B = Make(A) in
+    let module C = struct include A include B end in
+    (module C : T with type k=k and type v=v and type r=r)
+
+  let _ = make_with_first_class_module
+end
 
 module Leaf_node_frame_impls = Leaf_node_frame_impls
 module Isa_export = Isa_export
 module Isa_export_wrapper = Isa_export_wrapper
+
+
+(*
+(** Unsafe implementation of k_args using Pervasives.compare, for testing *)
+module Unsafe_k_args_impl(S:sig type k type v end) = struct
+  open S
+
+  module Map_ops = Isa_btree_util.Internal_make_map_ops(struct type nonrec k=k let k_cmp = Pervasives.compare end)
+
+  let k_map_ops,kopt_map_ops = Map_ops.(k_map(),kopt_map())
+
+
+  
+
+end
+*)

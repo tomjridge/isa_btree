@@ -48,9 +48,7 @@ module Internal = struct
   end
   include T2
 
-  let _leaf_map_ops : (int, int, (int, int, k_comparator) Base.Map.t) Tjr_map.With_base.map_ops = k_map()
-
-  module Leaf_map_ops = (val _leaf_map_ops)
+  let leaf_map_ops : (int, int, _) Tjr_map.With_base_as_record.map_ops = k_map()
 
   open Isa_export.Disk_node
 
@@ -62,14 +60,10 @@ module Internal = struct
   end
   include T3
 
-  let _node_map_ops : 
-    (int option, test_r, (int option, test_r, kopt_comparator) Base.Map.t) Tjr_map.With_base.map_ops 
+  let node_map_ops : (int option, test_r, _) Tjr_map.With_base_as_record.map_ops 
     = kopt_map()
 
-  let _ = _node_map_ops
-
-  module Node_map_ops = (val _node_map_ops)
-
+  let _ = node_map_ops
 
 
 
@@ -78,26 +72,26 @@ module Internal = struct
   (* open Tjr_map.With_base *)
       
   let rec tree'_to_test_r = function
-    | Leaf' kvs -> Test_r(Disk_leaf(Leaf_map_ops.of_bindings kvs))
+    | Leaf' kvs -> Test_r(Disk_leaf(leaf_map_ops.of_bindings kvs))
     | Node' (ks,rs) -> 
       let ks = None::(List.map (fun x -> Some x) ks) in
       let rs = List.map tree'_to_test_r rs in
       let krs = List.combine ks rs in
-      Test_r(Disk_node(Node_map_ops.of_bindings krs))
+      Test_r(Disk_node(node_map_ops.of_bindings krs))
 
   (* convert to yojson *)
 
   module Test_r_to_tree = struct
     let rec test_node_to_Node' n = 
       n 
-      |> Node_map_ops.bindings
+      |> node_map_ops.bindings
       |> List.split |> fun (ks,rs) -> 
       List.(tl ks |> map dest_Some,map test_r_to_tree' rs) |> fun (ks,rs) ->
       Node' (ks,rs)
 
     and test_leaf_to_Leaf' l = 
       l 
-      |> Leaf_map_ops.bindings
+      |> leaf_map_ops.bindings
       |> fun xs -> Leaf' xs
 
     and test_r_to_tree' (Test_r r) = match r with
@@ -137,10 +131,10 @@ module Export = struct
   let test_r_to_string = test_r_to_string
   let test_frame_to_yojson = test_frame_to_yojson
   let k_args = Isa_export_wrapper.{ 
-      k_cmp=Pervasives.compare; k_map=_leaf_map_ops; kopt_map=_node_map_ops }
-  let make_btree_ops ~monad_ops ~cs ~dbg_tree_at_r = 
+      k_cmp=Pervasives.compare; k_map=leaf_map_ops; kopt_map=node_map_ops }
+  let make_btree_ops ~monad_ops ~cs = 
     Isa_export_wrapper.Internal_make_with_kargs.make_with_kargs
-      ~monad_ops ~cs ~k_args ~dbg_tree_at_r 
+      ~monad_ops ~cs ~k_args
 end
 
 include Export
