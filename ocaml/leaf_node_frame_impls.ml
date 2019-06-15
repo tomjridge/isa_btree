@@ -105,12 +105,12 @@ module Internal_leaf_impl = struct
     in
     ops
 
-(* FIXME
+
   let test_leaf_impl () = 
     let k_cmp: int -> int -> int = Pervasives.compare in
-    let module Comp = Util.Internal_make_map_ops(struct type k = int let k_cmp = k_cmp end) in
+    let module Comp = Isa_btree_util.Internal_make_map_ops(struct type k = int let k_cmp = k_cmp end) in
     let open Comp in
-    let map_ops = Tjr_map.With_base.make_map_ops k_comparator in
+    let map_ops = Tjr_map.With_base_as_record.make_map_ops k_comparator in
     let ops = make_leaf_ops ~map_ops in
     let kvs0 = List_.from_to 1 20 |> List.map (fun x -> (x,2*x)) in
     let l0 = kvs0 |> ops.kvs_to_leaf in
@@ -129,7 +129,7 @@ module Internal_leaf_impl = struct
     ()
 
   let _ = Global.register ~name:(__MODULE__^".test_leaf_impl") test_leaf_impl
-*)
+
 
 end
 
@@ -155,7 +155,7 @@ module Internal_node_impl = struct
   (* implement node ops using a map from option; see impl notes in
      \doc(doc:node_ops) *)
 
-  let make_node_ops (type k v t) ~(map_ops:(k option,v,t)map_ops) = 
+  let make_node_ops (type k r t) ~(map_ops:(k option,r,t)map_ops) = 
     let make_node ks rs = 
       profile "bb" @@ fun () -> 
       (* assert(List.length rs = 1 + List.length ks); *)
@@ -272,19 +272,11 @@ module Internal_node_impl = struct
     in
     node_ops
 
-(* FIXME    
   let test_node_impl () = 
     let k_cmp: int -> int -> int = Pervasives.compare in
-    let module M = struct
-      module T = struct
-        open Core_kernel
-        type t = int option [@@deriving compare,sexp]
-      end
-      include T
-      include Core_kernel.Comparator.Make(T)
-    end
-    in
-    let map_ops = Tjr_map.With_base.make_map_ops (module M) in
+    let module Comp = Isa_btree_util.Internal_make_map_ops(struct type k = int let k_cmp = k_cmp end) in
+    let open Comp in
+    let map_ops = Tjr_map.With_base_as_record.make_map_ops kopt_comparator in
     let ops = make_node_ops ~map_ops in
     (* debugging *)
     let node_to_string n =
@@ -323,7 +315,6 @@ module Internal_node_impl = struct
     ()
 
   let _ = Global.register ~name:(__MODULE__^".test_node_impl") test_node_impl
-*)
 end
 
 

@@ -10,9 +10,9 @@ let int_of_string s =
 
 type ii_op = (int,int) op [@@deriving yojson]
 
-let k_cmp : int -> int -> int = Int_.compare
+(* let k_cmp : int -> int -> int = Int_.compare *)
 
 let dbg_tree_at_r = fun r -> return ()
 
-let map_ops : (int,int,(int,int,unit)Tjr_map.map) Tjr_map.map_ops = Tjr_map.make_map_ops k_cmp
+(* let map_ops : (int,int,(int,int,unit)Tjr_map.map) Tjr_map.map_ops = Tjr_map.make_map_ops k_cmp *)
 

@@ -1,4 +1,4 @@
-(** Tests for specific delete cases. *)
+(** Unit tests for specific delete cases. *)
 open Isa_export
 open Isa_export_wrapper
 open Isa_btree

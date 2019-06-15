@@ -37,11 +37,11 @@ module Internal = struct
   (* leaf and node test impls ----------------------------------------- *)
 
 
-  module Map_ops = Isa_export_wrapper.Internal_make_map_ops(struct
+  module Map_ops = Isa_btree_util.Internal_make_map_ops(struct
       type k=int
       let k_cmp = Pervasives.compare
     end)
-  open Map_ops
+  include Map_ops
        
   module T2 = struct
     type test_leaf = (int,int,k_comparator) Base.Map.t
@@ -130,11 +130,14 @@ module Export = struct
   let test_r_to_yojson = test_r_to_yojson
   let test_r_to_string = test_r_to_string
   let test_frame_to_yojson = test_frame_to_yojson
-  let k_args = Isa_export_wrapper.{ 
-      k_cmp=Pervasives.compare; k_map=leaf_map_ops; kopt_map=node_map_ops }
-  let make_btree_ops ~monad_ops ~cs = 
-    Isa_export_wrapper.Internal_make_with_kargs.make_with_kargs
-      ~monad_ops ~cs ~k_args
+  (* let k_args = Isa_export_wrapper.{  *)
+      (* k_cmp=Pervasives.compare; k_map=leaf_map_ops; kopt_map=node_map_ops } *)
+  let make_btree_ops ~monad_ops ~cs ~store_ops = 
+    Isa_btree.make_with_comparators ~monad_ops ~cs 
+      ~k_cmp:Internal.k_comparator 
+      ~kopt_cmp:Internal.kopt_comparator
+      ~store_ops
+
 end
 
 include Export

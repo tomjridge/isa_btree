@@ -9,7 +9,8 @@ This version uses sets of states rather than depth-first search.
 open Isa_export_wrapper
 open Test_monad
 open Test_leaf_node_frame_impls
-open Test_util
+(* open Test_util *)
+open Test_spec
 
 module C = struct
   type pre_config = {
@@ -33,6 +34,8 @@ module Internal = struct
   type spec = (int,int,unit)Tjr_map.map
 
   let execute_tests ~cs ~range = 
+    (* map_ops for the spec; FIXME rename *)
+    let map_ops = Test_spec.spec_map_ops in
     let dbg_frame f = 
       Logger.log_lazy (fun _ -> 
           Printf.sprintf "dbg_frame: %s\n" 

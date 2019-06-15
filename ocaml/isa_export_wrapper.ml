@@ -311,8 +311,9 @@ module Internal_make_with_k_maps = struct
 end
 include Internal_make_with_k_maps
 
-open Isa_btree_intf.Pre_btree_ops_type
+(* open Isa_btree_intf.Pre_btree_ops_type *)
 
+(*
 (** The advantage of this interface is that we provide the types of the k_map and kopt_map from the "outside", thereby avoiding type generativity issues. *)
 module Internal_make_with_kargs = struct
   type ('a,'b,'c) k_args = {
@@ -347,9 +348,11 @@ end
 
 
 include Internal_make_with_kargs
+*)
+
 
 module Internal_make_with_comparators = struct
-
+  open Isa_btree_util
   let make_with_comparators 
     (type k k_cmp kopt_cmp)
     ~monad_ops
@@ -358,22 +361,19 @@ module Internal_make_with_comparators = struct
     ~(kopt_cmp:(k option,kopt_cmp)Base.Map.comparator)
     ~store_ops
     =
-    let k_args = 
-      let k_map = Tjr_map.With_base_as_record.make_map_ops k_cmp in
-      let kopt_map = Tjr_map.With_base_as_record.make_map_ops kopt_cmp in
-      let k_cmp =
-        let (module A) = k_cmp in
+    let k_map = comparator_to_map_ops k_cmp in
+    let kopt_map = comparator_to_map_ops kopt_cmp in
+    let k_cmp =
+      let (module A) = k_cmp in
         A.comparator.compare
-      in
-      { k_cmp; k_map; kopt_map }
     in
-    make_with_kargs ~monad_ops ~cs ~k_args ~store_ops
-               
-       
+    let dbg_tree_at_r = fun _ -> monad_ops.return () in
+    make_with_k_maps ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops
+                     
   let _ = make_with_comparators
 end
 
 include Internal_make_with_comparators
 
-include Isa_btree_util
+(* include Isa_btree_util *)
 

@@ -53,3 +53,10 @@ end
 (** For testing *)
 module Int_map_ops = Internal_make_map_ops(
   struct type k = int let k_cmp=Pervasives.compare end)
+
+(** Utility function to convert a comparator to a record of map operations. *)
+module Comparator_to_map_ops = struct
+  let comparator_to_map_ops (cmp:('k,'cmp)Base.Map.comparator) =
+    Tjr_map.With_base_as_record.make_map_ops cmp
+end
+include Comparator_to_map_ops

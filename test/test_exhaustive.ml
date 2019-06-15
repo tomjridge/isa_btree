@@ -1,4 +1,4 @@
-(** Exhaustively test the B-tree functionality, using a "correct"
+(** DEPRECATED!!! Exhaustively test the B-tree functionality, using a "correct"
    in-memory store. In this case, we use a "Tree store".
 
 At the moment this takes constants from a config file, but perhaps we
@@ -23,6 +23,7 @@ open Isa_export_wrapper
 open Test_monad
 open Test_leaf_node_frame_impls
 open Test_util
+open Test_spec
 
 module C = struct
   type pre_config = {
@@ -47,6 +48,7 @@ module Internal = struct
   type spec = (int,int,unit)Tjr_map.map
 
   let execute_tests ~cs ~range ~fuel = 
+    let map_ops = spec_map_ops in     
     let dbg_frame f = 
       Logger.log_lazy (fun _ -> 
           Printf.sprintf "dbg_frame: %s\n" 

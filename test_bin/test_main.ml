@@ -16,9 +16,6 @@ Here, we know that insert will always mutate, so we always get a Some.
 We can also take ('a,t) m = 'a
 
 *)
-(* open Test_monad *)
-open Test_util
-(* open Isa_export_wrapper *)
 
 
 
@@ -89,14 +86,15 @@ let _ =
       with_logger (fun () -> Test_sequential_insert.test_seq_insert ())
 
   | ["test_polymap"] -> begin
+      let open Test_spec in
       let rec loop n m = 
         n <= 0 |> function
         | true -> ()
         | false -> 
-          map_ops.add n n m |> fun m -> 
+          spec_map_ops.add n n m |> fun m -> 
           loop (n-1) m
       in
-      loop (int_of_float 1e7) map_ops.empty
+      loop (int_of_float 1e7) spec_map_ops.empty
     end
 
 

@@ -103,7 +103,7 @@ end)
   open Isa_export_wrapper
   open S
 
-  module Map_ops = Isa_export_wrapper.Internal_make_map_ops(
+  module Map_ops = Isa_btree_util.Internal_make_map_ops(
     struct 
       type nonrec k = k 
       let k_cmp = k_cmp 
@@ -118,15 +118,14 @@ end)
   let make_btree_ops (type t) ~monad_ops ~cs ~(store_ops:(r,(node,leaf)dnode,t)store_ops)
       : (k,v,r,t,leaf,node,leaf_stream)pre_btree_ops
     = 
-    (* let dbg_tree_at_r r = monad_ops.return () in *)
-    let k_args = { k_cmp; k_map=k_map(); kopt_map=kopt_map() } in
-    Internal_make_with_kargs.(
-      make_with_kargs ~monad_ops ~cs ~k_args ~store_ops)
+    Internal_make_with_comparators.(
+      make_with_comparators ~monad_ops ~cs ~k_cmp:k_comparator ~kopt_cmp:kopt_comparator ~store_ops)
 
   let _ = make_btree_ops
 end
 
 
+module Comparator_to_map_ops = Isa_btree_util.Comparator_to_map_ops
 
 let make_with_comparators = Isa_export_wrapper.make_with_comparators
 
@@ -164,10 +163,12 @@ module Make_with_first_class_module = struct
   let _ = make_with_first_class_module
 end
 
+(* module Make_with_kargs = Isa_export_wrapper.Internal_make_with_kargs *)
+
 module Leaf_node_frame_impls = Leaf_node_frame_impls
 module Isa_export = Isa_export
 module Isa_export_wrapper = Isa_export_wrapper
-
+module Isa_btree_util = Isa_btree_util
 
 (*
 (** Unsafe implementation of k_args using Pervasives.compare, for testing *)

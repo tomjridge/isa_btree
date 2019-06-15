@@ -1,3 +1,7 @@
+(** Provide a function which repeatedly calls insert (not insert_many
+   or all). Used for assessing the improvement in performance afforded
+   by insert_many. *)
+
 (* open Isa_export_wrapper *)
 open Test_monad
 (* open Test_util *)
