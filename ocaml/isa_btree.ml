@@ -46,27 +46,35 @@ include Isa_export_wrapper.Node_ops_type
 include Pre_map_ops_type
 
 
+(*
 (** {2 Insert all and insert many} *)
 
 include Insert_all_type
 
 include Insert_many_type
+*)
+
 
 (** {2 Store ops} *)
 
 include Store_ops_type
 
 
+(*
 (** {2 Leaf stream ops} *)
 
 include Leaf_stream_ops_type
+*)
 
 
 (** {2 Main functionality: make a B-tree} *)
 
 (* include Isa_export_wrapper.Internal_export *)
 
+(** A record of operations provided by the B-tree *)
+
 include Pre_btree_ops_type
+
 
 (** This functor takes various types and constants (including, in
    particular, the type of keys and the value for the comparison on
@@ -80,24 +88,18 @@ include Pre_btree_ops_type
 
  *)
 
-module type S = sig 
-    type k
-    type v
-    type r
-    val k_cmp: k -> k -> int
-  end
-
 module Make(S:S) : (sig
   open S
-  type node
   type leaf 
-  type frame
+  type node
   type leaf_stream
+
+  val leaf_ops: (k,v,leaf)leaf_ops
+  val node_ops: (k,r,node)node_ops
+
   val make_btree_ops: 
-    monad_ops:'a monad_ops ->
-    cs:constants ->
-    store_ops:(r, (node, leaf) dnode, 'a) store_ops ->
-    (k, v, r, 'a, leaf, node, leaf_stream) pre_btree_ops
+    store_ops:(r, (node, leaf) dnode, t) store_ops ->
+    (k, v, r, t, leaf, node, leaf_stream) pre_btree_ops
 end)
 = struct
   open Isa_export_wrapper
@@ -108,15 +110,19 @@ end)
       type nonrec k = k 
       let k_cmp = k_cmp 
     end)
-  open Map_ops
+  include Map_ops
 
   type node = (k option, r, kopt_comparator) Base.Map.t
   type leaf = (k, v, k_comparator) Base.Map.t
   type frame = (k, r, node) Frame_type.frame
   type leaf_stream = (r, leaf, frame) Internal_leaf_stream_impl._t
 
-  let make_btree_ops (type t) ~monad_ops ~cs ~(store_ops:(r,(node,leaf)dnode,t)store_ops)
-      : (k,v,r,t,leaf,node,leaf_stream)pre_btree_ops
+  let leaf_node_frame_ops = Leaf_node_frame_impls.make_leaf_node_frame_ops_from_comparators ~k_cmp:k_comparator ~kopt_cmp:kopt_comparator
+  let leaf_ops = leaf_node_frame_ops.leaf_ops
+  let node_ops = leaf_node_frame_ops.node_ops
+
+  let make_btree_ops ~(store_ops:(r,(node,leaf)dnode,t)store_ops)
+    : (k,v,r,t,leaf,node,leaf_stream)pre_btree_ops
     = 
     Internal_make_with_comparators.(
       make_with_comparators ~monad_ops ~cs ~k_cmp:k_comparator ~kopt_cmp:kopt_comparator ~store_ops)
@@ -125,11 +131,11 @@ end)
 end
 
 
+(** {2 Internal interfaces} *)
+
 module Comparator_to_map_ops = Isa_btree_util.Comparator_to_map_ops
 
 let make_with_comparators = Isa_export_wrapper.make_with_comparators
-
-(** {2 Internal interfaces} *)
 
 module Make_with_first_class_module = struct
 
@@ -137,50 +143,41 @@ module Make_with_first_class_module = struct
     type k 
     type v 
     type r
+    type t
     type node
     type leaf
-    type frame
     type leaf_stream
+
+    (** These leaf and node ops allow store_ops to convert internal
+       types to lists that can be stored on disk. *)
+    val leaf_ops: (k,v,leaf)leaf_ops
+    val node_ops: (k,r,node)node_ops
+
     val make_btree_ops :
-      monad_ops:'a monad_ops ->
-      cs:constants ->
-      store_ops:(r, (node, leaf) dnode, 'a) store_ops ->
-      (k, v, r, 'a, leaf, node, leaf_stream) pre_btree_ops
+      store_ops:(r, (node, leaf) dnode, t) store_ops ->
+      (k, v, r, t, leaf, node, leaf_stream) pre_btree_ops
   end
 
-  let make_with_first_class_module (type k v r) ~monad_ops ~cs ~k_cmp = 
+  let make_with_first_class_module (type k v r t) ~monad_ops ~cs ~k_cmp = 
     let module A = struct 
       type nonrec k=k
       type nonrec v=v
       type nonrec r=r
+      type nonrec t=t
       let k_cmp=k_cmp
+      let monad_ops = monad_ops
+      let cs = cs
     end
     in
     let module B = Make(A) in
     let module C = struct include A include B end in
-    (module C : T with type k=k and type v=v and type r=r)
+    (module C : T with type k=k and type v=v and type r=r and type t=t)
 
   let _ = make_with_first_class_module
 end
-
-(* module Make_with_kargs = Isa_export_wrapper.Internal_make_with_kargs *)
 
 module Leaf_node_frame_impls = Leaf_node_frame_impls
 module Isa_export = Isa_export
 module Isa_export_wrapper = Isa_export_wrapper
 module Isa_btree_util = Isa_btree_util
-
-(*
-(** Unsafe implementation of k_args using Pervasives.compare, for testing *)
-module Unsafe_k_args_impl(S:sig type k type v end) = struct
-  open S
-
-  module Map_ops = Isa_btree_util.Internal_make_map_ops(struct type nonrec k=k let k_cmp = Pervasives.compare end)
-
-  let k_map_ops,kopt_map_ops = Map_ops.(k_map(),kopt_map())
-
-
-  
-
-end
-*)
+module Notes = Notes

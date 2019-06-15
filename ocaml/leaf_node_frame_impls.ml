@@ -1,4 +1,9 @@
-(** {2 Leaf operations} *)
+(** {2 Leaf operations}
+
+For generality, these use an arbitrary "map_ops". Typically we use
+   Base.Map to implement these underlying maps.
+
+ *)
 
 open Isa_btree_intf
 open Leaf_node_frame_map_ops_type
@@ -456,11 +461,23 @@ module Internal_frame_impl = struct
       step_frame_for_leaf_stream; dbg_frame }
 end
 
-
 module Export = struct
   let make_leaf_ops = Internal_leaf_impl.make_leaf_ops
   let make_node_ops = Internal_node_impl.make_node_ops
   let make_frame_ops = Internal_frame_impl.make_frame_ops
+
+  (** Given a two compartors (k and kopt) we can construct leaf node and
+      frame impls *)
+
+  let make_leaf_node_frame_ops_from_comparators ~k_cmp ~kopt_cmp = 
+    let map_ops = Tjr_map.With_base_as_record.make_map_ops k_cmp in
+    let leaf_ops = make_leaf_ops ~map_ops in
+    let map_ops = Tjr_map.With_base_as_record.make_map_ops kopt_cmp in
+    let node_ops = make_node_ops ~map_ops in
+    let frame_ops = make_frame_ops ~map_ops in
+    { leaf_ops; node_ops; frame_ops }
+
+
 end
 
 (*

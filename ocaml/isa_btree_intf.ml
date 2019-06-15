@@ -80,6 +80,13 @@ module Frame_ops_type = struct
 end
 include Frame_ops_type
 
+(** For packaging *)
+type ('a,'b,'c) leaf_node_frame_ops = {
+  leaf_ops:'a;
+  node_ops:'b;
+  frame_ops:'c;
+}
+
 (** {2 Store operations} *)
 
 module Store_ops_type = struct
@@ -196,3 +203,21 @@ module Leaf_node_frame_map_ops_type = struct
   type ('k,'v,'t) map_ops = ('k,'v,'t) Tjr_map.With_base_as_record.map_ops
 end
 (* don't include to avoid too many map types in scope *)
+
+
+type ('s,'t) type_conversions = {
+  s_to_t: 's -> 't;
+  t_to_s: 't -> 's;
+}
+
+
+
+module type S = sig 
+    type k
+    type v
+    type r
+    type t
+    val k_cmp: k -> k -> int
+    val monad_ops: t monad_ops
+    val cs: Constants.constants
+  end
