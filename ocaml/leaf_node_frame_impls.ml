@@ -24,10 +24,12 @@ open Internal_misc
 
 module Internal_leaf_impl = struct
 
-  let leaf_profiler = Init_ref.create dummy_profiler
+  let leaf_profiler = 
+    ref {dummy_profiler with mark=fun _ -> failwith __LOC__}
+    |> Global.register ~name:"leaf_profiler"
+
       
   module Internal_ = struct
-    open Init_ref
     let profile x z =
       let profiler = leaf_profiler in
       !profiler.mark x;
@@ -144,10 +146,12 @@ end
 
 module Internal_node_impl = struct
 
-  let node_profiler = Init_ref.create dummy_profiler
+  let node_profiler = 
+    ref dummy_profiler
+    |> Global.register ~name:"node_profiler"
+
 
   module Internal_ = struct
-    open Init_ref
     let profile x z =
       let profiler = node_profiler in
       !profiler.mark x;
@@ -328,11 +332,11 @@ end
 module Internal_frame_impl = struct
 
   open Isa_btree_intf.Frame_type
-
-  let frame_profiler = Init_ref.create dummy_profiler
-
+      
+  let frame_profiler = ref dummy_profiler |>
+                       Global.register ~name:"node_profiler"
+      
   module Internal_ = struct
-    open Init_ref
     let profile x z =
       let profiler = frame_profiler in
       !profiler.mark x;
