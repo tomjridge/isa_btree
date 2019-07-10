@@ -21,12 +21,9 @@ We can also take ('a,t) m = 'a
 
 (* setup profiler ----------------------------------------------- *)
 
-open Tjr_profile
+open Tjr_profile_with_core
 
-let profiler = 
-  Tjr_profile.make_string_profiler 
-    ~now:Core.Time_stamp_counter.(fun () ->
-        now () |> to_int63 |> Core.Int63.to_int |> fun (Some x) -> x)
+let profiler = make_string_profiler ()
 
 let _ = 
 (*  Init_ref.set 
