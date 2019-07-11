@@ -17,21 +17,6 @@ We can also take ('a,t) m = 'a
 
 *)
 
-
-
-(* setup profiler ----------------------------------------------- *)
-
-open Tjr_profile_with_core
-
-let profiler = make_string_profiler ()
-
-let _ = 
-(*  Init_ref.set 
-    Isa_btree.Leaf_node_frame_impls.Internal_leaf_impl.leaf_profiler 
-    profiler;*)
-  Init_ref.set_post_init ()
-
-
 let _ = 
   Isa_export_wrapper.enable_isa_checks();
   Tjr_lib.Test.enable();
@@ -53,7 +38,6 @@ let _ =
           Test_exhaustive.config |> List.iter (fun pre_config -> 
               Test_exhaustive.test_exhaustive ~pre_config);
           Printf.printf "%s: tests OK\n%!" __MODULE__);
-      profiler.print_summary()
     end
 
   | ["test_exhaustive_2"] -> with_logger (fun () -> 

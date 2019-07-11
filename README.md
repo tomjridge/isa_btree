@@ -26,3 +26,10 @@ This repository contains Isabelle definitions of the main B-tree operations, tog
 | tjr_fs_shared               | shared lib                                        |
 |                             |                                                   |
 
+
+
+## Compile-time configuration
+
+Profiling is controlled by ppx_optcomp, and file "profilers.ml". By
+default, profiling is disabled (?). To enable, you have to edit this
+config file.

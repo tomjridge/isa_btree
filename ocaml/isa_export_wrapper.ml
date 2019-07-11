@@ -1,5 +1,4 @@
 open Isa_btree_intf
-(* open Tjr_profile.Util.Profiler *)
 
 (** Wrap Isabelle-exported code in an OCaml-friendly interface *)
 

@@ -11,7 +11,7 @@ end
 include Dnode_type
 
 module Leaf_ops_type = struct
-  (** As Isabelle def. See \doc(doc:leaf_ops). *)
+  (** As Isabelle def. See \doc(doc:leaf_ops). Note: the empty leaf can be obtained by calling kvs_to_leaf on the empty list. *)
   type ('k,'v,'leaf) leaf_ops = {
     leaf_lookup: 'k -> 'leaf -> 'v option;
     leaf_insert: 'k -> 'v -> 'leaf -> 'leaf * 'v option;
@@ -23,6 +23,7 @@ module Leaf_ops_type = struct
     split_large_leaf: int -> 'leaf -> 'leaf*'k*'leaf;
     leaf_to_kvs: 'leaf -> ('k*'v) list;
     kvs_to_leaf: ('k*'v) list -> 'leaf;
+    (* empty_leaf: 'leaf;  *)
     (* dbg_leaf_kvs: 'leaf -> ('k*'v) list; *)
     (* dbg_leaf: 'leaf -> unit; *)
   }

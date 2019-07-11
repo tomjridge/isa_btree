@@ -8,36 +8,9 @@ For generality, these use an arbitrary "map_ops". Typically we use
 open Isa_btree_intf
 open Leaf_node_frame_map_ops_type
 
-(*
-module Internal_misc = struct
-  (* None is less than any other lower bound; this corresponds to the
-     "lowest" interval below k0 *)
-  let rec key_compare k_cmp k1 k2 =
-    match k1,k2 with 
-    | None,None -> 0
-    | None,_ -> -1
-    | _,None -> 1
-    | Some k1, Some k2 -> k_cmp k1 k2
-end
-open Internal_misc
-*)
-
 module Internal_leaf_impl = struct
 
-  let leaf_profiler = 
-    ref {dummy_profiler with mark=fun _ -> failwith __LOC__}
-    |> Global.register ~name:"leaf_profiler"
-
-      
-  module Internal_ = struct
-    let profile x z =
-      let profiler = leaf_profiler in
-      !profiler.mark x;
-      let r = z() in
-      !profiler.mark (x^"'");
-      r
-  end
-  open Internal_
+  open Profilers.Leaf_profiler  
 
   let make_leaf_ops (type k v t) ~(map_ops:(k,v,t)map_ops) = 
     let leaf_lookup k l = 
@@ -146,20 +119,7 @@ end
 
 module Internal_node_impl = struct
 
-  let node_profiler = 
-    ref dummy_profiler
-    |> Global.register ~name:"node_profiler"
-
-
-  module Internal_ = struct
-    let profile x z =
-      let profiler = node_profiler in
-      !profiler.mark x;
-      let r = z() in
-      !profiler.mark (x^"'");
-      r
-  end
-  open Internal_
+  open Profilers.Node_profiler
 
   (* implement node ops using a map from option; see impl notes in
      \doc(doc:node_ops) *)
@@ -332,19 +292,7 @@ end
 module Internal_frame_impl = struct
 
   open Isa_btree_intf.Frame_type
-      
-  let frame_profiler = ref dummy_profiler |>
-                       Global.register ~name:"node_profiler"
-      
-  module Internal_ = struct
-    let profile x z =
-      let profiler = frame_profiler in
-      !profiler.mark x;
-      let r = z() in
-      !profiler.mark (x^"'");
-      r
-  end
-  open Internal_
+  open Profilers.Frame_profiler
 
   (* note that the map_ops is the map ops for the node type *)
   let make_frame_ops (type k r node) ~(map_ops:(k option,r,node)map_ops) =
