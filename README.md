@@ -30,6 +30,7 @@ This repository contains Isabelle definitions of the main B-tree operations, tog
 
 ## Compile-time configuration
 
-Profiling is controlled by ppx_optcomp, and file "profilers.ml". By
-default, profiling is disabled (?). To enable, you have to edit this
-config file.
+Profiling is controlled by ppx_optcomp, a config file
+"/tmp/optcomp_config.ml", and file "profilers.ml". By default,
+profiling is disabled (?). To enable, you have to edit this config
+file.
