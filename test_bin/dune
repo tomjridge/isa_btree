@@ -5,4 +5,4 @@
   (name test_main)
 ;;  (public_name test_isa_btree)
   (preprocess (pps ppx_deriving_yojson))
-  (libraries isa_btree isa_btree_test tjr_profile_with_core))
+  (libraries isa_btree isa_btree_test tjr_profile))
