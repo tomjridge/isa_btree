@@ -360,7 +360,7 @@ module Internal_frame_impl = struct
       f.node |> map_ops.add k' r' |> fun n ->
       (* remove old ks *)
       (krs,n) 
-      |> List_.iter_opt (fun (krs,n) ->
+      |> iter_opt (fun (krs,n) ->
           match krs with 
           | [] -> None
           | (k,r)::krs ->
@@ -369,7 +369,7 @@ module Internal_frame_impl = struct
       (* add new krs *)
       |> fun n ->
       (krs',n) 
-      |> List_.iter_opt (fun (krs,n) -> 
+      |> iter_opt (fun (krs,n) -> 
           match krs with
           | [] -> None
           | (k,r)::krs ->
