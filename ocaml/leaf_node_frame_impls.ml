@@ -12,13 +12,20 @@ module Internal_leaf_impl = struct
 
   open Profilers.Leaf_profiler  
 
+  let 
+    [ll   ; li   ; lr   ; llen   ; lsr_  ; lsl_  ; lm   ; lspl   ; l2kvs   ; kvs2l] =
+    ["ll" ; "li" ; "lr" ; "llen" ; "lsr" ; "lsl" ; "lm" ; "lspl" ; "l2kvs" ;"kvs2l"] 
+    |> List.map intern
+
+  let profile = time_thunk
+
   let make_leaf_ops (type k v t) ~(map_ops:(k,v,t)map_ops) = 
     let leaf_lookup k l = 
-      profile (*"ab"*) "ll" @@ fun () -> 
+      profile ll @@ fun () -> 
       map_ops.find_opt k l
     in
     let leaf_insert k v l = 
-      profile (*"ae"*) "li" @@ fun () -> 
+      profile li @@ fun () -> 
       let old = ref None in
       let l' = 
         map_ops.update 
@@ -33,14 +40,14 @@ module Internal_leaf_impl = struct
       l',!old
     in
     let leaf_remove k l = 
-      profile (*"ah"*) "lr" @@ fun () -> 
+      profile lr @@ fun () -> 
       map_ops.remove k l in
     let leaf_length l = 
-      profile (*"aj"*) "llen" @@ fun () -> 
+      profile llen @@ fun () -> 
       map_ops.cardinal l in
     let leaf_steal_right (l1,l2) =
       (* Printf.printf "leaf_steal_right\n"; *)
-      profile (*"al"*) "lsr" @@ fun () -> 
+      profile lsr_ @@ fun () -> 
       map_ops.min_binding_opt l2 |> dest_Some |> fun (k,v) ->
       l2 |> map_ops.remove k |> fun l2 -> 
       l2 |> map_ops.min_binding_opt |> dest_Some |> fun (k',_) ->
@@ -48,19 +55,19 @@ module Internal_leaf_impl = struct
       (l1,k',l2)
     in
     let leaf_steal_left (l1,l2) =
-      profile (*"am"*) "lsl" @@ fun () ->      
+      profile lsl_ @@ fun () ->      
       map_ops.max_binding_opt l1 |> dest_Some |> fun (k,v) ->
       l1 |> map_ops.remove k |> fun l1 ->
       l2 |> map_ops.add k v |> fun l2 ->
       (l1,k,l2)
     in
     let leaf_merge (l1,l2) = 
-      profile (*"an"*) "lm" @@ fun () ->      
+      profile lm @@ fun () ->      
       map_ops.disjoint_union l1 l2 
     in
     let split_large_leaf i l1 = 
-      profile (*"ao"*) "lspl" @@ fun () ->      
-(*      Printf.printf "split_large_leaf: i=%d len=%d"
+      profile lspl @@ fun () ->      
+      (*      Printf.printf "split_large_leaf: i=%d len=%d"
         i
         (map_ops.cardinal l1);*)
       l1 |> map_ops.bindings |> List_.drop i |> fun binds -> 
@@ -74,10 +81,10 @@ module Internal_leaf_impl = struct
     (* by default, there is no debugging; override the dbg_leaf field to enable *)
     let dbg_leaf = fun l -> () in
     let kvs_to_leaf = fun kvs -> 
-      profile "kvs2l" @@ fun () ->
+      profile kvs2l @@ fun () ->
       map_ops.of_bindings kvs in
     let leaf_to_kvs = fun l -> 
-      profile "l2kvs" @@ fun () ->      
+      profile l2kvs @@ fun () ->      
       map_ops.bindings l in
     let ops = ({ leaf_lookup; leaf_insert; leaf_remove; leaf_length; 
        leaf_steal_right; leaf_steal_left; 
@@ -124,9 +131,17 @@ module Internal_node_impl = struct
   (* implement node ops using a map from option; see impl notes in
      \doc(doc:node_ops) *)
 
+  let profile = time_thunk
+
+  let 
+    [n1;n2;n3;n4;n5;n6;n7;n8;n9]
+    =  ["n1";"n2";"n3";"n4";"n5";"n6";"n7";"n8";"n9"]
+    |> List.map intern
+      
+
   let make_node_ops (type k r t) ~(map_ops:(k option,r,t)map_ops) = 
     let make_node ks rs = 
-      profile "bb" @@ fun () -> 
+      profile n1 @@ fun () -> 
       (* assert(List.length rs = 1 + List.length ks); *)
 
 (* attempt at optimization; failed see test_btree_main.2019-05-19_19:06:49.log
@@ -159,7 +174,7 @@ module Internal_node_impl = struct
     let check_node = check_node_has_none_binding in
 
     let split_node_at_k_index i n =   (* i counts from 0 *)
-      profile "bc" @@ fun () -> 
+      profile n2 @@ fun () -> 
       (* FIXME this is rather inefficient... is there a better way?
          without altering the map implementation? *)
       map_ops.bindings n |> fun krs -> 
@@ -181,7 +196,7 @@ module Internal_node_impl = struct
       (n1,k,n2)
     in
     let node_merge (n1,k,n2) = 
-      profile "bd" @@ fun () -> 
+      profile n3 @@ fun () -> 
       n2 |> map_ops.find_opt None |> dest_Some |> fun r2 -> 
       n2 |> map_ops.remove None |> map_ops.add (Some k) r2 |> fun n2 ->
       map_ops.disjoint_union n1 n2 |> fun n -> 
@@ -189,7 +204,7 @@ module Internal_node_impl = struct
       n
     in
     let node_steal_right (n1,k0,n2) =
-      profile "be" @@ fun () -> 
+      profile n4 @@ fun () -> 
       n2 |> map_ops.find_opt None |> dest_Some |> fun r ->
       n2 |> map_ops.remove None |> fun n2 ->
       n2 |> map_ops.min_binding_opt |> dest_Some |> fun (k',r') ->
@@ -200,7 +215,7 @@ module Internal_node_impl = struct
       (n1,k',n2)
     in
     let node_steal_left (n1,k0,n2) = 
-      profile "bf" @@ fun () -> 
+      profile n5 @@ fun () -> 
       n1 |> map_ops.max_binding_opt |> dest_Some |> fun (k,r) ->
       k |> dest_Some |> fun k ->
       n1 |> map_ops.remove (Some k) |> fun n1 ->
@@ -213,21 +228,21 @@ module Internal_node_impl = struct
       (n1,k,n2)
     in
     let node_keys_length n = 
-      profile "bg" @@ fun () -> 
+      profile n6 @@ fun () -> 
       (map_ops.cardinal n) -1
     in
     let node_make_small_root (r1,k,r2) =
-      profile "bh" @@ fun () -> 
+      profile n7 @@ fun () -> 
       (* Printf.printf "Making small root\n%!"; *)
       map_ops.empty |> map_ops.add None r1 |> map_ops.add (Some k) r2
     in
     let node_get_single_r n =
-      profile "bi" @@ fun () -> 
+      profile n8 @@ fun () -> 
       assert(map_ops.cardinal n = 1);
       map_ops.bindings n |> fun [(_,r)] -> r
     in
     let node_to_krs n = 
-      profile "bj" @@ fun () -> 
+      profile n9 @@ fun () -> 
       n |> map_ops.bindings |> List.split |> fun (ks,rs) ->
       (List.tl ks |> List.map dest_Some,rs)
     in
@@ -294,10 +309,18 @@ module Internal_frame_impl = struct
   open Isa_btree_intf.Frame_type
   open Profilers.Frame_profiler
 
+  let profile = time_thunk
+
+  let 
+    [f1;f2;f3;f4;f5;f6;f7;f8;f9]
+    =  ["f1";"f2";"f3";"f4";"f5";"f6";"f7";"f8";"f9"]
+    |> List.map intern
+  
+
   (* note that the map_ops is the map ops for the node type *)
   let make_frame_ops (type k r node) ~(map_ops:(k option,r,node)map_ops) =
     let split_node_on_key backing_node_blk_ref k n = 
-      profile "cb" @@ fun () -> 
+      profile f1 @@ fun () -> 
       (* get the relevant key *)
       let midkey,midpoint = 
         n |> map_ops.closest_key `Less_or_equal_to (Some k) |> function
@@ -325,7 +348,7 @@ module Internal_frame_impl = struct
     in
     let _ = get_prev_binding in
     let get_focus f : k option * r * k option = 
-      profile "cc" @@ fun () -> 
+      profile f2 @@ fun () -> 
       let k1 = f.midkey in
       let k2 = f.node |> get_next_binding f.midkey |> function 
         | None -> None 
@@ -334,7 +357,7 @@ module Internal_frame_impl = struct
       (k1,f.midpoint,k2)
     in
     let get_focus_and_right_sibling f =
-      profile "cd" @@ fun () -> 
+      profile f3 @@ fun () -> 
       let k1,r1 = f.midkey,f.midpoint in
       f.node |> get_next_binding f.midkey |> function
       | None -> None
@@ -345,7 +368,7 @@ module Internal_frame_impl = struct
         Some(k1,r1,k2,r2,None)
     in
     let get_left_sibling_and_focus f = 
-      profile "ce" @@ fun () -> 
+      profile f4 @@ fun () -> 
       f.node |> get_prev_binding f.midkey |> function
       | None -> None 
       | Some(k1,r1) ->
@@ -355,7 +378,7 @@ module Internal_frame_impl = struct
         Some(k1,r1,k2,r2,None)
     in
     let replace (k,r,krs,_) (k',r',krs',_) f =
-      profile "cf" @@ fun () -> 
+      profile f5 @@ fun () -> 
       assert(map_ops.k_cmp k k' = 0);
       f.node |> map_ops.add k' r' |> fun n ->
       (* remove old ks *)
@@ -380,7 +403,7 @@ module Internal_frame_impl = struct
     in
     let frame_to_node f = f.node in
     let get_midpoint_bounds f = 
-      profile "cg" @@ fun () -> 
+      profile f6 @@ fun () -> 
       let l : k option = f.midkey in
       let u = f.node |> get_next_binding f.midkey |> function
         | None -> None
@@ -390,7 +413,7 @@ module Internal_frame_impl = struct
     in
     let backing_node_blk_ref f = f.backing_node_blk_ref in
     let split_node_for_leaf_stream r n = 
-      profile "ch" @@ fun () -> 
+      profile f7 @@ fun () -> 
       let midkey = None in
       let midpoint = map_ops.min_binding_opt n |> function
         | None -> Printf.sprintf "impossible %s" __LOC__ |> failwith
@@ -401,7 +424,7 @@ module Internal_frame_impl = struct
       { midkey; midpoint; node=n; backing_node_blk_ref=r }
     in
     let step_frame_for_leaf_stream f = 
-      profile "ci" @@ fun () -> 
+      profile f8 @@ fun () -> 
       f.node |> get_next_binding f.midkey |> function
       | None -> None
       | Some (k,r) -> Some {f with midkey=(Some k); midpoint=r}
@@ -428,7 +451,6 @@ module Export = struct
     let node_ops = make_node_ops ~map_ops in
     let frame_ops = make_frame_ops ~map_ops in
     { leaf_ops; node_ops; frame_ops }
-
 
 end
 
