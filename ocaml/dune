@@ -4,6 +4,7 @@
 (library
   (name isa_btree)
   (public_name isa_btree)
+  (preprocessor_deps (file "optcomp_config.ml"))
   (preprocess (pps ppx_deriving_yojson ppx_jane))
   (libraries num yojson ppx_deriving_yojson ppx_deriving_yojson.runtime tjr_fs_shared tjr_profile))
 

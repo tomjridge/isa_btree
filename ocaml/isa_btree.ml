@@ -180,6 +180,6 @@ module Leaf_node_frame_impls = Leaf_node_frame_impls
 module Isa_export = Isa_export
 module Isa_export_wrapper = Isa_export_wrapper
 module Isa_btree_util = Isa_btree_util
-module Notes = Notes
+(* module Notes = Notes *)
 
 module Profilers = Profilers

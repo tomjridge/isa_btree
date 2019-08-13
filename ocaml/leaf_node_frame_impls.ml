@@ -7,10 +7,11 @@ For generality, these use an arbitrary "map_ops". Typically we use
 
 open Isa_btree_intf
 open Leaf_node_frame_map_ops_type
+open Profilers
 
 module Internal_leaf_impl = struct
 
-  open Profilers.Leaf_profiler  
+  let {mark; time_thunk; _ } = leaf_profiler
 
   let 
     [ll   ; li   ; lr   ; llen   ; lsr_  ; lsl_  ; lm   ; lspl   ; l2kvs   ; kvs2l] =
@@ -126,11 +127,10 @@ end
 
 module Internal_node_impl = struct
 
-  open Profilers.Node_profiler
-
   (* implement node ops using a map from option; see impl notes in
      \doc(doc:node_ops) *)
 
+  let { time_thunk; _ } = node_profiler
   let profile = time_thunk
 
   let 
@@ -307,8 +307,8 @@ end
 module Internal_frame_impl = struct
 
   open Isa_btree_intf.Frame_type
-  open Profilers.Frame_profiler
 
+  let { time_thunk; _ } = frame_profiler
   let profile = time_thunk
 
   let 
