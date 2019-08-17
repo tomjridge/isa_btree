@@ -8,7 +8,7 @@ let int_of_string s =
   | Some f -> int_of_float f
 
 
-type ii_op = (int,int) op [@@deriving yojson]
+type ii_op = (int,int) kvop [@@deriving yojson]
 
 (* let k_cmp : int -> int -> int = Int_.compare *)
 
