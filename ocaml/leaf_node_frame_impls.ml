@@ -441,7 +441,7 @@ module Export = struct
   let make_node_ops = Internal_node_impl.make_node_ops
   let make_frame_ops = Internal_frame_impl.make_frame_ops
 
-  (** Given a two compartors (k and kopt) we can construct leaf node and
+  (** Given a two comparators (k and kopt) we can construct leaf node and
       frame impls *)
 
   let make_leaf_node_frame_ops_from_comparators ~k_cmp ~kopt_cmp = 
@@ -468,4 +468,7 @@ end
 include Export
 
 
+(** Experimental version, where we use singleton types to enforce type distinctions *)
+module Export_with_singleton_types = struct
 
+end
