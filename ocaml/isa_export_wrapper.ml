@@ -20,7 +20,9 @@ open Isa_export
 
 module Internal_leaf_stream_impl = struct
   (* open Leaf_node_frame_impls *)
-  
+
+  include Isa_btree_intf.Internal_leaf_stream_impl_t
+(*
   (** We augment the basic Isabelle type with some extra information:
      the current leaf. This type is for debugging - you shouldn't need
      to access components. *)
@@ -28,6 +30,7 @@ module Internal_leaf_stream_impl = struct
     leaf: 'leaf;
     isa_ls_state: ('r,'leaf,'frame)Isa_export.Leaf_stream_state.leaf_stream_state 
   }
+*)
 
   (* we need to repeatedly step the leaf state to the point that we
      hit a leaf and dest_LS_leaf <> None; INVARIANT every ls_state
@@ -195,7 +198,6 @@ end
 
 let wf_tree = Internal1.wf_tree
 
-
 module Internal_make_with_k_maps = struct
   open Isa_btree_intf.Pre_btree_ops_type
          
@@ -310,6 +312,7 @@ module Internal_make_with_k_maps = struct
 end
 include Internal_make_with_k_maps
 
+
 (* open Isa_btree_intf.Pre_btree_ops_type *)
 
 (*
@@ -349,7 +352,7 @@ end
 include Internal_make_with_kargs
 *)
 
-
+(*
 module Internal_make_with_comparators = struct
   open Isa_btree_util
   let make_with_comparators 
@@ -373,6 +376,6 @@ module Internal_make_with_comparators = struct
 end
 
 include Internal_make_with_comparators
-
+*)
 (* include Isa_btree_util *)
 

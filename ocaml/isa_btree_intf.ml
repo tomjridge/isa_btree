@@ -3,12 +3,79 @@
 (* NOTE defn. in Isabelle *)
 (* type ('k,'r,'node) node_ops' = ('k,'r,'node) Disk_node.node_ops *)
 
+type ('a,'b) ty_eq = ('a,'b) Base.Type_equal.t
+
 module Dnode_type = struct
   (** Recall [dnode] type *)
   type ('node,'leaf) dnode = ('node,'leaf) Isa_export.Disk_node.dnode = 
       Disk_node of 'node | Disk_leaf of 'leaf
 end
 include Dnode_type
+
+(** {2 Node, leaf and frame types} *)
+
+(** It is useful to be able to talk about these types outside the functor application. *)
+
+(** {2 Frames} *)
+
+(* this is really an implementation type *)
+module Frame_type = struct
+  type ('k,'r,'node) frame = {
+    midkey: 'k option;  (* really or_bottom; may be None *)
+    midpoint: 'r;
+    node: 'node;
+    backing_node_blk_ref: 'r
+  } [@@deriving to_yojson]
+end
+(* open Frame_type  (\* lots of other frames lying around, so just open here *\) *)
+type ('k,'r,'node) frame = ('k,'r,'node) Frame_type.frame
+
+module Internal_leaf_node : sig
+  type ('k,'r,'cmp) node
+  val node_ty_eq: (('k,'r,'cmp) node,('k option, 'r, 'cmp) Base.Map.t) ty_eq
+
+  type ('k,'v,'cmp) leaf
+  val leaf_ty_eq: (('k,'v,'cmp) leaf,('k, 'v, 'cmp) Base.Map.t) ty_eq
+                    
+  (* type ('k,'r,'cmp) frame  *)
+  (* val frame_ty_eq : (('k,'r,'cmp) frame,('k, 'r, ('k,'r,'cmp) node) Frame_type.frame) ty_eq *)
+end
+= struct
+  type ('k,'r,'cmp) node = ('k option, 'r, 'cmp) Base.Map.t
+  let node_ty_eq = Base.Type_equal.refl
+  
+  type ('k,'v,'cmp) leaf = ('k, 'v, 'cmp) Base.Map.t
+  let leaf_ty_eq = Base.Type_equal.refl
+
+  (* type ('k,'r,'cmp) frame = ('k, 'r, ('k,'r,'cmp) node) Frame_type.frame *)
+  (* let frame_ty_eq = Base.Type_equal.refl *)
+end
+
+module Abstract_leaf_node_frame_types = struct
+  open Internal_leaf_node
+  type nonrec ('k,'r,'cmp) node = ('k,'r,'cmp) node
+  type nonrec ('k,'v,'cmp) leaf = ('k,'v,'cmp) leaf
+  (* type nonrec ('k,'r,'cmp) frame = ('k,'r,'cmp) frame  *)
+end
+include Abstract_leaf_node_frame_types
+
+module Internal_leaf_stream_impl_t = struct
+  (** We augment the basic Isabelle type with some extra information:
+     the current leaf. This type is for debugging - you shouldn't need
+     to access components. *)
+  type ('r,'leaf,'frame) _t = { 
+    leaf: 'leaf;
+    isa_ls_state: ('r,'leaf,'frame)Isa_export.Leaf_stream_state.leaf_stream_state 
+  }
+end
+
+module Abstract_leaf_stream : sig
+  type ('k,'v,'r,'cmp) leaf_stream
+end = struct
+  type ('k,'v,'r,'cmp) leaf_stream = 
+    ('r, ('k,'v,'cmp)leaf, ('k,'r,'cmp) Frame_type.frame) Internal_leaf_stream_impl_t._t 
+end
+
 
 module Leaf_ops_type = struct
   (** As Isabelle def. See \doc(doc:leaf_ops). Note: the empty leaf can be obtained by calling kvs_to_leaf on the empty list. *)
@@ -161,19 +228,6 @@ end
 include Insert_all_type
 
 
-(** {2 Frames} *)
-
-(* this is really an implementation type *)
-module Frame_type = struct
-  type ('k,'r,'node) frame = {
-    midkey: 'k option;  (* really or_bottom; may be None *)
-    midpoint: 'r;
-    node: 'node;
-    backing_node_blk_ref: 'r
-  } [@@deriving to_yojson]
-end
-open Frame_type  (* lots of other frames lying around, so just open here *)
-
 
 (** {2 B-tree (pre-) ops} *)
 
@@ -214,11 +268,11 @@ type ('s,'t) type_conversions = {
 
 
 module type S = sig 
-    type k
-    type v
-    type r
-    type t
-    val k_cmp: k -> k -> int
-    val monad_ops: t monad_ops
-    val cs: Constants.constants
-  end
+  type k
+  type v
+  type r
+  type t
+  val k_cmp: k -> k -> int
+  val monad_ops: t monad_ops
+  val cs: Constants.constants
+end

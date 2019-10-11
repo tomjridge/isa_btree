@@ -436,23 +436,66 @@ module Internal_frame_impl = struct
       step_frame_for_leaf_stream; dbg_frame }
 end
 
-module Export = struct
+module Internal_ = struct
   let make_leaf_ops = Internal_leaf_impl.make_leaf_ops
   let make_node_ops = Internal_node_impl.make_node_ops
   let make_frame_ops = Internal_frame_impl.make_frame_ops
 
   (** Given a two comparators (k and kopt) we can construct leaf node and
-      frame impls *)
+      frame impls *)      
 
   let make_leaf_node_frame_ops_from_comparators ~k_cmp ~kopt_cmp = 
+    let module A = struct
+      let f (type a b) (x:('c1,'c2)ty_eq) : ((a,b,'c1)leaf_ops,(a,b,'c2)leaf_ops)ty_eq =
+        let module X = struct
+          type 'c t = (a,b,'c)leaf_ops
+        end
+        in
+        let module A = Base.Type_equal.Lift(X) in
+        A.lift x
+
+      let f = f Isa_btree_intf.Internal_leaf_node.leaf_ty_eq |> Base.Type_equal.sym
+      let _ = f
+
+      let g (type a b) (x:('c1,'c2)ty_eq) : ((a,b,'c1)node_ops,(a,b,'c2)node_ops)ty_eq =
+        let module X = struct
+          type 'c t = (a,b,'c)node_ops
+        end
+        in
+        let module A = Base.Type_equal.Lift(X) in
+        A.lift x
+
+      let g = g Isa_btree_intf.Internal_leaf_node.node_ty_eq |> Base.Type_equal.sym
+      let _ = g
+    end
+    in
     let map_ops = Tjr_map.With_base_as_record.make_map_ops k_cmp in
-    let leaf_ops = make_leaf_ops ~map_ops in
+    let leaf_ops = make_leaf_ops ~map_ops |> Base.Type_equal.conv A.f in
+    let _ = leaf_ops in
+    (* at this point, we would like to hide the Base.Map impl type via
+       the type_equality from Isa_btree_intr.Internal_leaf_node;
+       however, this is not straightforward: ('a, 'b, ('a, 'b, 'c)
+       Base.Map.t) leaf_ops is not easily convertable into ('a, 'b,
+       ('a, 'b, 'c) leaf) leaf_ops :( We seem to need to traverse all
+       the operations, inserting conversion functions everywhere,
+       which is horrible; fortunately, Base.Type_equal has a "lift3"
+       functor which should do the trick *)
     let map_ops = Tjr_map.With_base_as_record.make_map_ops kopt_cmp in
-    let node_ops = make_node_ops ~map_ops in
+    let node_ops = make_node_ops ~map_ops |> Base.Type_equal.conv A.g in
     let frame_ops = make_frame_ops ~map_ops in
     { leaf_ops; node_ops; frame_ops }
 
 end
+
+let make_leaf_node_frame_ops_from_comparators 
+:k_cmp:('a, 'b) Base.Map.comparator ->
+kopt_cmp:('c option, 'd) Base.Map.comparator ->
+(('a, 'e, ('a, 'e, 'b) leaf) leaf_ops, ('c, 'f, ('c, 'f, 'd) node) node_ops,
+ ('c, 'f, ('c, 'f, ('c option, 'f, 'd) Base.Map.t) frame,
+  ('c option, 'f, 'd) Base.Map.t)
+ frame_ops)
+leaf_node_frame_ops
+= Internal_.make_leaf_node_frame_ops_from_comparators
 
 (*
 sig
@@ -465,10 +508,22 @@ sig
 end
 *)
 
-include Export
-
-
-(** Experimental version, where we use singleton types to enforce type distinctions *)
-module Export_with_singleton_types = struct
-
-end
+(*
+include (Export : sig
+  val make_leaf_ops : map_ops:('a, 'b, 'c) map_ops -> ('a, 'b, 'c) leaf_ops
+  val make_node_ops :
+    map_ops:('a option, 'b, 'c) map_ops -> ('a, 'b, 'c) node_ops
+  val make_frame_ops :
+    map_ops:('a option, 'b, 'c) map_ops ->
+    ('a, 'b, ('a, 'b, 'c) frame, 'c) frame_ops
+  val make_leaf_node_frame_ops_from_comparators :
+    k_cmp:('a, 'b) Base.Map.comparator ->
+    kopt_cmp:('c option, 'd) Base.Map.comparator ->
+    (('a, 'e, ('a, 'e, 'b) leaf) leaf_ops,
+     ('c, 'f, ('c, 'f, 'd) node) node_ops,
+     ('c, 'f, ('c, 'f, ('c option, 'f, 'd) Base.Map.t) frame,
+      ('c option, 'f, 'd) Base.Map.t)
+     frame_ops)
+    leaf_node_frame_ops
+end)
+*)
