@@ -117,15 +117,16 @@ end)
   type frame = (k, r, node) Frame_type.frame
   type leaf_stream = (r, leaf, frame) Internal_leaf_stream_impl._t
 
-  let leaf_node_frame_ops = Leaf_node_frame_impls.make_leaf_node_frame_ops_from_comparators ~k_cmp:k_comparator ~kopt_cmp:kopt_comparator
-  let leaf_ops = leaf_node_frame_ops.leaf_ops
-  let node_ops = leaf_node_frame_ops.node_ops
+  let dbg_tree_at_r = fun _ -> monad_ops.return () 
+
+  let x = Isa_export_wrapper.make_with_k_maps ~monad_ops ~cs ~k_cmp ~k_map:(k_map ()) ~kopt_map:(kopt_map()) ~dbg_tree_at_r
+  let leaf_ops = x.leaf_ops
+  let node_ops = x.node_ops
 
   let make_btree_ops ~(store_ops:(r,(node,leaf)dnode,t)store_ops)
     : (k,v,r,t,leaf,node,leaf_stream)pre_btree_ops
     = 
-    Internal_make_with_comparators.(
-      make_with_comparators ~monad_ops ~cs ~k_cmp:k_comparator ~kopt_cmp:kopt_comparator ~store_ops)
+    x.rest ~store_ops
 
   let _ = make_btree_ops
 end
@@ -135,7 +136,8 @@ end
 
 module Comparator_to_map_ops = Isa_btree_util.Comparator_to_map_ops
 
-let make_with_comparators = Isa_export_wrapper.make_with_comparators
+(** This is the "most general" interface *)
+let make_with_k_maps = Isa_export_wrapper.make_with_k_maps
 
 module Make_with_first_class_module = struct
 

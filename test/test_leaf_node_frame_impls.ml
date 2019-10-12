@@ -37,9 +37,11 @@ module Internal = struct
   (* leaf and node test impls ----------------------------------------- *)
 
 
+  let k_cmp : int -> int -> int = Pervasives.compare
+
   module Map_ops = Isa_btree_util.Internal_make_map_ops(struct
       type k=int
-      let k_cmp = Pervasives.compare
+      let k_cmp = k_cmp
     end)
   include Map_ops
        
@@ -133,10 +135,13 @@ module Export = struct
   (* let k_args = Isa_export_wrapper.{  *)
       (* k_cmp=Pervasives.compare; k_map=leaf_map_ops; kopt_map=node_map_ops } *)
   let make_btree_ops ~monad_ops ~cs ~store_ops = 
-    Isa_btree.make_with_comparators ~monad_ops ~cs 
-      ~k_cmp:Internal.k_comparator 
-      ~kopt_cmp:Internal.kopt_comparator
-      ~store_ops
+    Isa_btree.make_with_k_maps ~monad_ops ~cs 
+      ~k_cmp
+      ~k_map:leaf_map_ops
+      ~kopt_map:node_map_ops
+      ~dbg_tree_at_r:(fun _ -> monad_ops.return ())
+    |> fun x -> 
+    x.rest ~store_ops
 
 end
 

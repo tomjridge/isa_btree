@@ -441,6 +441,7 @@ module Internal_ = struct
   let make_node_ops = Internal_node_impl.make_node_ops
   let make_frame_ops = Internal_frame_impl.make_frame_ops
 
+
   (** Given a two comparators (k and kopt) we can construct leaf node and
       frame impls *)      
 
@@ -486,6 +487,7 @@ module Internal_ = struct
     { leaf_ops; node_ops; frame_ops }
 
 end
+include Internal_
 
 let make_leaf_node_frame_ops_from_comparators 
 :k_cmp:('a, 'b) Base.Map.comparator ->

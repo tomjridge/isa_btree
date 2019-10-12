@@ -198,119 +198,154 @@ end
 
 let wf_tree = Internal1.wf_tree
 
+
+(** This is the most general implementation, where we just require k_cmp and map implementations *)
 module Internal_make_with_k_maps = struct
-  open Isa_btree_intf.Pre_btree_ops_type
+  open Isa_btree_intf.Pre_btree_ops_type 
+(*
+  type ('k,'v,'r,'t,'leaf,'node,'leaf_stream) t1 = {
+    find : r:'r -> k:'k -> ('r * 'leaf * ('k, 'r, 'node) frame list, 't) m;
+    insert : r:'r -> k:'k -> v:'v -> ('r option, 't) m;
+    delete: r:'r -> k:'k -> ('r, 't) m;
+    leaf_stream_ops :
+      ('k, 'v, 'r,
+       'leaf_stream,
+       't)
+        leaf_stream_ops;
+    pre_map_ops : ('k, 'v, 'r, 'leaf, ('k, 'r, 'node) frame, 't) pre_map_ops;
+    insert_many : ('k, 'v, 'r, 't) insert_many_type;
+    insert_all : ('k, 'v, 'r, 't) insert_all_type
+  }
+*)
+  (* we want to have leaf and node ops available before we supply store_ops *)
+  type ('k,'v,'r,'t,'leaf,'node,'leaf_stream,'store_ops) t2 = {
+    (* leaf_lookup : 'k -> 'leaf -> 'v option; *)
+    leaf_ops: ('k,'v,'leaf) leaf_ops;
+    node_ops: ('k,'r,'node) node_ops;
+    rest: store_ops:'store_ops -> ('k,'v,'r,'t,'leaf,'node,'leaf_stream) pre_btree_ops
+  }
+
+  open Leaf_node_frame_impls
          
   (* FIXME do we need k_cmp? can we just get it from k_map? *)
-  let make_with_k_maps (type k v r t leaf node) ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r ~store_ops =
-    let module A = struct
-      open Internal_conversions
-      open Internal1
-      open Leaf_node_frame_impls
+  let make_with_k_maps (type k v r t leaf node) ~monad_ops ~cs ~k_cmp ~k_map ~kopt_map ~dbg_tree_at_r =
+    let leaf_ops0 = make_leaf_ops ~map_ops:k_map in    
+    let node_ops0 = make_node_ops ~map_ops:kopt_map in
+    let frame_ops0 = make_frame_ops ~map_ops:kopt_map in
+    let rest = (fun ~store_ops -> 
+      let module A = struct
+        open Internal_conversions
+        open Internal1
 
-      module Monad = struct
-        type nonrec t = t
-        type ('a,'t) mm = ('a,t) m 
-        let bind ab a = monad_ops.bind a ab
-        let return a = monad_ops.return a
-        let fmap f a = a |> bind (fun a -> return (f a))
+        module Monad = struct
+          type nonrec t = t
+          type ('a,'t) mm = ('a,t) m 
+          let bind ab a = monad_ops.bind a ab
+          let return a = monad_ops.return a
+          let fmap f a = a |> bind (fun a -> return (f a))
+        end
+
+        let ( >>= ) = monad_ops.bind
+        let return = monad_ops.return
+
+        module M = Isa_export.Make(Monad) 
+
+
+        (* this is in the monad *)
+        let store_ops2isa store_ops = 
+          let {read;wrte;rewrite;free} = store_ops in
+          M.Post_monad.make_store_ops read wrte rewrite free
+
+        let cs,k_cmp,leaf_ops,node_ops,frame_ops,store_ops = 
+          (cs2isa cs),(cmp2isa k_cmp),(leaf_ops2isa leaf_ops0),
+          (node_ops2isa node_ops0),(frame_ops2isa frame_ops0),
+          (store_ops2isa store_ops)
+
+        module type EXPORT = sig
+          val find : r:r -> k:k -> (r * leaf * (k, r, node) Frame_type.frame list, t) m
+          val insert : r:r -> k:k -> v:v -> (r option, t) Monad.mm
+          val delete : r:r -> k:k -> (r, t) Monad.mm
+          val leaf_stream_ops :
+            (k, v, r,
+             (r, leaf, (k, r, node) Frame_type.frame) Internal_leaf_stream_impl._t, 
+             t)
+              leaf_stream_ops
+          val leaf_lookup : k -> leaf -> v option
+          val pre_map_ops : (k, v, r, leaf, (k, r, node) Frame_type.frame, t) pre_map_ops
+          val insert_many : (k, v, r, t) insert_many_type
+          val insert_all : (k, v, r, t) insert_all_type
+        end
+
+        module Export : EXPORT = struct
+          let find  = 
+            let find = M.Find.find frame_ops store_ops in
+            fun ~(r:r) ~(k:k) -> find r k |> Monad.fmap (fun (a,(b,c)) -> (a,(b:leaf),c))
+
+          let insert = 
+            let insert = M.Insert.insert cs leaf_ops node_ops frame_ops store_ops dbg_tree_at_r in
+            fun  ~(r:r) ~(k:k) ~(v:v) -> (insert r k v : (r option,t)Monad.mm)
+
+          let delete  =
+            let delete = M.Delete.delete cs leaf_ops node_ops frame_ops store_ops dbg_tree_at_r in
+            fun ~(r:r) ~(k:k) -> (delete r k : (r,t)Monad.mm)
+
+          let leaf_stream_ops = 
+            let open M.Leaf_stream in
+            Internal_leaf_stream_impl.make_leaf_stream_ops ~monad_ops ~leaf_kvs:leaf_ops0.leaf_to_kvs ~isa_ls_step_to_next_leaf:(ls_step_to_next_leaf frame_ops store_ops)
+
+
+          let leaf_lookup = leaf_ops0.leaf_lookup 
+
+          let pre_map_ops = {leaf_lookup;find;insert;delete} 
+
+          let insert_many =
+            let insert_many = M.Insert_many.insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops in 
+            let insert_many = fun ~(r:r) ~(k:k) ~(v:v) ~kvs -> insert_many r k v kvs in
+            { insert_many }
+
+          let insert_all = 
+            (* let im_step = M.Insert_many.im_step cs k_cmp leaf_ops node_ops frame_ops store_ops in *)
+            let insert_many = M.Insert_many.insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops in 
+            let iter_m = iter_m ~monad_ops in
+            let insert_all ~r ~kvs = 
+              (r,kvs) |> 
+              iter_m  (fun (r,kvs) -> 
+                  match kvs with 
+                    [] -> return None
+                  | (k,v)::kvs -> (
+                      insert_many r k v kvs >>= fun (kvs,r') -> 
+                      match r' with
+                      | None -> return (Some(r,kvs))
+                      | Some r' -> return (Some(r',kvs))))
+              >>= fun (r',_) -> return r'  (* NOTE may return the original r *)
+            in
+            let _ = insert_all in
+            { insert_all }
+        end
       end
-
-      let ( >>= ) = monad_ops.bind
-      let return = monad_ops.return
-
-      module M = Isa_export.Make(Monad) 
-
-
-      (* this is in the monad *)
-      let store_ops2isa store_ops = 
-        let {read;wrte;rewrite;free} = store_ops in
-        M.Post_monad.make_store_ops read wrte rewrite free
-
-      let leaf_ops0 = make_leaf_ops ~map_ops:k_map
-
-      let node_ops0 = make_node_ops ~map_ops:kopt_map
-
-      let frame_ops0 = make_frame_ops ~map_ops:kopt_map
-
-      let cs,k_cmp,leaf_ops,node_ops,frame_ops,store_ops = 
-        (cs2isa cs),(cmp2isa k_cmp),(leaf_ops2isa leaf_ops0),
-        (node_ops2isa node_ops0),(frame_ops2isa frame_ops0),
-        (store_ops2isa store_ops)
-
-      module type EXPORT = sig
-        val find : r:r -> k:k -> (r * leaf * (k, r, node) Frame_type.frame list, t) m
-        val insert : r:r -> k:k -> v:v -> (r option, t) Monad.mm
-        val delete : r:r -> k:k -> (r, t) Monad.mm
-        val leaf_stream_ops :
-          (k, v, r,
-           (r, leaf, (k, r, node) Frame_type.frame) Internal_leaf_stream_impl._t, 
-           t)
-            leaf_stream_ops
-        val leaf_lookup : k -> leaf -> v option
-        val pre_map_ops : (k, v, r, leaf, (k, r, node) Frame_type.frame, t) pre_map_ops
-        val insert_many : (k, v, r, t) insert_many_type
-        val insert_all : (k, v, r, t) insert_all_type
-      end
-
-      module Export : EXPORT = struct
-        let find  = 
-          let find = M.Find.find frame_ops store_ops in
-          fun ~(r:r) ~(k:k) -> find r k |> Monad.fmap (fun (a,(b,c)) -> (a,(b:leaf),c))
-
-        let insert = 
-          let insert = M.Insert.insert cs leaf_ops node_ops frame_ops store_ops dbg_tree_at_r in
-          fun  ~(r:r) ~(k:k) ~(v:v) -> (insert r k v : (r option,t)Monad.mm)
-
-        let delete  =
-          let delete = M.Delete.delete cs leaf_ops node_ops frame_ops store_ops dbg_tree_at_r in
-          fun ~(r:r) ~(k:k) -> (delete r k : (r,t)Monad.mm)
-
-        let leaf_stream_ops = 
-          let open M.Leaf_stream in
-          Internal_leaf_stream_impl.make_leaf_stream_ops ~monad_ops ~leaf_kvs:leaf_ops0.leaf_to_kvs ~isa_ls_step_to_next_leaf:(ls_step_to_next_leaf frame_ops store_ops)
-
-
-        let leaf_lookup = leaf_ops0.leaf_lookup 
-
-        let pre_map_ops = {leaf_lookup;find;insert;delete} 
-
-        let insert_many =
-          let insert_many = M.Insert_many.insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops in 
-          let insert_many = fun ~(r:r) ~(k:k) ~(v:v) ~kvs -> insert_many r k v kvs in
-          { insert_many }
-
-        let insert_all = 
-          (* let im_step = M.Insert_many.im_step cs k_cmp leaf_ops node_ops frame_ops store_ops in *)
-          let insert_many = M.Insert_many.insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops in 
-          let iter_m = iter_m ~monad_ops in
-          let insert_all ~r ~kvs = 
-            (r,kvs) |> 
-            iter_m  (fun (r,kvs) -> 
-                match kvs with 
-                  [] -> return None
-                | (k,v)::kvs -> (
-                    insert_many r k v kvs >>= fun (kvs,r') -> 
-                    match r' with
-                    | None -> return (Some(r,kvs))
-                    | Some r' -> return (Some(r',kvs))))
-            >>= fun (r',_) -> return r'  (* NOTE may return the original r *)
-          in
-          let _ = insert_all in
-          { insert_all }
-      end
-    end
+      in
+      A.Export.{
+        find;insert;delete;leaf_stream_ops;leaf_ops=leaf_ops0; node_ops=node_ops0;
+        pre_map_ops;insert_many;insert_all})
     in
-    (A.Export.{
-        find;insert;delete;leaf_stream_ops;
-        (* leaf_lookup; *)
-        pre_map_ops;insert_many;insert_all;leaf_ops=A.leaf_ops0;
-        node_ops=A.node_ops0} 
-     : 
-       (k,v,r,t,leaf,node,(r, leaf, (k, r, node) Frame_type.frame) Internal_leaf_stream_impl._t)
-         pre_btree_ops)
+    { leaf_ops=leaf_ops0; node_ops=node_ops0; rest }
 end
 include Internal_make_with_k_maps
+
+let make_with_k_maps 
+: monad_ops:'a monad_ops ->
+cs:Constants_type.constants ->
+k_cmp:('b -> 'b -> int) ->
+k_map:('b, 'c, 'd) Leaf_node_frame_map_ops_type.map_ops ->
+kopt_map:('b option, 'e, 'f) Leaf_node_frame_map_ops_type.map_ops ->
+dbg_tree_at_r:('e -> (unit, 'a) m) ->
+('b, 'c, 'e, 'a, 'd, 'f,
+ ('e, 'd, ('b, 'e, 'f) frame)
+ Isa_btree__Isa_btree_intf.Internal_leaf_stream_impl_t._t,
+ ('e, ('f, 'd) dnode, 'a) store_ops)
+t2
+= make_with_k_maps
+
 
 
 (* open Isa_btree_intf.Pre_btree_ops_type *)
