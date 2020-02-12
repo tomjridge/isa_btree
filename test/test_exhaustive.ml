@@ -47,6 +47,8 @@ module Internal = struct
   type test_r = Test_leaf_node_frame_impls.test_r
   type spec = (int,int,unit)Tjr_map.map
 
+  open Kv_op
+
   let execute_tests ~cs ~range ~fuel = 
     let map_ops = spec_map_ops in     
     let dbg_frame f = 

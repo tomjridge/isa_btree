@@ -192,7 +192,7 @@ module Internal_node_impl = struct
       let r = map_ops.find_opt (Some k) n |> dest_Some in
       let (n1,_,n2) = map_ops.split (Some k) n in
       n2 |> map_ops.add None r |> fun n2 ->
-      Test.test (fun () -> check_node n1;check_node n2);
+      Test.check (fun () -> check_node n1;check_node n2);
       (n1,k,n2)
     in
     let node_merge (n1,k,n2) = 
@@ -200,7 +200,7 @@ module Internal_node_impl = struct
       n2 |> map_ops.find_opt None |> dest_Some |> fun r2 -> 
       n2 |> map_ops.remove None |> map_ops.add (Some k) r2 |> fun n2 ->
       map_ops.disjoint_union n1 n2 |> fun n -> 
-      Test.test (fun () -> check_node n);
+      Test.check (fun () -> check_node n);
       n
     in
     let node_steal_right (n1,k0,n2) =
@@ -211,7 +211,7 @@ module Internal_node_impl = struct
       k' |> dest_Some |> fun k' ->
       n2 |> map_ops.remove (Some k') |> map_ops.add None r' |> fun n2 ->
       n1 |> map_ops.add (Some k0) r |> fun n1 ->
-      Test.test (fun () -> check_node n1;check_node n2);
+      Test.check (fun () -> check_node n1;check_node n2);
       (n1,k',n2)
     in
     let node_steal_left (n1,k0,n2) = 
@@ -224,7 +224,7 @@ module Internal_node_impl = struct
       n2 |> map_ops.remove None |> fun n2 -> 
       n2 |> map_ops.add (Some k0) r' |> fun n2 ->
       n2 |> map_ops.add None r |> fun n2 -> 
-      Test.test (fun () -> check_node n1;check_node n2);
+      Test.check (fun () -> check_node n1;check_node n2);
       (n1,k,n2)
     in
     let node_keys_length n = 

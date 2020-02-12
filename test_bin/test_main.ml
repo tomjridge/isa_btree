@@ -23,7 +23,7 @@ let _ =
   ()
 
 let with_logger f = 
-    Logger.logger := Some (Log.mk_log_ops());
+    Logger.logger := Some (Tjr_lib.Log.mk_log_ops());
     Logger.at_exit ~print:true;
     Logger.log_lazy (fun _ -> "Logger initialized");
     f();
