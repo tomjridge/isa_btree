@@ -95,7 +95,7 @@ module Internal_leaf_impl = struct
 
 
   let test_leaf_impl () = 
-    let k_cmp: int -> int -> int = Pervasives.compare in
+    let k_cmp: int -> int -> int = Stdlib.compare in
     let module Comp = Isa_btree_util.Internal_make_map_ops(struct type k = int let k_cmp = k_cmp end) in
     let open Comp in
     let map_ops = Tjr_map.With_base_as_record.make_map_ops k_comparator in
@@ -116,7 +116,7 @@ module Internal_leaf_impl = struct
     assert(xs'@ys'=kvs0);
     ()
 
-  let _ = Global.register ~name:(__MODULE__^".test_leaf_impl") test_leaf_impl
+  let _ : unit -> unit = Global.register ~name:(__MODULE__^".test_leaf_impl") test_leaf_impl
 
 
 end
@@ -182,7 +182,7 @@ module Internal_node_impl = struct
       let ks = List.tl ks |> List.map dest_Some in  (* drop None *)
       assert(  (* FIXME use Test.assert_ or similar *)
         let len = List.length ks in 
-        let _ = 
+        let _ : unit = 
           match i < len with
           | false -> Printf.printf "NOTE %s: %d %d\n%!" __LOC__ i len
           | true -> ()
@@ -257,7 +257,7 @@ module Internal_node_impl = struct
     node_ops
 
   let test_node_impl () = 
-    let k_cmp: int -> int -> int = Pervasives.compare in
+    let k_cmp: int -> int -> int = Stdlib.compare in
     let module Comp = Isa_btree_util.Internal_make_map_ops(struct type k = int let k_cmp = k_cmp end) in
     let open Comp in
     let map_ops = Tjr_map.With_base_as_record.make_map_ops kopt_comparator in
@@ -298,7 +298,7 @@ module Internal_node_impl = struct
     assert(n3 |> ops.node_to_krs = krs0);
     ()
 
-  let _ = Global.register ~name:(__MODULE__^".test_node_impl") test_node_impl
+  let _ : unit -> unit = Global.register ~name:(__MODULE__^".test_node_impl") test_node_impl
 end
 
 

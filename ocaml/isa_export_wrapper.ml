@@ -4,13 +4,13 @@ open Isa_btree_intf
 
 (** Control isabelle assert flag *)
 module Isa_export_assert_flag = struct
-  let _ = 
+  let _ : bool ref = 
     Isa_export.assert_flag
     |> Global.register ~name:"Isa_export.assert_flag" 
 
   let enable_isa_checks () = Isa_export.assert_flag:=true
   let disable_isa_checks () = Isa_export.assert_flag:=false
-  let _ = disable_isa_checks ()  (* default is to disable *)
+  let _ : unit = disable_isa_checks ()  (* default is to disable *)
 end
 include Isa_export_assert_flag
 

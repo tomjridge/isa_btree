@@ -84,7 +84,7 @@ module Internal = struct
     add_spec_for_r init_state map_ops.empty;
     (* use the functionality from Tjr_lib.Exhaustive_testing *)
     Exhaustive_testing.test 
-      ~cmp:Pervasives.compare
+      ~cmp:Stdlib.compare
       ~step:(fun r op -> 
           let s = test_r_to_spec r in
           match op with

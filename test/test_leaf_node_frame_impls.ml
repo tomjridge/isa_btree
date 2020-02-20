@@ -37,7 +37,7 @@ module Internal = struct
   (* leaf and node test impls ----------------------------------------- *)
 
 
-  let k_cmp : int -> int -> int = Pervasives.compare
+  let k_cmp : int -> int -> int = Stdlib.compare
 
   module Map_ops = Isa_btree_util.Internal_make_map_ops(struct
       type k=int

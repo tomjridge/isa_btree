@@ -52,7 +52,7 @@ end
 
 (** For testing *)
 module Int_map_ops = Internal_make_map_ops(
-  struct type k = int let k_cmp=Pervasives.compare end)
+  struct type k = int let k_cmp=Stdlib.compare end)
 
 (** Utility function to convert a comparator to a record of map operations. *)
 module Comparator_to_map_ops = struct

@@ -5,6 +5,6 @@
   (name isa_btree)
   (public_name isa_btree)
   (preprocessor_deps (file "optcomp_config.ml"))
-  (preprocess (pps ppx_deriving_yojson ppx_jane))
+  (preprocess (pps ppx_deriving_yojson ppx_optcomp)) ; ppx_jane should not enforce style rules on isa-generated code
   (libraries num yojson ppx_deriving_yojson ppx_deriving_yojson.runtime tjr_fs_shared tjr_profile))
 
