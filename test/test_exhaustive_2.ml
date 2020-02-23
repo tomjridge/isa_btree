@@ -33,7 +33,7 @@ module Internal = struct
   type test_r = Test_leaf_node_frame_impls.test_r
   type spec = (int,int,unit)Tjr_map.map
 
-  open Kv_op
+  open Kvop
 
   let execute_tests ~cs ~range = 
     (* map_ops for the spec; FIXME rename *)

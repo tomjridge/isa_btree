@@ -1,4 +1,4 @@
-open Tjr_fs_shared.Kv_op
+open Tjr_fs_shared.Kvop
 open Test_monad
 
 (* allow float representation *)
