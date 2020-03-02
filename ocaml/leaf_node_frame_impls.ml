@@ -157,6 +157,12 @@ module Internal_node_impl = struct
       in              
 *)
       let ks = None::(List.map (fun x -> Some x) ks) in
+      Test.assert_(fun() -> 
+          let b = List.length ks = List.length rs in
+          let _ : unit = 
+            if not b then  Printf.printf "%s: lengths differ, %d %d \n%!" __LOC__ (List.length ks) (List.length rs)
+          in
+          assert(b));
       let krs = List.combine ks rs in
       map_ops.of_bindings krs
     in
@@ -244,6 +250,7 @@ module Internal_node_impl = struct
     let node_to_krs n = 
       profile n9 @@ fun () -> 
       n |> map_ops.bindings |> List.split |> fun (ks,rs) ->
+      assert(List.hd ks = None);
       (List.tl ks |> List.map dest_Some,rs)
     in
     let krs_to_node = fun (ks,rs) -> make_node ks rs in
