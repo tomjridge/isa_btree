@@ -100,7 +100,7 @@ module Internal_leaf_impl = struct
     let open Comp in
     let map_ops = Tjr_map.With_base_as_record.make_map_ops k_comparator in
     let ops = make_leaf_ops ~map_ops in
-    let kvs0 = List_.from_to 1 20 |> List.map (fun x -> (x,2*x)) in
+    let kvs0 = List_.from_upto 1 20 |> List.map (fun x -> (x,2*x)) in
     let l0 = kvs0 |> ops.kvs_to_leaf in
     let l1,k,l2 = ops.split_large_leaf 10 l0 in
     (* Printf.printf "%s k is %d\n%!" __LOC__ k; *)
