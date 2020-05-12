@@ -1,17 +1,17 @@
-*~
-/src/document/root.aux
-/src/document/root.log
-/src/document/root.out
-/src/document/root.toc
-src/output/
-/docs/tmp.*
-/docs/pics/*.pdf
-docs/pics/*.ps
-/docs/pics/all
-/ocaml/META
-/dune-project
-/isa_btree.install
-/ocaml/.merlin
-/test/.merlin
-/isa_btree_test.install
-.merlin
+# *~
+# /src/document/root.aux
+# /src/document/root.log
+# /src/document/root.out
+# /src/document/root.toc
+# src/output/
+# /docs/tmp.*
+# /docs/pics/*.pdf
+# docs/pics/*.ps
+# /docs/pics/all
+# /ocaml/META
+# /dune-project
+# /isa_btree.install
+# /ocaml/.merlin
+# /test/.merlin
+# /isa_btree_test.install
+# .merlin
