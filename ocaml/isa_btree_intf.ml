@@ -161,7 +161,7 @@ type ('a,'b,'c) leaf_node_frame_ops = {
 
 (** {2 Store operations} *)
 
-module Store_ops_type = struct
+module Store_ops = struct
 
   (* $(PIPE2SH("""sed -n '/store_ops[ ]are like/,/}/p' >GEN.store_ops.ml_""")) *)
   (** store_ops are like a blk device, but allowing read/writes of
@@ -179,9 +179,10 @@ module Store_ops_type = struct
     free    : 'r list -> (unit,'t) m
   }
 
+  type ('r,'dnode,'t) t = ('r,'dnode,'t) store_ops
   (* $(FIXME("free store_ops.free needs thinking about")) *)
 end
-include Store_ops_type
+include Store_ops
 
 
 (** {2 Pre-map operations} *)

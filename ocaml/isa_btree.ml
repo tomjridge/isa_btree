@@ -35,7 +35,9 @@ open Isa_btree_intf
 
 type ('node,'leaf) dnode = ('node,'leaf) Dnode_type.dnode
 
-type ('r,'dnode,'t) store_ops = ('r,'dnode,'t) Store_ops_type.store_ops
+module Store_ops = Store_ops
+
+type ('r,'dnode,'t) store_ops = ('r,'dnode,'t) Store_ops.store_ops
 
 type ('k,'v,'leaf) leaf_ops = ('k,'v,'leaf) Isa_btree_intf.leaf_ops
 
