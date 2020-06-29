@@ -1,7 +1,6 @@
 (** A store that works directly with trees, not refs to blks. For
    testing. Pointers r are trees themselves. *)
 
-open Isa_btree
 open Test_leaf_node_frame_impls
 open Test_monad
 
@@ -30,7 +29,7 @@ let store_ops =
   in
   let rewrite r frm = wrte frm >>= fun r -> return (Some r) in
   let free _rs = return () in
-  {read;wrte;rewrite;free}
+  Store_ops_type.{read;wrte;rewrite;free}
 
 let _ : (test_r, (test_node, test_leaf) dnode, test_r state_passing)
     Isa_btree.store_ops

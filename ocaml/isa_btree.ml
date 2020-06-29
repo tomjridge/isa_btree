@@ -1,16 +1,18 @@
 (** Isabelle B-tree definitions, as an OCaml lib *)
-open Isa_btree_intf
 
-(** {2 Public interfaces} *)
+include Summary
+
 
 (** {2 Assertion checking etc} *)
 include Isa_export_wrapper.Isa_export_assert_flag
 
 
-(** {2 Collection of all the interfaces in a separate module (we pull
-   some of these out in the following).} *)
+(** {2 Code exported from Isabelle, and a wrapper} *)
 
-module Isa_btree_intf = Isa_btree_intf
+module Isa_export = Isa_export
+
+module Isa_export_wrapper = Isa_export_wrapper
+
 
 (** {2 Constants} *)
 
@@ -25,111 +27,33 @@ type constants = Constants.constants =
 module Constants = Constants
 
 
-(** {2 Disk-backed nodes} *)
+(** {2 Main types and interfaces} *)
 
-include Isa_btree_intf.Dnode_type
+module Isa_btree_intf = Isa_btree_intf
 
+open Isa_btree_intf
 
-(*
-(** {2 Node/leaf conversions to/from lists} *)
+type ('node,'leaf) dnode = ('node,'leaf) Dnode_type.dnode
 
-include Isa_export_wrapper.Node_leaf_conversions_type
+type ('r,'dnode,'t) store_ops = ('r,'dnode,'t) Store_ops_type.store_ops
 
-(*
-include Isa_export_wrapper.Leaf_ops_type
-include Isa_export_wrapper.Node_ops_type
-*)
-*)
+type ('k,'v,'leaf) leaf_ops = ('k,'v,'leaf) Isa_btree_intf.leaf_ops
 
-(** {2 Pre-map ops} *)
+type ('k,'r,'node) node_ops = ('k,'r,'node) Isa_btree_intf.node_ops
 
-include Pre_map_ops_type
+type ('k, 'v, 'r, 'ls, 't) leaf_stream_ops =
+  ('k, 'v, 'r, 'ls, 't) Isa_btree_intf.leaf_stream_ops
 
+type ('k, 'v, 'r, 'leaf, 'frame, 't) pre_map_ops =
+  ('k, 'v, 'r, 'leaf, 'frame, 't) Isa_btree_intf.pre_map_ops
 
-(*
-(** {2 Insert all and insert many} *)
-
-include Insert_all_type
-
-include Insert_many_type
-*)
-
-
-(** {2 Store ops} *)
-
-include Store_ops_type
-
-
-(*
-(** {2 Leaf stream ops} *)
-
-include Leaf_stream_ops_type
-*)
+type ('k,'v,'r,'t,'leaf,'node,'ls) pre_btree_ops = 
+  ('k,'v,'r,'t,'leaf,'node,'ls) Isa_btree_intf.pre_btree_ops
 
 
 (** {2 Main functionality: make a B-tree} *)
 
-(* include Isa_export_wrapper.Internal_export *)
-
-(** A record of operations provided by the B-tree *)
-
-include Pre_btree_ops_type
-
-
-(** This functor takes various types and constants (including, in
-   particular, the type of keys and the value for the comparison on
-   keys) and generates extra types [k_comparator...] for the map
-   implementations. Then there is a function [make_btree_ops] which
-   takes a [store_ops] and returns the B-tree operations.
-
-    Note that these are "pre_btree_ops" because they expose internal
-   types that we may want to hide: leaf, node, frame, leaf_stream(?).
-   See tjr_btree for the simpler versions.
-
- *)
-
-module Make(S:S) : (sig
-  open S
-  type leaf 
-  type node
-  type leaf_stream
-
-  val leaf_ops: (k,v,leaf)leaf_ops
-  val node_ops: (k,r,node)node_ops
-
-  val make_btree_ops: 
-    store_ops:(r, (node, leaf) dnode, t) store_ops ->
-    (k, v, r, t, leaf, node, leaf_stream) pre_btree_ops
-end)
-= struct
-  open Isa_export_wrapper
-  open S
-
-  module Map_ops = Isa_btree_util.Internal_make_map_ops(
-    struct 
-      type nonrec k = k 
-      let k_cmp = k_cmp 
-    end)
-  include Map_ops
-
-  type node = (k option, r, kopt_comparator) Base.Map.t
-  type leaf = (k, v, k_comparator) Base.Map.t
-  type frame = (k, r, node) Frame_type.frame
-  type leaf_stream = (r, leaf, frame) Internal_leaf_stream_impl._t
-
-  let dbg_tree_at_r = fun _ -> monad_ops.return () 
-
-  let x = Isa_export_wrapper.make_with_k_maps ~monad_ops ~cs ~k_cmp ~k_map:(k_map ()) ~kopt_map:(kopt_map()) ~dbg_tree_at_r
-  let leaf_ops = x.leaf_ops
-  let node_ops = x.node_ops
-
-  let make_btree_ops ~(store_ops:(r,(node,leaf)dnode,t)store_ops)
-    : (k,v,r,t,leaf,node,leaf_stream)pre_btree_ops
-    = 
-    x.rest ~store_ops
-
-  let _ = make_btree_ops
-end
+module Make = Make
 
 
 (** {2 Internal interfaces} *)
@@ -171,7 +95,7 @@ module Make_with_first_class_module = struct
       let cs = cs
     end
     in
-    let module B = Make(A) in
+    let module B = Make.Make_v2(A) in
     let module C = struct include A include B end in
     (module C : T with type k=k and type v=v and type r=r and type t=t)
 
@@ -179,9 +103,7 @@ module Make_with_first_class_module = struct
 end
 
 module Leaf_node_frame_impls = Leaf_node_frame_impls
-module Isa_export = Isa_export
-module Isa_export_wrapper = Isa_export_wrapper
+
 module Isa_btree_util = Isa_btree_util
-(* module Notes = Notes *)
 
 module Profilers = Profilers

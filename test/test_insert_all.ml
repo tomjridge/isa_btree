@@ -1,6 +1,5 @@
 (** Some testing of insert_many and insert_all. *)
 
-open Isa_btree
 open Isa_export
 open Isa_export_wrapper
 open Tjr_monad
