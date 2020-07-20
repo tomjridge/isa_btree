@@ -306,18 +306,18 @@ module Internal_make_with_k_maps = struct
           let insert_all = 
             (* let im_step = M.Insert_many.im_step cs k_cmp leaf_ops node_ops frame_ops store_ops in *)
             let insert_many = M.Insert_many.insert_many cs k_cmp leaf_ops node_ops frame_ops store_ops in 
-            let iter_m = iter_m ~monad_ops in
+            (* let iter_m = iter_m ~monad_ops in *)
             let insert_all ~r ~kvs = 
               (r,kvs) |> 
-              iter_m  (fun (r,kvs) -> 
+              iter_k  (fun ~k:kont (r,kvs) -> 
                   match kvs with 
-                    [] -> return None
+                  | [] -> return r
                   | (k,v)::kvs -> (
                       insert_many r k v kvs >>= fun (kvs,r') -> 
                       match r' with
-                      | None -> return (Some(r,kvs))
-                      | Some r' -> return (Some(r',kvs))))
-              >>= fun (r',_) -> return r'  (* NOTE may return the original r *)
+                      | None -> kont (r,kvs)
+                      | Some r' -> kont (r',kvs)))
+              >>= fun r' -> return r'  (* NOTE may return the original r *)
             in
             let _ = insert_all in
             { insert_all }
