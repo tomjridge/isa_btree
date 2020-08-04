@@ -12,7 +12,7 @@ update_generated_doc:
 
 test_main:=test_bin/test_main.exe
 
-$(test_main):
+test_exes: 
 	$(DUNE) build $(test_main)
 
 run_tests: build $(test_main)
