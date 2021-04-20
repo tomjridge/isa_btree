@@ -73,7 +73,7 @@ derived from the splitting code in Key_value *)
 definition index_to_bound :: "'k list \<Rightarrow> nat \<Rightarrow> ('k option * 'k option)" where
 "index_to_bound ks i = (
   let l = if (i=min_child_index) then None else Some(ks!(i-1)) in
-  let u = if (i\<ge>ks_to_max_child_index ks) then None else Some(ks!i) in (* really undefined for i> *)
+  let u = if (i\<ge>ks_to_max_child_index ks) then None else Some(ks!i) in \<comment> \<open> really undefined for i>... \<close>
   (l,u))"
 
 
@@ -131,7 +131,7 @@ definition get_min_size :: "constants \<Rightarrow> (min_size_t * ('k,'v) tree) 
   let min_node_keys = c|>min_node_keys in
   case mt of
     (Small_root_node_or_leaf,Node _) => 1
-    | (Small_root_node_or_leaf,Leaf _) => 0  (* NB this is smaller than just Small_leaf *)
+    | (Small_root_node_or_leaf,Leaf _) => 0  \<comment> \<open> NB this is smaller than just Small_leaf \<close>
     | (Small_node, Node _) => min_node_keys-1
     | (Small_leaf,Leaf _) => min_leaf_size-1
     | (_,_) => failwith (STR ''get_min_size'') )"
@@ -149,7 +149,7 @@ definition wf_size_1 :: "constants \<Rightarrow> ('k,'v) tree => bool" where
   | Node(l,cs) => (
     let n = length l in
     (1 <= n) & (n >= c|>min_node_keys) & (n <= c|>max_node_keys)  
-    (* FIXME 1\<le>n not needed since constants enforce this *) ))"
+    \<comment> \<open> FIXME 1\<le>n not needed since constants enforce this \<close> ))"
 
 (* NOTE this treats the root differently, depending on ms; wf_size_1 has no ms *)
 definition wf_size :: "constants \<Rightarrow> ms_t => ('k,'v) tree => bool" where

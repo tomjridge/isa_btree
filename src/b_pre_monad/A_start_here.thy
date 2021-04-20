@@ -1,6 +1,8 @@
 theory A_start_here
-imports Main "HOL-Library.RBT_Impl"  "HOL-Library.Datatype_Records" (* ~~/src/HOL/Library/Datatype_Records *)
+  imports Main "HOL-Library.RBT_Impl"  "HOL-Library.Datatype_Records" (* ~~/src/HOL/Library/Datatype_Records *)
 begin
+(* NOTE Datatype_Records syntax clashes with existing record syntax, so there are some warnings 
+in the rest of the code; not sure of the best way to get round this *)
 
 (* rbt aux funs -------------------------------------- *)
 fun rbt_min' :: "('a,'b) RBT_Impl.rbt \<Rightarrow> ('a*'b) option \<Rightarrow> ('a*'b) option" where

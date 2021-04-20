@@ -133,7 +133,7 @@ constants \<Rightarrow>
         None \<Rightarrow> return (Inr ())
         | Some r2 \<Rightarrow> return (Inl (I1 r2, stk'))))
       | False \<Rightarrow> (
-        let index = calculate_node_split cs n_keys_length in  (* index counts from 0 *) 
+        let index = calculate_node_split cs n_keys_length in \<comment> \<open> index counts from 0 \<close>
         let (n1,k,n2) = (node_ops|>split_node_at_k_index) index n in  
         Disk_node(n1) |> write |> bind (% r1. 
         Disk_node(n2) |> write |> bind (% r2.

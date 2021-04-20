@@ -2,3 +2,7 @@ For isabelle env:
 
 nix-shell
 source build_and_run_isabelle.sh
+
+
+NOTE 2021-04-19: this is likely out of date, and new uses should just
+use plain isabelle eg 2018, 2020 or 2021

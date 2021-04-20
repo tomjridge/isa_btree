@@ -104,18 +104,18 @@ include Leaf_ops_type
 module Node_ops_type = struct
   (* As Isabelle defn. See \doc(doc:node_ops) *)
   type ('k,'r,'node) node_ops = {
-    split_node_at_k_index: int -> 'node -> ('node*'k*'node);
-    node_merge: 'node*'k*'node -> 'node;
-    node_steal_right: 'node*'k*'node -> 'node*'k*'node;
-    node_steal_left: 'node*'k*'node -> 'node*'k*'node;
-    node_keys_length: 'node -> int;
-    node_make_small_root: 'r*'k*'r -> 'node;
-    node_get_single_r: 'node -> 'r;
-    node_to_krs: 'node -> ('k list * 'r list);
-    krs_to_node: ('k list * 'r list) -> 'node;
+    split_node_at_k_index : int -> 'node -> ('node*'k*'node);
+    node_merge            : 'node*'k*'node -> 'node;
+    node_steal_right      : 'node*'k*'node -> 'node*'k*'node;
+    node_steal_left       : 'node*'k*'node -> 'node*'k*'node;
+    node_keys_length      : 'node -> int;
+    node_make_small_root  : 'r*'k*'r -> 'node;
+    node_get_single_r     : 'node -> 'r;
+    node_to_krs           : 'node -> ('k list * 'r list);
+    krs_to_node           : ('k list * 'r list) -> 'node;
+  }
     (* dbg_node_krs: 'node -> ('k list * 'r list); *)
     (* dbg_node: 'node -> unit *)
-  }
 end
 include Node_ops_type
 

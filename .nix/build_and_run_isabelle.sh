@@ -1,6 +1,8 @@
 cd ../src
-# obviously change this to wherever you have checked out to
-export SRC=/tmp/l/github/an_imp/b_isa_btree/src
+
+# https://stackoverflow.com/questions/4774054/reliable-way-for-a-bash-script-to-get-the-full-path-to-itself ; but we have realpath in nix env
+WHEREAMI=`realpath .`
+export SRC=$WHEREAMI
 isabelle jedit Tmp.thy
 
 # note that this will pull Lem theory files from the LEM heap,
