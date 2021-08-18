@@ -20,6 +20,9 @@ module Internal_leaf_impl = struct
 
   let profile = time_thunk
 
+  let rec drop n xs = 
+    if n = 0 then xs else drop (n-1) (List.tl xs)
+
   let make_leaf_ops (type k v t) ~(map_ops:(k,v,t)map_ops) = 
     let leaf_lookup k l = 
       profile ll @@ fun () -> 
@@ -71,7 +74,7 @@ module Internal_leaf_impl = struct
       (*      Printf.printf "split_large_leaf: i=%d len=%d"
         i
         (map_ops.cardinal l1);*)
-      l1 |> map_ops.bindings |> List_.drop i |> fun binds -> 
+      l1 |> map_ops.bindings |> drop i |> fun binds -> 
       match binds with
       | [] -> failwith __LOC__
       | (k,v)::rest -> 
@@ -100,7 +103,7 @@ module Internal_leaf_impl = struct
     let open Comp in
     let map_ops = Tjr_map.With_base_as_record.make_map_ops k_comparator in
     let ops = make_leaf_ops ~map_ops in
-    let kvs0 = List_.from_upto 1 20 |> List.map (fun x -> (x,2*x)) in
+    let kvs0 = from_upto 1 20 |> List.map (fun x -> (x,2*x)) in
     let l0 = kvs0 |> ops.kvs_to_leaf in
     let l1,k,l2 = ops.split_large_leaf 10 l0 in
     (* Printf.printf "%s k is %d\n%!" __LOC__ k; *)
@@ -116,7 +119,7 @@ module Internal_leaf_impl = struct
     assert(xs'@ys'=kvs0);
     ()
 
-  let _ : unit -> unit = Global.register ~name:(__MODULE__^".test_leaf_impl") test_leaf_impl
+  (* let _ : unit -> unit = Global.register ~name:(__MODULE__^".test_leaf_impl") test_leaf_impl *)
 
 
 end
@@ -292,20 +295,21 @@ module Internal_node_impl = struct
     assert(ops.node_merge(n1,k,n2) |> ops.node_to_krs = krs0);
     (* steal left *)
     let (n1,k,n2) = ops.split_node_at_k_index 1 n0 in
-    Logger.log(Printf.sprintf "%d %s" __LINE__ (n1 |> node_to_string));
-    Logger.log(Printf.sprintf "%d %d" __LINE__ k);
-    Logger.log(Printf.sprintf "%d %s" __LINE__ (n2 |> node_to_string));
-    Logger.log(Printf.sprintf "%d %s" __LINE__ (n3 |> node_to_string));
+    let log s = Printf.printf "%s\n" s in
+    log(Printf.sprintf "%d %s" __LINE__ (n1 |> node_to_string));
+    log(Printf.sprintf "%d %d" __LINE__ k);
+    log(Printf.sprintf "%d %s" __LINE__ (n2 |> node_to_string));
+    log(Printf.sprintf "%d %s" __LINE__ (n3 |> node_to_string));
     let n1,k,n2 = ops.node_steal_left (n1,k,n2) in
     let n3 = ops.node_merge (n1,k,n2) in
-    Logger.log(Printf.sprintf "%d %s" __LINE__ (n1 |> node_to_string));
-    Logger.log(Printf.sprintf "%d %d" __LINE__ k);
-    Logger.log(Printf.sprintf "%d %s" __LINE__ (n2 |> node_to_string));
-    Logger.log(Printf.sprintf "%d %s" __LINE__ (n3 |> node_to_string));
+    log(Printf.sprintf "%d %s" __LINE__ (n1 |> node_to_string));
+    log(Printf.sprintf "%d %d" __LINE__ k);
+    log(Printf.sprintf "%d %s" __LINE__ (n2 |> node_to_string));
+    log(Printf.sprintf "%d %s" __LINE__ (n3 |> node_to_string));
     assert(n3 |> ops.node_to_krs = krs0);
     ()
 
-  let _ : unit -> unit = Global.register ~name:(__MODULE__^".test_node_impl") test_node_impl
+  (* let _ : unit -> unit = Global.register ~name:(__MODULE__^".test_node_impl") test_node_impl *)
 end
 
 
@@ -323,6 +327,16 @@ module Internal_frame_impl = struct
     =  ["f1";"f2";"f3";"f4";"f5";"f6";"f7";"f8";"f9"]
     |> List.map intern
   
+
+  (* FIXME replace with iter_k *)
+  let iter_opt (f:'a -> 'a option) = 
+    let rec loop x = 
+      match f x with
+      | None -> x
+      | Some x -> loop x
+    in
+    fun x -> loop x
+
 
   (* note that the map_ops is the map ops for the node type *)
   let make_frame_ops (type k r node) ~(map_ops:(k option,r,node)map_ops) =

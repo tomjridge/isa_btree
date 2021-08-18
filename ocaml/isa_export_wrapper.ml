@@ -6,7 +6,7 @@ open Isa_btree_intf
 module Isa_export_assert_flag = struct
   let _ : bool ref = 
     Isa_export.assert_flag
-    |> Global.register ~name:"Isa_export.assert_flag" 
+    (* |> Global.register ~name:"Isa_export.assert_flag"  *)
 
   let enable_isa_checks () = Isa_export.assert_flag:=true
   let disable_isa_checks () = Isa_export.assert_flag:=false

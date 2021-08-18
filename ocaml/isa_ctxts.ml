@@ -1,4 +1,6 @@
 (** This ctxt gives us enough to construct the node leaf and leaf_stream types *)
+
+(*
 module type C_kvr = sig
   type k
   type v
@@ -17,3 +19,4 @@ module type C_kvr = sig
   type cs (* singleton type *)
   val cs: (cs,Constants.constants)sng
 end
+*)
