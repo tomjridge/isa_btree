@@ -21,7 +21,7 @@ let cs = Constants.{
     max_node_keys=1
   }
 
-let k_cmp = Int_.compare
+let k_cmp = Int.compare
 
 let wf_tree = wf_tree ~cs ~ms:(Some Tree.Small_root_node_or_leaf) ~k_cmp 
 

@@ -4,5 +4,5 @@
 (library
   (public_name isa_btree_test)
   (preprocess (pps ppx_deriving_yojson))
-  (libraries isa_btree tjr_lib tjr_fs_shared tjr_profile))
+  (libraries tjr_lib isa_btree tjr_fs_shared tjr_profile))
 
