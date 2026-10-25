@@ -19,6 +19,7 @@ depends: [
   "ppx_deriving_yojson"
   "tjr_fs_shared"
   "isa_btree"
+  "tjr_lib"
 ]
 
 # ----------------------------------------------------------------------

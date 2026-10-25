@@ -394,8 +394,8 @@ module Internal_make_with_comparators = struct
     (type k k_cmp kopt_cmp)
     ~monad_ops
     ~cs
-    ~(k_cmp:(k,k_cmp)Base.Map.comparator)
-    ~(kopt_cmp:(k option,kopt_cmp)Base.Map.comparator)
+    ~(k_cmp:(k,k_cmp)Base.Comparator.Module.t)
+    ~(kopt_cmp:(k option,kopt_cmp)Base.Comparator.Module.t)
     ~store_ops
     =
     let k_map = comparator_to_map_ops k_cmp in

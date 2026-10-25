@@ -16,8 +16,8 @@ module Internal_make_map_ops(S:sig type k val k_cmp: k->k->int end) = struct
 
   type k_comparator = K_comp.comparator_witness
 
-  (* Base.Map.comparator is different from Comparator.comparator *)
-  let k_comparator : (k,k_comparator)Base.Map.comparator = 
+  (* Base.Comparator.Module.t is different from Comparator.comparator *)
+  let k_comparator : (k,k_comparator)Base.Comparator.Module.t = 
     (module struct type t = k include K_comp end)      
     
 
@@ -42,7 +42,7 @@ module Internal_make_map_ops(S:sig type k val k_cmp: k->k->int end) = struct
 
   type kopt_comparator = Kopt_comp.comparator_witness
 
-  let kopt_comparator : (k option,kopt_comparator)Base.Map.comparator = 
+  let kopt_comparator : (k option,kopt_comparator)Base.Comparator.Module.t = 
     (module struct type t = k option include Kopt_comp end)
 
   let kopt_map () : (k option,'r,_)Leaf_node_frame_map_ops_type.map_ops = 
@@ -56,7 +56,7 @@ module Int_map_ops = Internal_make_map_ops(
 
 (** Utility function to convert a comparator to a record of map operations. *)
 module Comparator_to_map_ops = struct
-  let comparator_to_map_ops (cmp:('k,'cmp)Base.Map.comparator) =
+  let comparator_to_map_ops (cmp:('k,'cmp)Base.Comparator.Module.t) =
     Tjr_map.With_base_as_record.make_map_ops cmp
 end
 include Comparator_to_map_ops

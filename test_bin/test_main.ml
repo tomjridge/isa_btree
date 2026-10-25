@@ -35,14 +35,14 @@ let _ =
   | ["exhaustive_deprecated"] -> begin
       with_logger (fun () -> 
           Printf.printf "%s: tests begin\n%!" __MODULE__;
-          Test_exhaustive.config |> List.iter (fun pre_config -> 
+          Lazy.force Test_exhaustive.config |> List.iter (fun pre_config -> 
               Test_exhaustive.test_exhaustive ~pre_config);
           Printf.printf "%s: tests OK\n%!" __MODULE__);
     end
 
   | ["test_exhaustive_2"] -> with_logger (fun () -> 
       Printf.printf "%s: tests begin\n%!" __MODULE__;
-      Test_exhaustive_2.config |> List.iter (fun pre_config -> 
+      Lazy.force Test_exhaustive_2.config |> List.iter (fun pre_config -> 
           Test_exhaustive_2.test_exhaustive ~pre_config);
       Printf.printf "%s: tests OK\n%!" __MODULE__)
 

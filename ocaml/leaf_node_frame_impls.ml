@@ -511,8 +511,8 @@ end
 include Internal_
 
 let make_leaf_node_frame_ops_from_comparators 
-:k_cmp:('a, 'b) Base.Map.comparator ->
-kopt_cmp:('c option, 'd) Base.Map.comparator ->
+:k_cmp:('a, 'b) Base.Comparator.Module.t ->
+kopt_cmp:('c option, 'd) Base.Comparator.Module.t ->
 (('a, 'e, ('a, 'e, 'b) leaf) leaf_ops, ('c, 'f, ('c, 'f, 'd) node) node_ops,
  ('c, 'f, ('c, 'f, ('c option, 'f, 'd) Base.Map.t) frame,
   ('c option, 'f, 'd) Base.Map.t)
@@ -540,8 +540,8 @@ include (Export : sig
     map_ops:('a option, 'b, 'c) map_ops ->
     ('a, 'b, ('a, 'b, 'c) frame, 'c) frame_ops
   val make_leaf_node_frame_ops_from_comparators :
-    k_cmp:('a, 'b) Base.Map.comparator ->
-    kopt_cmp:('c option, 'd) Base.Map.comparator ->
+    k_cmp:('a, 'b) Base.Comparator.Module.t ->
+    kopt_cmp:('c option, 'd) Base.Comparator.Module.t ->
     (('a, 'e, ('a, 'e, 'b) leaf) leaf_ops,
      ('c, 'f, ('c, 'f, 'd) node) node_ops,
      ('c, 'f, ('c, 'f, ('c option, 'f, 'd) Base.Map.t) frame,
